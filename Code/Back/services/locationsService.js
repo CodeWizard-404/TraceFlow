@@ -45,8 +45,8 @@ class LocationService {
                 const delegationName = delegation.name;
                 return {
                     success: true,
-                    address: `Address: ${regionName}, ${governorateName}, ${delegationName}`,
-                    idInfo: `ID: Delegation : ${delegationName}`
+                    address: `${regionName}, ${governorateName}, ${delegationName}`,
+                    idInfo: `${delegationName}`
                 };
             }
 
@@ -74,8 +74,8 @@ class LocationService {
 
                 return {
                     success: true,
-                    address: `Address: ${regionName}, ${governorateName}, ${delegationName}`,
-                    idInfo: `ID: Governorate : ${governorateName}`
+                    address: `${regionName}, ${governorateName}, ${delegationName}`,
+                    idInfo: `${governorateName}`
                 };
             }
 

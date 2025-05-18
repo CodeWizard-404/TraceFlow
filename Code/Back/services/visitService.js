@@ -3,6 +3,8 @@ const { parseTLV } = require('../utils/qrParser');
 const ChecklistService = require('./checklistService');
 const ReasonService = require('./reasonService');
 const GoogleCalendarService = require('./googleCalendarService');
+const OTPService = require('./otpService');
+const { sendSMS } = require('../config/sms');
 const path = require('path');
 const fs = require('fs');
 const { sequelize } = require('../config/db');
@@ -201,7 +203,7 @@ class VisitService {
                 error.status = 404;
                 throw error;
             }
-            // Skip QR verification for visits without an agent (e.g., recruitment visits)
+            // Skip QR verification and OTP for visits without an agent (e.g., recruitment visits)
             if (!visit.agentID) {
                 return { valid: true, message: 'Verification skipped for recruitment visit' };
             }
@@ -223,7 +225,12 @@ class VisitService {
                 error.status = 400;
                 throw error;
             }
-            return { valid: true, message: 'Verification successful' };
+
+            // Generate and send OTP to the agent
+            const otp = await OTPService.generateOTP(visit.agentID, 'agent');
+            await sendSMS(agent.phone, `Your OTP for visit ${visitId} verification is ${otp.code}`);
+
+            return { valid: true, message: 'Verification successful, OTP sent to agent', otpID: otp.otpID };
         } catch (error) {
             const err = new Error(error.message);
             err.status = error.status || 500;
@@ -234,7 +241,7 @@ class VisitService {
     static async logVisit(visitID, data, files, actorID) {
         const transaction = await sequelize.transaction();
         try {
-            const { duration, checklistUpdates, comment, date, time } = data;
+            const { duration, checklistUpdates, comment, date, time, otpCode } = data;
             if (!files || files.length === 0) {
                 const error = new Error('At least one photo is required to log a visit');
                 error.status = 400;
@@ -249,6 +256,16 @@ class VisitService {
                 const error = new Error('Visit not found');
                 error.status = 404;
                 throw error;
+            }
+
+            // Validate OTP for non-recruitment visits
+            if (visit.agentID) {
+                if (!otpCode) {
+                    const error = new Error('OTP code is required for non-recruitment visits');
+                    error.status = 400;
+                    throw error;
+                }
+                await OTPService.validateOTP(visit.agentID, otpCode, 'agent');
             }
 
             const newDate = date || visit.date;
@@ -287,11 +304,11 @@ class VisitService {
             const oldTime = visit.time.replace(/:/g, '-');
             const supervisorName = `${visit.Timesheet.User.firstname.toLowerCase()}_${visit.Timesheet.User.lastname.toLowerCase()}`;
             const oldFolderName = `${oldDate}_${oldTime}_${supervisorName}`;
-            const oldFolderPath = path.join(__dirname, '../uploads/photos', oldFolderName);
+            const oldFolderPath = path.join(__dirname, '../Uploads/photos', oldFolderName);
 
             const newTimeForFolder = newTime.replace(/:/g, '-');
             const newFolderName = `${newDate}_${newTimeForFolder}_${supervisorName}`;
-            const newFolderPath = path.join(__dirname, '../uploads/photos', newFolderName);
+            const newFolderPath = path.join(__dirname, '../Uploads/photos', newFolderName);
 
             let photoPaths = visit.photos ? [...visit.photos] : [];
 

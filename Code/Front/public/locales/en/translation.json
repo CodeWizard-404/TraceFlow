@@ -794,6 +794,8 @@
     }
   },
   "errorDisplay": {
+    "title": "Error",
+    "dismiss": "Dismiss error",
     "actions": {
       "dismiss": "Dismiss"
     }

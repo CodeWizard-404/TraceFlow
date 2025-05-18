@@ -310,7 +310,6 @@ const TimesheetSuggestionsModal: React.FC<TimesheetSuggestionsModalProps> = ({
                                 className="filter-input"
                             />
                         </div>
-                        {error && <p className="error">{error}</p>}
                         <div className="form-buttons">
                             <button
                                 type="submit"

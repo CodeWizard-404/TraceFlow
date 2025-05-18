@@ -31,7 +31,7 @@ class VisitController {
             if (result.valid) {
                 await NotificationService.triggerNotification({
                     event: 'visit:qr_verified',
-                    data: { visitId, qrData },
+                    data: { visitId, qrData, otpID: result.otpID },
                     metadata: { verifiedBy: req.user.email },
                 });
             }
@@ -46,7 +46,7 @@ class VisitController {
     static async logVisit(req, res) {
         try {
             const { id } = req.params;
-            const { duration, checklistUpdates, comment, date, time } = req.body;
+            const { duration, checklistUpdates, comment, date, time, otpCode } = req.body;
             const files = req.files || [];
             if (!id) {
                 logger.warn(`Log visit failed: Missing visit ID, user: ${req.user.userID}, IP: ${req.ip}`);
@@ -56,7 +56,7 @@ class VisitController {
                 logger.warn(`Log visit failed: At least one photo is required to log a visit, user: ${req.user.userID}, IP: ${req.ip}`);
                 return res.status(400).json({ error: 'At least one photo is required to log a visit' });
             }
-            const visit = await VisitService.logVisit(id, { duration, checklistUpdates, comment, date, time }, files, req.user.userID);
+            const visit = await VisitService.logVisit(id, { duration, checklistUpdates, comment, date, time, otpCode }, files, req.user.userID);
             try {
                 const event = await GoogleCalendarService.updateCalendarEvent(req.user.userID, id);
                 await GoogleCalendarService.notifyCalendarUpdate(req.user.userID, {
@@ -118,7 +118,7 @@ class VisitController {
             const { id } = req.params;
             if (!id) {
                 logger.warn(`Delete visit failed: Missing visit ID, user: ${req.user.userID}, IP: ${req.ip}`);
-                return res.status(400).json({ error: 'Visit ID is required' });
+                return res.status(400).json({ doorbell: 'Visit ID is required' });
             }
             const result = await VisitService.deleteVisit(id, req.user.userID);
             try {

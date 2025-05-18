@@ -1,58 +1,92 @@
-import React, { useEffect, useRef } from "react";
-import { useError } from "../../context/ErrorContext";
-import { FaExclamationTriangle } from "react-icons/fa";
-import { motion } from "framer-motion";
-import { useTranslation } from "react-i18next";
-import "./ErrorDisplay.css";
+import React, { useEffect, useRef } from 'react';
+import { FaExclamationTriangle } from 'react-icons/fa';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
+import './ErrorDisplay.css';
 
-const ErrorDisplay: React.FC = () => {
-  const { error, clearError } = useError();
+interface ErrorItem {
+  id: string;
+  message: string;
+  timestamp: string;
+}
+
+interface ErrorDisplayProps {
+  errors: ErrorItem[];
+  clearError: (id: string) => void;
+  clearAllErrors: () => void;
+}
+
+const ErrorDisplay: React.FC<ErrorDisplayProps> = ({ errors, clearError, clearAllErrors }) => {
   const { t } = useTranslation();
-  const errorRef = useRef<HTMLDivElement>(null);
+  const errorContainerRef = useRef<HTMLDivElement>(null);
 
-  // Dismiss on click outside
+  // Dismiss on click outside for the entire error stack
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
-        errorRef.current &&
-        !errorRef.current.contains(event.target as Node)
+        errorContainerRef.current &&
+        !errorContainerRef.current.contains(event.target as Node)
       ) {
-        clearError();
+        if (errors.length > 0) {
+          clearError(errors[errors.length - 1].id);
+        }
       }
     };
-    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside);
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [clearError]);
+  }, [errors, clearError]);
 
-  if (!error) return null;
+  if (errors.length === 0) return null;
 
   return (
-    <motion.div
-      className="error-display"
-      initial={{ opacity: 0, scale: 0.8 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.8 }}
-      transition={{ duration: 0.3, ease: "easeInOut" }}
-      role="alert"
-      aria-live="assertive"
-    >
-      <div className="error-glass" ref={errorRef}>
-        <FaExclamationTriangle className="error-icon" aria-hidden="true" />
-        <div className="error-content">
-          <h3>{t("errorDisplay.title")}</h3>
-          <span>{error}</span>
-        </div>
-        <button
-          className="dismiss-button"
-          onClick={clearError}
-          aria-label={t("errorDisplay.dismiss")}
+    <div className="error-container" ref={errorContainerRef}>
+      {errors.length > 1 && (
+        <motion.button
+          className="clear-all-button"
+          onClick={clearAllErrors}
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.9 }}
+          transition={{ duration: 0.3 }}
+          aria-label={t('errorDisplay.clearAll')}
         >
-          ✕
-        </button>
-      </div>
-    </motion.div>
+          {t('errorDisplay.clearAll')}
+        </motion.button>
+      )}
+      <AnimatePresence>
+        {errors.map((error: ErrorItem, index) => (
+          <motion.div
+            key={error.id}
+            className="error-display"
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: index * 15 }} // Tighter offset for deck effect
+            exit={{ opacity: 0, y: 50, scale: 0.9 }}
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
+            style={{ zIndex: 1000 - index }} // Decreasing z-index for stacking
+            role="alert"
+            aria-live="assertive"
+          >
+            <div className="error-glass">
+              <FaExclamationTriangle className="error-icon" aria-hidden="true" />
+              <div className="error-content">
+                <h3>{t('errorDisplay.title')} (ID: {error.id.slice(0, 8)})</h3>
+                <span>{error.message}</span>
+                <small>{new Date(error.timestamp).toLocaleString()}</small>
+              </div>
+              <button
+                className="dismiss-button"
+                onClick={() => clearError(error.id)}
+                aria-label={t('errorDisplay.dismiss')}
+              >
+                ✕
+              </button>
+            </div>
+          </motion.div>
+        ))}
+      </AnimatePresence>
+    </div>
   );
 };
 
