@@ -9,7 +9,7 @@ import ErrorManager from './components/ErrorManager';
 import AccessDenied from './pages/Error/AccessDenied';
 import './App.css';
 import LoginPage from './pages/Auth/Login';
-import ProfilePage from './pages/Auth/ProfilePage';
+import ProfilePage from './pages/Auth/Profile/ProfilePage';
 import Entry from './pages/Dashboard/Entry';
 import AgentManagement from './pages/Dashboard/AgentManagement';
 

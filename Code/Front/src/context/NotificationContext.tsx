@@ -36,7 +36,7 @@ const initialState: NotificationState = {
 const notificationReducer = (state: NotificationState, action: NotificationAction): NotificationState => {
     switch (action.type) {
         case 'ADD_NOTIFICATION':
-            if (state.notifications.some((n) => n.notificationID === action.payload.notificationID)) {
+            if (state.notifications.some((n) => n.notificationID === n.notificationID)) {
                 return state;
             }
             return {

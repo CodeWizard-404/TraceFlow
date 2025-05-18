@@ -12,7 +12,6 @@ import User from '../../../models/User';
 import Role from '../../../models/Role';
 import { isValidNotificationEvent, getNotificationEntities, getEntityActions, getNotificationTypes } from '../../../lib/notifEvents';
 
-
 interface NotificationRuleAddProps {
     rules: NotificationRule[];
     setRules: React.Dispatch<React.SetStateAction<NotificationRule[]>>;
@@ -43,7 +42,6 @@ const NotificationRuleAddSkeleton: React.FC = () => (
         ))}
         <div className="form-actions-0">
             <div className="custom-skeleton pulsing" style={{ width: '120px', height: '40px' }} />
-
         </div>
     </div>
 );
@@ -58,7 +56,7 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
         event: '',
         type: 'general',
         recipients: { roles: [], userIDs: [] },
-        channels: { websocket: true, email: false, sms: false, inApp: true },
+        channels: { email: false, sms: false, inApp: true },
         messageTemplate: '',
         enabled: true,
     });
@@ -84,7 +82,6 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
     useEffect(() => {
         const fetchData = async () => {
             try {
-
                 const [usersData, rolesData, entitiesData, typesData] = await Promise.all([
                     getAllUsers(),
                     getAllRoles(),
@@ -93,8 +90,6 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
                 ]);
                 setUsers(usersData || []);
                 setRoles(rolesData || []);
-
-                // Set notification types
                 setNotificationTypes(typesData || []);
 
                 // Set entities and actions
@@ -110,14 +105,11 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
                     for (const entity of entitiesData) {
                         actionMap[entity] = await getEntityActions(entity);
                     }
-
-
                     cachedEntityActions.current = actionMap;
                     lastCacheTime.current = Date.now();
                 }
                 setEntities(cachedEntities.current || []);
                 setEntityActions(cachedEntityActions.current || {});
-
             } catch (err) {
                 setError('Failed to fetch data');
                 console.error(err);
@@ -135,8 +127,6 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
         const event = `${entity}:${action}`;
         const isValid = await isValidNotificationEvent(event);
         if (isValid) return 'Event already exists; it will reuse existing rules';
-
-
         return '';
     };
 
@@ -181,7 +171,6 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
             setFormData((prev) => ({
                 ...prev,
                 channels: {
-                    websocket: prev.channels?.websocket ?? false,
                     email: prev.channels?.email ?? false,
                     sms: prev.channels?.sms ?? false,
                     inApp: prev.channels?.inApp ?? false,
@@ -413,8 +402,9 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
                     </div>
                     <div className="form-section">
                         <h3 className="form-header">Channels</h3>
+                        <p className="info-text">Real-time WebSocket notifications are always enabled and cannot be disabled.</p>
                         <div className="channels-grid">
-                            {(['websocket', 'email', 'sms', 'inApp'] as Array<keyof typeof formData.channels>).map((channel: string) => (
+                            {(['email', 'sms', 'inApp'] as Array<keyof typeof formData.channels>).map((channel: string) => (
                                 <label key={channel} className="toggle-switch">
                                     <input
                                         type="checkbox"

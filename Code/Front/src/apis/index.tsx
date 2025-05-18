@@ -132,7 +132,7 @@ export type TimesheetByIdResponse = Timesheet;
 export type TimesheetsBySupervisorResponse = Timesheet[];
 export type UpdateTimesheetResponse = Timesheet;
 export type ValidateTimesheetResponse = Timesheet;
-export type TimesheetByWeekNumberAndYearResponse = Timesheet;
+export type TimesheetByWeekNumberAndYearResponse = Timesheet[];
 
 // User Routes
 export type AssignGoogleAccountResponse = { userID: string; keycloakId: string; firstname: string; lastname: string; phone: string; email: string; password: string; googleEmail: string };

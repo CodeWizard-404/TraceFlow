@@ -55,7 +55,16 @@ export const updateNotificationPreferences = async (
     preferences: NotificationPreference['preferences']
 ): Promise<NotificationPreference> => {
     try {
-        const response = await api.put('/notifications/preferences', { preferences });
+        // Define sanitizedPreferences with explicit type
+        const sanitizedPreferences: NotificationPreference['preferences'] = {};
+        for (const [event, channels] of Object.entries(preferences)) {
+            sanitizedPreferences[event] = {
+                email: channels.email,
+                sms: channels.sms,
+                inApp: channels.inApp,
+            };
+        }
+        const response = await api.put('/notifications/preferences', { preferences: sanitizedPreferences });
         return response.data;
     } catch (error) {
         console.error('Error updating notification preferences:', error);
@@ -75,9 +84,18 @@ export const getNotificationRules = async (): Promise<NotificationRule[]> => {
 };
 
 // Create a notification rule (admin only)
-export const createNotificationRule = async (rule: NotificationRule): Promise<NotificationRule> => {
+export const createNotificationRule = async (rule: Omit<NotificationRule, 'ruleID' | 'creatorID' | 'createdAt' | 'updatedAt'>): Promise<NotificationRule> => {
     try {
-        const response = await api.post('/notifications/rules', rule);
+        // Ensure channels exclude websocket
+        const sanitizedRule = {
+            ...rule,
+            channels: {
+                email: rule.channels.email,
+                sms: rule.channels.sms,
+                inApp: rule.channels.inApp,
+            },
+        };
+        const response = await api.post('/notifications/rules', sanitizedRule);
         return response.data;
     } catch (error) {
         console.error('Error creating notification rule:', error);
@@ -88,10 +106,19 @@ export const createNotificationRule = async (rule: NotificationRule): Promise<No
 // Update a notification rule (admin only)
 export const updateNotificationRule = async (
     ruleID: string,
-    rule: Partial<NotificationRule>
+    rule: Partial<Omit<NotificationRule, 'ruleID' | 'creatorID' | 'createdAt' | 'updatedAt'>>
 ): Promise<NotificationRule> => {
     try {
-        const response = await api.put(`/notifications/rules/${ruleID}`, rule);
+        // Ensure channels exclude websocket
+        const sanitizedRule = {
+            ...rule,
+            channels: rule.channels ? {
+                email: rule.channels.email,
+                sms: rule.channels.sms,
+                inApp: rule.channels.inApp,
+            } : undefined,
+        };
+        const response = await api.put(`/notifications/rules/${ruleID}`, sanitizedRule);
         return response.data;
     } catch (error) {
         console.error('Error updating notification rule:', error);
@@ -132,7 +159,7 @@ export const createNotification = async (
         email?: string;
         sms?: string;
     }
-): Promise<{ results: Notification[]; message: string }> => {
+): Promise<{ results: any[]; message: string }> => {
     try {
         const response = await api.post('/notifications', notification);
         return response.data;

@@ -9,6 +9,7 @@ const ERROR_MESSAGES = {
     SERVER_ERROR: 'Something broke. Try again later.',
     INVALID_RULE: 'Invalid notification rule.',
     INVALID_PREFERENCES: 'Invalid notification preferences.',
+    INVALID_CHANNELS: 'Channels must only include email, sms, and inApp.',
 };
 
 class NotificationController {
@@ -26,6 +27,15 @@ class NotificationController {
                 throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
             }
             const { event, type, recipients, channels, conditions, messageTemplate, enabled } = req.body;
+
+            // Validate channels to exclude websocket
+            if (channels.websocket !== undefined) {
+                throw Object.assign(new Error(ERROR_MESSAGES.INVALID_CHANNELS), { status: 400 });
+            }
+            if (!['email', 'sms', 'inApp'].every(c => typeof channels[c] === 'boolean')) {
+                throw Object.assign(new Error(ERROR_MESSAGES.INVALID_CHANNELS), { status: 400 });
+            }
+
             const rule = await NotificationRule.create({
                 event,
                 type,
@@ -49,7 +59,7 @@ class NotificationController {
             return res.status(201).json(rule);
         } catch (error) {
             const response = NotificationController.formatError(error);
-            const status = error.message === ERROR_MESSAGES.MISSING_FIELDS ? 400 : error.status || 500;
+            const status = error.message === ERROR_MESSAGES.MISSING_FIELDS || error.message === ERROR_MESSAGES.INVALID_CHANNELS ? 400 : error.status || 500;
             logger.error('Failed to create notification rule', {
                 route: 'notifications/rules',
                 method: req.method,
@@ -73,6 +83,15 @@ class NotificationController {
             }
             const { ruleID } = req.params;
             const { event, type, recipients, channels, conditions, messageTemplate, enabled } = req.body;
+
+            // Validate channels to exclude websocket
+            if (channels.websocket !== undefined) {
+                throw Object.assign(new Error(ERROR_MESSAGES.INVALID_CHANNELS), { status: 400 });
+            }
+            if (!['email', 'sms', 'inApp'].every(c => typeof channels[c] === 'boolean')) {
+                throw Object.assign(new Error(ERROR_MESSAGES.INVALID_CHANNELS), { status: 400 });
+            }
+
             const rule = await NotificationRule.findByPk(ruleID);
             if (!rule) {
                 throw Object.assign(new Error(ERROR_MESSAGES.INVALID_RULE), { status: 404 });
@@ -99,7 +118,7 @@ class NotificationController {
             return res.status(200).json(rule);
         } catch (error) {
             const response = NotificationController.formatError(error);
-            const status = error.message === ERROR_MESSAGES.MISSING_FIELDS ? 400 : error.status || 500;
+            const status = error.message === ERROR_MESSAGES.MISSING_FIELDS || error.message === ERROR_MESSAGES.INVALID_CHANNELS ? 400 : error.status || 500;
             logger.error('Failed to update notification rule', {
                 route: 'notifications/rules',
                 method: req.method,
@@ -239,7 +258,7 @@ class NotificationController {
             const currentPreferences = preference.preferences || {};
             const updatedPreferences = { ...currentPreferences };
             for (const [event, channels] of Object.entries(preferences)) {
-                if (typeof channels !== 'object' || !['email', 'sms', 'inApp'].every(c => typeof channels[c] === 'boolean')) {
+                if (typeof channels !== 'object' || !['email', 'sms', 'inApp'].every(c => typeof channels[c] === 'boolean') || channels.websocket !== undefined) {
                     throw Object.assign(new Error(ERROR_MESSAGES.INVALID_PREFERENCES), { status: 400 });
                 }
                 updatedPreferences[event] = {
@@ -263,7 +282,7 @@ class NotificationController {
             return res.status(200).json(preference);
         } catch (error) {
             const response = NotificationController.formatError(error);
-            const status = error.message === ERROR_MESSAGES.MISSING_FIELDS ? 400 : error.status || 500;
+            const status = error.message === ERROR_MESSAGES.MISSING_FIELDS || error.message === ERROR_MESSAGES.INVALID_PREFERENCES ? 400 : error.status || 500;
             logger.error('Failed to update notification preferences', {
                 route: 'notifications/preferences',
                 method: req.method,
@@ -292,6 +311,15 @@ class NotificationController {
                 return acc;
             }, {});
             const preferences = preference && preference.preferences ? { ...defaultPrefs, ...preference.preferences } : defaultPrefs;
+            // Ensure preferences exclude websocket
+            const sanitizedPreferences = {};
+            for (const [event, channels] of Object.entries(preferences)) {
+                sanitizedPreferences[event] = {
+                    email: channels.email,
+                    sms: channels.sms,
+                    inApp: channels.inApp,
+                };
+            }
             logger.info('Successfully fetched notification preferences', {
                 route: 'notifications/preferences',
                 method: req.method,
@@ -302,7 +330,7 @@ class NotificationController {
                 userId: actorID,
                 metadata: { userID: req.user.userID, eventCount: availableEvents.length },
             });
-            return res.status(200).json({ preferences, availableEvents });
+            return res.status(200).json({ preferences: sanitizedPreferences, availableEvents });
         } catch (error) {
             const response = NotificationController.formatError(error);
             logger.error('Failed to fetch notification preferences', {

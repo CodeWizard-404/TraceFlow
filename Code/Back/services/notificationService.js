@@ -37,14 +37,13 @@ class NotificationService {
                 return { success: false, method: 'WebSocket', reason: 'Server not initialized' };
             }
             const payload = { event, data, timestamp: new Date().toISOString() };
-            roles.forEach((role) => {
-                const room = role.toLowerCase();
+            const rooms = [...roles.map(r => r.toLowerCase()), ...userIDs, 'default-roles-traceflow'].filter(Boolean);
+            if (rooms.length === 0) {
+                return { success: true, method: 'WebSocket', reason: 'No rooms to notify' };
+            }
+            rooms.forEach((room) => {
                 io.to(room).emit(event, payload);
             });
-            userIDs.forEach((userID) => {
-                io.to(userID).emit(event, payload);
-            });
-            io.to('default-roles-traceflow').emit(event, payload);
             return { success: true, method: 'WebSocket' };
         } catch (error) {
             console.error('WebSocket notification failed:', error.message);
@@ -56,7 +55,6 @@ class NotificationService {
         try {
             console.log('sendEmailNotification: message parameter:', message);
             const resolvedMessage = await Promise.resolve(message);
-            // Create a detailed email message
             let detailedMessage = `Event: ${resolvedMessage}\n`;
             if (data && Object.keys(data).length) {
                 detailedMessage += `Details:\n${Object.entries(data)
@@ -74,7 +72,7 @@ class NotificationService {
                 templateName: 'default',
                 replacements: {
                     firstname: 'User',
-                    content: detailedMessage.replace(/\n/g, '<br>'), // Convert newlines to HTML breaks for email
+                    content: detailedMessage.replace(/\n/g, '<br>'),
                     event: resolvedMessage,
                     timestamp: new Date().toLocaleString(),
                     platformUrl: process.env.PLATFORM_URL || 'https://traceflow.example.com',
@@ -91,10 +89,9 @@ class NotificationService {
     async sendSMSNotification(to, message, data = {}, metadata = {}) {
         try {
             const resolvedMessage = await Promise.resolve(message);
-            // Create a concise SMS message
             let smsMessage = `${resolvedMessage}`;
             if (data && Object.keys(data).length) {
-                const keyDetail = Object.entries(data)[0]; // Include one key detail due to SMS length limits
+                const keyDetail = Object.entries(data)[0];
                 smsMessage += ` (${keyDetail[0]}: ${keyDetail[1]})`;
             }
             smsMessage += `. Check traceflow.app`;
@@ -111,7 +108,6 @@ class NotificationService {
         let notification;
         const preferences = userIDs.length ? await this.getUserPreferences(userIDs[0], event) : { inApp: true };
 
-        // Ensure message is resolved
         const resolvedMessage = await Promise.resolve(message);
 
         if (preferences.inApp && userIDs.length) {
@@ -123,16 +119,7 @@ class NotificationService {
                 event,
             });
         }
-        if (event && data && (roles.length || userIDs.length) && preferences.inApp) {
-            const rooms = [...roles.map(r => r.toLowerCase()), ...userIDs, 'default-roles-traceflow'];
-            for (const room of rooms) {
-                await this.redis.publish('notifications', JSON.stringify({
-                    room,
-                    data: { event, ...data },
-                }));
-            }
-            results.push({ success: true, method: 'Redis Pub/Sub' });
-        }
+
         if (email && preferences.email && resolvedMessage) {
             const subject = `TraceFlow Notification: ${type.charAt(0).toUpperCase() + type.slice(1)}`;
             const emailResult = await this.sendEmailNotification(email, subject, resolvedMessage, data, metadata);
@@ -140,7 +127,7 @@ class NotificationService {
                 await this.storeNotification({
                     userID: userIDs[0],
                     type,
-                    message: resolvedMessage, // Store only event name for email channel
+                    message: resolvedMessage,
                     channel: 'email',
                     status: 'sent',
                     event,
@@ -157,13 +144,14 @@ class NotificationService {
             }
             results.push(emailResult);
         }
+
         if (sms && preferences.sms && resolvedMessage) {
             const smsResult = await this.sendSMSNotification(sms, resolvedMessage, data, metadata);
             if (smsResult.success && userIDs.length) {
                 await this.storeNotification({
                     userID: userIDs[0],
                     type,
-                    message: resolvedMessage, // Store only event name for SMS channel
+                    message: resolvedMessage,
                     channel: 'sms',
                     status: 'sent',
                     event,
@@ -180,6 +168,7 @@ class NotificationService {
             }
             results.push(smsResult);
         }
+
         return results;
     }
 
@@ -221,22 +210,9 @@ class NotificationService {
             });
 
             if (channel === 'in-app' && preferences.inApp) {
-                const eventName = 'notification:created';
-                const data = {
-                    notificationID: notification.notificationID,
-                    userID,
-                    type,
-                    message: notificationMessage,
-                    channel,
-                    status: 'pending',
-                    createdAt: notification.createdAt,
-                    updatedAt: notification.updatedAt,
-                };
-                const wsResult = await this.sendWebSocketNotification(eventName, data, [], [userID]);
-                if (wsResult.success) {
-                    await this.updateNotificationStatus(notification.notificationID, 'sent');
-                }
+                await this.updateNotificationStatus(notification.notificationID, 'sent');
             }
+
             return notification;
         } catch (error) {
             console.error('Failed to store notification:', error.message);
@@ -277,7 +253,6 @@ class NotificationService {
                     userIDs: [],
                 },
                 channels: {
-                    websocket: true,
                     email: event.includes('ai:') ? true : false,
                     sms: event.includes('ai:anomaly_detected') ? true : false,
                     inApp: true,
@@ -287,7 +262,7 @@ class NotificationService {
                     ? 'AI detected {anomalyCount} anomalies in {dataType} data.'
                     : event === 'ai:report_generated'
                         ? 'AI generated a {format} report with filters: {filters}.'
-                        : '{event}', // Use only the event name
+                        : '{event}',
                 enabled: true,
             };
             const rule = await NotificationRule.create(defaultRule);
@@ -300,15 +275,27 @@ class NotificationService {
 
     async triggerNotification({ event, data, metadata = {} }) {
         try {
+            // Fetch all users and roles to ensure WebSocket notifications are sent to everyone
+            const allUsers = await User.findAll();
+            const allRoles = await Role.findAll();
+            const userIDs = allUsers.map(user => user.userID);
+            const roleNames = allRoles.map(role => role.name);
+
+            // Send WebSocket notification to all users and roles unconditionally
+            const triggerEventPayload = { event, data, timestamp: new Date().toISOString() };
+            await this.sendWebSocketNotification(event, triggerEventPayload, roleNames, userIDs);
+
+            // Fetch only enabled rules for in-app, email, and SMS notifications
             let rules = await NotificationRule.findAll({ where: { event, enabled: true } });
             if (!rules.length) {
                 const defaultRule = await this.createDefaultDisabledRule({ event, data, metadata });
                 if (defaultRule && defaultRule.enabled) {
                     rules = [defaultRule];
                 } else {
-                    return [];
+                    return [{ success: true, method: 'WebSocket', reason: 'No enabled rules, WebSocket sent' }];
                 }
             }
+
             const results = [];
             for (const rule of rules) {
                 const recipients = await this.resolveRecipients(rule.recipients);
@@ -328,13 +315,12 @@ class NotificationService {
                         message,
                         email: rule.channels.email && preferences.email ? user.email : null,
                         sms: rule.channels.sms && preferences.sms ? user.phone : null,
-                        metadata, // Pass metadata for email/SMS
+                        metadata,
                     });
                     results.push({ userID: user.userID, ruleID: rule.ruleID, result });
                 }
-                const triggerEventPayload = { event, data, timestamp: new Date().toISOString() };
-                await this.sendWebSocketNotification(event, triggerEventPayload, rule.recipients.roles || [], []);
             }
+
             return results;
         } catch (error) {
             console.error('Failed to trigger notification:', error.message);

@@ -7,7 +7,6 @@ interface NotificationRule {
         userIDs?: string[];
     };
     channels: {
-        websocket: boolean;
         email: boolean;
         sms: boolean;
         inApp: boolean;

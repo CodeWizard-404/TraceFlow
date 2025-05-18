@@ -45,6 +45,7 @@ const ROLES = {
   DIRECTOR: import.meta.env.VITE_ROLES_DIRECTOR,
   PURCHASE_TEAM: import.meta.env.VITE_ROLES_PURCHASE_TEAM,
   STOCK_MANAGER: import.meta.env.VITE_ROLES_STOCK_MANAGER,
+  HR: import.meta.env.VITE_ROLES_HR,
   ADMIN: import.meta.env.VITE_ROLES_ADMIN,
   SUPER_ADMIN: import.meta.env.VITE_ROLES_SUPER_ADMIN,
 }
@@ -136,6 +137,7 @@ const RolesList: React.FC<RolesListProps> = React.memo(
           ROLES.DIRECTOR,
           ROLES.REGIONAL_MANAGER,
           ROLES.SUPERVISOR,
+          ROLES.HR,
           ROLES.PURCHASE_TEAM,
           ROLES.STOCK_MANAGER
         ];
@@ -347,7 +349,7 @@ const RolesList: React.FC<RolesListProps> = React.memo(
             })()}
             {(() => {
               const premadeRoles = filteredRoles.filter((role) =>
-                [ROLES.DIRECTOR, ROLES.SUPERVISOR, ROLES.REGIONAL_MANAGER, ROLES.STOCK_MANAGER, ROLES.PURCHASE_TEAM].includes(
+                [ROLES.DIRECTOR, ROLES.SUPERVISOR, ROLES.REGIONAL_MANAGER, ROLES.STOCK_MANAGER, ROLES.PURCHASE_TEAM, ROLES.HR].includes(
                   role.name
                 )
               );
@@ -420,6 +422,7 @@ const RolesList: React.FC<RolesListProps> = React.memo(
                     ROLES.DIRECTOR,
                     ROLES.SUPER_ADMIN,
                     ROLES.SUPERVISOR,
+                    ROLES.HR,
                     ROLES.REGIONAL_MANAGER,
                     ROLES.STOCK_MANAGER,
                     ROLES.PURCHASE_TEAM

@@ -67,7 +67,7 @@ const NotificationRuleView: React.FC<NotificationRuleViewProps> = ({
         event: '',
         type: 'general',
         recipients: { roles: [], userIDs: [] },
-        channels: { websocket: true, email: false, sms: false, inApp: true },
+        channels: { email: false, sms: false, inApp: true },
         messageTemplate: '',
         enabled: true,
     });
@@ -130,6 +130,11 @@ const NotificationRuleView: React.FC<NotificationRuleViewProps> = ({
                     setFormData({
                         ...selectedRule,
                         messageTemplate: selectedRule.messageTemplate || '',
+                        channels: {
+                            email: selectedRule.channels.email,
+                            sms: selectedRule.channels.sms,
+                            inApp: selectedRule.channels.inApp,
+                        },
                     });
                     const [entity, action] = selectedRule.event.split(':');
                     setSelectedEntity(entity || null);
@@ -211,7 +216,6 @@ const NotificationRuleView: React.FC<NotificationRuleViewProps> = ({
             setFormData((prev) => ({
                 ...prev,
                 channels: {
-                    websocket: prev.channels?.websocket ?? false,
                     email: prev.channels?.email ?? false,
                     sms: prev.channels?.sms ?? false,
                     inApp: prev.channels?.inApp ?? false,
@@ -465,8 +469,9 @@ const NotificationRuleView: React.FC<NotificationRuleViewProps> = ({
                     </div>
                     <div className="form-section">
                         <h3 className="form-header">Channels</h3>
+                        <p className="info-text">Real-time WebSocket notifications are always enabled and cannot be disabled.</p>
                         <div className="channels-grid">
-                            {(['websocket', 'email', 'sms', 'inApp'] as Array<keyof typeof formData.channels>).map((channel: string) => (
+                            {(['email', 'sms', 'inApp'] as Array<keyof typeof formData.channels>).map((channel: string) => (
                                 <label key={channel} className="toggle-switch">
                                     <input
                                         type="checkbox"

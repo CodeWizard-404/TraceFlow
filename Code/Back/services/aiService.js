@@ -130,7 +130,7 @@ class AIService {
             const weekStartString = weekStart.toISOString().split('T')[0];
 
             // Check if the chosen week is the current week
-            const today = new Date('2025-05-18T03:57:00.000Z'); // Hardcoded for May 18, 2025, 03:57 AM CET
+            const today = new Date('2025-05-18T18:05:00.000Z'); // Updated to May 18, 2025, 08:05 PM CET
             const jan4 = new Date(Date.UTC(today.getUTCFullYear(), 0, 4));
             const dayOfWeek = jan4.getUTCDay() || 7;
             const firstMonday = new Date(Date.UTC(today.getUTCFullYear(), 0, 4 - (dayOfWeek - 1)));
@@ -188,6 +188,13 @@ class AIService {
                     console.error('Recruitment Areas Geocoding Error:', error);
                     throw Object.assign(new Error(ERROR_MESSAGES.NO_RECRUITMENT_LOCATIONS), { status: 400, details: error.message });
                 }
+            } else if (includeRecruitmentVisits && (!criteria.recruitmentAreas || criteria.recruitmentAreas.length === 0)) {
+                // Allow null coordinates for recruitment visits
+                recruitmentVisitLocations = [{
+                    latitude: null,
+                    longitude: null,
+                    formattedAddress: 'Recruitment Location'
+                }];
             }
 
             if (delegationIds.length > 0) {
@@ -226,10 +233,10 @@ class AIService {
                 agentID: agent.agentID,
                 name: agent.name,
                 lastname: agent.lastname,
-                location: agent.location || 'Unknown',
+                location: agent.location || null,
                 latitude: agent.latitude,
                 longitude: agent.longitude,
-                delegation: agent.Delegation?.name || 'Unknown',
+                delegation: agent.Delegation?.name || 'Unknown'
             }));
 
             if (agentIds.length > 0 && agentData.length !== agentIds.length) {
@@ -257,8 +264,9 @@ class AIService {
                     .slice(0, 3);
             });
 
+            // Strictly use preferredDays if provided, otherwise all days
             let daysOfWeek = preferredDays.length > 0
-                ? preferredDays.map((_, index) => this.getDateString(weekStart, index))
+                ? preferredDays
                 : Array.from({ length: 7 }, (_, i) => this.getDateString(weekStart, i));
 
             // If current week, filter out days before today
@@ -266,7 +274,7 @@ class AIService {
                 const todayDate = today.toISOString().split('T')[0]; // 2025-05-18
                 daysOfWeek = daysOfWeek.filter(date => date >= todayDate);
                 if (daysOfWeek.length === 0) {
-                    return []; // No valid days left
+                    return [];
                 }
             }
 
@@ -290,7 +298,7 @@ class AIService {
             const config = (await AIConfig.findOne({ where: { supervisorId }, attributes: ['modelName', 'timesheetMaxSuggestions'] })) || aiConfig;
 
             const prompt = `Generate up to ${config.timesheetMaxSuggestions} timesheet suggestions for supervisor ${supervisorId} for week ${weekNumber} of ${year} starting ${weekStartString}.
-- Agents: ${agentData.map(a => `${a.agentID}:${a.latitude !== null && !isNaN(a.latitude) ? a.latitude : 'null'},${a.longitude !== null && !isNaN(a.longitude) ? a.longitude : 'null'},${a.location}`).join(';')}
+- Agents: ${agentData.length > 0 ? agentData.map(a => `${a.agentID}:${a.latitude !== null && !isNaN(a.latitude) ? a.latitude : 'null'},${a.longitude !== null && !isNaN(a.longitude) ? a.longitude : 'null'},${a.location || 'null'}`).join(';') : 'none'}
 - Reasons: ${reasons.map(r => `${r.reasonID}:${r.item}`).join(';')}
 - Checklists: ${checklists.map(c => `${c.checklistID}:${c.item}`).join(';')}
 - Reason-Checklist Mapping: ${JSON.stringify(reasonChecklistMapping)}
@@ -299,21 +307,22 @@ class AIService {
 - Time Interval: ${timeInterval.startHour}:00-${timeInterval.endHour}:00
 - Max Visits Per Agent: ${maxVisitsPerAgentPerWeek}
 - Include Recruitment Visits: ${includeRecruitmentVisits}
-- Recruitment Visit Locations: ${recruitmentVisitLocations.length > 0 ? recruitmentVisitLocations.map(l => `${l.latitude},${l.longitude},${l.formattedAddress}`).join(';') : 'none'}
+- Recruitment Visit Locations: ${recruitmentVisitLocations.length > 0 ? recruitmentVisitLocations.map(l => `${l.latitude !== null ? l.latitude : 'null'},${l.longitude !== null ? l.longitude : 'null'},${l.formattedAddress}`).join(';') : 'none'}
 - Criteria: ${JSON.stringify(criteria)}
 - Visit Description: ${criteria.description || 'No specific description provided'}
 - Current Date: 2025-05-18
 - Is Current Week: ${isCurrentWeek}
-Return a JSON array of objects: [{"agentID":"string","schedule":[{"date":"YYYY-MM-DD","visits":[{"time":"HH:MM","location":"string","latitude":number,"longitude":number,"reasons":[{"id":"string"}],"checklists":[{"id":"string"}]}]}],"supervisorID":"string"}]
-- Use only the provided agent IDs: ${agentData.map(a => a.agentID).join(',')} for non-recruitment visits.
-- For recruitment visits (if enabled), set agentID to null and use recruitment visit locations.
-- For non-recruitment visits, use the agent's location if no specific location is provided.
-- For agents with null coordinates, set latitude and longitude to null in the response.
+Return a JSON array of objects: [{"agentID":"string","schedule":[{"date":"YYYY-MM-DD","visits":[{"time":"HH:MM","location":"string","latitude":number|null,"longitude":number|null,"reasons":[{"id":"string"}],"checklists":[{"id":"string"}]}]}],"supervisorID":"string"}]
+- Strictly use only the provided agent IDs: ${agentData.length > 0 ? agentData.map(a => a.agentID).join(',') : 'none'} for non-recruitment visits.
+- Strictly use only the provided dates: ${daysOfWeek.join(',')}.
+- For recruitment visits (if enabled), set agentID to null and use recruitment visit locations or null coordinates.
+- For non-recruitment visits, strictly use the agent's location if provided; otherwise, set location, latitude, and longitude to null.
+- Do not include recruitment visits unless includeRecruitmentVisits is true.
 - Ensure exactly 1-2 reasons per visit, selected based on the visit description.
 - Ensure exactly 1-3 checklists per visit, selected from the Reason-Checklist Mapping to be contextually related to the chosen reasons.
 - Use the visit description to prioritize reasons and checklists (e.g., select inventory-related reasons and checklists if description mentions inventory).
 - If Is Current Week is true, only include visits on or after 2025-05-18.
-- Ensure visits on the same day for the same agent or recruitment visit have unique times with at least a 1-hour gap between them (e.g., 09:00 and 10:00 are valid, but 09:00 and 09:30 are not).
+- Ensure visits on the same day for the same agent or recruitment visit have unique times with at least a 1-hour gap.
 - Ensure reasons and checklists are non-empty arrays of objects with id fields, e.g., {"id":"rea_001"}.
 - Ensure date is in YYYY-MM-DD format and time is in HH:MM (24-hour) format.
 - Ensure time, date, reasons, and checklists are non-empty for all visits.
@@ -323,7 +332,7 @@ Return a JSON array of objects: [{"agentID":"string","schedule":[{"date":"YYYY-M
 - Return only the JSON array without additional text or formatting.`;
 
             const payload = {
-                model: config.modelName,
+                model: 'mistral',
                 prompt,
                 stream: false
             };
@@ -372,7 +381,7 @@ Return a JSON array of objects: [{"agentID":"string","schedule":[{"date":"YYYY-M
                     agentID: suggestion.agentID,
                     supervisorID: suggestion.supervisorID,
                     schedule: suggestion.schedule.map(day => {
-                        if (!day.date || !Array.isArray(day.visits)) {
+                        if (!day.date || !Array.isArray(day.visits) || !daysOfWeek.includes(day.date)) {
                             return null;
                         }
                         // Additional validation for current week
@@ -391,18 +400,18 @@ Return a JSON array of objects: [{"agentID":"string","schedule":[{"date":"YYYY-M
                         for (let i = 1; i < sortedTimes.length; i++) {
                             if (sortedTimes[i].minutes === sortedTimes[i - 1].minutes) {
                                 console.warn(`Duplicate visit time ${sortedTimes[i].time} on ${day.date}`);
-                                return null; // Duplicate times
+                                return null;
                             }
                             if (sortedTimes[i].minutes - sortedTimes[i - 1].minutes < 60) {
                                 console.warn(`Insufficient time gap between ${sortedTimes[i - 1].time} and ${sortedTimes[i].time} on ${day.date}`);
-                                return null; // Less than 1-hour gap
+                                return null;
                             }
                         }
                         return {
                             date: day.date,
                             visits: day.visits
                                 .map(visit => {
-                                    if (!visit.time || !visit.location) {
+                                    if (!visit.time || (!isRecruitmentVisit && !visit.location)) {
                                         return null;
                                     }
                                     const reasons = Array.isArray(visit.reasons)
@@ -428,22 +437,19 @@ Return a JSON array of objects: [{"agentID":"string","schedule":[{"date":"YYYY-M
                                     if (reasons.length < 1 || reasons.length > 2 || checklists.length < 1 || checklists.length > 3) {
                                         return null;
                                     }
+                                    const agent = isRecruitmentVisit ? null : agentData.find(a => a.agentID === suggestion.agentID);
                                     return {
                                         time: visit.time.includes('AM') || visit.time.includes('PM') ? this.convertTo24Hour(visit.time) : visit.time,
-                                        location: visit.location,
-                                        latitude: visit.latitude,
-                                        longitude: visit.longitude,
+                                        location: isRecruitmentVisit ? visit.location || 'Recruitment Location' : (agent?.location || null),
+                                        latitude: isRecruitmentVisit ? null : (agent?.latitude || null),
+                                        longitude: isRecruitmentVisit ? null : (agent?.longitude || null),
                                         reasons,
                                         checklists
                                     };
                                 })
                                 .filter(visit => visit)
                                 .sort((a, b) => {
-                                    if (isRecruitmentVisit) {
-                                        return 0;
-                                    }
-                                    const agent = agentData.find(ag => ag.agentID === suggestion.agentID);
-                                    if (!agent || agent.latitude === null || isNaN(agent.latitude) || agent.longitude === null || isNaN(agent.longitude)) {
+                                    if (isRecruitmentVisit || a.latitude === null || b.latitude === null) {
                                         return 0;
                                     }
                                     return this.calculateDistance(
@@ -490,9 +496,9 @@ Return a JSON array of objects: [{"agentID":"string","schedule":[{"date":"YYYY-M
             const prompt = `Analyze ${dataType} data: ${JSON.stringify(data)}. Detect anomalies with a confidence threshold of ${config.anomalyThreshold}. Return a JSON array of anomalies with explanations. Return only the JSON array without additional text or formatting.`;
 
             const payload = {
-                model: config.modelName,
+                model: 'mistral',
                 prompt,
-                stream: false,
+                stream: false
             };
 
             const response = await makeOllamaApiCall('post', '/generate', payload, { signal: controller.signal });
@@ -545,9 +551,9 @@ Return a JSON array of objects: [{"agentID":"string","schedule":[{"date":"YYYY-M
             const prompt = `Generate a ${format} report based on filters: ${JSON.stringify(filters)}. Include summaries and visualizations where applicable. Return the response as a JSON object. Return only the JSON object without additional text or formatting.`;
 
             const payload = {
-                model: aiConfig.modelName,
+                model: 'mistral',
                 prompt,
-                stream: false,
+                stream: false
             };
 
             const response = await makeOllamaApiCall('post', '/generate', payload, { signal: controller.signal });
