@@ -60,6 +60,8 @@ type CancelTimesheetSuggestionResponse = {
   message: string;
 };
 
+// Update the type to match the backend response
+
 const handleApiError = (error: unknown, defaultMessage: string): string => {
   const axiosError = error as AxiosError<AxiosErrorResponse>;
   if (axiosError.response) {
@@ -222,14 +224,16 @@ export const getTimesheetByWeekNumberAndYear = async (
   supervisorID: string
 ): Promise<TimesheetByWeekNumberAndYearResponse> => {
   try {
-    if (!weekNumber || !year || !supervisorID) {
-      throw new Error("Week number, year, and supervisor ID are required.");
-    }
     const response = await api.get<TimesheetByWeekNumberAndYearResponse>(
       `/timesheets/week/${weekNumber}/year/${year}/supervisor/${supervisorID}`
     );
+    // Ensure the response is a single Timesheet object
+    if (!response.data || typeof response.data !== 'object') {
+      throw new Error("Invalid response: Expected a Timesheet object");
+    }
     return response.data;
   } catch (error) {
+    console.error("Error fetching timesheet by week number and year:", error);
     throw new Error(handleApiError(error, "Unable to fetch timesheet by week number and year."));
   }
 };

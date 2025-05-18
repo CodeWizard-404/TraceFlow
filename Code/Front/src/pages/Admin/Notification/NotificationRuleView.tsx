@@ -39,7 +39,7 @@ const formVariants = {
 const NotificationRuleViewSkeleton: React.FC = () => (
     <div className="form-card skeleton">
         <div className="custom-skeleton pulsing" style={{ width: '200px', height: '24px', marginBottom: '16px' }} />
-        {[...Array(4)].map((_, i) => (
+        {[...Array(5)].map((_, i) => (
             <div key={i} className="form-section">
                 <div className="custom-skeleton pulsing" style={{ width: '150px', height: '20px', marginBottom: '12px' }} />
                 <div className="form-row">
@@ -70,6 +70,7 @@ const NotificationRuleView: React.FC<NotificationRuleViewProps> = ({
         channels: { email: false, sms: false, inApp: true },
         messageTemplate: '',
         enabled: true,
+        priority: 'normal',
     });
     const [selectedEntity, setSelectedEntity] = useState<string | null>(null);
     const [selectedAction, setSelectedAction] = useState<string | null>(null);
@@ -135,6 +136,7 @@ const NotificationRuleView: React.FC<NotificationRuleViewProps> = ({
                             sms: selectedRule.channels.sms,
                             inApp: selectedRule.channels.inApp,
                         },
+                        priority: selectedRule.priority || 'normal',
                     });
                     const [entity, action] = selectedRule.event.split(':');
                     setSelectedEntity(entity || null);
@@ -222,7 +224,7 @@ const NotificationRuleView: React.FC<NotificationRuleViewProps> = ({
                     [name]: checked,
                 },
             }));
-        } else if (name === 'type' || name === 'messageTemplate') {
+        } else {
             setFormData((prev) => ({ ...prev, [name]: value }));
             if (name === 'messageTemplate') {
                 setTouched((prev) => ({ ...prev, messageTemplate: true }));
@@ -430,6 +432,22 @@ const NotificationRuleView: React.FC<NotificationRuleViewProps> = ({
                                     ))}
                                 </select>
                             </div>
+                            <div className="form-group">
+                                <label htmlFor="priority">
+                                    Priority
+                                    <span className="tooltip" data-tooltip="Select the priority of the notification"></span>
+                                </label>
+                                <select
+                                    id="priority"
+                                    name="priority"
+                                    value={formData.priority}
+                                    onChange={handleChange}
+                                    className="form-input"
+                                >
+                                    <option value="normal">Normal</option>
+                                    <option value="high">High</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                     <div className="form-section">
@@ -469,7 +487,7 @@ const NotificationRuleView: React.FC<NotificationRuleViewProps> = ({
                     </div>
                     <div className="form-section">
                         <h3 className="form-header">Channels</h3>
-                        <p className="info-text">Real-time WebSocket notifications are always enabled and cannot be disabled.</p>
+                        <p className="info-text">Real-time notifications are always enabled and cannot be disabled.</p>
                         <div className="channels-grid">
                             {(['email', 'sms', 'inApp'] as Array<keyof typeof formData.channels>).map((channel: string) => (
                                 <label key={channel} className="toggle-switch">

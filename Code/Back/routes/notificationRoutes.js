@@ -19,4 +19,8 @@ router.get('/', NotificationController.getNotifications);
 router.put('/:notificationID/read', NotificationController.markNotificationAsRead);
 router.put('/read-all', NotificationController.markAllNotificationsAsRead);
 
+// Notification triggers
+router.post('/anomaly', requirePermission('trigger_notifications'), NotificationController.notifyAnomaly);
+router.post('/report', requirePermission('trigger_notifications'), NotificationController.notifyReport);
+
 module.exports = router;

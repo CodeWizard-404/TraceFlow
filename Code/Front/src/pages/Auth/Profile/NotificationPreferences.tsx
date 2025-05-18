@@ -13,7 +13,6 @@ const NotificationPreferences: React.FC = React.memo(() => {
         notificationPrefs,
         setNotificationPrefs,
         notificationTypes,
-        availableEvents,
         groupedPreferences,
         prefFilterType,
         setPrefFilterType,

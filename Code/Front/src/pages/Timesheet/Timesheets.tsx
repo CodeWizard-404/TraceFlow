@@ -1,5 +1,3 @@
-// src/pages/Timesheet/Timesheets.tsx
-
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
@@ -20,7 +18,7 @@ import {
     createTimesheet,
     SuggestTimesheetResponse,
 } from "../../apis/timesheetAPI";
-import { getAllUsers, getSupervisorsByUser } from "../../apis/userAPI";
+import { getAllUsers, getSupervisorsByUser, getUserById } from "../../apis/userAPI";
 import { getReasonsByVisitId } from "../../apis/reasonAPI";
 import { updateVisit } from '../../apis/visitAPI';
 import { FaClock, FaMapMarkerAlt, FaRegUser, FaFilter } from "react-icons/fa";
@@ -48,16 +46,15 @@ const ROLES = {
     SUPER_ADMIN: import.meta.env.VITE_ROLES_SUPER_ADMIN,
     SUPERVISOR: import.meta.env.VITE_ROLES_SUPERVISOR,
     REGIONAL_MANAGER: import.meta.env.VITE_ROLES_REGIONAL_MANAGER,
+    DIRECTOR: import.meta.env.VITE_ROLES_DIRECTOR,
 };
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
 
-// Drag-and-Drop Item Types
 const ItemTypes = {
     VISIT: 'visit',
 };
 
-// Types
 type ViewMode = "year" | "month" | "week" | "day";
 
 interface VisitWithSupervisor extends Visit {
@@ -75,9 +72,9 @@ interface GeneratedVisit {
     agentID: string | null;
     date: string;
     status: VisitStatus.GENERATED;
+    selected?: boolean; // Added for visit selection
 }
 
-// Skeleton component
 const TimesheetsSkeleton: React.FC = () => (
     <div className="timesheets-container">
         <header className="timesheets-header">
@@ -142,7 +139,6 @@ const TimesheetsSkeleton: React.FC = () => (
     </div>
 );
 
-// New DayColumn Component
 interface DayColumnProps {
     day: Date;
     visits: (VisitWithSupervisor | GeneratedVisit)[];
@@ -160,6 +156,10 @@ interface DayColumnProps {
     visitReasons: Record<string, VisitReason[]>;
     locationCache: Record<string, string | undefined>;
     navigate: (path: string) => void;
+    toggleVisitSelection: (visitId: string, isGenerated: boolean) => void;
+    isSuperAdmin: boolean;
+    isRegionalManager: boolean;
+    isDirector: boolean;
 }
 
 const DayColumn: React.FC<DayColumnProps> = ({
@@ -175,6 +175,10 @@ const DayColumn: React.FC<DayColumnProps> = ({
     visitReasons,
     locationCache,
     navigate,
+    toggleVisitSelection,
+    isSuperAdmin,
+    isRegionalManager,
+    isDirector,
 }) => {
     const dayStr = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, "0")}-${String(day.getDate()).padStart(2, "0")}`;
     const today = new Date();
@@ -243,6 +247,10 @@ const DayColumn: React.FC<DayColumnProps> = ({
                             navigate={navigate}
                             formatTime={formatTime}
                             isCoordinates={isCoordinates}
+                            toggleVisitSelection={toggleVisitSelection}
+                            isSuperAdmin={isSuperAdmin}
+                            isRegionalManager={isRegionalManager}
+                            isDirector={isDirector}
                         />
                     ))
                 ) : (
@@ -255,7 +263,6 @@ const DayColumn: React.FC<DayColumnProps> = ({
     );
 };
 
-// New VisitCard Component
 interface VisitCardProps {
     visit: VisitWithSupervisor | GeneratedVisit;
     t: (key: string, options?: any) => string;
@@ -272,6 +279,10 @@ interface VisitCardProps {
     navigate: (path: string) => void;
     formatTime: (timeStr: string) => string;
     isCoordinates: (str: string) => boolean;
+    toggleVisitSelection: (visitId: string, isGenerated: boolean) => void;
+    isSuperAdmin: boolean;
+    isRegionalManager: boolean;
+    isDirector: boolean;
 }
 
 const VisitCard: React.FC<VisitCardProps> = ({
@@ -286,9 +297,15 @@ const VisitCard: React.FC<VisitCardProps> = ({
     navigate,
     formatTime,
     isCoordinates,
+    toggleVisitSelection,
+    isSuperAdmin,
+    isRegionalManager,
+    isDirector,
 }) => {
     const visitId = "visitID" in visit ? visit.visitID : `${visit.agentID}-${visit.date}-${visit.startTime}`;
     const isVisited = visit.status === VisitStatus.VISITED;
+    const isGenerated = !("visitID" in visit);
+    const isSelected = isGenerated && (visit as GeneratedVisit).selected;
     const visitRef = useRef<HTMLDivElement>(null);
     const [{ isDragging }, drag] = useDrag(() => ({
         type: ItemTypes.VISIT,
@@ -296,7 +313,7 @@ const VisitCard: React.FC<VisitCardProps> = ({
             visitId,
             originalDate: "time" in visit ? visit.date : visit.date,
             time: "time" in visit ? visit.time : visit.startTime,
-            isGenerated: !("visitID" in visit),
+            isGenerated,
         },
         collect: (monitor) => ({
             isDragging: !!monitor.isDragging(),
@@ -310,7 +327,31 @@ const VisitCard: React.FC<VisitCardProps> = ({
         }
     }, [drag, userPermissions, isVisited]);
 
-    // Determine the location display
+    const [agentName, setAgentName] = useState<string>("");
+    const [supervisorName, setSupervisorName] = useState<string>("");
+
+    useEffect(() => {
+        const fetchNames = async () => {
+            if (isSupervisor && visit.agentID) {
+                try {
+                    const agent = await getAgentById(visit.agentID);
+                    setAgentName(`${agent?.name || 'Unknown'} ${agent?.lastname || ''}`);
+                } catch (error) {
+                    console.error('Failed to fetch agent name:', error);
+                }
+            }
+            if ((isSuperAdmin || isRegionalManager || isDirector) && ("supervisorID" in visit ? visit.supervisorID : weekData.supervisorID)) {
+                try {
+                    const supervisor = await getUserById("supervisorID" in visit ? visit.supervisorID! : weekData.supervisorID!);
+                    setSupervisorName(`${supervisor?.firstname || 'Unknown'} ${supervisor?.lastname || ''}`);
+                } catch (error) {
+                    console.error('Failed to fetch supervisor name:', error);
+                }
+            }
+        };
+        fetchNames();
+    }, [visit, isSupervisor, isSuperAdmin, isRegionalManager, isDirector, weekData.supervisorID]);
+
     let displayLocation = t("visitDetails.whenWhere.na");
     if (visit.agentID) {
         displayLocation = locationCache[`agent:${visit.agentID}`] || t("visitDetails.whenWhere.na");
@@ -325,7 +366,7 @@ const VisitCard: React.FC<VisitCardProps> = ({
     return (
         <div
             ref={visitRef}
-            className={`visit-card ${isVisited ? 'visited' : ''}`}
+            className={`visit-card ${isVisited ? 'visited' : ''} ${isSelected ? 'selected' : ''}`}
             style={{ opacity: isDragging ? 0.5 : 1 }}
             onClick={
                 userPermissions.canAccessTimesheetDetails && "visitID" in visit
@@ -344,19 +385,23 @@ const VisitCard: React.FC<VisitCardProps> = ({
                 time: "time" in visit ? visit.time : visit.startTime,
             })}
         >
-            {!isSupervisor && (
+            {isGenerated && (
+                <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={() => toggleVisitSelection(visitId, isGenerated)}
+                    className="visit-selection-checkbox"
+                    aria-label={t("timesheets.selectVisit")}
+                />
+            )}
+            {(isSupervisor && agentName) && (
+                <p className="visit-agent">
+                    <FaRegUser /> {agentName}
+                </p>
+            )}
+            {((isSuperAdmin || isRegionalManager || isDirector) && supervisorName) && (
                 <p className="visit-supervisor">
-                    <FaRegUser />{" "}
-                    {users.find(
-                        (u) =>
-                            u.userID ===
-                            ("supervisorID" in visit ? visit.supervisorID : weekData.supervisorID)
-                    )?.firstname || "Unknown"}{" "}
-                    {users.find(
-                        (u) =>
-                            u.userID ===
-                            ("supervisorID" in visit ? visit.supervisorID : weekData.supervisorID)
-                    )?.lastname || ""}
+                    <FaRegUser /> {supervisorName}
                 </p>
             )}
             <hr className="hr" />
@@ -388,7 +433,6 @@ const VisitCard: React.FC<VisitCardProps> = ({
     );
 };
 
-// Main Component
 const Timesheets: React.FC = React.memo(() => {
     const navigate = useNavigate();
     const { user, userRoles, effectivePermissions, permissionsLoaded } = useAuth();
@@ -418,6 +462,7 @@ const Timesheets: React.FC = React.memo(() => {
     const [isSuggestionsModalOpen, setIsSuggestionsModalOpen] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
     const [locationCache, setLocationCache] = useState<Record<string, string | undefined>>({});
+    const [hasUnsavedChanges, setHasUnsavedChanges] = useState<boolean>(false);
 
     const userPermissions = useMemo(
         () => ({
@@ -459,6 +504,11 @@ const Timesheets: React.FC = React.memo(() => {
         [userRoles]
     );
 
+    const isDirector = useMemo(
+        () => userRoles?.some((role) => role.name === ROLES.DIRECTOR),
+        [userRoles]
+    );
+
     const isSupervisor = useMemo(
         () => userRoles?.some((role) => role.name === ROLES.SUPERVISOR),
         [userRoles]
@@ -481,7 +531,7 @@ const Timesheets: React.FC = React.memo(() => {
 
             if (userPermissions.canAccessTimesheets) {
                 data = await getAllTimesheets();
-            } else if (isRegionalManager) {
+            } else if (isRegionalManager || isDirector) {
                 const supervisors = await getSupervisorsByUser(supervisorID!);
                 const supervisorTimesheetsPromises = supervisors.map((supervisor) =>
                     getTimesheetsBySupervisor(supervisor.userID)
@@ -508,6 +558,7 @@ const Timesheets: React.FC = React.memo(() => {
         userPermissions.canAccessTimesheets,
         userPermissions.canAccessSupervisorTimesheets,
         isRegionalManager,
+        isDirector,
         supervisorID,
         currentYear,
         t,
@@ -573,6 +624,19 @@ const Timesheets: React.FC = React.memo(() => {
             fetchVisitReasons();
         }
     }, [timesheets, fetchVisitReasons]);
+
+    useEffect(() => {
+        const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+            if (hasUnsavedChanges) {
+                event.preventDefault();
+                event.returnValue = t("timesheets.warnings.unsavedChanges");
+                return t("timesheets.warnings.unsavedChanges");
+            }
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [hasUnsavedChanges, t]);
 
     const getWeekNumber = useCallback((date: Date): number => {
         const year = date.getFullYear();
@@ -653,7 +717,6 @@ const Timesheets: React.FC = React.memo(() => {
         return `${formattedHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} ${period}`;
     };
 
-    // Inside the Timesheets component, add the location fetching useEffect
     useEffect(() => {
         const fetchLocations = async () => {
             const allVisits = [...timesheets.flatMap(ts => ts.Visits || []), ...generatedVisits];
@@ -682,7 +745,7 @@ const Timesheets: React.FC = React.memo(() => {
                     locationID = visit.location;
                 } else if (visit.location) {
                     key = `direct:${visit.location}`;
-                    newLocationCache[key] = visit.location; // Store direct location string
+                    newLocationCache[key] = visit.location;
                 }
 
                 if (key && locationID && !newLocationCache[key]) {
@@ -726,16 +789,40 @@ const Timesheets: React.FC = React.memo(() => {
                     agentID: agent.agentID,
                     date: normalizedDate,
                     status: VisitStatus.GENERATED,
+                    selected: true,
                 }));
             })
         );
         setGeneratedVisits(visits);
         setIsSuggestionsModalOpen(false);
+        setHasUnsavedChanges(true);
     }, []);
 
     const handleCancelSuggestions = useCallback(() => {
         setGeneratedVisits([]);
         setError(null);
+        setHasUnsavedChanges(false);
+    }, []);
+
+    const toggleVisitSelection = useCallback((visitId: string, isGenerated: boolean) => {
+        if (isGenerated) {
+            setGeneratedVisits(prev =>
+                prev.map(visit =>
+                    `${visit.agentID}-${visit.date}-${visit.startTime}` === visitId
+                        ? { ...visit, selected: !visit.selected }
+                        : visit
+                )
+            );
+            setHasUnsavedChanges(true);
+        }
+    }, []);
+
+    const toggleSelectAllVisits = useCallback(() => {
+        setGeneratedVisits(prev => {
+            const allSelected = prev.every(visit => visit.selected);
+            return prev.map(visit => ({ ...visit, selected: !allSelected }));
+        });
+        setHasUnsavedChanges(true);
     }, []);
 
     const handleSaveSuggestions = useCallback(async () => {
@@ -743,7 +830,14 @@ const Timesheets: React.FC = React.memo(() => {
         setLoading(true);
         setError(null);
         try {
-            const visits = generatedVisits.map(visit => ({
+            const selectedVisits = generatedVisits.filter(visit => visit.selected);
+            if (selectedVisits.length === 0) {
+                setGeneratedVisits([]);
+                setHasUnsavedChanges(false);
+                setLoading(false);
+                return;
+            }
+            const visits = selectedVisits.map(visit => ({
                 date: visit.date.split("/").reverse().join("-"),
                 time: visit.startTime,
                 agentID: visit.agentID,
@@ -758,6 +852,7 @@ const Timesheets: React.FC = React.memo(() => {
                 status: TimesheetStatus.PENDING,
             });
             setGeneratedVisits([]);
+            setHasUnsavedChanges(false);
             await fetchTimesheets();
         } catch (err: any) {
             console.error("Error saving suggestions:", err);
@@ -971,6 +1066,7 @@ const Timesheets: React.FC = React.memo(() => {
         setIsSuggestionsModalOpen(false);
     }, []);
 
+    /* Fix for handleDropVisit function to maintain GeneratedVisit status type */
     const handleDropVisit = useCallback(
         async (
             item: { visitId: string; originalDate: string; time: string; isGenerated: boolean },
@@ -983,14 +1079,20 @@ const Timesheets: React.FC = React.memo(() => {
                     setGeneratedVisits((prev) =>
                         prev.map((visit) =>
                             `${visit.agentID}-${visit.date}-${visit.startTime}` === item.visitId
-                                ? { ...visit, date: targetDate.split('-').reverse().join('/') }
+                                ? {
+                                    ...visit,
+                                    date: targetDate.split('-').reverse().join('/'),
+                                    status: isSupervisor ? VisitStatus.GENERATED : visit.status // Maintain GENERATED status
+                                }
                                 : visit
                         )
                     );
+                    setHasUnsavedChanges(true);
                 } else {
                     await updateVisit(item.visitId, {
                         date: targetDate,
                         time: item.time,
+                        status: isSupervisor ? VisitStatus.PENDING : undefined,
                     });
                     await fetchTimesheets();
                 }
@@ -999,7 +1101,7 @@ const Timesheets: React.FC = React.memo(() => {
                 setError(t('timesheets.errors.updateVisit'));
             }
         },
-        [fetchTimesheets, t]
+        [fetchTimesheets, t, isSupervisor]
     );
 
     const filteredSupervisors = useMemo(
@@ -1160,7 +1262,7 @@ const Timesheets: React.FC = React.memo(() => {
                             </button>
                         ))}
                     </div>
-                    {(isSuperAdmin || isRegionalManager) && (
+                    {(isSuperAdmin || isRegionalManager || isDirector) && (
                         <button
                             className={`toggle-btn-5 toggle-btn ${isFilterVisible ? "active" : ""}`}
                             onClick={() => setIsFilterVisible(!isFilterVisible)}
@@ -1211,52 +1313,80 @@ const Timesheets: React.FC = React.memo(() => {
                     </div>
                 </header>
 
-                {isFilterVisible && (isSuperAdmin || isRegionalManager) && (
+                {(isFilterVisible && (isSuperAdmin || isRegionalManager || isDirector)) || isSupervisor ? (
                     <div className="filter-controls">
-                        <input
-                            type="text"
-                            placeholder={t("timesheets.filter.searchPlaceholder")}
-                            value={supervisorSearch}
-                            onChange={(e) => debouncedSetSupervisorSearch(e.target.value)}
-                            className="filter-input supervisor-search"
-                            aria-label={t("timesheets.filter.searchPlaceholder")}
-                        />
-                        <select
-                            className="filter-select supervisor-filter"
-                            value={supervisorFilter}
-                            onChange={(e) => setSupervisorFilter(e.target.value)}
-                            aria-label={t("timesheets.filter.supervisorSelect")}
-                        >
-                            <option value="all">{t("timesheets.filter.allSupervisors")}</option>
-                            {filteredSupervisors.map((supervisor) => (
-                                <option key={supervisor.userID} value={supervisor.userID}>
-                                    {supervisor.firstname} {supervisor.lastname}
-                                </option>
-                            ))}
-                        </select>
-                        <select
-                            className="filter-select visit-status-filter"
-                            value={visitStatusFilter}
-                            onChange={(e) => setVisitStatusFilter(e.target.value)}
-                            aria-label={t("timesheets.filter.visitStatusSelect")}
-                        >
-                            <option value="all">{t("timesheets.filter.allStatuses")}</option>
-                            {Object.values(VisitStatus).map((status) => (
-                                <option key={status} value={status}>
-                                    {status}
-                                </option>
-                            ))}
-                        </select>
-                        <input
-                            type="text"
-                            placeholder={t("timesheets.filter.reasonPlaceholder")}
-                            value={visitReasonSearch}
-                            onChange={(e) => debouncedSetVisitReasonSearch(e.target.value)}
-                            className="filter-input visit-reason-search"
-                            aria-label={t("timesheets.filter.reasonPlaceholder")}
-                        />
+                        {isSupervisor ? (
+                            <>
+                                <select
+                                    className="filter-select visit-status-filter"
+                                    value={visitStatusFilter}
+                                    onChange={(e) => setVisitStatusFilter(e.target.value)}
+                                    aria-label={t("timesheets.filter.visitStatusSelect")}
+                                >
+                                    <option value="all">{t("timesheets.filter.allStatuses")}</option>
+                                    {Object.values(VisitStatus).map((status) => (
+                                        <option key={status} value={status}>
+                                            {status}
+                                        </option>
+                                    ))}
+                                </select>
+                                <input
+                                    type="text"
+                                    placeholder={t("timesheets.filter.reasonPlaceholder")}
+                                    value={visitReasonSearch}
+                                    onChange={(e) => debouncedSetVisitReasonSearch(e.target.value)}
+                                    className="filter-input visit-reason-search"
+                                    aria-label={t("timesheets.filter.reasonPlaceholder")}
+                                />
+                            </>
+                        ) : (
+                            <>
+                                <input
+                                    type="text"
+                                    placeholder={t("timesheets.filter.searchPlaceholder")}
+                                    value={supervisorSearch}
+                                    onChange={(e) => debouncedSetSupervisorSearch(e.target.value)}
+                                    className="filter-input supervisor-search"
+                                    aria-label={t("timesheets.filter.searchPlaceholder")}
+                                />
+                                <select
+                                    className="filter-select supervisor-filter"
+                                    value={supervisorFilter}
+                                    onChange={(e) => setSupervisorFilter(e.target.value)}
+                                    aria-label={t("timesheets.filter.supervisorSelect")}
+                                >
+                                    <option value="all">{t("timesheets.filter.allSupervisors")}</option>
+                                    {filteredSupervisors.map((supervisor) => (
+                                        <option key={supervisor.userID} value={supervisor.userID}>
+                                            {supervisor.firstname} {supervisor.lastname}
+                                        </option>
+                                    ))}
+                                </select>
+                                <select
+                                    className="filter-select visit-status-filter"
+                                    value={visitStatusFilter}
+                                    onChange={(e) => setVisitStatusFilter(e.target.value)}
+                                    aria-label={t("timesheets.filter.visitStatusSelect")}
+                                >
+                                    <option value="all">{t("timesheets.filter.allStatuses")}</option>
+                                    {Object.values(VisitStatus).map((status) => (
+                                        <option key={status} value={status}>
+                                            {status}
+                                        </option>
+                                    ))}
+                                </select>
+                                <input
+                                    type="text"
+                                    placeholder={t("timesheets.filter.reasonPlaceholder")}
+                                    value={visitReasonSearch}
+                                    onChange={(e) => debouncedSetVisitReasonSearch(e.target.value)}
+                                    className="filter-input visit-reason-search"
+                                    aria-label={t("timesheets.filter.reasonPlaceholder")}
+                                />
+                            </>
+                        )}
                     </div>
-                )}
+                ) : null}
 
                 {error && <p className="error">{error}</p>}
 
@@ -1477,6 +1607,15 @@ const Timesheets: React.FC = React.memo(() => {
                                 {isSupervisor && generatedVisits.length > 0 && (
                                     <>
                                         <button
+                                            className="select-all-btn"
+                                            onClick={toggleSelectAllVisits}
+                                            aria-label={t("timesheets.actions.toggleSelectAll")}
+                                        >
+                                            {generatedVisits.every(visit => visit.selected)
+                                                ? t("timesheets.actions.deselectAll")
+                                                : t("timesheets.actions.selectAll")}
+                                        </button>
+                                        <button
                                             className="cancel-btn"
                                             onClick={handleCancelSuggestions}
                                             aria-label={t("timesheets.actions.cancelSuggestions")}
@@ -1515,6 +1654,10 @@ const Timesheets: React.FC = React.memo(() => {
                                         visitReasons={visitReasons}
                                         locationCache={locationCache}
                                         navigate={navigate}
+                                        toggleVisitSelection={toggleVisitSelection}
+                                        isSuperAdmin={!!isSuperAdmin}
+                                        isRegionalManager={!!isRegionalManager}
+                                        isDirector={!!isDirector}
                                     />
                                 ))}
                             </div>
@@ -1562,77 +1705,24 @@ const Timesheets: React.FC = React.memo(() => {
                         <div className="visits-list">
                             {dayData.length > 0 ? (
                                 dayData.map((visit) => (
-                                    <div
+                                    <VisitCard
                                         key={'visitID' in visit ? visit.visitID : `${visit.agentID}-${visit.date}-${visit.startTime}`}
-                                        className="visit-card"
-                                        onClick={
-                                            userPermissions.canAccessTimesheetDetails && 'visitID' in visit
-                                                ? () =>
-                                                    navigate(
-                                                        `/visit/${visit.visitID}`
-                                                    )
-                                                : undefined
-                                        }
-                                        role="button"
-                                        tabIndex={
-                                            userPermissions.canAccessTimesheetDetails && 'visitID' in visit
-                                                ? 0
-                                                : -1
-                                        }
-                                        onKeyDown={(e) =>
-                                            userPermissions.canAccessTimesheetDetails &&
-                                            'visitID' in visit &&
-                                            e.key === "Enter" &&
-                                            navigate(
-                                                `/visit/${visit.visitID}`
-                                            )
-                                        }
-                                        aria-label={t("timesheets.dayView.visitCard", {
-                                            time: 'time' in visit ? visit.time : visit.startTime,
-                                        })}
-                                    >
-                                        <p className="visit-supervisor">
-                                            <FaRegUser />{" "}
-                                            {users.find((u) => u.userID === ('supervisorID' in visit ? visit.supervisorID : supervisorID))
-                                                ?.firstname || "Unknown"}{" "}
-                                            {users.find((u) => u.userID === ('supervisorID' in visit ? visit.supervisorID : supervisorID))
-                                                ?.lastname || ""}
-                                        </p>
-                                        <hr className="hr" />
-                                        <div className="visit-header">
-                                            <span className="visit-time">
-                                                <FaClock /> {formatTime('time' in visit ? visit.time : visit.startTime)}
-                                            </span>
-                                            <span
-                                                className={`visit-status status-${visit.status.toLowerCase()}`}
-                                            >
-                                                {visit.status}
-                                            </span>
-                                        </div>
-                                        <p className="visit-location">
-                                            <FaMapMarkerAlt />{" "}
-                                            {visit.agentID
-                                                ? locationCache[`${visit.agentID}`] || t("timesheets.locationTBD")
-                                                : visit.location
-                                                    ? isCoordinates(visit.location)
-                                                        ? locationCache[`${visit.location}`] || t("timesheets.locationTBD")
-                                                        : visit.location
-                                                    : t("timesheets.locationTBD")}
-                                        </p>
-                                        {'time' in visit ? (
-                                            visitReasons[visit.visitID] && visitReasons[visit.visitID].length > 0 && (
-                                                <p className="visit-reasons">
-                                                    {visitReasons[visit.visitID].map((r) => r.item).join(", ")}
-                                                </p>
-                                            )
-                                        ) : (
-                                            visit.reasons.length > 0 && (
-                                                <p className="visit-reasons">
-                                                    {visit.reasons.map((r) => r.item).join(", ")}
-                                                </p>
-                                            )
-                                        )}
-                                    </div>
+                                        visit={visit}
+                                        t={t}
+                                        users={users}
+                                        isSupervisor={!!isSupervisor}
+                                        weekData={weekData}
+                                        userPermissions={userPermissions}
+                                        visitReasons={visitReasons}
+                                        locationCache={locationCache}
+                                        navigate={navigate}
+                                        formatTime={formatTime}
+                                        isCoordinates={isCoordinates}
+                                        toggleVisitSelection={toggleVisitSelection}
+                                        isSuperAdmin={!!isSuperAdmin}
+                                        isRegionalManager={!!isRegionalManager}
+                                        isDirector={!!isDirector}
+                                    />
                                 ))
                             ) : (
                                 <div className="no-visits">

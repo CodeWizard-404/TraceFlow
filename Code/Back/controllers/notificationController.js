@@ -10,6 +10,7 @@ const ERROR_MESSAGES = {
     INVALID_RULE: 'Invalid notification rule.',
     INVALID_PREFERENCES: 'Invalid notification preferences.',
     INVALID_CHANNELS: 'Channels must only include email, sms, and inApp.',
+    INVALID_PRIORITY: 'Priority must be "high" or "normal".',
 };
 
 class NotificationController {
@@ -26,14 +27,19 @@ class NotificationController {
             if (!errors.isEmpty()) {
                 throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
             }
-            const { event, type, recipients, channels, conditions, messageTemplate, enabled } = req.body;
+            const { event, type, recipients, channels, conditions, messageTemplate, enabled, priority } = req.body;
 
-            // Validate channels to exclude websocket
+            // Validate channels
             if (channels.websocket !== undefined) {
                 throw Object.assign(new Error(ERROR_MESSAGES.INVALID_CHANNELS), { status: 400 });
             }
             if (!['email', 'sms', 'inApp'].every(c => typeof channels[c] === 'boolean')) {
                 throw Object.assign(new Error(ERROR_MESSAGES.INVALID_CHANNELS), { status: 400 });
+            }
+
+            // Validate priority
+            if (priority && !['high', 'normal'].includes(priority)) {
+                throw Object.assign(new Error(ERROR_MESSAGES.INVALID_PRIORITY), { status: 400 });
             }
 
             const rule = await NotificationRule.create({
@@ -44,8 +50,15 @@ class NotificationController {
                 conditions,
                 messageTemplate,
                 enabled: enabled !== undefined ? enabled : true,
+                priority: priority || 'normal',
                 creatorID: req.user.userID,
             });
+
+            // Handle priority change if high
+            if (rule.priority === 'high') {
+                await NotificationService.handlePriorityChange(rule);
+            }
+
             logger.info('Successfully created notification rule', {
                 route: 'notifications/rules',
                 method: req.method,
@@ -54,12 +67,14 @@ class NotificationController {
                 ip: req.ip,
                 traceId: req.traceId,
                 userId: actorID,
-                metadata: { ruleID: rule.ruleID },
+                metadata: { ruleID: rule.ruleID, priority: rule.priority },
             });
             return res.status(201).json(rule);
         } catch (error) {
             const response = NotificationController.formatError(error);
-            const status = error.message === ERROR_MESSAGES.MISSING_FIELDS || error.message === ERROR_MESSAGES.INVALID_CHANNELS ? 400 : error.status || 500;
+            const status = error.message === ERROR_MESSAGES.MISSING_FIELDS ||
+                error.message === ERROR_MESSAGES.INVALID_CHANNELS ||
+                error.message === ERROR_MESSAGES.INVALID_PRIORITY ? 400 : error.status || 500;
             logger.error('Failed to create notification rule', {
                 route: 'notifications/rules',
                 method: req.method,
@@ -82,9 +97,9 @@ class NotificationController {
                 throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
             }
             const { ruleID } = req.params;
-            const { event, type, recipients, channels, conditions, messageTemplate, enabled } = req.body;
+            const { event, type, recipients, channels, conditions, messageTemplate, enabled, priority } = req.body;
 
-            // Validate channels to exclude websocket
+            // Validate channels
             if (channels.websocket !== undefined) {
                 throw Object.assign(new Error(ERROR_MESSAGES.INVALID_CHANNELS), { status: 400 });
             }
@@ -92,10 +107,17 @@ class NotificationController {
                 throw Object.assign(new Error(ERROR_MESSAGES.INVALID_CHANNELS), { status: 400 });
             }
 
+            // Validate priority
+            if (priority && !['high', 'normal'].includes(priority)) {
+                throw Object.assign(new Error(ERROR_MESSAGES.INVALID_PRIORITY), { status: 400 });
+            }
+
             const rule = await NotificationRule.findByPk(ruleID);
             if (!rule) {
                 throw Object.assign(new Error(ERROR_MESSAGES.INVALID_RULE), { status: 404 });
             }
+
+            const wasNormalPriority = rule.priority === 'normal';
             await rule.update({
                 event,
                 type,
@@ -104,7 +126,14 @@ class NotificationController {
                 conditions,
                 messageTemplate,
                 enabled,
+                priority: priority || rule.priority,
             });
+
+            // Handle priority change if changed to high
+            if (wasNormalPriority && rule.priority === 'high') {
+                await NotificationService.handlePriorityChange(rule);
+            }
+
             logger.info('Successfully updated notification rule', {
                 route: 'notifications/rules',
                 method: req.method,
@@ -113,12 +142,14 @@ class NotificationController {
                 ip: req.ip,
                 traceId: req.traceId,
                 userId: actorID,
-                metadata: { ruleID },
+                metadata: { ruleID, priority: rule.priority },
             });
             return res.status(200).json(rule);
         } catch (error) {
             const response = NotificationController.formatError(error);
-            const status = error.message === ERROR_MESSAGES.MISSING_FIELDS || error.message === ERROR_MESSAGES.INVALID_CHANNELS ? 400 : error.status || 500;
+            const status = error.message === ERROR_MESSAGES.MISSING_FIELDS ||
+                error.message === ERROR_MESSAGES.INVALID_CHANNELS ||
+                error.message === ERROR_MESSAGES.INVALID_PRIORITY ? 400 : error.status || 500;
             logger.error('Failed to update notification rule', {
                 route: 'notifications/rules',
                 method: req.method,
@@ -248,6 +279,22 @@ class NotificationController {
                 throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
             }
             const { preferences } = req.body;
+
+            // Validate preferences and check for high-priority rules
+            const rules = await NotificationRule.findAll({ where: { priority: 'high' } });
+            const highPriorityEvents = rules.map(rule => rule.event);
+            for (const event of Object.keys(preferences)) {
+                if (highPriorityEvents.includes(event)) {
+                    throw Object.assign(new Error(`Cannot customize preferences for high-priority event: ${event}`), { status: 400 });
+                }
+                const channels = preferences[event];
+                if (typeof channels !== 'object' ||
+                    !['email', 'sms', 'inApp'].every(c => typeof channels[c] === 'boolean') ||
+                    channels.websocket !== undefined) {
+                    throw Object.assign(new Error(ERROR_MESSAGES.INVALID_PREFERENCES), { status: 400 });
+                }
+            }
+
             let preference = await NotificationPreference.findOne({ where: { userID: req.user.userID } });
             if (!preference) {
                 preference = await NotificationPreference.create({
@@ -258,9 +305,6 @@ class NotificationController {
             const currentPreferences = preference.preferences || {};
             const updatedPreferences = { ...currentPreferences };
             for (const [event, channels] of Object.entries(preferences)) {
-                if (typeof channels !== 'object' || !['email', 'sms', 'inApp'].every(c => typeof channels[c] === 'boolean') || channels.websocket !== undefined) {
-                    throw Object.assign(new Error(ERROR_MESSAGES.INVALID_PREFERENCES), { status: 400 });
-                }
                 updatedPreferences[event] = {
                     email: channels.email,
                     sms: channels.sms,
@@ -282,7 +326,9 @@ class NotificationController {
             return res.status(200).json(preference);
         } catch (error) {
             const response = NotificationController.formatError(error);
-            const status = error.message === ERROR_MESSAGES.MISSING_FIELDS || error.message === ERROR_MESSAGES.INVALID_PREFERENCES ? 400 : error.status || 500;
+            const status = error.message === ERROR_MESSAGES.MISSING_FIELDS ||
+                error.message === ERROR_MESSAGES.INVALID_PREFERENCES ||
+                error.message.includes('Cannot customize preferences') ? 400 : error.status || 500;
             logger.error('Failed to update notification preferences', {
                 route: 'notifications/preferences',
                 method: req.method,
@@ -302,16 +348,18 @@ class NotificationController {
         try {
             const preference = await NotificationPreference.findOne({ where: { userID: req.user.userID } });
             const rules = await NotificationRule.findAll({
-                attributes: ['event'],
-                group: ['event'],
+                attributes: ['event', 'priority'],
+                group: ['event', 'priority'],
             });
-            const availableEvents = rules.map(rule => rule.event);
-            const defaultPrefs = availableEvents.reduce((acc, event) => {
+            const availableEvents = rules.map(rule => ({
+                event: rule.event,
+                isCustomizable: rule.priority !== 'high',
+            }));
+            const defaultPrefs = availableEvents.reduce((acc, { event }) => {
                 acc[event] = { email: true, sms: true, inApp: true };
                 return acc;
             }, {});
             const preferences = preference && preference.preferences ? { ...defaultPrefs, ...preference.preferences } : defaultPrefs;
-            // Ensure preferences exclude websocket
             const sanitizedPreferences = {};
             for (const [event, channels] of Object.entries(preferences)) {
                 sanitizedPreferences[event] = {

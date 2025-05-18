@@ -24,7 +24,6 @@ module.exports = (sequelize, DataTypes) => {
         channels: {
             type: DataTypes.JSON,
             allowNull: false,
-            defaultValue: { websocket: true, email: false, sms: false, inApp: true },
         },
         conditions: {
             type: DataTypes.JSON,
@@ -38,6 +37,11 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.BOOLEAN,
             allowNull: false,
             defaultValue: true,
+        },
+        priority: {
+            type: DataTypes.ENUM('high', 'normal'),
+            defaultValue: 'normal',
+            allowNull: false,
         },
         createdAt: {
             type: DataTypes.DATE,

@@ -3,9 +3,11 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import AuthProvider, { useAuth } from './context/AuthContext';
 import { ErrorProvider, useError } from './context/ErrorContext';
+import { useNotification } from './context/NotificationContext';
 import Footer from './components/Footer';
 import Header from './components/Header';
 import ErrorManager from './components/ErrorManager';
+import ToastContainer from './components/ui/ToastContainer';
 import AccessDenied from './pages/Error/AccessDenied';
 import './App.css';
 import LoginPage from './pages/Auth/Login';
@@ -110,6 +112,7 @@ const AppContent: React.FC = React.memo(() => {
   const location = useLocation();
   const { user, permissionsLoaded } = useAuth();
   const { setError } = useError();
+  const { toasts, removeToast } = useNotification();
   const [loadingTimeout, setLoadingTimeout] = useState(false);
 
   useEffect(() => {
@@ -153,9 +156,10 @@ const AppContent: React.FC = React.memo(() => {
 
   return (
     <div className="app-container">
+      <ToastContainer toasts={toasts} onDismiss={removeToast} />
       <Header />
       <main>
-        {location.pathname !== '/login' && <ErrorManager />} {/* Replace ErrorDisplay with ErrorManager */}
+        {location.pathname !== '/login' && <ErrorManager />}
         {location.state?.error && (
           <div className="error-message" style={{ textAlign: 'center', margin: '10px 0', color: '#ff4444' }}>
             {location.state.error}

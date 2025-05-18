@@ -39,7 +39,7 @@ export const markAllNotificationsAsRead = async (): Promise<{ message: string }>
 // Fetch user notification preferences
 export const getNotificationPreferences = async (): Promise<{
     preferences: NotificationPreference['preferences'];
-    availableEvents: string[];
+    availableEvents: Array<{ event: string; isCustomizable: boolean }>;
 }> => {
     try {
         const response = await api.get('/notifications/preferences');
@@ -55,7 +55,6 @@ export const updateNotificationPreferences = async (
     preferences: NotificationPreference['preferences']
 ): Promise<NotificationPreference> => {
     try {
-        // Define sanitizedPreferences with explicit type
         const sanitizedPreferences: NotificationPreference['preferences'] = {};
         for (const [event, channels] of Object.entries(preferences)) {
             sanitizedPreferences[event] = {
@@ -84,9 +83,10 @@ export const getNotificationRules = async (): Promise<NotificationRule[]> => {
 };
 
 // Create a notification rule (admin only)
-export const createNotificationRule = async (rule: Omit<NotificationRule, 'ruleID' | 'creatorID' | 'createdAt' | 'updatedAt'>): Promise<NotificationRule> => {
+export const createNotificationRule = async (
+    rule: Omit<NotificationRule, 'ruleID' | 'creatorID' | 'createdAt' | 'updatedAt'>
+): Promise<NotificationRule> => {
     try {
-        // Ensure channels exclude websocket
         const sanitizedRule = {
             ...rule,
             channels: {
@@ -109,7 +109,6 @@ export const updateNotificationRule = async (
     rule: Partial<Omit<NotificationRule, 'ruleID' | 'creatorID' | 'createdAt' | 'updatedAt'>>
 ): Promise<NotificationRule> => {
     try {
-        // Ensure channels exclude websocket
         const sanitizedRule = {
             ...rule,
             channels: rule.channels ? {

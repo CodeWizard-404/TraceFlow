@@ -8,6 +8,7 @@ import { markNotificationAsRead, getNotifications } from '../apis/notificationAP
 interface NotificationState {
     notifications: Notification[];
     unreadCount: number;
+    toasts: Notification[];
 }
 
 type NotificationAction =
@@ -15,15 +16,19 @@ type NotificationAction =
     | { type: 'MARK_AS_READ'; payload: string }
     | { type: 'MARK_ALL_AS_READ' }
     | { type: 'SET_NOTIFICATIONS'; payload: Notification[] }
-    | { type: 'MERGE_NOTIFICATIONS'; payload: Notification[] };
+    | { type: 'MERGE_NOTIFICATIONS'; payload: Notification[] }
+    | { type: 'ADD_TOAST'; payload: Notification }
+    | { type: 'REMOVE_TOAST'; payload: string };
 
 interface NotificationContextType {
     notifications: Notification[];
     unreadCount: number;
+    toasts: Notification[];
     addNotification: (notification: Notification) => void;
     markAsRead: (notificationID: string) => void;
     markAllAsRead: () => void;
     mergeNotifications: (notifications: Notification[]) => void;
+    removeToast: (notificationID: string) => void;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
@@ -31,12 +36,13 @@ const NotificationContext = createContext<NotificationContextType | undefined>(u
 const initialState: NotificationState = {
     notifications: [],
     unreadCount: 0,
+    toasts: [],
 };
 
 const notificationReducer = (state: NotificationState, action: NotificationAction): NotificationState => {
     switch (action.type) {
         case 'ADD_NOTIFICATION':
-            if (state.notifications.some((n) => n.notificationID === n.notificationID)) {
+            if (state.notifications.some((n) => n.notificationID === action.payload.notificationID)) {
                 return state;
             }
             return {
@@ -52,6 +58,7 @@ const notificationReducer = (state: NotificationState, action: NotificationActio
                 notifications: state.notifications.map((n) =>
                     n.notificationID === action.payload ? { ...n, status: 'read' } : n
                 ),
+                toasts: state.toasts.filter((t) => t.notificationID !== action.payload),
                 unreadCount: state.notifications.filter(
                     (n) => n.notificationID !== action.payload && n.status !== 'read' && n.channel === 'in-app'
                 ).length,
@@ -60,6 +67,7 @@ const notificationReducer = (state: NotificationState, action: NotificationActio
             return {
                 ...state,
                 notifications: state.notifications.map((n) => ({ ...n, status: 'read' })),
+                toasts: [],
                 unreadCount: 0,
             };
         case 'SET_NOTIFICATIONS':
@@ -81,6 +89,19 @@ const notificationReducer = (state: NotificationState, action: NotificationActio
                 unreadCount: [...newNotifications, ...state.notifications].filter(
                     (n) => n.status !== 'read' && n.channel === 'in-app'
                 ).length,
+            };
+        case 'ADD_TOAST':
+            if (state.toasts.some((t) => t.notificationID === action.payload.notificationID)) {
+                return state;
+            }
+            return {
+                ...state,
+                toasts: [action.payload, ...state.toasts],
+            };
+        case 'REMOVE_TOAST':
+            return {
+                ...state,
+                toasts: state.toasts.filter((t) => t.notificationID !== action.payload),
             };
         default:
             return state;
@@ -123,6 +144,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
             if (notification.channel === 'in-app') {
                 dispatch({ type: 'ADD_NOTIFICATION', payload: notification });
+                dispatch({ type: 'ADD_TOAST', payload: notification }); // Add to toasts for popup
             } else if (event === 'notification:updated' && (data as any).status === 'read') {
                 dispatch({ type: 'MARK_AS_READ', payload: notification.notificationID });
             } else if (event.includes(':created') || event.includes(':updated') || event.includes(':deleted')) {
@@ -147,6 +169,9 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
     const addNotification = (notification: Notification) => {
         dispatch({ type: 'ADD_NOTIFICATION', payload: notification });
+        if (notification.channel === 'in-app') {
+            dispatch({ type: 'ADD_TOAST', payload: notification });
+        }
     };
 
     const markAsRead = async (notificationID: string) => {
@@ -172,9 +197,22 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         dispatch({ type: 'MERGE_NOTIFICATIONS', payload: notifications });
     };
 
+    const removeToast = (notificationID: string) => {
+        dispatch({ type: 'REMOVE_TOAST', payload: notificationID });
+    };
+
     return (
         <NotificationContext.Provider
-            value={{ notifications: state.notifications, unreadCount: state.unreadCount, addNotification, markAsRead, markAllAsRead, mergeNotifications }}
+            value={{
+                notifications: state.notifications,
+                unreadCount: state.unreadCount,
+                toasts: state.toasts,
+                addNotification,
+                markAsRead,
+                markAllAsRead,
+                mergeNotifications,
+                removeToast,
+            }}
         >
             {children}
         </NotificationContext.Provider>
