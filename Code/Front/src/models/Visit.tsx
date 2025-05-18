@@ -1,6 +1,7 @@
+import Agent from "./Agent";
 import { VisitChecklist } from "./Checklist";
 import VisitStatus from "./Enum/VisitStatus";
-import { VisitReason } from "./Reason";
+import { Reason } from "./Reason";
 
 interface Visit {
   visitID: string;
@@ -14,8 +15,11 @@ interface Visit {
   agentID?: string | null;
   timesheetID: string;
   Checklists?: VisitChecklist[];
-  Reasons?: VisitReason[];
+  Reasons?: Reason[];
+  Agent?: Agent;
   calendarEventId?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export default Visit;

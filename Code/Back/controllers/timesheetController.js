@@ -1,4 +1,3 @@
-// timesheetController.js
 const { validationResult } = require('express-validator');
 const TimesheetService = require('../services/timesheetService');
 const GoogleCalendarService = require('../services/googleCalendarService');
@@ -11,6 +10,8 @@ const ERROR_MESSAGES = {
     INVALID_SUPERVISOR: 'Invalid supervisor ID.',
     INVALID_WEEK_START: 'Invalid week start date.',
     REQUEST_CANCELED: 'AI request was canceled.',
+    INVALID_COORDINATES: 'Valid coordinates (lat, lng) are required.',
+    INVALID_TIME_INTERVAL: 'Valid time interval (startHour, endHour) is required.'
 };
 
 class TimesheetController {
@@ -113,6 +114,42 @@ class TimesheetController {
             const status = error.message === ERROR_MESSAGES.MISSING_FIELDS ? 400 : error.status || 500;
             logger.error('Failed to fetch timesheets by supervisor', {
                 route: 'timesheets/supervisor',
+                method: req.method,
+                url: req.originalUrl,
+                status,
+                ip: req.ip,
+                traceId: req.traceId,
+                userId: actorID,
+                metadata: { error: response.error },
+            });
+            return res.status(status).json(response);
+        }
+    }
+    static async getTimesheetByWeekNumberAndYear(req, res) {
+        const actorID = req.user?.userID || 'unknown';
+        try {
+            const errors = validationResult(req);
+            if (!errors.isEmpty()) {
+                throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
+            }
+            const { weekNumber, year, supervisorID } = req.params;
+            const timesheet = await TimesheetService.getTimesheetByWeekAndYear(weekNumber, year, supervisorID);
+            logger.info('Successfully fetched timesheet by week number and year', {
+                route: 'timesheets/weekNumberAndYear',
+                method: req.method,
+                url: req.originalUrl,
+                status: 200,
+                ip: req.ip,
+                traceId: req.traceId,
+                userId: actorID,
+                metadata: { weekNumber, year },
+            });
+            return res.status(200).json(timesheet);
+        } catch (error) {
+            const response = TimesheetController.formatError(error);
+            const status = error.message === ERROR_MESSAGES.MISSING_FIELDS ? 400 : error.status || 500;
+            logger.error('Failed to fetch timesheet by week number and year', {
+                route: 'timesheets/weekNumberAndYear',
                 method: req.method,
                 url: req.originalUrl,
                 status,
@@ -284,8 +321,34 @@ class TimesheetController {
             if (!errors.isEmpty()) {
                 throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
             }
-            const { supervisorId, weekNumber, year, criteria } = req.body;
-            const { suggestions, requestId } = await TimesheetService.suggestTimesheet(supervisorId, weekNumber, year, criteria || {});
+            const { supervisorId, weekNumber, year, criteria, coordinates } = req.body;
+
+            logger.info('Received suggestTimesheet request in controller', {
+                supervisorId,
+                weekNumber,
+                year,
+                criteria,
+                coordinates,
+                actorID
+            });
+
+            if (!coordinates || typeof coordinates.lat !== 'number' || typeof coordinates.lng !== 'number') {
+                throw Object.assign(new Error(ERROR_MESSAGES.INVALID_COORDINATES), { status: 400 });
+            }
+
+            if (!criteria?.timeInterval || !Number.isInteger(criteria.timeInterval.startHour) ||
+                !Number.isInteger(criteria.timeInterval.endHour) || criteria.timeInterval.startHour < 0 ||
+                criteria.timeInterval.endHour > 24 || criteria.timeInterval.startHour >= criteria.timeInterval.endHour) {
+                throw Object.assign(new Error(ERROR_MESSAGES.INVALID_TIME_INTERVAL), { status: 400 });
+            }
+
+            const { suggestions, requestId } = await TimesheetService.suggestTimesheet(
+                supervisorId,
+                weekNumber,
+                year,
+                criteria,
+                coordinates
+            );
             await NotificationService.triggerNotification({
                 event: 'timesheet:suggested',
                 data: { supervisorId, weekNumber, year, suggestionCount: suggestions.length },
@@ -318,6 +381,7 @@ class TimesheetController {
             return res.status(status).json(response);
         }
     }
+
 
     static async cancelTimesheetSuggestion(req, res) {
         const actorID = req.user?.userID || 'unknown';

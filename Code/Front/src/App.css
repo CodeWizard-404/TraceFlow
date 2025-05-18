@@ -203,7 +203,10 @@ body.dark .timesheets-container .toggle-btn.active {
 }
 
 body.dark .timesheets-container .nav-btn,
-body.dark .timesheets-container .current-btn {
+body.dark .timesheets-container .current-btn,
+body.dark .timesheets-container .refresh-btn,
+body.dark .timesheets-container .select-all-btn,
+body.dark .timesheets-container .deselect-all-btn {
   background: #262626;
   color: #63b3ed;
   border-color: #63b3ed;
@@ -216,7 +219,10 @@ body.dark .timesheets-container .create-btn {
 }
 
 body.dark .timesheets-container .nav-btn:hover,
-body.dark .timesheets-container .current-btn:hover {
+body.dark .timesheets-container .current-btn:hover,
+body.dark .timesheets-container .refresh-btn:hover,
+body.dark .timesheets-container .select-all-btn:hover,
+body.dark .timesheets-container .deselect-all-btn:hover {
   background: #63b3ed;
   color: #fff;
 }

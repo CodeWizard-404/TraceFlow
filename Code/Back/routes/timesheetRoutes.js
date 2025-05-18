@@ -10,6 +10,8 @@ router.put('/:id/validate', requirePermission('validate_timesheets'), TimesheetC
 router.get('/', requirePermission('access_all_timesheets'), TimesheetController.getAllTimesheets);
 router.get('/:id', requirePermission('access_timesheet_details'), TimesheetController.getTimesheetById);
 router.get('/supervisor/:supervisorID', requirePermission('access_supervisor_timesheets'), TimesheetController.getTimesheetsBySupervisor);
+router.get('/week/:weekNumber/year/:year/supervisor/:supervisorID', requirePermission('access_timesheets_by_week_and_year'), TimesheetController.getTimesheetByWeekNumberAndYear);
+
 
 router.post('/suggest', requirePermission('suggest_timesheets'), TimesheetController.suggestTimesheet);
 router.post('/:id/sync-calendar', requirePermission('sync_calendar'), TimesheetController.syncTimesheetToCalendar);

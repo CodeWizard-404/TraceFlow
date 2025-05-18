@@ -104,7 +104,7 @@ html {
 }
 
 .create-btn,
-.current-btn {
+.current-btn, .refresh-btn, .select-all-btn, .deselect-all-btn {
   padding: 0.625rem 1.25rem;
   font-size: 0.875rem;
   font-weight: 600;
@@ -126,13 +126,13 @@ html {
   background: #3a8fa2;
 }
 
-.current-btn {
+.current-btn, .refresh-btn, .select-all-btn, .deselect-all-btn {
   background: #fff;
   color: #4cb1c7;
   border: 1px solid #4cb1c7;
 }
 
-.current-btn:hover {
+.current-btn:hover, .refresh-btn:hover, .select-all-btn:hover, .deselect-all-btn:hover {
   background: #4cb1c7;
   color: #fff;
 }
@@ -404,6 +404,10 @@ body.dark .status-visited {
   background: #930744;
 }
 
+.status-generated {
+  background: #8b8b8b;
+}
+
 .visit-location,
 .visit-duration {
   font-size: 0.75rem;
@@ -543,7 +547,7 @@ body.dark .supervisor-filter {
   }
 
   .create-btn,
-  .current-btn {
+  .current-btn, .refresh-btn, .select-all-btn, .deselect-all-btn {
     padding: 0.75rem 1.5rem;
     font-size: 0.875rem;
   }
@@ -662,7 +666,7 @@ body.dark .supervisor-filter {
   }
 
   .create-btn,
-  .current-btn {
+  .current-btn, .refresh-btn, .select-all-btn, .deselect-all-btn {
     padding: 0.625rem 1.25rem;
     font-size: 0.75rem;
     /* 15px at 20px */
@@ -1315,4 +1319,23 @@ body.dark .visit-card.visited {
 
 body.dark .visit-card.visited:hover {
   border: 1px solid #63b3ed;
+}
+
+
+
+.visit-card.selected {
+  border: 2px solid #63b3ed;
+  background-color: #e6f3ff;
+}
+
+.visit-selection {
+  cursor: pointer;
+  margin-left: 8px;
+  font-size: 1.2em;
+  vertical-align: middle;
+}
+
+.visit-agent {
+  margin: 0;
+  font-weight: 500;
 }

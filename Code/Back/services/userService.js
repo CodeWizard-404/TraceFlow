@@ -180,25 +180,38 @@ class UserService {
         const emailPassword = password;
         this.validateInput({ email, phone, password, firstname, lastname });
 
+        // Check for duplicates in local DB first
+        const existingUser = await User.findOne({
+            where: { [Op.or]: [{ email }, { phone }] },
+        });
+        if (existingUser) {
+            const errors = [];
+            if (existingUser.email === email) errors.push(ERROR_MESSAGES.DUPLICATE_EMAIL);
+            if (existingUser.phone === phone) errors.push(ERROR_MESSAGES.DUPLICATE_PHONE);
+            throw new Error(errors.join(' '));
+        }
+
         const token = await this.getAdminToken();
 
         // Check for duplicates in Keycloak
+        let keycloakUserId;
         try {
-            const existingUser = await axios.get(
+            const response = await axios.get(
                 `${KEYCLOAK_URL}/admin/realms/${REALM}/users?username=${encodeURIComponent(email)}&exact=true`,
                 { headers: { Authorization: `Bearer ${token}` } }
             );
-            if (existingUser.data.length > 0) {
+            if (response.status === 200 && response.data.length > 0) {
                 throw new Error(ERROR_MESSAGES.DUPLICATE_EMAIL);
             }
         } catch (error) {
-            if (error.response?.status !== 404) {
-                throw new Error(ERROR_MESSAGES.AUTH_SERVICE_DOWN);
+            if (error.message === ERROR_MESSAGES.DUPLICATE_EMAIL) {
+                throw error; // Propagate duplicate email error
             }
+            console.error(`Keycloak email check failed: ${error.message}`, error.response?.data);
+            throw new Error(ERROR_MESSAGES.AUTH_SERVICE_DOWN);
         }
 
         // Create user in Keycloak
-        let keycloakUserId;
         try {
             const keycloakResponse = await axios.post(
                 `${KEYCLOAK_URL}/admin/realms/${REALM}/users`,
@@ -215,21 +228,8 @@ class UserService {
             );
             keycloakUserId = keycloakResponse.headers.location.split('/').pop();
         } catch (error) {
+            console.error(`Keycloak user creation failed: ${error.message}`, error.response?.data);
             throw new Error(ERROR_MESSAGES.KEYCLOAK_CREATE_FAILED);
-        }
-
-        // Check for duplicates in local DB
-        const existingUser = await User.findOne({
-            where: { [Op.or]: [{ email }, { phone }] },
-        });
-        if (existingUser) {
-            const errors = [];
-            if (existingUser.email === email) errors.push(ERROR_MESSAGES.DUPLICATE_EMAIL);
-            if (existingUser.phone === phone) errors.push(ERROR_MESSAGES.DUPLICATE_PHONE);
-            await axios.delete(`${KEYCLOAK_URL}/admin/realms/${REALM}/users/${keycloakUserId}`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            throw new Error(errors.join(' '));
         }
 
         // Create user in local DB
@@ -246,9 +246,14 @@ class UserService {
                 googleEmail: null,
             });
         } catch (error) {
-            await axios.delete(`${KEYCLOAK_URL}/admin/realms/${REALM}/users/${keycloakUserId}`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
+            // Rollback Keycloak user creation
+            try {
+                await axios.delete(`${KEYCLOAK_URL}/admin/realms/${REALM}/users/${keycloakUserId}`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+            } catch (deleteError) {
+                console.error(`Failed to rollback Keycloak user: ${deleteError.message}`);
+            }
             throw new Error(ERROR_MESSAGES.DB_CREATE_FAILED);
         }
 

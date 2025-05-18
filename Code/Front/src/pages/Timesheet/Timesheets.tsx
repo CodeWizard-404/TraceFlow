@@ -1,3 +1,5 @@
+// src/pages/Timesheet/Timesheets.tsx
+
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
@@ -66,11 +68,11 @@ interface VisitWithSupervisor extends Visit {
 interface GeneratedVisit {
     startTime: string;
     location: string;
-    latitude: number;
-    longitude: number;
+    latitude: number | null;
+    longitude: number | null;
     reasons: Array<{ id: string; item: string }>;
     checklists: Array<{ id: string; item: string }>;
-    agentID: string;
+    agentID: string | null;
     date: string;
     status: VisitStatus.GENERATED;
 }
@@ -156,7 +158,7 @@ interface DayColumnProps {
         canCreateSupervisorTimesheets: boolean;
     };
     visitReasons: Record<string, VisitReason[]>;
-    locationCache: Record<string, string | undefined>; // Updated to allow undefined
+    locationCache: Record<string, string | undefined>;
     navigate: (path: string) => void;
 }
 

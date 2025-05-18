@@ -1,4 +1,3 @@
-// timesheetAPI.ts
 import { AxiosError } from "axios";
 import api from "./axiosConfig";
 import {
@@ -8,7 +7,8 @@ import {
   ValidateTimesheetResponse,
   TimesheetsBySupervisorResponse,
   DeleteTimesheetResponse,
-  AxiosErrorResponse
+  AxiosErrorResponse,
+  TimesheetByWeekNumberAndYearResponse
 } from ".";
 
 // Type for timesheet calendar sync response
@@ -18,25 +18,40 @@ export type SyncTimesheetCalendarResponse = Array<{
   status: "created" | "updated";
 }>;
 
-// Type for timesheet suggestions response
+// Type for timesheet suggestions response (matches parent component expectations)
 export type SuggestTimesheetResponse = Array<{
-  agentID: string;
+  agentID: string | null;
+  supervisorID: string;
   schedule: Array<{
-    date: string;
+    date: string; // DD/MM/YYYY
     visits: Array<{
-      startTime: string;
+      startTime: string; // HH:MM
       location: string;
-      latitude: number;
-      longitude: number;
+      latitude: number | null;
+      longitude: number | null;
       reasons: Array<{ id: string; item: string }>;
       checklists: Array<{ id: string; item: string }>;
     }>;
   }>;
 }>;
 
-// Type for the full suggest timesheet API response
+// Type for the raw API response
 type SuggestTimesheetApiResponse = {
-  suggestions: SuggestTimesheetResponse;
+  suggestions: Array<{
+    agentID: string | null;
+    supervisorID: string;
+    schedule: Array<{
+      date: string; // YYYY-MM-DD
+      visits: Array<{
+        time: string; // HH:MM
+        location: string;
+        latitude: number | null;
+        longitude: number | null;
+        reasons: Array<{ id: string }>;
+        checklists: Array<{ id: string }>;
+      }>;
+    }>;
+  }>;
   requestId: string;
 };
 
@@ -201,6 +216,24 @@ export const getTimesheetById = async (id: string): Promise<TimesheetByIdRespons
   }
 };
 
+export const getTimesheetByWeekNumberAndYear = async (
+  weekNumber: number,
+  year: number,
+  supervisorID: string
+): Promise<TimesheetByWeekNumberAndYearResponse> => {
+  try {
+    if (!weekNumber || !year || !supervisorID) {
+      throw new Error("Week number, year, and supervisor ID are required.");
+    }
+    const response = await api.get<TimesheetByWeekNumberAndYearResponse>(
+      `/timesheets/week/${weekNumber}/year/${year}/supervisor/${supervisorID}`
+    );
+    return response.data;
+  } catch (error) {
+    throw new Error(handleApiError(error, "Unable to fetch timesheet by week number and year."));
+  }
+};
+
 export const validateTimesheet = async (
   id: string,
   data: { visitIDs: string[]; status: string }
@@ -247,16 +280,22 @@ export const suggestTimesheet = async (data: {
   criteria: {
     delegationIds?: string[];
     agentIds?: string[];
-    supervisorLocation?: { latitude: number; longitude: number };
     preferredDays?: string[];
     timeInterval?: { startHour: number; endHour: number };
     maxVisitsPerAgentPerWeek?: number;
+    includeRecruitmentVisits?: boolean;
+    recruitmentAreas?: string[];
+    description?: string;
     filters?: Record<string, any>;
   };
+  coordinates: { lat: number; lng: number };
 }): Promise<{ suggestions: SuggestTimesheetResponse; requestId: string }> => {
   try {
     if (!data.supervisorId || !data.weekNumber || !data.year) {
       throw new Error("Supervisor ID, week number, and year are required.");
+    }
+    if (!data.coordinates || typeof data.coordinates.lat !== "number" || typeof data.coordinates.lng !== "number") {
+      throw new Error("Valid coordinates (lat, lng) are required.");
     }
     if (data.criteria?.timeInterval) {
       const { startHour, endHour } = data.criteria.timeInterval;
@@ -270,15 +309,44 @@ export const suggestTimesheet = async (data: {
         throw new Error("Invalid time interval: startHour must be less than endHour and both must be integers between 0 and 24.");
       }
     }
+    if (data.criteria?.includeRecruitmentVisits && (!data.criteria.recruitmentAreas || data.criteria.recruitmentAreas.length === 0)) {
+      throw new Error("Recruitment areas are required when includeRecruitmentVisits is true.");
+    }
     const response = await api.post<SuggestTimesheetApiResponse>("/timesheets/suggest", data);
-    console.log("Raw API response:", JSON.stringify(response.data, null, 2)); // Debug log
+    console.log("Raw API response:", JSON.stringify(response.data, null, 2));
     if (!response.data.suggestions || !Array.isArray(response.data.suggestions)) {
       console.error("Invalid suggestions response: Expected an array", response.data);
       throw new Error("Invalid suggestions response: Expected an array");
     }
-    console.log("Processed suggestions:", JSON.stringify(response.data.suggestions, null, 2)); // Debug log
+
+    // Transform the response to match parent component expectations
+    const transformedSuggestions: SuggestTimesheetResponse = response.data.suggestions.map(suggestion => ({
+      ...suggestion,
+      schedule: suggestion.schedule.map(day => {
+        // Convert date from YYYY-MM-DD to DD/MM/YYYY
+        const [y, m, d] = day.date.split("-").map(Number);
+        const formattedDate = `${d.toString().padStart(2, "0")}/${m.toString().padStart(2, "0")}/${y}`;
+        return {
+          date: formattedDate,
+          visits: day.visits.map(visit => ({
+            ...visit,
+            startTime: visit.time, // Rename time to startTime
+            reasons: visit.reasons.map(reason => ({
+              id: reason.id,
+              item: `Reason ${reason.id}` // Mock item field
+            })),
+            checklists: visit.checklists.map(checklist => ({
+              id: checklist.id,
+              item: `Checklist ${checklist.id}` // Mock item field
+            }))
+          }))
+        };
+      })
+    }));
+
+    console.log("Transformed suggestions:", JSON.stringify(transformedSuggestions, null, 2));
     return {
-      suggestions: response.data.suggestions,
+      suggestions: transformedSuggestions,
       requestId: response.data.requestId,
     };
   } catch (error) {
