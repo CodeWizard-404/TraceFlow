@@ -42,7 +42,6 @@ const ReceiptBookBulkUploadModal: React.FC<ReceiptBookBulkUploadModalProps> = ({
     const [headerMappings, setHeaderMappings] = useState<CsvHeader[]>([]);
     const [editingHeaders, setEditingHeaders] = useState(false);
     const [savingHeaders, setSavingHeaders] = useState(false);
-    const [totalRecords, setTotalRecords] = useState<number>(0);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
@@ -59,17 +58,6 @@ const ReceiptBookBulkUploadModal: React.FC<ReceiptBookBulkUploadModalProps> = ({
         };
         fetchHeaders();
     }, [isOpen, setError, t]);
-
-    const countCsvRecords = (content: string): number => {
-        try {
-            const lines = content.split("\n").map(line => line.trim()).filter(line => line);
-            // Subtract 1 for header row
-            return Math.max(0, lines.length - 1);
-        } catch (error) {
-            console.error("Error counting CSV records:", error);
-            return 0;
-        }
-    };
 
     const validateHeaders = useCallback(
         (content: string): boolean => {
@@ -140,14 +128,12 @@ const ReceiptBookBulkUploadModal: React.FC<ReceiptBookBulkUploadModalProps> = ({
         setUploadResult(null);
         setFileHeaders([]);
         setFileContent(null);
-        setTotalRecords(0);
 
         const reader = new FileReader();
         reader.onload = (event) => {
             const content = event.target?.result?.toString();
             if (content) {
                 setFileContent(content);
-                setTotalRecords(countCsvRecords(content));
                 validateHeaders(content);
             } else {
                 setError(t("receiptBooks.errors.invalidCSVFormat"));
@@ -291,7 +277,6 @@ const ReceiptBookBulkUploadModal: React.FC<ReceiptBookBulkUploadModalProps> = ({
         setHeaderMappings([]);
         setEditingHeaders(false);
         setSavingHeaders(false);
-        setTotalRecords(0);
         if (fileInputRef.current) fileInputRef.current.value = "";
         setError(null);
         onClose();
@@ -345,34 +330,13 @@ const ReceiptBookBulkUploadModal: React.FC<ReceiptBookBulkUploadModalProps> = ({
                                     </div>
                                 </>
                             ) : (
-                                <>
-                                    <p>{t("receiptBooks.bulkUpload.processing")}</p>
-                                    {totalRecords > 0 && (
-                                        <p>
-                                            {t("receiptBooks.bulkUpload.progress", {
-                                                processed: uploadResult?.summary.booksCreated || 0,
-                                                total: totalRecords,
-                                            })}
-                                        </p>
-                                    )}
-                                    <div className="progress-bar">
-                                        <div
-                                            className="progress-bar-fill"
-                                            style={{
-                                                width: totalRecords > 0
-                                                    ? `${((uploadResult?.summary.booksCreated || 0) / totalRecords) * 100}%`
-                                                    : "0%",
-                                            }}
-                                        ></div>
-                                    </div>
-                                </>
+                                <p>{t("receiptBooks.bulkUpload.processing")}</p>
                             )}
                         </div>
                     )}
                     {file && (
                         <div className="file-info">
                             <p>{t("receiptBooks.bulkUpload.selectedFile", { fileName: file.name })}</p>
-                            <p>{t("receiptBooks.bulkUpload.totalRecords", { count: totalRecords })}</p>
                             <button
                                 className="action-button"
                                 onClick={() => setEditingHeaders(true)}

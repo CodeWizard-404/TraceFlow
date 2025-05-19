@@ -189,7 +189,6 @@ class AIService {
                     throw Object.assign(new Error(ERROR_MESSAGES.NO_RECRUITMENT_LOCATIONS), { status: 400, details: error.message });
                 }
             } else if (includeRecruitmentVisits && (!criteria.recruitmentAreas || criteria.recruitmentAreas.length === 0)) {
-                // Allow null coordinates for recruitment visits
                 recruitmentVisitLocations = [{
                     latitude: null,
                     longitude: null,
@@ -250,20 +249,6 @@ class AIService {
             const checklistMap = {};
             checklists.forEach(c => { checklistMap[c.checklistID] = { id: c.checklistID, item: c.item }; });
 
-            const reasonChecklistMapping = {};
-            reasons.forEach(reason => {
-                reasonChecklistMapping[reason.reasonID] = checklists
-                    .filter(checklist => {
-                        const reasonText = reason.item.toLowerCase();
-                        const checklistText = checklist.item.toLowerCase();
-                        return reasonText.split(/\s+/).some(word => checklistText.includes(word)) ||
-                            checklistText.split(/\s+/).some(word => reasonText.includes(word)) ||
-                            (criteria.description && checklistText.includes(criteria.description.toLowerCase()));
-                    })
-                    .map(checklist => checklist.checklistID)
-                    .slice(0, 3);
-            });
-
             // Strictly use preferredDays if provided, otherwise all days
             let daysOfWeek = preferredDays.length > 0
                 ? preferredDays
@@ -301,7 +286,6 @@ class AIService {
 - Agents: ${agentData.length > 0 ? agentData.map(a => `${a.agentID}:${a.latitude !== null && !isNaN(a.latitude) ? a.latitude : 'null'},${a.longitude !== null && !isNaN(a.longitude) ? a.longitude : 'null'},${a.location || 'null'}`).join(';') : 'none'}
 - Reasons: ${reasons.map(r => `${r.reasonID}:${r.item}`).join(';')}
 - Checklists: ${checklists.map(c => `${c.checklistID}:${c.item}`).join(';')}
-- Reason-Checklist Mapping: ${JSON.stringify(reasonChecklistMapping)}
 - Dates: ${daysOfWeek.join(',')}
 - Supervisor Location: ${supervisorLocation.latitude},${supervisorLocation.longitude}
 - Time Interval: ${timeInterval.startHour}:00-${timeInterval.endHour}:00
@@ -319,7 +303,7 @@ Return a JSON array of objects: [{"agentID":"string","schedule":[{"date":"YYYY-M
 - For non-recruitment visits, strictly use the agent's location if provided; otherwise, set location, latitude, and longitude to null.
 - Do not include recruitment visits unless includeRecruitmentVisits is true.
 - Ensure exactly 1-2 reasons per visit, selected based on the visit description.
-- Ensure exactly 1-3 checklists per visit, selected from the Reason-Checklist Mapping to be contextually related to the chosen reasons.
+- Ensure exactly 2-4 checklists per visit, selected by the AI to be contextually related to the chosen reasons, based on semantic similarity or relevance to the visit description, without relying on a predefined mapping.
 - Use the visit description to prioritize reasons and checklists (e.g., select inventory-related reasons and checklists if description mentions inventory).
 - If Is Current Week is true, only include visits on or after 2025-05-18.
 - Ensure visits on the same day for the same agent or recruitment visit have unique times with at least a 1-hour gap.
@@ -463,7 +447,21 @@ Return a JSON array of objects: [{"agentID":"string","schedule":[{"date":"YYYY-M
                 };
             }).filter(suggestion => suggestion && suggestion.schedule.length > 0);
 
-            return transformedSuggestions;
+            // Validate that every visit has at least one reason and one checklist
+            const validSuggestions = transformedSuggestions.filter(suggestion => {
+                return suggestion.schedule.every(day => {
+                    return day.visits.every(visit => {
+                        return visit.reasons.length > 0 && visit.checklists.length > 0;
+                    });
+                });
+            });
+
+            if (validSuggestions.length === 0) {
+                console.warn('No valid suggestions after validation');
+                return [];
+            }
+
+            return validSuggestions;
         } catch (error) {
             if (error.name === 'AbortError') {
                 const abortError = new Error(ERROR_MESSAGES.REQUEST_CANCELED);

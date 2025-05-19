@@ -481,13 +481,6 @@ const NotificationRulesList: React.FC<NotificationRulesListProps> = React.memo(
                                                                     >
                                                                         <div className="rule-details-content">
                                                                             <div className="pill-group">
-                                                                                <strong>From Type:</strong>
-                                                                                <span className="pill pill-type">
-                                                                                    {rule.type.toUpperCase()}
-                                                                                </span>
-                                                                            </div>
-                                                                            <hr />
-                                                                            <div className="pill-group">
                                                                                 <strong>Priority:</strong>
                                                                                 <span className="pill pill-priority">
                                                                                     {rule.priority.toUpperCase()}
@@ -537,6 +530,13 @@ const NotificationRulesList: React.FC<NotificationRulesListProps> = React.memo(
                                                                                             </span>
                                                                                         )}
                                                                                 </div>
+                                                                            </div>
+                                                                            <hr />
+                                                                            <div className="pill-group">
+                                                                                <strong>Type:</strong>
+                                                                                <span className="pill pill-type">
+                                                                                    {rule.type.toUpperCase()}
+                                                                                </span>
                                                                             </div>
                                                                             <hr />
                                                                             <div className="pill-group">

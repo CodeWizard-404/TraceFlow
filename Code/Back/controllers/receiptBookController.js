@@ -256,12 +256,62 @@ class ReceiptBookController {
     static async getAllReceiptBooks(req, res) {
         const actorID = req.user?.userID || 'unknown';
         try {
-            const startTime = Date.now();
-            const receiptBooks = await ReceiptBookService.getAllReceiptBooks();
-            const responseBooks = receiptBooks.map(book => ({
+            const {
+                page = 1,
+                limit = 10,
+                sortField = 'number',
+                sortOrder = 'ASC',
+                searchQuery = '',
+                filterType = 'all',
+                filterStatus = 'all',
+            } = req.query;
+
+            // Validate sortField
+            const validSortFields = ['number', 'holder', 'bookStatus', 'stubStatus', 'type'];
+            if (!validSortFields.includes(sortField)) {
+                logger.warn('Invalid sort field provided', {
+                    route: 'receipt-books',
+                    method: req.method,
+                    url: req.originalUrl,
+                    status: 400,
+                    ip: req.ip,
+                    traceId: req.traceId,
+                    userId: actorID,
+                    metadata: { sortField }
+                });
+                return res.status(400).json({ error: 'Invalid sort field' });
+            }
+
+            // Validate sortOrder
+            if (!['ASC', 'DESC'].includes(sortOrder.toUpperCase())) {
+                logger.warn('Invalid sort order provided', {
+                    route: 'receipt-books',
+                    method: req.method,
+                    url: req.originalUrl,
+                    status: 400,
+                    ip: req.ip,
+                    traceId: req.traceId,
+                    userId: actorID,
+                    metadata: { sortOrder }
+                });
+                return res.status(400).json({ error: 'Invalid sort order' });
+            }
+
+            const result = await ReceiptBookService.getAllReceiptBooks(
+                parseInt(page),
+                parseInt(limit),
+                sortField,
+                sortOrder,
+                searchQuery,
+                filterType,
+                filterStatus
+            );
+
+            const responseBooks = result.books.map(book => ({
                 ...book,
                 qrCode: book.qrCode ? Buffer.from(book.qrCode).toString('base64') : null,
             }));
+
             logger.info('Successfully fetched receipt books', {
                 route: 'receipt-books',
                 method: req.method,
@@ -270,9 +320,15 @@ class ReceiptBookController {
                 ip: req.ip,
                 traceId: req.traceId,
                 userId: actorID,
-                metadata: { bookCount: responseBooks.length, durationMs: Date.now() - startTime }
+                metadata: { bookCount: responseBooks.length },
             });
-            return res.status(200).json(responseBooks);
+
+            return res.status(200).json({
+                books: responseBooks,
+                totalCount: result.totalCount,
+                currentPage: result.currentPage,
+                totalPages: result.totalPages,
+            });
         } catch (error) {
             logger.error('Failed to fetch receipt books', {
                 route: 'receipt-books',
@@ -282,11 +338,12 @@ class ReceiptBookController {
                 ip: req.ip,
                 traceId: req.traceId,
                 userId: actorID,
-                metadata: { error: error.message }
+                metadata: { error: error.message },
             });
-            return res.status(error.status || 500).json({ error: error.message || 'Failed to retrieve receipt books' });
+            return res.status(error.status || 500).json({ error: error.message });
         }
     }
+
 
     /**
      * Get a receipt book by ID.

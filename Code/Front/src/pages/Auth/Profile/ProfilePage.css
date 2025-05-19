@@ -1274,3 +1274,11 @@ body.dark .popup-close-btn:hover {
         max-height: 250px;
     }
 }
+
+.notification-toggle {
+    display: flex;
+    flex-direction: row;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+    margin-top: -0.5rem;
+}

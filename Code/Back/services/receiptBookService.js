@@ -1,6 +1,6 @@
 const { sendSMS } = require('../config/sms');
 const { sendEmail } = require('../config/smtp');
-const { ReceiptBook, User, Agent, ReceiptBookTransfer, ReceiptStub, Role, ReceiptBookType } = require('../models');
+const { ReceiptBook, User, Agent, ReceiptBookTransfer, ReceiptStub, Role, ReceiptBookType, sequelize } = require('../models');
 const OTPService = require('../services/otpService');
 const QRGenerator = require('../utils/qrGenerator');
 const csv = require('csv-parse');
@@ -169,68 +169,158 @@ class ReceiptBookService {
         }
     }
 
-    static async getAllReceiptBooks() {
+    static async getAllReceiptBooks(
+        page = 1,
+        limit = 10,
+        sortField = 'number',
+        sortOrder = 'ASC',
+        searchQuery = '',
+        filterType = 'all',
+        filterStatus = 'all'
+    ) {
+        const traceId = uuidv4();
+        const startTime = Date.now();
         try {
-            const startTime = Date.now();
+
+            // Build where clause for filtering
+            const whereClause = {};
+            if (searchQuery) {
+                whereClause[Op.or] = [
+                    { number: { [Op.iLike]: `%${searchQuery}%` } }, // Use iLike for case-insensitive search
+                    { '$ReceiptBookType.name$': { [Op.iLike]: `%${searchQuery}%` } },
+                    sequelize.where(sequelize.cast(sequelize.col('ReceiptBook.status'), 'TEXT'), {
+                        [Op.iLike]: `%${searchQuery}%`
+                    }), // Cast ENUM to TEXT for LIKE search
+                    { '$CurrentHolder.firstname$': { [Op.iLike]: `%${searchQuery}%` } },
+                    { '$CurrentHolder.lastname$': { [Op.iLike]: `%${searchQuery}%` } },
+                    { '$Agent.name$': { [Op.iLike]: `%${searchQuery}%` } },
+                    { '$Agent.lastname$': { [Op.iLike]: `%${searchQuery}%` } },
+                ];
+                // Handle ReceiptStub.status separately due to optional association
+                if (searchQuery) {
+                    whereClause[Op.or].push(
+                        sequelize.where(
+                            sequelize.cast(sequelize.col('ReceiptStub.status'), 'TEXT'),
+                            { [Op.iLike]: `%${searchQuery}%` }
+                        )
+                    );
+                }
+            }
+            if (filterType !== 'all') {
+                whereClause.typeID = filterType;
+            }
+            if (filterStatus !== 'all') {
+                whereClause.status = filterStatus;
+            }
+
+
+            // Pagination
+            const offset = (page - 1) * limit;
+
+            // Define sorting logic based on sortField
+            let orderClause;
+            switch (sortField) {
+                case 'number':
+                    orderClause = [[sequelize.literal("CAST(regexp_replace(number, '\\D', '', 'g') AS INTEGER)"), sortOrder]];
+                    break;
+                case 'holder':
+                    orderClause = [
+                        [{ model: User, as: 'CurrentHolder' }, 'lastname', sortOrder],
+                        [{ model: User, as: 'CurrentHolder' }, 'firstname', sortOrder],
+                    ];
+                    break;
+                case 'bookStatus':
+                    orderClause = [['status', sortOrder]];
+                    break;
+                case 'stubStatus':
+                    orderClause = [[{ model: ReceiptStub, as: 'ReceiptStub' }, 'status', sortOrder]];
+                    break;
+                case 'type':
+                    orderClause = [[{ model: ReceiptBookType, as: 'ReceiptBookType' }, 'name', sortOrder]];
+                    break;
+                default:
+                    throw new Error(`Invalid sortField: ${sortField}`);
+            }
+
+            // Fetch receipt books with pagination and sorting
             const books = await ReceiptBook.findAll({
+                where: whereClause,
                 attributes: ['bookID', 'number', 'status', 'qrCode', 'agentID', 'currentHolderID', 'typeID'],
                 include: [
                     {
+                        model: User,
+                        as: 'CurrentHolder',
+                        attributes: ['userID', 'firstname', 'lastname', 'phone'],
+                        required: false, // Allow null CurrentHolder
+                    },
+                    {
+                        model: Agent,
+                        attributes: ['agentID', 'name', 'lastname'],
+                        required: false, // Allow null Agent
+                    },
+                    {
                         model: ReceiptStub,
+                        as: 'ReceiptStub',
                         attributes: ['stubID', 'status'],
-                        required: false,
+                        required: false, // Allow null ReceiptStub
                     },
                     {
                         model: ReceiptBookType,
+                        as: 'ReceiptBookType',
                         attributes: ['typeID', 'name'],
+                        required: false, // Allow null ReceiptBookType
                     },
                 ],
-                order: [['number', 'ASC']],
+                order: orderClause,
+                offset,
+                limit,
             });
 
-            const bookIDs = books.map(book => book.bookID);
-            const [holders, agents, transfers] = await Promise.all([
-                User.findAll({
-                    where: { userID: books.map(book => book.currentHolderID).filter(id => id) },
-                    attributes: ['userID', 'firstname', 'lastname', 'phone'],
-                }),
-                Agent.findAll({
-                    where: { agentID: books.map(book => book.agentID).filter(id => id) },
-                    attributes: ['agentID', 'name', 'lastname'],
-                }),
-                ReceiptBookTransfer.findAll({
-                    where: { bookID: bookIDs },
-                    attributes: ['transferID', 'bookID', 'transferType', 'transferDate'],
-                    include: [],
-                }),
-            ]);
 
-            const holderMap = new Map(holders.map(h => [h.userID, h.toJSON()]));
-            const agentMap = new Map(agents.map(a => [a.agentID, a.toJSON()]));
-            const transferMap = new Map();
-            transfers.forEach(t => {
-                if (!transferMap.has(t.bookID)) transferMap.set(t.bookID, []);
-                transferMap.get(t.bookID).push(t.toJSON());
-            });
-
+            // Transform the response
             const enrichedBooks = books.map(book => {
                 const bookData = book.toJSON();
-                bookData.holder = book.currentHolderID
-                    ? {
-                        userID: holderMap.get(book.currentHolderID)?.userID,
-                        firstname: holderMap.get(book.currentHolderID)?.firstname,
-                        lastname: holderMap.get(book.currentHolderID)?.lastname,
-                        phone: holderMap.get(book.currentHolderID)?.phone,
-                    }
-                    : null;
-                bookData.Agent = book.agentID ? agentMap.get(book.agentID) : null;
-                bookData.ReceiptBookTransfers = transferMap.get(book.bookID) || [];
+                bookData.holder = bookData.CurrentHolder ? {
+                    userID: bookData.CurrentHolder.userID,
+                    firstname: bookData.CurrentHolder.firstname,
+                    lastname: bookData.CurrentHolder.lastname,
+                    phone: bookData.CurrentHolder.phone,
+                } : null;
+                bookData.Agent = bookData.Agent ? {
+                    agentID: bookData.Agent.agentID,
+                    name: bookData.Agent.name,
+                    lastname: bookData.Agent.lastname,
+                } : null;
                 bookData.type = bookData.ReceiptBookType ? bookData.ReceiptBookType.name : null;
+                bookData.ReceiptStub = bookData.ReceiptStub || null;
+                delete bookData.CurrentHolder;
                 delete bookData.ReceiptBookType;
                 return bookData;
             });
 
-            return enrichedBooks;
+
+            // Get total count for pagination
+            const countStartTime = Date.now();
+            const totalCount = await ReceiptBook.count({
+                where: whereClause,
+                include: [
+                    { model: User, as: 'CurrentHolder', required: false },
+                    { model: Agent, required: false },
+                    { model: ReceiptStub, as: 'ReceiptStub', required: false },
+                    { model: ReceiptBookType, as: 'ReceiptBookType', required: false },
+                ],
+            });
+
+
+            const result = {
+                books: enrichedBooks,
+                totalCount,
+                currentPage: page,
+                totalPages: Math.ceil(totalCount / limit),
+            };
+
+
+            return result;
         } catch (error) {
             const err = new Error('Failed to retrieve receipt books: ' + error.message);
             err.status = 500;

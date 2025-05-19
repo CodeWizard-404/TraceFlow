@@ -35,7 +35,18 @@ import {
     stripPhoneForDatabase,
 } from "./profileUtils";
 
+// Define type for groupedPreferences
+interface PreferenceEvent {
+    value: string;
+    label: string;
+}
+interface GroupedPreferences {
+    [type: string]: PreferenceEvent[];
+}
+
 export const useProfile = () => {
+    console.debug("useProfile hook initialized", { timestamp: new Date().toISOString() });
+
     const { user } = useAuth();
     const [profileData, setProfileData] = useState<User | null>(null);
     const [editingField, setEditingField] = useState<string | null>(null);
@@ -51,7 +62,7 @@ export const useProfile = () => {
     const [showProfilePicPopup, setShowProfilePicPopup] = useState(false);
 
     // Notification-specific states
-    const [notificationView, setNotificationView] = useState<"list" | "preferences">("list");
+    const [notificationView, setNotificationViewState] = useState<"list" | "preferences">("list");
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [notificationPrefs, setNotificationPrefs] = useState<NotificationPreference['preferences']>({});
     const [availableEvents, setAvailableEvents] = useState<string[]>([]);
@@ -70,6 +81,16 @@ export const useProfile = () => {
     const [prefFilterType, setPrefFilterType] = useState<string>("");
     const [prefSortBy, setPrefSortBy] = useState<"none" | "event" | "type">("none");
     const [prefSortOrder, setPrefSortOrder] = useState<"asc" | "desc">("asc");
+
+    // Debug setNotificationView
+    const setNotificationView = useCallback((view: "list" | "preferences") => {
+        console.debug("setNotificationView called in useProfile", {
+            view,
+            previousView: notificationView,
+            timestamp: new Date().toISOString(),
+        });
+        setNotificationViewState(view);
+    }, [notificationView]);
 
     const setTempError = useCallback((message: string) => {
         setError(message);
@@ -171,7 +192,7 @@ export const useProfile = () => {
 
                 setProfileData(completeUser);
                 setNotificationPrefs(notificationData.preferences);
-                setAvailableEvents(notificationData.availableEvents);
+                setAvailableEvents(notificationData.availableEvents.map(item => item.event));
                 setNotificationTypes(types);
 
                 if (completeUser.PFP && completeUser.PFP.trim()) {
@@ -646,8 +667,8 @@ export const useProfile = () => {
         setTempError,
     ]);
 
-    const groupedPreferences = useMemo(() => {
-        const grouped: { [type: string]: { value: string; label: string }[] } = {};
+    const groupedPreferences: GroupedPreferences = useMemo(() => {
+        const grouped: GroupedPreferences = {};
         availableEvents.forEach((event) => {
             const action = event.split(':')[1];
             if (!action) return;

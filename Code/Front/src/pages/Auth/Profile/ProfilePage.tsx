@@ -4,7 +4,7 @@
  * Delegates rendering to specialized components for better performance and maintainability.
  * Uses existing ProfilePage.css for styling.
  */
-import React, { useState, useCallback } from "react";
+import React, { useCallback, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "../../../context/AuthContext";
 import { useProfile } from "./useProfile";
@@ -29,15 +29,47 @@ const ProfilePage: React.FC = React.memo(() => {
     setShowProfilePicPopup,
     handleProfilePicChange,
     handleRemoveProfilePic,
+    notificationView,
+    setNotificationView,
   } = useProfile();
-  const [activeTab, setActiveTab] = useState<"info" | "settings" | "activity" | "notifications">("info");
+  const [activeTab, setActiveTab] = React.useState<"info" | "settings" | "activity" | "notifications">("info");
+
+  console.debug("ProfilePage rendered", {
+    activeTab,
+    notificationView,
+    timestamp: new Date().toISOString(),
+  });
 
   const handleTabChange = useCallback(
     (tab: "info" | "settings" | "activity" | "notifications") => {
+      console.debug("handleTabChange called", { tab, timestamp: new Date().toISOString() });
       setActiveTab(tab);
+      if (tab !== "notifications") {
+        setNotificationView("list");
+      }
     },
-    []
+    [setNotificationView]
   );
+
+  const handleNotificationViewChange = useCallback(
+    (view: "list" | "preferences") => {
+      console.debug("handleNotificationViewChange called", {
+        newView: view,
+        activeTab,
+        timestamp: new Date().toISOString(),
+      });
+      setNotificationView(view);
+    },
+    [activeTab, setNotificationView]
+  );
+
+  // Log notificationView changes
+  useEffect(() => {
+    console.debug("notificationView changed in ProfilePage", {
+      notificationView,
+      timestamp: new Date().toISOString(),
+    });
+  }, [notificationView]);
 
   if (loading) {
     return (
@@ -196,10 +228,24 @@ const ProfilePage: React.FC = React.memo(() => {
           {activeTab === "settings" && <SettingsSection />}
           {activeTab === "activity" && <ActivitySection />}
           {activeTab === "notifications" && (
-            <>
-              <NotificationList />
-              <NotificationPreferences />
-            </>
+            <div className="notifications-section">
+              <div className="notification-toggle">
+                <button
+                  className={`nav-tab ${notificationView === "list" ? "active" : ""}`}
+                  onClick={() => handleNotificationViewChange("list")}
+                >
+                  Notification List
+                </button>
+                <button
+                  className={`nav-tab ${notificationView === "preferences" ? "active" : ""}`}
+                  onClick={() => handleNotificationViewChange("preferences")}
+                >
+                  Preferences
+                </button>
+              </div>
+              {notificationView === "list" && <NotificationList />}
+              {notificationView === "preferences" && <NotificationPreferences />}
+            </div>
           )}
           {error && <div className="error-message">{error}</div>}
           {success && <div className="success-message">{success}</div>}

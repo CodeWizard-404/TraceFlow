@@ -4396,14 +4396,16 @@ body.dark .pill:hover {
 /* Specific pill variants */
 .pill-type,
 .pill-channel,
-.pill-role {
+.pill-role,
+.pill-priority {
     background: #fff;
     border: 1px solid #4cb1c7;
 }
 
 body.dark .pill-type,
 body.dark .pill-channel,
-body.dark .pill-role {
+body.dark .pill-role,
+body.dark .pill-priority {
     background: #222222;
     border: 1px solid #63b3ed;
 }

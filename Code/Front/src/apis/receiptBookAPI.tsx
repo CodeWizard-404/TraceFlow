@@ -64,12 +64,22 @@ export const createReceiptBook = async (data: Partial<ReceiptBook>): Promise<Cre
 };
 
 // Get all receipt books
-export const getAllReceiptBooks = async (): Promise<ListReceiptBooksResponse> => {
+export const getAllReceiptBooks = async (
+    page = 1,
+    limit = 10,
+    sortField: 'number' | 'holder' | 'bookStatus' | 'stubStatus' | 'type' = 'number',
+    sortOrder: 'ASC' | 'DESC' = 'ASC',
+    searchQuery = '',
+    filterType = 'all',
+    filterStatus = 'all'
+) => {
     try {
-        const response = await api.get<ListReceiptBooksResponse>("/receipt-books");
+        const response = await api.get(
+            `/receipt-books?page=${page}&limit=${limit}&sortField=${sortField}&sortOrder=${sortOrder}&searchQuery=${encodeURIComponent(searchQuery)}&filterType=${filterType}&filterStatus=${filterStatus}`
+        );
         return response.data;
     } catch (error) {
-        throw new Error(handleApiError(error, "Unable to fetch all receipt books."));
+        throw new Error(handleApiError(error, 'Unable to fetch all receipt books.'));
     }
 };
 

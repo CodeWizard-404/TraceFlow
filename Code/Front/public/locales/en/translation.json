@@ -512,6 +512,12 @@
       "scanStub": "Scan Stub",
       "noBooksAvailable": "No Books Available",
       "or": "or",
+      "regionalManager": "Regional Manager",
+      "supervisor": "Supervisor",
+      "region": "Region",
+      "governorate": "Governorate",
+      "delegation": "Delegation",
+      "multipleAgents": "Multiple Agents",
       "placeholders": {
         "selectRecipientType": "Select Recipient Type",
         "enterAgentPhone": "Enter agent phone number",
@@ -522,7 +528,15 @@
         "searchBooks": "Search books by number or type",
         "searchRecipient": "Enter phone number or search by name",
         "selectRecipient": "Select {{type}}",
-        "enterOTP": "Enter OTP"
+        "enterOTP": "Enter OTP",
+        "regionalManagerSearch": "Search regional managers by name or phone",
+        "regionalManagerSelect": "Select Regional Manager",
+        "supervisorSearch": "Search supervisors by name",
+        "supervisorPhone": "Enter supervisor phone number",
+        "supervisorSelect": "Select Supervisor",
+        "selectRegion": "Select Region",
+        "selectGovernorate": "Select Governorate",
+        "selectDelegation": "Select Delegation"
       }
     },
     "actions": {
@@ -535,6 +549,8 @@
       "collect": "Collect from Supplier",
       "validateTransfer": "Validate Transfer",
       "validateStubCollection": "Validate Stub Collection",
+      "selectAll": "Select All",
+      "deselectAll": "Deselect All",
       "aria": {
         "back": "Back to previous step",
         "initiate": "Initiate transfer of receipt books",
@@ -542,11 +558,14 @@
         "collect": "Collect books from supplier",
         "validateTransfer": "Validate transfer",
         "validateStubCollection": "Validate stub collection",
-        "removeBook": "Remove book {{number}}"
+        "removeBook": "Remove book {{number}}",
+        "selectAll": "Select all books",
+        "deselectAll": "Deselect all books"
       }
     },
     "types": {
-      "standard": "Standard"
+      "standard": "Standard",
+      "unknown": "Unknown Type"
     },
     "pagination": {
       "pageInfo": "Page {{currentPage}} of {{totalPages}}",
@@ -567,7 +586,10 @@
       "supplier": "Supplier",
       "archive": "Archive",
       "stubCollection": "Stub Collection",
-      "collectFromSupplier": "Collect from Supplier"
+      "collectFromSupplier": "Collect from Supplier",
+      "regionalManager": "Regional Manager",
+      "supervisor": "Supervisor",
+      "stockManager": "Stock Manager"
     },
     "errors": {
       "accessDenied": "Access Denied - Missing transfer_receipt_books permission",
@@ -595,7 +617,16 @@
       "agentNotFound": "No agent found with phone {{phone}}.",
       "userRoleMismatch": "User with phone {{phone}} does not have role {{recipientType}}.",
       "userNotFound": "No user found with phone {{phone}}.",
-      "fetchAgents": "Failed to fetch agents by location."
+      "fetchAgents": "Failed to fetch agents by location.",
+      "fetchDataFailed": "Failed to fetch initial data.",
+      "fetchUsersFailed": "Failed to fetch users.",
+      "loadRegionalManagers": "Failed to load regional managers.",
+      "loadSupervisors": "Failed to load supervisors.",
+      "loadAgents": "Failed to load agents.",
+      "loadGovernorates": "Failed to load governorates.",
+      "loadDelegations": "Failed to load delegations.",
+      "noAgentSelected": "Please select an agent.",
+      "unknown": "An unknown error occurred."
     }
   },
   "receiptBooks": {
@@ -628,10 +659,12 @@
     "sort": {
       "title": "Sort By",
       "ariaLabel": "Sort receipt books",
-      "fields": {
+      "field": {
         "number": "Number",
         "type": "Type",
-        "status": "Status"
+        "bookStatus": "Book Status",
+        "stubStatus": "Stub Status",
+        "holder": "Holder"
       },
       "order": {
         "asc": "Asc",

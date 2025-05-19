@@ -288,7 +288,6 @@ interface VisitCardProps {
 const VisitCard: React.FC<VisitCardProps> = ({
     visit,
     t,
-    users,
     isSupervisor,
     weekData,
     userPermissions,
