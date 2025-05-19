@@ -10,6 +10,8 @@ import {
   FaHistory,
   FaExchangeAlt,
   FaList,
+  FaUpload,
+  FaSyncAlt
 } from "react-icons/fa";
 import { useAuth } from "../../context/AuthContext";
 import {
@@ -29,6 +31,7 @@ import { getAgentById } from "../../apis/agentAPI";
 import { useTranslation } from "react-i18next";
 import { debounce } from "lodash";
 import { t } from "i18next";
+import ReceiptBookBulkUploadModal from "./ReceiptBookBulkUploadModal";
 import "./ReceiptBooks.css";
 import "../Admin/AdminDashboard.css";
 
@@ -354,7 +357,7 @@ const ReceiptBookTypesList: React.FC<{
               </div>
             ))
           ) : (
-            <div >
+            <div>
               <div className="table-cell">{t("receiptBooks.types.table.noData")}</div>
             </div>
           )}
@@ -515,7 +518,7 @@ const ReceiptBooks: React.FC = memo(() => {
     data: [],
     timestamp: 0,
   });
-  const [view, setView] = useState<"list" | "create" | "edit" | "types" | "createType" | "editType">("list");
+  const [view, setView] = useState<"list" | "create" | "edit" | "types" | "createType" | "editType" | "bulkUpload">("list");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortField, setSortField] = useState<"number" | "typeID" | "status">("number");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
@@ -534,6 +537,7 @@ const ReceiptBooks: React.FC = memo(() => {
     timestamp: 0,
   });
   const [formError, setFormError] = useState<string | null>(null);
+  const [isBulkUploadModalOpen, setIsBulkUploadModalOpen] = useState(false);
 
   const currentUserID = user?.userID;
 
@@ -1046,6 +1050,13 @@ const ReceiptBooks: React.FC = memo(() => {
   // Main render
   return (
     <div className="receipt-books" role="main">
+      {isBulkUploadModalOpen && (
+        <ReceiptBookBulkUploadModal
+          isOpen={isBulkUploadModalOpen}
+          onClose={() => setIsBulkUploadModalOpen(false)}
+          setError={setError}
+        />
+      )}
       <header className="dashboard-header">
         <h1>
           {view === "list"
@@ -1058,7 +1069,9 @@ const ReceiptBooks: React.FC = memo(() => {
                   ? t("receiptBooks.types.title.list")
                   : view === "createType"
                     ? t("receiptBooks.types.title.create")
-                    : t("receiptBooks.types.title.edit")}
+                    : view === "editType"
+                      ? t("receiptBooks.types.title.edit")
+                      : t("receiptBooks.bulkUpload.title")}
         </h1>
         {(view === "list" || view === "types") && (
           <div className="search-container">
@@ -1078,7 +1091,48 @@ const ReceiptBooks: React.FC = memo(() => {
 
       <section className="dashboard-content">
         <aside className="sidebar">
-          {(view === "list" || view === "create" || view === "edit") && (
+
+          <div className="filter-card">
+            <h3>{t("receiptBooks.sidebar.manager")}</h3>
+            {userPermissions.canCreate && (
+              <>
+                <button
+                  className="action-button-0"
+                  onClick={() => setView("create")}
+                  aria-label={t("receiptBooks.actions.aria.newReceipt")}
+                >
+                  <FaPlus aria-hidden="true" /> {t("receiptBooks.actions.newReceipt")}
+                </button>
+                <button
+                  className="action-button-0"
+                  onClick={() => setIsBulkUploadModalOpen(true)}
+                  aria-label={t("receiptBooks.actions.aria.importBooks")}
+                >
+                  <FaUpload aria-hidden="true" /> {t("receiptBooks.actions.importBooks")}
+                </button>
+              </>
+            )}
+            {userPermissions.canTransfer && (
+              <button
+                className="action-button-0"
+                onClick={handleTransfer}
+                aria-label={t("receiptBooks.actions.aria.transferBooks")}
+              >
+                <FaExchangeAlt aria-hidden="true" /> {t("receiptBooks.actions.transferBooks")}
+              </button>
+            )}
+
+            {userPermissions.canManageTypes && view === "types" && (
+              <button
+                className="action-button-0"
+                onClick={() => setView("createType")}
+                aria-label={t("receiptBooks.types.actions.aria.newType")}
+              >
+                <FaPlus aria-hidden="true" /> {t("receiptBooks.types.actions.newType")}
+              </button>
+            )}
+          </div>
+          {(view === "list" || view === "create" || view === "edit" || view === "bulkUpload") && (
             <>
               <div className="sort-card">
                 <h3>{t("receiptBooks.sort.title")}</h3>
@@ -1137,45 +1191,33 @@ const ReceiptBooks: React.FC = memo(() => {
               </div>
             </>
           )}
-          {userPermissions.canCreate && (
+          <div>
             <button
               className="action-button-0"
-              onClick={() => setView("create")}
-              aria-label={t("receiptBooks.actions.aria.newReceipt")}
+              onClick={() => {
+                setError(null);
+                setLoading(true);
+                setReceiptBooksCache({ data: [], timestamp: 0 }); // Reset cache to force refetch
+                setReceiptBookTypesCache({ data: [], timestamp: 0 }); // Reset types cache
+                setHoldersCache({ data: new Map(), timestamp: 0 }); // Reset holders cache
+              }}
+              aria-label={t("receiptBooks.actions.aria.refresh")}
             >
-              <FaPlus aria-hidden="true" /> {t("receiptBooks.actions.newReceipt")}
+              <FaSyncAlt aria-hidden="true" /> {t("receiptBooks.actions.refresh")}
             </button>
-          )}
-          {userPermissions.canTransfer && (
-            <button
-              className="action-button-0"
-              onClick={handleTransfer}
-              aria-label={t("receiptBooks.actions.aria.transferBooks")}
-            >
-              <FaExchangeAlt aria-hidden="true" /> {t("receiptBooks.actions.transferBooks")}
-            </button>
-          )}
-          {userPermissions.canViewTypes && (
-            <button
-              className="action-button-0"
-              onClick={() => setView(view === "types" ? "list" : "types")}
-              aria-label={t(
-                view === "types" ? "receiptBooks.actions.aria.viewBooks" : "receiptBooks.actions.aria.viewTypes"
-              )}
-            >
-              <FaList aria-hidden="true" />{" "}
-              {t(view === "types" ? "receiptBooks.actions.viewBooks" : "receiptBooks.actions.viewTypes")}
-            </button>
-          )}
-          {userPermissions.canManageTypes && view === "types" && (
-            <button
-              className="action-button-0"
-              onClick={() => setView("createType")}
-              aria-label={t("receiptBooks.types.actions.aria.newType")}
-            >
-              <FaPlus aria-hidden="true" /> {t("receiptBooks.types.actions.newType")}
-            </button>
-          )}
+            {userPermissions.canViewTypes && (
+              <button
+                className="action-button-0"
+                onClick={() => setView(view === "types" ? "list" : "types")}
+                aria-label={t(
+                  view === "types" ? "receiptBooks.actions.aria.viewBooks" : "receiptBooks.actions.aria.viewTypes"
+                )}
+              >
+                <FaList aria-hidden="true" />{" "}
+                {t(view === "types" ? "receiptBooks.actions.viewBooks" : "receiptBooks.actions.viewTypes")}
+              </button>
+            )}
+          </div>
         </aside>
 
         <main className="main-content">
@@ -1192,7 +1234,7 @@ const ReceiptBooks: React.FC = memo(() => {
                       setLoading(true);
                       setReceiptBooksCache({ data: [], timestamp: 0 }); // Reset cache to force refetch
                     }}
-                    className="action-button-0"
+                    className="action-button-2"
                     aria-label={t("receiptBooks.actions.aria.retry")}
                   >
                     {t("receiptBooks.actions.retry")}
@@ -1277,7 +1319,7 @@ const ReceiptBooks: React.FC = memo(() => {
                       setTypesLoading(true);
                       setReceiptBookTypesCache({ data: [], timestamp: 0 }); // Reset cache to force refetch
                     }}
-                    className="action-button-0"
+                    className="action-button-2"
                     aria-label={t("receiptBooks.types.actions.aria.retry")}
                   >
                     {t("receiptBooks.types.actions.retry")}

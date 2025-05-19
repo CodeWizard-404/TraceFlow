@@ -3,10 +3,10 @@ const CsvHeader = require('../models').CsvHeader;
 class CsvHeaderService {
     /**
      * Get all CSV header mappings for a given CSV type.
-     * @param {string} csvType - Type of CSV (e.g., 'agent').
+     * @param {string} csvType - Type of CSV (e.g., 'agent', 'receipt_book').
      * @returns {Promise<Array>} List of header mappings.
      */
-    static async getHeaders(csvType = 'agent') {
+    static async getHeaders(csvType) {
         try {
             const headers = await CsvHeader.findAll({
                 where: { csvType },
@@ -14,13 +14,14 @@ class CsvHeaderService {
             });
             return headers || [];
         } catch (error) {
+            console.error(`Failed to fetch headers for csvType ${csvType}:`, error);
             return [];
         }
     }
 
     /**
      * Update or create CSV header mappings for a given CSV type.
-     * @param {string} csvType - Type of CSV (e.g., 'agent').
+     * @param {string} csvType - Type of CSV (e.g., 'agent', 'receipt_book').
      * @param {Array} headers - Array of { expectedHeader, mappedHeader } objects.
      * @param {string} actorID - ID of the user performing the action.
      * @returns {Promise<Object>} Success message or error response.
@@ -44,10 +45,19 @@ class CsvHeaderService {
                 return { success: false, message: 'Expected headers must be non-empty strings' };
             }
 
-            // Validate expected headers
-            const validExpectedHeaders = ['name', 'lastname', 'phone', 'email', 'delegation', 'supervisor_phone', 'governorate', 'lat', 'lng'];
+            // Define valid expected headers based on csvType
+            const validExpectedHeaders = csvType === 'receipt_book'
+                ? ['number', 'type', 'status']
+                : ['name', 'lastname', 'phone', 'email', 'delegation', 'supervisor_phone', 'governorate', 'lat', 'lng'];
+
             if (headers.some(h => !validExpectedHeaders.includes(h.expectedHeader))) {
-                return { success: false, message: `Invalid expected headers: ${headers.filter(h => !validExpectedHeaders.includes(h.expectedHeader)).map(h => h.expectedHeader).join(', ')}` };
+                return {
+                    success: false,
+                    message: `Invalid expected headers for ${csvType}: ${headers
+                        .filter(h => !validExpectedHeaders.includes(h.expectedHeader))
+                        .map(h => h.expectedHeader)
+                        .join(', ')}`
+                };
             }
 
             const existingHeaders = await CsvHeader.findAll({
@@ -80,7 +90,7 @@ class CsvHeaderService {
             return { success: true, message: 'Headers updated successfully' };
         } catch (error) {
             await transaction.rollback();
-            console.error('Failed to update headers:', error);
+            console.error(`Failed to update headers for csvType ${csvType}:`, error);
             return { success: false, message: `Unable to update headers: ${error.message}` };
         }
     }

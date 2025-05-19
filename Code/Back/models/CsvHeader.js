@@ -12,7 +12,7 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: false,
             defaultValue: 'agent',
             validate: {
-                isIn: [['agent']],
+                isIn: [['agent', 'receipt_book']],
             },
         },
         expectedHeader: {

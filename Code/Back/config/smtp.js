@@ -55,7 +55,7 @@ async function loadEmailTemplate(templateName, replacements = {}) {
 }
 
 // Send an email with a specified template or default template
-async function sendEmail({ to, subject, templateName, replacements = {}, textFallback = '' }) {
+async function sendEmail({ to, subject, templateName, replacements = {}, textFallback = '', attachments = [] }) {
     try {
         // Validate inputs
         if (typeof textFallback !== 'string') {
@@ -92,24 +92,33 @@ async function sendEmail({ to, subject, templateName, replacements = {}, textFal
             });
         }
 
-        await transporter.sendMail({
+        const mailOptions = {
             from: process.env.SMTP_USER,
             to,
             subject,
             html: htmlContent,
             text: textFallback,
-        });
+        };
 
-        logger.info(`Email sent successfully to ${to}`, {
+        // Add attachments if provided
+        if (attachments.length > 0) {
+            mailOptions.attachments = attachments;
+        }
+
+        await transporter.sendMail(mailOptions);
+
+        logger.info(`Email sent successfully to ${to} with ${attachments.length} attachments`, {
             route: 'smtp',
             service: 'email',
             subject,
+            attachmentCount: attachments.length,
         });
     } catch (error) {
         logger.error(`Failed to send email to ${to}`, {
             route: 'smtp',
             service: 'email',
             message: error.message,
+            attachmentCount: attachments.length,
         });
         throw error;
     }

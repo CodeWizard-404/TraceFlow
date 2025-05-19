@@ -3,8 +3,6 @@ const router = express.Router();
 const { requirePermission } = require('../config/security');
 const AgentController = require('../controllers/agentController');
 const multer = require('multer');
-
-// Configure multer for file uploads
 const upload = multer({ storage: multer.memoryStorage() });
 
 // Other agent-related routes

@@ -254,6 +254,7 @@ class NotificationService {
 
             if (channel === 'in-app' && preferences.inApp) {
                 await this.updateNotificationStatus(notification.notificationID, 'sent');
+                await this.sendWebSocketNotification('notification:created', { data: notification }, [], [userID]);
             }
 
             return notification;

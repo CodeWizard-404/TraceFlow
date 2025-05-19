@@ -926,6 +926,79 @@ class ReceiptBookController {
             return res.status(error.status || 400).json({ error: error.message || 'Failed to delete receipt book' });
         }
     }
+
+
+
+    /**
+ * Upload and process a CSV file to create receipt books in bulk.
+ * @param {Object} req - Express request object with CSV file in req.file.
+ * @param {Object} res - Express response object.
+ * @returns {Promise<void>} JSON response with processing results or error.
+ */
+    static async uploadReceiptBooksCSV(req, res) {
+        const actorID = req.user?.userID || 'unknown';
+        try {
+            if (!req.file) {
+                logger.warn('Upload receipt books CSV failed: No file uploaded', {
+                    route: 'receipt-books/upload-csv',
+                    method: req.method,
+                    url: req.originalUrl,
+                    status: 400,
+                    ip: req.ip,
+                    traceId: req.traceId,
+                    userId: actorID,
+                    metadata: {}
+                });
+                return res.status(400).json({ error: 'CSV file is required' });
+            }
+
+            const result = await ReceiptBookService.processReceiptBookCSV(req.file.buffer, actorID);
+
+            // Trigger notification for successful uploads
+            if (result.summary.booksCreated > 0) {
+                await NotificationService.triggerNotification({
+                    event: 'receipt_book:bulk_created',
+                    data: {
+                        totalBooks: result.summary.booksCreated,
+                        actorID
+                    },
+                    metadata: { createdBy: req.user.email }
+                });
+            }
+
+            logger.info('Successfully processed receipt books CSV', {
+                route: 'receipt-books/upload-csv',
+                method: req.method,
+                url: req.originalUrl,
+                status: 200,
+                ip: req.ip,
+                traceId: req.traceId,
+                userId: actorID,
+                metadata: {
+                    totalRecords: result.summary.totalRecords,
+                    booksCreated: result.summary.booksCreated,
+                    recordsSkipped: result.summary.recordsSkipped,
+                    errorsEncountered: result.summary.errorsEncountered
+                }
+            });
+
+            return res.status(200).json(result);
+        } catch (error) {
+            logger.error('Failed to process receipt books CSV', {
+                route: 'receipt-books/upload-csv',
+                method: req.method,
+                url: req.originalUrl,
+                status: error.status || 500,
+                ip: req.ip,
+                traceId: req.traceId,
+                userId: actorID,
+                metadata: { error: error.message }
+            });
+            return res.status(error.status || 500).json({
+                error: error.message || 'Failed to process receipt books CSV'
+            });
+        }
+    }
 }
 
 module.exports = ReceiptBookController;

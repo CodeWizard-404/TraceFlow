@@ -11,6 +11,7 @@ import {
     ValidateTransferResponse,
     TransferHistoryResponse,
     ReceiveFromSupplierResponse,
+    ReceiptBookBulkUploadResponse,
 } from ".";
 import ReceiptBook from "../models/ReceiptBook";
 import ReceiptBookType from "models/ReceiptBookType";
@@ -260,5 +261,23 @@ export const deleteReceiptBookType = async (typeID: string): Promise<void> => {
         await api.delete(`/receipt-books/types/${typeID}`);
     } catch (error) {
         throw new Error(handleApiError(error, 'Failed to delete receipt book type'));
+    }
+};
+
+
+// Upload receipt books via CSV
+export const uploadReceiptBooks = async (file: File): Promise<ReceiptBookBulkUploadResponse> => {
+    try {
+        if (!file) {
+            throw new Error('CSV file is required.');
+        }
+        const formData = new FormData();
+        formData.append('csvFile', file);
+        const response = await api.post<ReceiptBookBulkUploadResponse>('/receipt-books/upload-csv', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        return response.data;
+    } catch (error) {
+        throw new Error(handleApiError(error, 'Unable to upload receipt books CSV.'));
     }
 };

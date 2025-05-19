@@ -108,6 +108,36 @@ export type TransferHistoryResponse = ReceiptBookTransfer[];
 export type TransferResponse = { message: string };
 export type UpdateReceiptBookResponse = ReceiptBook;
 export type ValidateTransferResponse = ReceiptBook;
+export interface ReceiptBookBulkUploadResponse {
+    status: 'pending' | 'completed_successfully' | 'completed_with_issues' | 'failed';
+    summary: {
+        totalRecords: number;
+        booksCreated: number;
+        recordsSkipped: number;
+        errorsEncountered: number;
+    };
+    detailedLog: {
+        created: Array<{
+            bookNumber: string;
+            bookType: string;
+            timestamp: string;
+            details: string;
+        }>;
+        skipped: Array<{
+            bookNumber: string;
+            bookType: string;
+            timestamp: string;
+            reason: string;
+        }>;
+        errors: Array<{
+            bookNumber: string;
+            bookType: string;
+            timestamp: string;
+            operation: string;
+            reason: string;
+        }>;
+    };
+}
 
 // Receipt Stub Routes
 export type ArchiveStubResponse = ReceiptStub;

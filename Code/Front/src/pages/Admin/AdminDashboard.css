@@ -2095,7 +2095,7 @@ body.dark .supervisor-toggle-button:hover:not(.active) {
     margin-bottom: 15px;
     max-width: 500px;
     position: fixed;
-    top: -5rem;
+    top: 0rem;
     left: 50%;
     transform: translateX(-50%);
     z-index: 1000;
@@ -6036,7 +6036,7 @@ body.dark label {
 /* Error text styling */
 .error-text,
 .error-message {
-    color: #e81f76;
+    color: #fff;
     font-size: 0.75rem;
     margin-top: 0.25rem;
     display: block;
@@ -6044,7 +6044,7 @@ body.dark label {
 
 body.dark .error-text,
 body.dark .error-message {
-    color: #e81f76;
+    color: #fff;
 }
 
 /* Responsive Design */

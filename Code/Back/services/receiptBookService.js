@@ -1,9 +1,15 @@
 const { sendSMS } = require('../config/sms');
 const { sendEmail } = require('../config/smtp');
-const { ReceiptBook, User, Agent, OTP, ReceiptBookTransfer, ReceiptStub, Role, ReceiptBookType } = require('../models');
+const { ReceiptBook, User, Agent, ReceiptBookTransfer, ReceiptStub, Role, ReceiptBookType } = require('../models');
 const OTPService = require('../services/otpService');
 const QRGenerator = require('../utils/qrGenerator');
-
+const csv = require('csv-parse');
+const { Readable } = require('stream');
+const { Op } = require('sequelize');
+const iconv = require('iconv-lite');
+const CsvHeader = require('../models').CsvHeader;
+const archiver = require('archiver');
+const { stringify } = require('csv-stringify');
 
 class ReceiptBookService {
     // --- Type Management Methods ---
@@ -73,25 +79,28 @@ class ReceiptBookService {
     }
 
     // --- Receipt Book Methods ---
-    static async createReceiptBook(number, typeID, purchaseUserID) {
+    static async createReceiptBook(number, typeID, purchaseUserID, options = {}) {
         try {
-            const type = await ReceiptBookType.findByPk(typeID);
+            const type = await ReceiptBookType.findByPk(typeID, options);
             if (!type) {
                 const error = new Error('Invalid receipt book type');
                 error.status = 400;
                 throw error;
             }
             const qrCode = await QRGenerator.generateReceiptBookQR(number, type.name);
-            const book = await ReceiptBook.create({
-                number,
-                typeID,
-                qrCode,
-                status: 'In Stock',
-                currentHolderID: purchaseUserID,
-            });
+            const book = await ReceiptBook.create(
+                {
+                    number,
+                    typeID,
+                    qrCode,
+                    status: 'In Stock',
+                    currentHolderID: purchaseUserID,
+                },
+                options
+            );
 
-            await ReceiptStub.create({ bookID: book.bookID, status: 'pending' });
-            await this.logTransfer(book.bookID, purchaseUserID, null, 'Pending', 'ToSupplier');
+            await ReceiptStub.create({ bookID: book.bookID, status: 'pending' }, options);
+            await this.logTransfer(book.bookID, purchaseUserID, null, 'Pending', 'ToSupplier', 'toUserID', options);
 
             return book;
         } catch (error) {
@@ -332,47 +341,149 @@ class ReceiptBookService {
 
     // --- Receipt Book Transfer ---
 
+
+
+
+
     static async sendToSupplier(bookIDs, supplierEmail, userID) {
         try {
-            const books = await ReceiptBook.findAll({
-                where: { bookID: bookIDs, status: 'In Stock', currentHolderID: userID },
-                include: [{ model: ReceiptBookType, attributes: ['name'] }],
-            });
+            const batchSize = 1000; // Process books in batches of 1000
+            const books = [];
+            for (let i = 0; i < bookIDs.length; i += batchSize) {
+                const batchIDs = bookIDs.slice(i, i + batchSize);
+                const batchBooks = await ReceiptBook.findAll({
+                    where: { bookID: batchIDs, status: 'In Stock', currentHolderID: userID },
+                    include: [{ model: ReceiptBookType, attributes: ['name'] }],
+                });
+                books.push(...batchBooks);
+            }
+
             if (books.length !== bookIDs.length) {
                 const error = new Error('Some books are not in stock or not held by you');
                 error.status = 400;
                 throw error;
             }
 
-            await Promise.all(
-                books.map(async book => {
-                    const pendingTransfer = await ReceiptBookTransfer.findOne({
-                        where: { bookID: book.bookID, transferType: 'ToSupplier', status: 'Pending' },
-                    });
-                    if (pendingTransfer) {
-                        await pendingTransfer.update({ status: 'Validated', transferDate: new Date() });
-                    } else {
-                        await this.logTransfer(book.bookID, userID, null, 'Validated', 'ToSupplier');
-                    }
-                    await book.update({ status: 'Sent to Supplier', currentHolderID: null, supplierSentAt: new Date() });
-                })
-            );
+            // Generate preview table (first 10 books)
+            const previewBooks = books.slice(0, 10);
+            const tableRows = previewBooks.map(b => `
+            <tr>
+                <td>${b.number}</td>
+                <td>${b.ReceiptBookType.name}</td>
+            </tr>
+        `).join('');
+            const receiptBooksTable = `
+            <table>
+                <thead>
+                    <tr>
+                        <th>Book Number</th>
+                        <th>Type</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${tableRows}
+                </tbody>
+            </table>
+        `;
 
-            const table = books.map(b => `${b.number} | ${b.ReceiptBookType.name}`).join('\n');
+            // Summarize book types
+            const typeCounts = books.reduce((acc, b) => {
+                const type = b.ReceiptBookType.name;
+                acc[type] = (acc[type] || 0) + 1;
+                return acc;
+            }, {});
+            const bookTypes = Object.entries(typeCounts)
+                .map(([type, count]) => `${type} (${count})`)
+                .join(', ');
+
+            // Generate CSV content
+            const csvData = books.map(b => ({
+                number: b.number,
+                type: b.ReceiptBookType.name,
+            }));
+            const csvContent = await new Promise((resolve, reject) => {
+                stringify(csvData, { header: true, columns: ['number', 'type'] }, (err, output) => {
+                    if (err) reject(err);
+                    else resolve(output);
+                });
+            });
+            const csvStream = Readable.from(csvContent);
+
+            // Generate ZIP file for QR codes
+            const archive = archiver('zip', { zlib: { level: 9 } });
+            const zipBuffers = [];
+            archive.on('data', chunk => zipBuffers.push(chunk));
+            archive.on('error', err => { throw err; });
+
+            books.forEach(b => {
+                archive.append(b.qrCode, { name: `${b.number}.png` });
+            });
+            archive.finalize();
+
+            const zipBuffer = await new Promise((resolve, reject) => {
+                archive.on('end', () => resolve(Buffer.concat(zipBuffers)));
+                archive.on('error', reject);
+            });
+
+            // Update books and log transfers in batches
+            const transaction = await ReceiptBook.sequelize.transaction();
+            try {
+                for (let i = 0; i < books.length; i += batchSize) {
+                    const batchBooks = books.slice(i, i + batchSize);
+                    await Promise.all(
+                        batchBooks.map(async book => {
+                            const pendingTransfer = await ReceiptBookTransfer.findOne({
+                                where: { bookID: book.bookID, transferType: 'ToSupplier', status: 'Pending' },
+                                transaction,
+                            });
+                            if (pendingTransfer) {
+                                await pendingTransfer.update({ status: 'Validated', transferDate: new Date() }, { transaction });
+                            } else {
+                                await this.logTransfer(book.bookID, userID, null, 'Validated', 'ToSupplier', null, { transaction });
+                            }
+                            await book.update(
+                                { status: 'Sent to Supplier', currentHolderID: null, supplierSentAt: new Date() },
+                                { transaction }
+                            );
+                        })
+                    );
+                }
+                await transaction.commit();
+            } catch (error) {
+                await transaction.rollback();
+                throw error;
+            }
+
+            // Send email with attachments
             await sendEmail({
                 to: supplierEmail,
-                subject: 'Receipt Books Sent',
-                templateName: 'default',
+                subject: 'Receipt Books Sent for Printing',
+                templateName: 'supplier_receipt_books',
                 replacements: {
-                    firstname: 'Supplier',
-                    content: `The following receipt books have been sent:\n${table}`,
+                    supplierName: 'Supplier', // Replace with actual supplier name if available
+                    totalBooks: books.length,
+                    bookTypes,
+                    receiptBooksTable,
+                    logoUrl: process.env.LOGO_URL || 'http://localhost:5000/logo/Logo.png',
+                    signatureLogoUrl: process.env.SIGNATURE_LOGO_URL || 'http://localhost:5000/logo/Banner-bd.png',
+                    platformUrl: process.env.PLATFORM_URL || 'http://localhost:5000',
+                    supportEmail: process.env.SUPPORT_EMAIL || 'support@traceflow.com',
                 },
-                textFallback: `The following receipt books have been sent:\n${table}`,
-                attachments: books.map(b => ({
-                    filename: `${b.number}.png`,
-                    content: b.qrCode,
-                    encoding: 'binary',
-                })),
+                textFallback: `The following receipt books have been sent for printing (${books.length} total):\n${books
+                    .map(b => `${b.number} | ${b.ReceiptBookType.name}`)
+                    .join('\n')}\n\nSee attachments for full list and QR codes.`,
+                attachments: [
+                    {
+                        filename: 'receipt_books.csv',
+                        content: csvStream,
+                        encoding: 'utf8',
+                    },
+                    {
+                        filename: 'qr_codes.zip',
+                        content: zipBuffer,
+                        encoding: 'binary',
+                    },
+                ],
             });
 
             return { message: `${books.length} books sent to supplier` };
@@ -533,12 +644,12 @@ class ReceiptBookService {
         }
     }
 
-    static async logTransfer(bookID, fromID, toID, status, transferType, toField = 'toUserID') {
+    static async logTransfer(bookID, fromID, toID, status, transferType, toField = 'toUserID', options = {}) {
         try {
             const transferData = { bookID, status, transferType };
             if (fromID) transferData.fromUserID = fromID;
             if (toID) transferData[toField] = toID;
-            return await ReceiptBookTransfer.create(transferData);
+            return await ReceiptBookTransfer.create(transferData, options);
         } catch (error) {
             throw new Error('Failed to log transfer: ' + error.message);
         }
@@ -634,6 +745,199 @@ class ReceiptBookService {
         } catch (error) {
             throw new Error('Failed to determine transfer details: ' + error.message);
         }
+    }
+
+
+
+
+    /**
+ * Process receipt book CSV file.
+ * @param {Buffer} fileBuffer - Uploaded CSV file buffer.
+ * @param {string} actorID - ID of the user performing the action.
+ * @returns {Promise<Object>} Detailed processing results.
+ */
+    static async processReceiptBookCSV(fileBuffer, actorID) {
+        const results = {
+            status: 'pending',
+            summary: {
+                totalRecords: 0,
+                booksCreated: 0,
+                recordsSkipped: 0,
+                errorsEncountered: 0,
+            },
+            detailedLog: {
+                created: [],
+                skipped: [],
+                errors: [],
+            },
+        };
+
+        // Decode buffer with fallback encoding
+        let bufferString;
+        try {
+            bufferString = fileBuffer.toString(process.env.CSV_ENCODING || 'utf8');
+            if (bufferString.includes('\uFFFD')) {
+                bufferString = iconv.decode(fileBuffer, process.env.CSV_FALLBACK_ENCODING || 'win1252');
+            }
+        } catch (error) {
+            try {
+                bufferString = iconv.decode(fileBuffer, process.env.CSV_FALLBACK_ENCODING || 'win1252');
+            } catch (fallbackError) {
+                results.detailedLog.errors.push({
+                    bookNumber: 'N/A',
+                    bookType: 'N/A',
+                    timestamp: new Date().toISOString(),
+                    operation: 'CSV parsing',
+                    reason: `Failed to decode buffer: ${fallbackError.message}`,
+                });
+                results.summary.errorsEncountered++;
+                return results;
+            }
+        }
+
+        // Fetch header mappings
+        const headerMappings = await CsvHeader.findAll({ where: { csvType: 'receipt_book' } });
+        const headerMap = headerMappings.reduce((map, header) => {
+            map[header.mappedHeader] = header.expectedHeader;
+            return map;
+        }, {});
+
+        // Extract and validate CSV headers
+        const firstLine = bufferString.split('\n')[0].trim();
+        if (!firstLine) {
+            results.detailedLog.errors.push({
+                bookNumber: 'N/A',
+                bookType: 'N/A',
+                timestamp: new Date().toISOString(),
+                operation: 'CSV parsing',
+                reason: 'CSV file is empty or has no headers',
+            });
+            results.summary.errorsEncountered++;
+            return results;
+        }
+        const csvHeaders = firstLine.split(',').map(h => h.trim()).filter(h => h);
+
+        // Validate mandatory headers
+        const mandatoryHeaders = ['number', 'type'];
+        const missingMandatory = mandatoryHeaders.filter(h => {
+            const mapping = headerMappings.find(m => m.expectedHeader === h);
+            return !mapping || !csvHeaders.includes(mapping.mappedHeader);
+        });
+        if (missingMandatory.length > 0) {
+            results.detailedLog.errors.push({
+                bookNumber: 'N/A',
+                bookType: 'N/A',
+                timestamp: new Date().toISOString(),
+                operation: 'Header validation',
+                reason: `Missing required headers: ${missingMandatory.join(', ')}`,
+            });
+            results.summary.errorsEncountered++;
+            return results;
+        }
+
+        // Parse CSV with dynamic column mapping
+        const parser = Readable.from(bufferString).pipe(
+            csv.parse({
+                columns: header => header.map(h => headerMap[h] || h),
+                skip_empty_lines: true,
+                trim: true,
+                bom: true,
+                delimiter: process.env.CSV_DELIMITER || ',',
+                quote: process.env.CSV_QUOTE || '"',
+            })
+        );
+
+        for await (const record of parser) {
+            results.summary.totalRecords++;
+            const { number, type } = record;
+
+            // Validate required fields
+            if (!number || !type) {
+                results.detailedLog.skipped.push({
+                    bookNumber: number || 'N/A',
+                    bookType: type || 'N/A',
+                    timestamp: new Date().toISOString(),
+                    reason: `Missing required fields: ${!number ? 'number' : ''} ${!type ? 'type' : ''}`.trim(),
+                });
+                results.summary.recordsSkipped++;
+                continue;
+            }
+
+            const transaction = await ReceiptBook.sequelize.transaction();
+            try {
+                // Validate book number format (example: alphanumeric, 1-50 characters)
+                if (!/^[a-zA-Z0-9]{1,50}$/.test(number)) {
+                    results.detailedLog.skipped.push({
+                        bookNumber: number,
+                        bookType: type,
+                        timestamp: new Date().toISOString(),
+                        reason: 'Invalid book number format: must be 1-50 alphanumeric characters',
+                    });
+                    results.summary.recordsSkipped++;
+                    await transaction.rollback();
+                    continue;
+                }
+
+                // Check for duplicate book number
+                const existingBook = await ReceiptBook.findOne({ where: { number }, transaction });
+                if (existingBook) {
+                    results.detailedLog.skipped.push({
+                        bookNumber: number,
+                        bookType: type,
+                        timestamp: new Date().toISOString(),
+                        reason: `Book number '${number}' already exists`,
+                    });
+                    results.summary.recordsSkipped++;
+                    await transaction.rollback();
+                    continue;
+                }
+
+                // Find or create receipt book type
+                let bookType = await ReceiptBookType.findOne({
+                    where: { name: { [Op.iLike]: type } },
+                    transaction,
+                });
+                if (!bookType) {
+                    bookType = await ReceiptBookType.create(
+                        { name: type },
+                        { transaction }
+                    );
+                }
+
+                // Create receipt book
+                const book = await this.createReceiptBook(number, bookType.typeID, actorID, { transaction });
+
+                results.detailedLog.created.push({
+                    bookNumber: number,
+                    bookType: type,
+                    timestamp: new Date().toISOString(),
+                    details: `Receipt book created with number '${number}' and type '${type}'`,
+                });
+                results.summary.booksCreated++;
+
+                await transaction.commit();
+            } catch (error) {
+                await transaction.rollback();
+                results.detailedLog.errors.push({
+                    bookNumber: number || 'N/A',
+                    bookType: type || 'N/A',
+                    timestamp: new Date().toISOString(),
+                    operation: 'Record processing',
+                    reason: `Failed to process record: ${error.message}`,
+                });
+                results.summary.errorsEncountered++;
+            }
+        }
+
+        // Determine overall status
+        results.status =
+            results.summary.errorsEncountered === 0 && results.summary.recordsSkipped === 0
+                ? 'completed_successfully'
+                : results.summary.booksCreated > 0
+                    ? 'completed_with_issues'
+                    : 'failed';
+
+        return results;
     }
 }
 

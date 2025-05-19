@@ -1,7 +1,7 @@
 const { makeOllamaApiCall } = require('../utils/apiClient');
 const { initializeAI } = require('../config/ai');
 const { AIConfig, User, Agent, Reason, Checklist, Delegation } = require('../models');
-const GoogleMapsService = require('./GoogleMapsService');
+const GoogleMapsService = require('./googleMapsService');
 const { Op } = require('sequelize');
 const NodeCache = require('node-cache');
 

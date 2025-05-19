@@ -602,7 +602,11 @@
     "title": {
       "list": "Receipt Books",
       "create": "Create",
-      "edit": "Edit"
+      "edit": "Edit",
+      "bulkUpload": "Bulk Upload Receipt Books"
+    },
+    "sidebar": {
+      "manager": "Manage"
     },
     "loading": "Loading...",
     "form": {
@@ -677,17 +681,23 @@
         "viewBooks": "View receipt books list",
         "viewTypes": "View receipt book types list",
         "newReceipt": "Create a new receipt book",
-        "transferBooks": "Transfer receipt books"
+        "transferBooks": "Transfer receipt books",
+        "importBooks": "Import receipt books via CSV",
+        "refresh": "Refresh receipt books list"
       },
+      "refresh": "Refresh",
       "viewBooks": "View Books",
       "viewTypes": "View Types",
       "retry": "Retry",
       "newReceipt": "New Receipt",
-      "transferBooks": "Transfer Books",
+      "transferBooks": "Transfer",
+      "importBooks": "Import Books",
       "create": "Create",
       "save": "Save",
       "cancel": "Cancel",
-      "deleteConfirm": "Are you sure?"
+      "deleteConfirm": "Are you sure?",
+      "uploading": "Uploading",
+      "saving": "Saving"
     },
     "errors": {
       "requiredFields": "Please fill in all required fields.",
@@ -696,7 +706,24 @@
       "updateFailed": "Failed to update receipt book: {message}",
       "deleteFailed": "Failed to delete receipt book: {error}",
       "fetchFailed": "Failed to fetch receipt books.",
-      "unknown": "An unknown error occurred."
+      "unknown": "An unknown error occurred.",
+      "fetchHeadersFailed": "Failed to fetch CSV header mappings.",
+      "saveHeadersFailed": "Failed to save CSV header mappings.",
+      "emptyCSV": "The CSV file is empty.",
+      "noHeaders": "No headers found in the CSV file.",
+      "invalidCSVFormat": "Invalid CSV format.",
+      "invalidFileType": "Please upload a valid CSV file.",
+      "fileTooLarge": "File size exceeds 5MB limit.",
+      "fileReadError": "Error reading the file.",
+      "noFileSelected": "No file selected.",
+      "invalidCSVBeforeUpload": "Please fix CSV header mappings before uploading.",
+      "uploadFailed": "Failed to upload receipt books.",
+      "emptyHeaders": "All header fields must be filled.",
+      "duplicateExpectedHeaders": "Duplicate system headers are not allowed.",
+      "duplicateHeaders": "Duplicate CSV headers are not allowed.",
+      "unmappedMandatoryBackendHeaders": "Mandatory headers missing: {{headers}}",
+      "invalidMappedHeaders": "Invalid CSV headers: {{headers}}",
+      "validationFailedAfterSave": "CSV validation failed after saving headers."
     },
     "types": {
       "title": {
@@ -745,6 +772,36 @@
         "deleteFailed": "Failed to delete receipt book type: {{message}}",
         "fetchFailed": "Failed to fetch receipt book types."
       }
+    },
+    "bulkUpload": {
+      "title": "Bulk Upload Receipt Books",
+      "requiredHeaders": "Required Headers",
+      "optionalHeaders": "Optional Headers",
+      "none": "None",
+      "selectCSV": "Select CSV File",
+      "editHeaders": "Edit Headers",
+      "addHeader": "Add Header",
+      "mappingInstructions": "Map CSV headers to system fields",
+      "mismatchWarning": "Header mismatch detected. Please map headers correctly.",
+      "required": "Required",
+      "remove": "Remove",
+      "selectSystemHeader": "Select System Header",
+      "selectHeader": "Select CSV Header",
+      "systemHeader": "System Header",
+      "csvHeader": "CSV Header",
+      "actions": "Actions",
+      "upload": "Upload",
+      "uploadResults": "Upload Results",
+      "totalRecords": "Total Records: {{count}}",
+      "created": "Created: {{count}}",
+      "updated": "Updated: {{count}}",
+      "skipped": "Skipped: {{count}}",
+      "skippedRecords": "Skipped Records",
+      "skipReason": "Reason",
+      "errors": "Errors",
+      "unknownOperation": "Unknown Operation",
+      "selectedFile": "Selected File: {{fileName}}",
+      "fileHeaders": "File Headers: {{headers}}"
     }
   },
   "receiptBookHistory": {
