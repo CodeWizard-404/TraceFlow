@@ -3,12 +3,13 @@
  * Component for managing notification preferences with filtering and sorting.
  * Displays only rules assigned to the user (by role or userID) and disables editing for high-priority rules.
  */
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../../context/AuthContext";
 import { getNotificationRules, updateNotificationPreferences } from "../../../apis/notificationAPI";
 import { useProfile } from "./useProfile";
 import { FaFilter, FaSort } from "react-icons/fa";
 import NotificationRule from "../../../models/NotificationRule";
+import NotificationPreference from "../../../models/NotificationPreference";
 
 const NotificationPreferences: React.FC = React.memo(() => {
     const { user } = useAuth();
@@ -31,6 +32,8 @@ const NotificationPreferences: React.FC = React.memo(() => {
     const [notificationRules, setNotificationRules] = useState<NotificationRule[]>([]);
     const [showPrefTypeFilter, setShowPrefTypeFilter] = useState(false);
     const [showPrefSortPanel, setShowPrefSortPanel] = useState(false);
+    const [originalPrefs, setOriginalPrefs] = useState<NotificationPreference['preferences']>({});
+    const [hasChanges, setHasChanges] = useState(false);
 
     console.debug("NotificationPreferences component mounted", {
         notificationView,
@@ -71,6 +74,16 @@ const NotificationPreferences: React.FC = React.memo(() => {
                 });
 
                 setNotificationRules(userRules);
+                // Initialize original preferences
+                const initialPrefs: NotificationPreference['preferences'] = {};
+                userRules.forEach(rule => {
+                    initialPrefs[rule.event] = {
+                        email: rule.channels.email,
+                        sms: rule.channels.sms,
+                        inApp: rule.channels.inApp,
+                    };
+                });
+                setOriginalPrefs(initialPrefs);
             } catch (error) {
                 setNotificationError("Failed to fetch notification rules");
                 console.error("Error fetching notification rules:", {
@@ -82,6 +95,18 @@ const NotificationPreferences: React.FC = React.memo(() => {
 
         fetchRules();
     }, [user, setNotificationError]);
+
+    // Track changes to notification preferences
+    useEffect(() => {
+        const hasPrefsChanged = Object.keys(notificationPrefs).some(event => {
+            if (!originalPrefs[event]) return true;
+            return Object.keys(notificationPrefs[event]).some(channel =>
+                notificationPrefs[event][channel as keyof typeof notificationPrefs[typeof event]] !==
+                originalPrefs[event][channel as keyof typeof originalPrefs[typeof event]]
+            );
+        });
+        setHasChanges(hasPrefsChanged);
+    }, [notificationPrefs, originalPrefs]);
 
     // Debug groupedPreferences and notificationPrefs
     useEffect(() => {
@@ -98,7 +123,7 @@ const NotificationPreferences: React.FC = React.memo(() => {
         });
     }, [groupedPreferences, notificationPrefs]);
 
-    const handlePreferenceChange = (event: string, channel: "email" | "sms" | "inApp") => {
+    const handlePreferenceChange = useCallback((event: string, channel: "email" | "sms" | "inApp") => {
         const rule = notificationRules.find(r => r.event === event);
         if (rule?.priority === "high") {
             console.debug("Blocked preference change for high-priority rule", {
@@ -117,9 +142,9 @@ const NotificationPreferences: React.FC = React.memo(() => {
                 [channel]: !prev[event][channel],
             },
         }));
-    };
+    }, [notificationRules, setNotificationPrefs]);
 
-    const handleSavePreferences = async () => {
+    const handleSavePreferences = useCallback(async () => {
         try {
             const editablePrefs: typeof notificationPrefs = {};
             Object.entries(notificationPrefs).forEach(([event, channels]) => {
@@ -138,6 +163,8 @@ const NotificationPreferences: React.FC = React.memo(() => {
             });
 
             await updateNotificationPreferences(editablePrefs);
+            setOriginalPrefs(notificationPrefs);
+            setHasChanges(false);
             setTempSuccess("Notification preferences saved successfully");
         } catch (err) {
             setNotificationError("Failed to save notification preferences");
@@ -146,7 +173,27 @@ const NotificationPreferences: React.FC = React.memo(() => {
                 timestamp: new Date().toISOString(),
             });
         }
-    };
+    }, [notificationPrefs, notificationRules, setTempSuccess, setNotificationError]);
+
+    const handleCancelChanges = useCallback(() => {
+        setNotificationPrefs(originalPrefs);
+        setHasChanges(false);
+    }, [originalPrefs, setNotificationPrefs]);
+
+    const handleResetPreferences = useCallback(() => {
+        const resetPrefs: NotificationPreference['preferences'] = {};
+        notificationRules.forEach(rule => {
+            resetPrefs[rule.event] = {
+                email: rule.channels.email,
+                sms: rule.channels.sms,
+                inApp: rule.channels.inApp,
+            };
+        });
+        setNotificationPrefs(resetPrefs);
+        setOriginalPrefs(resetPrefs);
+        setHasChanges(false);
+        setTempSuccess("Preferences reset to default rules");
+    }, [notificationRules, setNotificationPrefs, setTempSuccess]);
 
     // Filter grouped preferences to only show events from user-assigned rules
     const filteredGroupedPreferences = Object.fromEntries(
@@ -165,12 +212,12 @@ const NotificationPreferences: React.FC = React.memo(() => {
             type,
             events: filteredGroupedPreferences[type].map((e: { value: any; label: any; }) => ({ value: e.value, label: e.label })),
         })),
+        notificationPrefs,
         timestamp: new Date().toISOString(),
     });
 
-
     return (
-        <div className="notification-preferences-wrapper" >
+        <div className="notification-preferences-wrapper">
             <div className="notification-preferences">
                 <h2>Notification Preferences</h2>
                 {Object.keys(filteredGroupedPreferences).length === 0 ? (
@@ -193,13 +240,14 @@ const NotificationPreferences: React.FC = React.memo(() => {
                                         const { value, label } = event;
                                         const rule = notificationRules.find(r => r.event === value);
                                         const isHighPriority = rule?.priority === "high";
+                                        const prefs = notificationPrefs[value] || { email: false, sms: false, inApp: false };
                                         return (
                                             <tr key={value}>
                                                 <td>{label}</td>
                                                 <td>
                                                     <input
                                                         type="checkbox"
-                                                        checked={notificationPrefs[value]?.email ?? false}
+                                                        checked={prefs.email}
                                                         onChange={() => handlePreferenceChange(value, "email")}
                                                         disabled={isHighPriority}
                                                         title={isHighPriority ? "High priority rule - cannot be modified" : ""}
@@ -208,7 +256,7 @@ const NotificationPreferences: React.FC = React.memo(() => {
                                                 <td>
                                                     <input
                                                         type="checkbox"
-                                                        checked={notificationPrefs[value]?.sms ?? false}
+                                                        checked={prefs.sms}
                                                         onChange={() => handlePreferenceChange(value, "sms")}
                                                         disabled={isHighPriority}
                                                         title={isHighPriority ? "High priority rule - cannot be modified" : ""}
@@ -217,7 +265,7 @@ const NotificationPreferences: React.FC = React.memo(() => {
                                                 <td>
                                                     <input
                                                         type="checkbox"
-                                                        checked={notificationPrefs[value]?.inApp ?? false}
+                                                        checked={prefs.inApp}
                                                         onChange={() => handlePreferenceChange(value, "inApp")}
                                                         disabled={isHighPriority}
                                                         title={isHighPriority ? "High priority rule - cannot be modified" : ""}
@@ -231,13 +279,33 @@ const NotificationPreferences: React.FC = React.memo(() => {
                         </div>
                     ))
                 )}
-                <button
-                    onClick={handleSavePreferences}
-                    className="update-btn"
-                    disabled={isLoadingNotifications}
-                >
-                    Save Preferences
-                </button>
+                <div className="button-group">
+                    <button
+                        onClick={handleResetPreferences}
+                        className="reset-btn"
+                        disabled={isLoadingNotifications}
+                    >
+                        Reset to Defaults
+                    </button>
+                    {hasChanges && (
+                        <>
+                            <button
+                                onClick={handleCancelChanges}
+                                className="cancel-btn"
+                                disabled={isLoadingNotifications}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleSavePreferences}
+                                className="save-btn"
+                                disabled={isLoadingNotifications}
+                            >
+                                Save
+                            </button>
+                        </>
+                    )}
+                </div>
             </div>
             <aside className="filter-sidebar">
                 <div className="filter-section">

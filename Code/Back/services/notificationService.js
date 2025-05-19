@@ -6,6 +6,13 @@ const { Op } = require('sequelize');
 const { getRedisClient, getRedisSubClient } = require('../config/redis');
 const RedisUtils = require('../utils/redisUtils');
 
+const ERROR_MESSAGES = {
+    INVALID_RULE: 'Invalid notification rule.',
+    INVALID_CHANNELS: 'Channels must only include email, sms, and inApp.',
+    INVALID_PRIORITY: 'Priority must be "high" or "normal".',
+    INVALID_PREFERENCES: 'Invalid notification preferences.',
+};
+
 class NotificationService {
     constructor() {
         this.redis = getRedisClient();
@@ -31,6 +38,233 @@ class NotificationService {
         });
     }
 
+    async createRule(data, creatorID, logInfo) {
+        const { event, type, recipients, channels, conditions, messageTemplate, enabled, priority } = data;
+
+        if (channels.websocket !== undefined || !['email', 'sms', 'inApp'].every(c => typeof channels[c] === 'boolean')) {
+            throw Object.assign(new Error(ERROR_MESSAGES.INVALID_CHANNELS), { status: 400 });
+        }
+
+        if (priority && !['high', 'normal'].includes(priority)) {
+            throw Object.assign(new Error(ERROR_MESSAGES.INVALID_PRIORITY), { status: 400 });
+        }
+
+        const rule = await NotificationRule.create({
+            event,
+            type,
+            recipients,
+            channels,
+            conditions,
+            messageTemplate,
+            enabled: enabled !== undefined ? enabled : true,
+            priority: priority || 'normal',
+            creatorID,
+        });
+
+        if (rule.priority === 'high') {
+            await this.handlePriorityChange(rule);
+        }
+        return rule;
+    }
+
+    async updateRule(ruleID, data, logInfo) {
+        const { event, type, recipients, channels, conditions, messageTemplate, enabled, priority } = data;
+
+        if (channels.websocket !== undefined || !['email', 'sms', 'inApp'].every(c => typeof channels[c] === 'boolean')) {
+            throw Object.assign(new Error(ERROR_MESSAGES.INVALID_CHANNELS), { status: 400 });
+        }
+
+        if (priority && !['high', 'normal'].includes(priority)) {
+            throw Object.assign(new Error(ERROR_MESSAGES.INVALID_PRIORITY), { status: 400 });
+        }
+
+        const rule = await NotificationRule.findByPk(ruleID);
+        if (!rule) {
+            throw Object.assign(new Error(ERROR_MESSAGES.INVALID_RULE), { status: 404 });
+        }
+
+        const wasNormalPriority = rule.priority === 'normal';
+        await rule.update({
+            event,
+            type,
+            recipients,
+            channels,
+            conditions,
+            messageTemplate,
+            enabled,
+            priority: priority || rule.priority,
+        });
+
+        if (wasNormalPriority && rule.priority === 'high') {
+            await this.handlePriorityChange(rule);
+        }
+
+        return rule;
+    }
+
+    async deleteRule(ruleID, logInfo) {
+        const rule = await NotificationRule.findByPk(ruleID);
+        if (!rule) {
+            throw Object.assign(new Error(ERROR_MESSAGES.INVALID_RULE), { status: 404 });
+        }
+        await rule.destroy();
+        return { message: 'Notification rule deleted successfully.' };
+    }
+
+    async getRules(logInfo) {
+        const rules = await NotificationRule.findAll();
+        return rules;
+    }
+
+    async getNotificationTypes(logInfo) {
+        const rules = await NotificationRule.findAll({
+            attributes: ['type'],
+            group: ['type'],
+        });
+        const types = rules.map(rule => rule.type);
+        return types;
+    }
+
+    async updatePreferences(userID, preferences, logInfo) {
+        const rules = await NotificationRule.findAll({ where: { priority: 'high' } });
+        const highPriorityEvents = rules.map(rule => rule.event);
+
+        for (const event of Object.keys(preferences)) {
+            if (highPriorityEvents.includes(event)) {
+                throw Object.assign(new Error(`Cannot customize preferences for high-priority event: ${event}`), { status: 400 });
+            }
+            const channels = preferences[event];
+            if (typeof channels !== 'object' ||
+                !['email', 'sms', 'inApp'].every(c => typeof channels[c] === 'boolean') ||
+                channels.websocket !== undefined) {
+                throw Object.assign(new Error(ERROR_MESSAGES.INVALID_PREFERENCES), { status: 400 });
+            }
+        }
+
+        let preference = await NotificationPreference.findOne({ where: { userID } });
+        if (!preference) {
+            preference = await NotificationPreference.create({
+                userID,
+                preferences: {},
+            });
+        }
+        const currentPreferences = preference.preferences || {};
+        const updatedPreferences = { ...currentPreferences };
+        for (const [event, channels] of Object.entries(preferences)) {
+            updatedPreferences[event] = {
+                email: channels.email,
+                sms: channels.sms,
+                inApp: channels.inApp,
+            };
+        }
+        await preference.update({ preferences: updatedPreferences });
+        await RedisUtils.storeUserPreferences(userID, updatedPreferences);
+        return preference;
+    }
+
+    async getPreferences(userID, logInfo) {
+        const preference = await NotificationPreference.findOne({ where: { userID } });
+        const rules = await NotificationRule.findAll({
+            attributes: ['event', 'priority'],
+            group: ['event', 'priority'],
+        });
+        const availableEvents = rules.map(rule => ({
+            event: rule.event,
+            isCustomizable: rule.priority !== 'high',
+        }));
+
+        // Use stored preferences directly, only apply defaults for undefined events
+        const storedPrefs = preference?.preferences || {};
+        const preferences = {};
+        for (const { event } of availableEvents) {
+            preferences[event] = storedPrefs[event] || {
+                email: rules.channels?.email || false,
+                sms: rules.channels?.sms || false,
+                inApp: rules.channels?.inApp || true,
+            };
+        }
+
+        const sanitizedPreferences = {};
+        for (const [event, channels] of Object.entries(preferences)) {
+            sanitizedPreferences[event] = {
+                email: channels.email,
+                sms: channels.sms,
+                inApp: channels.inApp,
+            };
+        }
+
+        return { preferences: sanitizedPreferences, availableEvents };
+    }
+
+    async getNotifications(userID, logInfo) {
+        const notifications = await Notification.findAll({
+            where: { userID },
+            order: [['createdAt', 'DESC']],
+        });
+        return notifications;
+    }
+
+    async markNotificationAsRead(notificationID, userID, logInfo) {
+        const notification = await Notification.findByPk(notificationID);
+        if (!notification || notification.userID !== userID) {
+            throw Object.assign(new Error('Notification not found or unauthorized'), { status: 404 });
+        }
+        await notification.update({ status: 'read' });
+        return notification;
+    }
+
+    async markAllNotificationsAsRead(userID, logInfo) {
+        const updatedCount = await Notification.update(
+            { status: 'read' },
+            {
+                where: {
+                    userID,
+                    status: { [Op.in]: ['pending', 'sent'] },
+                },
+            }
+        );
+        return { message: `Marked ${updatedCount[0]} notifications as read.` };
+    }
+
+    async createNotification(data, logInfo) {
+        const { event, data: notificationData, roles, userIDs, type, message, email, sms } = data;
+        const results = await this.sendNotification({
+            event,
+            data: notificationData,
+            roles: roles || [],
+            userIDs: userIDs || [],
+            type,
+            message,
+            email,
+            sms,
+        });
+        return { results, message: 'Notification sent successfully.' };
+    }
+
+    async notifyAnomaly(data, userEmail, logInfo) {
+        const { dataType, anomalies, userIDs, roles } = data;
+        const results = await this.triggerNotification({
+            event: 'ai:anomaly_detected',
+            data: { dataType, anomalyCount: anomalies.length },
+            metadata: { triggeredBy: userEmail, anomalies },
+            roles: roles || [],
+            userIDs: userIDs || [],
+        });
+        return { results, message: 'Anomaly notification sent successfully.' };
+    }
+
+    async notifyReport(data, userEmail, logInfo) {
+        const { format, filters, userIDs, roles } = data;
+        const results = await this.triggerNotification({
+            event: 'ai:report_generated',
+            data: { format, filters },
+            metadata: { triggeredBy: userEmail },
+            roles: roles || [],
+            userIDs: userIDs || [],
+        });
+        return { results, message: 'Report notification sent successfully.' };
+    }
+
     async sendWebSocketNotification(event, data, roles = [], userIDs = []) {
         try {
             if (!io || !io.sockets) {
@@ -53,7 +287,6 @@ class NotificationService {
 
     async sendEmailNotification(to, subject, message, data = {}, metadata = {}) {
         try {
-            console.log('sendEmailNotification: message parameter:', message);
             const resolvedMessage = await Promise.resolve(message);
             let detailedMessage = `Event: ${resolvedMessage}\n`;
             if (data && Object.keys(data).length) {
@@ -108,12 +341,10 @@ class NotificationService {
         let notification;
         const resolvedMessage = await Promise.resolve(message);
 
-        // Check if the rule is disabled
         if (!rule.enabled) {
             return [{ success: false, method: 'All', reason: 'Rule is disabled' }];
         }
 
-        // For high-priority rules, ignore user preferences and use rule channels
         const isHighPriority = rule.priority === 'high';
         const preferences = isHighPriority
             ? { inApp: rule.channels.inApp, email: rule.channels.email, sms: rule.channels.sms }
@@ -193,7 +424,7 @@ class NotificationService {
         try {
             const cachedPrefs = await RedisUtils.getUserPreferences(userID);
             if (cachedPrefs) {
-                const prefs = event ? cachedPrefs[event] || { email: true, sms: true, inApp: true } : cachedPrefs;
+                const prefs = event ? cachedPrefs[event] || { email: rule?.channels.email || false, sms: rule?.channels.sms || false, inApp: rule?.channels.inApp || true } : cachedPrefs;
                 return {
                     preferences: prefs,
                     isCustomizable: !rule || rule.priority !== 'high',
@@ -202,7 +433,6 @@ class NotificationService {
             const preferences = await NotificationPreference.findOne({ where: { userID } });
             let prefs = preferences?.preferences || {};
             if (rule && rule.priority === 'high' && prefs[event]) {
-                // Remove event preferences if rule is high-priority
                 delete prefs[event];
                 await NotificationPreference.update(
                     { preferences: prefs },
@@ -211,7 +441,7 @@ class NotificationService {
                 await RedisUtils.invalidateUserPreferences(userID);
             }
             await RedisUtils.storeUserPreferences(userID, prefs);
-            const eventPrefs = event ? prefs[event] || { email: true, sms: true, inApp: true } : prefs;
+            const eventPrefs = event ? prefs[event] || { email: rule?.channels.email || false, sms: rule?.channels.sms || false, inApp: rule?.channels.inApp || true } : prefs;
             return {
                 preferences: eventPrefs,
                 isCustomizable: !rule || rule.priority !== 'high',
@@ -219,7 +449,7 @@ class NotificationService {
         } catch (error) {
             console.error('Failed to get user preferences:', error.message);
             return {
-                preferences: event ? { email: true, sms: true, inApp: true } : { emailEnabled: true, smsEnabled: true, inAppEnabled: true },
+                preferences: event ? { email: rule?.channels.email || false, sms: rule?.channels.sms || false, inApp: rule?.channels.inApp || true } : {},
                 isCustomizable: !rule || rule.priority !== 'high',
             };
         }
@@ -227,12 +457,10 @@ class NotificationService {
 
     async storeNotification({ userID, type, message, channel, event, rule }) {
         try {
-            // Do not store notifications for disabled rules
             if (!rule || !rule.enabled) {
                 return null;
             }
 
-            // For high-priority rules, use rule channels; otherwise, check user preferences
             const { preferences } = await this.getUserPreferences(userID, event, rule);
             if (channel === 'in-app' && !preferences.inApp) return null;
             if (channel === 'email' && !preferences.email) return null;
@@ -320,10 +548,8 @@ class NotificationService {
 
     async handlePriorityChange(rule) {
         try {
-            // Check if rule is high-priority
             if (rule.priority !== 'high') return;
 
-            // Find all users who might have preferences for this event
             const preferences = await NotificationPreference.findAll({
                 where: {
                     preferences: {
@@ -350,23 +576,19 @@ class NotificationService {
 
     async triggerNotification({ event, data, metadata = {} }) {
         try {
-            // Fetch all users and roles for WebSocket notifications
             const allUsers = await User.findAll();
             const allRoles = await Role.findAll();
             const userIDs = allUsers.map(user => user.userID);
             const roleNames = allRoles.map(role => role.name);
 
-            // Send WebSocket notification to all users and roles unconditionally
             const triggerEventPayload = { event, data, timestamp: new Date().toISOString() };
             await this.sendWebSocketNotification(event, triggerEventPayload, roleNames, userIDs);
 
-            // Fetch all rules (enabled or disabled) to check for priority changes
             const allRules = await NotificationRule.findAll({ where: { event } });
             for (const rule of allRules) {
                 await this.handlePriorityChange(rule);
             }
 
-            // Fetch only enabled rules for in-app, email, and SMS notifications
             const rules = await NotificationRule.findAll({ where: { event, enabled: true } });
             if (!rules.length) {
                 const defaultRule = await this.createDefaultDisabledRule({ event, data, metadata });

@@ -164,6 +164,7 @@ export const useProfile = () => {
 
             try {
                 setLoading(true);
+                setIsLoadingNotifications(true);
                 const [fullUser, notificationData, types] = await Promise.all([
                     fetchProfileWithRetry(),
                     getNotificationPreferences(),
@@ -191,9 +192,25 @@ export const useProfile = () => {
                 };
 
                 setProfileData(completeUser);
-                setNotificationPrefs(notificationData.preferences);
+                // Validate and set notification preferences
+                const validatedPrefs: NotificationPreference['preferences'] = {};
+                Object.entries(notificationData.preferences).forEach(([event, channels]) => {
+                    validatedPrefs[event] = {
+                        email: !!channels.email,
+                        sms: !!channels.sms,
+                        inApp: !!channels.inApp,
+                    };
+                });
+                setNotificationPrefs(validatedPrefs);
                 setAvailableEvents(notificationData.availableEvents.map(item => item.event));
                 setNotificationTypes(types);
+
+                console.debug("Loaded notification preferences", {
+                    preferences: validatedPrefs,
+                    availableEvents: notificationData.availableEvents,
+                    notificationTypes: types,
+                    timestamp: new Date().toISOString(),
+                });
 
                 if (completeUser.PFP && completeUser.PFP.trim()) {
                     if (!isValidBase64(completeUser.PFP)) {
@@ -260,6 +277,7 @@ export const useProfile = () => {
                 }
             } finally {
                 setLoading(false);
+                setIsLoadingNotifications(false);
             }
         };
 
