@@ -8,7 +8,6 @@ const { sendSMS } = require('../config/sms');
 const path = require('path');
 const fs = require('fs');
 const { sequelize } = require('../config/db');
-const logger = require('../utils/logger');
 
 class VisitService {
     static async createVisit(data, actorID, options = {}) {
@@ -39,7 +38,6 @@ class VisitService {
                     error.status = 404;
                     throw error;
                 }
-                logger.info(`Using provided timesheet ${targetTimesheet.timesheetID} for visit creation`);
             } else {
                 targetTimesheet = await Timesheet.findOne({
                     where: {
@@ -62,7 +60,6 @@ class VisitService {
                             },
                             { transaction }
                         );
-                        logger.info(`Created new timesheet ${targetTimesheet.timesheetID} for week ${weekNumber}, year ${year}, supervisor ${supervisorID}`);
                     } catch (error) {
                         if (error.name === 'SequelizeUniqueConstraintError') {
                             // Retry to find the timesheet
@@ -74,13 +71,10 @@ class VisitService {
                             if (!targetTimesheet) {
                                 throw new Error('Failed to find or create timesheet after unique constraint error');
                             }
-                            logger.info(`Reused timesheet ${targetTimesheet.timesheetID} after unique constraint retry for week ${weekNumber}, year ${year}, supervisor ${supervisorID}`);
                         } else {
                             throw error;
                         }
                     }
-                } else {
-                    logger.info(`Reused existing timesheet ${targetTimesheet.timesheetID} for week ${weekNumber}, year ${year}, supervisor ${supervisorID}`);
                 }
             }
 
@@ -117,12 +111,10 @@ class VisitService {
                         const createdReasons = await ReasonService.getItemsByIds(reasonIds, { transaction });
                         if (createdReasons.length > 0) {
                             await visit.setReasons(createdReasons, { transaction });
-                        } else {
-                            logger.warn(`No valid reasons found for visit ${visit.visitID}`);
                         }
                     }
                 } catch (error) {
-                    logger.warn(`Failed to attach reasons to visit ${visit.visitID}: ${error.message}`);
+                    throw new Error(`Failed to attach reasons to visit ${visit.visitID}: ${error.message}`);
                 }
             }
 
@@ -135,11 +127,11 @@ class VisitService {
                         if (createdChecklists.length > 0) {
                             await visit.setChecklists(createdChecklists, { transaction });
                         } else {
-                            logger.warn(`No valid checklists found for visit ${visit.visitID}`);
+                            throw new Error(`No valid checklists found for visit ${visit.visitID}`);
                         }
                     }
                 } catch (error) {
-                    logger.warn(`Failed to attach checklists to visit ${visit.visitID}: ${error.message}`);
+                    throw new Error(`Failed to attach checklists to visit ${visit.visitID}: ${error.message}`);
                 }
             }
 
@@ -177,7 +169,7 @@ class VisitService {
                     action: 'created',
                 });
             } catch (error) {
-                logger.warn(`Failed to sync visit ${visit.visitID} to calendar: ${error.message}`);
+                throw new Error(`Failed to create Google Calendar event for visit ${visit.visitID}: ${error.message}`);
             }
 
             if (isLocalTransaction) await transaction.commit();
@@ -383,7 +375,7 @@ class VisitService {
                     action: 'updated',
                 });
             } catch (error) {
-                logger.warn(`Failed to update calendar event for visit ${visitID} during logging: ${error.message}`);
+                throw error;
             }
 
             await transaction.commit();
@@ -559,7 +551,7 @@ class VisitService {
                     action: 'updated',
                 });
             } catch (error) {
-                logger.warn(`Failed to update calendar event for visit ${visitID}: ${error.message}`);
+                throw error;
             }
 
             return visit.reload({ include: [Checklist, Reason] });
@@ -606,7 +598,7 @@ class VisitService {
                     action: 'deleted',
                 });
             } catch (error) {
-                logger.warn(`Failed to delete calendar event for visit ${visitID}: ${error.message}`);
+                throw error;
             }
 
             await visit.destroy();

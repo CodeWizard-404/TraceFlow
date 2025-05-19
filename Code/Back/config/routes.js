@@ -15,6 +15,7 @@ const locationRoutes = require('../routes/locationRoutes');
 const csvHeaderRoutes = require('../routes/csvHeaderRoutes');
 const aiRoutes = require('../routes/aiRoutes');
 const { initializeRedis } = require('./redis');
+const logger = require('../utils/logger');
 
 function setupRoutes(app) {
     app.use('/api/auth', authRoutes);
@@ -52,7 +53,15 @@ function setupRoutes(app) {
 
     // Error handling
     app.use((err, req, res, next) => {
-        res.status(500).json({ error: 'Something went wrong!' });
+        logger.error('Route error', {
+            error: err.message,
+            stack: err.stack,
+            path: req.path,
+            method: req.method,
+            ip: req.ip,
+            service: 'api',
+        });
+        res.status(err.status || 500).json({ error: err.message || 'Something went wrong!' });
     });
 }
 

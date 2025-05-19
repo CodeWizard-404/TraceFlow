@@ -4,7 +4,6 @@ const { sequelize } = require('../config/db');
 const VisitService = require('./visitService');
 const GoogleCalendarService = require('./googleCalendarService');
 const { Op } = require('sequelize');
-const logger = require('../utils/logger'); // Added for debugging
 
 const ERROR_MESSAGES = {
     INVALID_SUPERVISOR: 'Invalid supervisor ID.',
@@ -256,13 +255,6 @@ class TimesheetService {
 
     static async suggestTimesheet(supervisorId, weekNumber, year, criteria, coordinates) {
         try {
-            logger.info('Received suggestTimesheet request', {
-                supervisorId,
-                weekNumber,
-                year,
-                criteria,
-                coordinates
-            });
 
             const supervisor = await User.findByPk(supervisorId);
             if (!supervisor) {
@@ -357,7 +349,6 @@ class TimesheetService {
                 activeControllers.delete(requestId);
             }
         } catch (error) {
-            logger.error('suggestTimesheet error', { error: error.message, stack: error.stack });
             if (error.message === ERROR_MESSAGES.REQUEST_CANCELED) {
                 throw error;
             }

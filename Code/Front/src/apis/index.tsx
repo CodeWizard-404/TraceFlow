@@ -69,7 +69,6 @@ export type AgentLocationsResponse = {
 export type NearbyAgentsResponse = Array<Agent & { distance: number }>;
 export type AgentsByBoundsResponse = Agent[];
 
-
 // Checklist Routes
 export type ChecklistByIdResponse = Checklist;
 export type ChecklistsByVisitResponse = VisitChecklist[];
@@ -103,11 +102,11 @@ export type ListReceiptBooksResponse = ReceiptBook[];
 export type ReceiptBookByIdResponse = ReceiptBook;
 export type ReceiptBooksByHolderResponse = ReceiptBook[];
 export type ReceiveFromSupplierResponse = { message: string };
-export type SendToSupplierResponse = { message: string };
+export type SendToSupplierResponse = { message: string; bookIDs?: string[]; csvUrl?: string; zipUrl?: string };
 export type TransferHistoryResponse = ReceiptBookTransfer[];
-export type TransferResponse = { message: string };
+export type TransferResponse = { message: string; otpID?: string };
 export type UpdateReceiptBookResponse = ReceiptBook;
-export type ValidateTransferResponse = ReceiptBook;
+export type ValidateTransferResponse = { message: string };
 export interface ReceiptBookBulkUploadResponse {
     status: 'pending' | 'completed_successfully' | 'completed_with_issues' | 'failed';
     summary: {
@@ -184,8 +183,6 @@ export type GetUsersByRegionResponse = User[];
 export type GetUsersByGovernorateResponse = User[];
 export type GetUsersByDelegationResponse = User[];
 
-
-
 // Location Routes
 export type AllRegionsResponse = Region[];
 export type AllGovernoratesResponse = Governorate[];
@@ -199,15 +196,12 @@ export type GovernoratesByUserResponse = Governorate[];
 export type DelegationsByUserResponse = Delegation[];
 export interface LocationDetailsResponse { success: boolean; address?: string; idInfo?: string; message?: string; }
 
-
 // Visit Routes
 export type DeleteVisitResponse = { message: string };
 export type LogVisitResponse = Visit;
 export type UpdateVisitResponse = Visit;
 export type VerifyQrResponse = { valid: boolean; message: string; otpID?: string };
 export type VisitByIdResponse = Visit;
-
-
 
 // Google Maps API response types
 export type GeocodeResponse = { geometry: { location: { lat: number; lng: number } }; formatted_address: string; latitude: number; longitude: number; mock?: boolean; };

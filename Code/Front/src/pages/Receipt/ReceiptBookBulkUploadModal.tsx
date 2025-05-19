@@ -11,7 +11,7 @@ import "../Admin/AdminDashboard.css";
 
 const MANDATORY_HEADERS = [
     { csvHeader: "number", backend: "number" },
-    { csvHeader: "type", backend: "type" }, // Map to type, not typeID
+    { csvHeader: "type", backend: "type" },
 ];
 
 const OPTIONAL_HEADERS = [
@@ -20,7 +20,7 @@ const OPTIONAL_HEADERS = [
 
 const BACKEND_FIELDS = [
     "number",
-    "type", // Use type, not typeID
+    "type",
     "status",
 ];
 
@@ -34,12 +34,15 @@ const ReceiptBookBulkUploadModal: React.FC<ReceiptBookBulkUploadModalProps> = ({
     const { t } = useTranslation();
     const [file, setFile] = useState<File | null>(null);
     const [uploading, setUploading] = useState(false);
+    const [processing, setProcessing] = useState(false);
+    const [uploadPercentage, setUploadPercentage] = useState<number>(0);
     const [uploadResult, setUploadResult] = useState<ReceiptBookBulkUploadResponse | null>(null);
     const [fileHeaders, setFileHeaders] = useState<string[]>([]);
     const [fileContent, setFileContent] = useState<string | null>(null);
     const [headerMappings, setHeaderMappings] = useState<CsvHeader[]>([]);
     const [editingHeaders, setEditingHeaders] = useState(false);
     const [savingHeaders, setSavingHeaders] = useState(false);
+    const [totalRecords, setTotalRecords] = useState<number>(0);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
@@ -56,6 +59,17 @@ const ReceiptBookBulkUploadModal: React.FC<ReceiptBookBulkUploadModalProps> = ({
         };
         fetchHeaders();
     }, [isOpen, setError, t]);
+
+    const countCsvRecords = (content: string): number => {
+        try {
+            const lines = content.split("\n").map(line => line.trim()).filter(line => line);
+            // Subtract 1 for header row
+            return Math.max(0, lines.length - 1);
+        } catch (error) {
+            console.error("Error counting CSV records:", error);
+            return 0;
+        }
+    };
 
     const validateHeaders = useCallback(
         (content: string): boolean => {
@@ -126,12 +140,14 @@ const ReceiptBookBulkUploadModal: React.FC<ReceiptBookBulkUploadModalProps> = ({
         setUploadResult(null);
         setFileHeaders([]);
         setFileContent(null);
+        setTotalRecords(0);
 
         const reader = new FileReader();
         reader.onload = (event) => {
             const content = event.target?.result?.toString();
             if (content) {
                 setFileContent(content);
+                setTotalRecords(countCsvRecords(content));
                 validateHeaders(content);
             } else {
                 setError(t("receiptBooks.errors.invalidCSVFormat"));
@@ -243,14 +259,24 @@ const ReceiptBookBulkUploadModal: React.FC<ReceiptBookBulkUploadModalProps> = ({
         }
 
         setUploading(true);
+        setProcessing(false);
+        setUploadPercentage(0);
+
         try {
-            const result = await uploadReceiptBooks(file);
+            const result = await uploadReceiptBooks(file, (percentage) => {
+                setUploadPercentage(percentage);
+                if (percentage === 100) {
+                    setProcessing(true);
+                }
+            });
             setUploadResult(result);
             setError(null);
         } catch (error) {
             setError(error instanceof Error ? error.message : t("receiptBooks.errors.uploadFailed"));
         } finally {
             setUploading(false);
+            setProcessing(false);
+            setUploadPercentage(0);
         }
     };
 
@@ -258,11 +284,14 @@ const ReceiptBookBulkUploadModal: React.FC<ReceiptBookBulkUploadModalProps> = ({
         setFile(null);
         setUploadResult(null);
         setUploading(false);
+        setProcessing(false);
+        setUploadPercentage(0);
         setFileHeaders([]);
         setFileContent(null);
         setHeaderMappings([]);
         setEditingHeaders(false);
         setSavingHeaders(false);
+        setTotalRecords(0);
         if (fileInputRef.current) fileInputRef.current.value = "";
         setError(null);
         onClose();
@@ -298,18 +327,56 @@ const ReceiptBookBulkUploadModal: React.FC<ReceiptBookBulkUploadModalProps> = ({
                     <button
                         className="action-button"
                         onClick={handleFileSelectClick}
-                        disabled={uploading || savingHeaders}
+                        disabled={uploading || processing || savingHeaders}
                         aria-label={t("receiptBooks.bulkUpload.selectCSV")}
                     >
                         <FaUpload aria-hidden="true" /> {t("receiptBooks.bulkUpload.selectCSV")}
                     </button>
+                    {(uploading || processing) && (
+                        <div className="upload-progress">
+                            {uploading && !processing ? (
+                                <>
+                                    <p>{t("receiptBooks.bulkUpload.uploading")} {uploadPercentage}%</p>
+                                    <div className="progress-bar">
+                                        <div
+                                            className="progress-bar-fill"
+                                            style={{ width: `${uploadPercentage}%` }}
+                                        ></div>
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <p>{t("receiptBooks.bulkUpload.processing")}</p>
+                                    {totalRecords > 0 && (
+                                        <p>
+                                            {t("receiptBooks.bulkUpload.progress", {
+                                                processed: uploadResult?.summary.booksCreated || 0,
+                                                total: totalRecords,
+                                            })}
+                                        </p>
+                                    )}
+                                    <div className="progress-bar">
+                                        <div
+                                            className="progress-bar-fill"
+                                            style={{
+                                                width: totalRecords > 0
+                                                    ? `${((uploadResult?.summary.booksCreated || 0) / totalRecords) * 100}%`
+                                                    : "0%",
+                                            }}
+                                        ></div>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    )}
                     {file && (
                         <div className="file-info">
                             <p>{t("receiptBooks.bulkUpload.selectedFile", { fileName: file.name })}</p>
+                            <p>{t("receiptBooks.bulkUpload.totalRecords", { count: totalRecords })}</p>
                             <button
                                 className="action-button"
                                 onClick={() => setEditingHeaders(true)}
-                                disabled={uploading || savingHeaders || !fileHeaders.length}
+                                disabled={uploading || processing || savingHeaders || !fileHeaders.length}
                                 aria-label={t("receiptBooks.bulkUpload.editHeaders")}
                             >
                                 <FaEdit aria-hidden="true" /> {t("receiptBooks.bulkUpload.editHeaders")}
@@ -447,10 +514,10 @@ const ReceiptBookBulkUploadModal: React.FC<ReceiptBookBulkUploadModalProps> = ({
                     <button
                         className="action-button"
                         onClick={handleUpload}
-                        disabled={uploading || !file || editingHeaders || savingHeaders}
-                        aria-label={uploading ? t("receiptBooks.actions.uploading") : t("receiptBooks.bulkUpload.upload")}
+                        disabled={uploading || processing || !file || editingHeaders || savingHeaders}
+                        aria-label={uploading || processing ? t("receiptBooks.actions.uploading") : t("receiptBooks.bulkUpload.upload")}
                     >
-                        <FaUpload aria-hidden="true" /> {uploading ? `${t("receiptBooks.actions.uploading")}...` : t("receiptBooks.bulkUpload.upload")}
+                        <FaUpload aria-hidden="true" /> {uploading || processing ? `${t("receiptBooks.actions.uploading")}...` : t("receiptBooks.bulkUpload.upload")}
                     </button>
                     <button
                         className="cancel-button"

@@ -219,19 +219,25 @@
             <p><strong>Total Books:</strong> {{totalBooks}}</p>
             <p><strong>Types Included:</strong> {{bookTypes}}</p>
         </div>
-        <p>A preview of the receipt books is provided below. For the complete list, please refer to the attached CSV
-            file (receipt_books.csv). All QR codes are included in the attached ZIP file (qr_codes.zip).</p>
+        <p>A preview of the receipt books is provided below. You can download the complete list and QR codes using the
+            links below. The files are available indefinitely until downloaded, after which they will expire 7 days from
+            the first download (limited to {{maxDownloads}} downloads each).</p>
         <div class="table-container">
             {{receiptBooksTable}}
         </div>
+        <p><strong>Download Files:</strong></p>
+        <p>
+            <a href="{{csvUrl}}" class="button">Download CSV</a>
+            <a href="{{zipUrl}}" class="button">Download QR Codes ZIP</a>
+        </p>
         <p><strong>Instructions:</strong></p>
-        <p>Please print the receipt books as specified in the attached CSV file. Ensure the corresponding QR codes from
-            the ZIP file are clearly printed on each book.</p>
+        <p>Please print the receipt books as specified in the CSV file. Ensure the corresponding QR codes from the ZIP
+            file are clearly printed on each book.</p>
         <p>Upon completion, kindly confirm receipt and estimated delivery date by contacting us at {{supportEmail}}.</p>
         <div class="signature">
             <p>Best regards,</p>
             <p>The TraceFlow Team</p>
-            <img src="cid:signature-logo" alt="TraceFlow Signature Logo">
+            <img src="cid:signature" alt="TraceFlow Signature Logo">
         </div>
         <div class="footer">
             <p>© 2025 TraceFlow. All rights reserved.</p>

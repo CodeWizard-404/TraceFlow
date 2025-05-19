@@ -15,6 +15,7 @@ import {
 } from ".";
 import ReceiptBook from "../models/ReceiptBook";
 import ReceiptBookType from "models/ReceiptBookType";
+import { v4 as uuidv4 } from 'uuid';
 
 // Error response type for Axios errors
 interface AxiosErrorResponse {
@@ -49,7 +50,13 @@ const handleApiError = (error: unknown, defaultMessage: string): string => {
 // Create a new receipt book
 export const createReceiptBook = async (data: Partial<ReceiptBook>): Promise<CreateReceiptBookResponse> => {
     try {
-        const response = await api.post<CreateReceiptBookResponse>("/receipt-books", data);
+        const payload = {
+            number: data.number,
+            typeID: data.typeID,
+            status: data.status,
+            agentID: data.agentID,
+        };
+        const response = await api.post<CreateReceiptBookResponse>("/receipt-books", payload);
         return response.data;
     } catch (error) {
         throw new Error(handleApiError(error, "Unable to create receipt book."));
@@ -101,13 +108,16 @@ export const updateReceiptBook = async (
         if (!bookID) {
             throw new Error("Book ID is required.");
         }
-        const response = await api.put<UpdateReceiptBookResponse>(`/receipt-books/${bookID}`, data);
+        const payload = {
+            number: data.number,
+            typeID: data.typeID,
+        };
+        const response = await api.put<UpdateReceiptBookResponse>(`/receipt-books/${bookID}`, payload);
         return response.data;
     } catch (error) {
         throw new Error(handleApiError(error, "Unable to update receipt book."));
     }
 };
-
 // Delete a receipt book
 export const deleteReceiptBook = async (bookID: string): Promise<DeleteReceiptBookResponse> => {
     try {
@@ -127,15 +137,36 @@ export const sendToSupplier = async (
     supplierEmail: string
 ): Promise<SendToSupplierResponse> => {
     try {
-        if (!Array.isArray(bookIDs) || !supplierEmail) {
-            throw new Error("Book IDs (array) and supplier email are required.");
+        const CHUNK_SIZE = 100; // Process 100 books per request
+        const transferID = uuidv4(); // Generate a unique transfer ID for this batch
+        const chunks = [];
+
+        // Split bookIDs into chunks of 100
+        for (let i = 0; i < bookIDs.length; i += CHUNK_SIZE) {
+            chunks.push(bookIDs.slice(i, i + CHUNK_SIZE));
         }
-        const response = await api.post<SendToSupplierResponse>("/receipt-books/send", { bookIDs, supplierEmail });
-        return response.data;
+
+        // Send each chunk as a partial request
+        for (const chunk of chunks) {
+            await api.post<SendToSupplierResponse>(
+                "/receipt-books/send",
+                { transferID, bookIDs: chunk, supplierEmail, isPartial: true },
+                { timeout: 60000 } // 60-second timeout per chunk
+            );
+        }
+
+        // Send final request to trigger email
+        const finalResponse = await api.post<SendToSupplierResponse>(
+            "/receipt-books/send",
+            { transferID, supplierEmail, isPartial: false },
+            { timeout: 120000 } // 120-second timeout for final request
+        );
+        return finalResponse.data;
     } catch (error) {
         throw new Error(handleApiError(error, "Unable to send receipt books to supplier."));
     }
 };
+
 
 // Collect receipt books from supplier
 export const collectFromSupplier = async (
@@ -266,7 +297,10 @@ export const deleteReceiptBookType = async (typeID: string): Promise<void> => {
 
 
 // Upload receipt books via CSV
-export const uploadReceiptBooks = async (file: File): Promise<ReceiptBookBulkUploadResponse> => {
+export const uploadReceiptBooks = async (
+    file: File,
+    onProgress?: (percentage: number) => void
+): Promise<ReceiptBookBulkUploadResponse> => {
     try {
         if (!file) {
             throw new Error('CSV file is required.');
@@ -274,7 +308,13 @@ export const uploadReceiptBooks = async (file: File): Promise<ReceiptBookBulkUpl
         const formData = new FormData();
         formData.append('csvFile', file);
         const response = await api.post<ReceiptBookBulkUploadResponse>('/receipt-books/upload-csv', formData, {
-            headers: { 'Content-Type': 'multipart/form-data' }
+            headers: { 'Content-Type': 'multipart/form-data' },
+            onUploadProgress: (progressEvent) => {
+                if (progressEvent.total && onProgress) {
+                    const percentage = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                    onProgress(percentage);
+                }
+            },
         });
         return response.data;
     } catch (error) {

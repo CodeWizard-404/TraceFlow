@@ -590,9 +590,9 @@ class ReceiptBookController {
     static async sendToSupplier(req, res) {
         const actorID = req.user?.userID || 'unknown';
         try {
-            const { bookIDs, supplierEmail } = req.body;
-            if (!Array.isArray(bookIDs) || !supplierEmail) {
-                logger.warn('Send to supplier failed: Missing bookIDs or supplierEmail', {
+            const { transferID, bookIDs, supplierEmail, isPartial } = req.body;
+            if (!transferID || (!isPartial && !supplierEmail) || (isPartial && (!Array.isArray(bookIDs) || !supplierEmail))) {
+                logger.warn('Send to supplier failed: Missing required fields', {
                     route: 'receipt-books/send-to-supplier',
                     method: req.method,
                     url: req.originalUrl,
@@ -600,17 +600,18 @@ class ReceiptBookController {
                     ip: req.ip,
                     traceId: req.traceId,
                     userId: actorID,
-                    metadata: {}
                 });
-                return res.status(400).json({ error: 'Book IDs (array) and supplier email are required' });
+                return res.status(400).json({ error: 'Transfer ID, book IDs (array, if partial), and supplier email are required' });
             }
-            const result = await ReceiptBookService.sendToSupplier(bookIDs, supplierEmail, actorID);
-            await NotificationService.triggerNotification({
-                event: 'receipt_book:sent_to_supplier',
-                data: { bookIDs, supplierEmail },
-                metadata: { sentBy: req.user.email }
-            });
-            logger.info('Successfully sent receipt books to supplier', {
+            const result = await ReceiptBookService.sendToSupplier(transferID, bookIDs || [], supplierEmail, isPartial, actorID);
+            if (!isPartial) {
+                await NotificationService.triggerNotification({
+                    event: 'receipt_book:sent_to_supplier',
+                    data: { bookCount: result.message.match(/\d+/)?.[0] || 0, supplierEmail },
+                    metadata: { sentBy: req.user.email },
+                });
+            }
+            logger.info('Successfully processed send to supplier request', {
                 route: 'receipt-books/send-to-supplier',
                 method: req.method,
                 url: req.originalUrl,
@@ -618,7 +619,7 @@ class ReceiptBookController {
                 ip: req.ip,
                 traceId: req.traceId,
                 userId: actorID,
-                metadata: { bookCount: bookIDs.length, supplierEmail }
+                metadata: { transferID, isPartial, bookCount: bookIDs?.length || 0 },
             });
             return res.status(200).json(result);
         } catch (error) {
@@ -630,7 +631,7 @@ class ReceiptBookController {
                 ip: req.ip,
                 traceId: req.traceId,
                 userId: actorID,
-                metadata: { error: error.message }
+                metadata: { error: error.message },
             });
             return res.status(error.status || 400).json({ error: error.message || 'Failed to send books to supplier' });
         }

@@ -801,7 +801,8 @@
       "errors": "Errors",
       "unknownOperation": "Unknown Operation",
       "selectedFile": "Selected File: {{fileName}}",
-      "fileHeaders": "File Headers: {{headers}}"
+      "fileHeaders": "File Headers: {{headers}}",
+      "progress": "Processed {{processed}} of {{total}} books"
     }
   },
   "receiptBookHistory": {

@@ -4,7 +4,6 @@ const { User, Role, Permission, TrustedDevice } = require('../models');
 const otpService = require('./otpService');
 const { sendEmail } = require('../config/smtp');
 const { sendSMS } = require('../config/sms');
-const logger = require('../utils/logger');
 const { getRedisClient } = require('../config/redis');
 const RedisUtils = require('../utils/redisUtils');
 require('dotenv').config();
@@ -52,9 +51,7 @@ class AuthService {
         const key = `session:${userId}`;
         try {
             await this.redis.setex(key, ttl, JSON.stringify({ token }));
-            logger.info(`Session stored for user: ${userId}`, { service: 'auth' });
         } catch (error) {
-            logger.error(`Failed to store session for user: ${userId}`, { error: error.message, service: 'auth' });
             throw new Error('Failed to store session');
         }
     }
@@ -65,7 +62,6 @@ class AuthService {
             const session = await this.redis.get(key);
             return session ? JSON.parse(session) : null;
         } catch (error) {
-            logger.error(`Failed to retrieve session for user: ${userId}`, { error: error.message, service: 'auth' });
             return null;
         }
     }
@@ -74,9 +70,8 @@ class AuthService {
         const key = `session:${userId}`;
         try {
             await this.redis.del(key);
-            logger.info(`Session destroyed for user: ${userId}`, { service: 'auth' });
         } catch (error) {
-            logger.error(`Failed to destroy session for user: ${userId}`, { error: error.message, service: 'auth' });
+            throw new Error('Failed to destroy session');
         }
     }
 
@@ -164,7 +159,7 @@ class AuthService {
                 await RedisUtils.storeUserWithDetails(userID, userData);
             }
         } catch (error) {
-            logger.error(`Failed to cache user details for user: ${userID}`, { error: error.message, service: 'auth' });
+            throw new Error('Failed to cache user details');
         }
     }
 

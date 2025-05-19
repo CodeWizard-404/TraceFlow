@@ -1,5 +1,4 @@
 const nodemailer = require('nodemailer');
-const logger = require('../utils/logger');
 const fs = require('fs').promises;
 const path = require('path');
 
@@ -16,17 +15,8 @@ const transporter = nodemailer.createTransport({
 async function initializeSMTP() {
     try {
         await transporter.verify();
-        logger.info('SMTP server verified successfully', {
-            route: 'smtp',
-            service: 'email',
-        });
         return true;
     } catch (error) {
-        logger.error('SMTP verification error', {
-            route: 'smtp',
-            service: 'email',
-            message: error.message,
-        });
         throw error;
     }
 }
@@ -45,11 +35,6 @@ async function loadEmailTemplate(templateName, replacements = {}) {
 
         return templateContent;
     } catch (error) {
-        logger.error(`Failed to load email template: ${templateName}`, {
-            route: 'smtp',
-            service: 'email',
-            message: error.message,
-        });
         throw new Error(`Failed to load email template: ${templateName}`);
     }
 }
@@ -61,24 +46,58 @@ async function sendEmail({ to, subject, templateName, replacements = {}, textFal
         if (typeof textFallback !== 'string') {
             const resolvedTextFallback = await Promise.resolve(textFallback);
             textFallback = String(resolvedTextFallback || '');
-            logger.warn(`textFallback was not a string, resolved to: ${textFallback}`, {
-                route: 'smtp',
-                service: 'email',
-            });
         }
         if (replacements.content && typeof replacements.content !== 'string') {
             replacements.content = await Promise.resolve(replacements.content).then(String);
-            logger.warn(`replacements.content was not a string, resolved to: ${replacements.content}`, {
-                route: 'smtp',
-                service: 'email',
-            });
+        }
+
+        // Handle logo and signature images as CID attachments
+        const updatedReplacements = { ...replacements };
+        const imageAttachments = [];
+        const imageConfigs = [
+            {
+                key: 'logoUrl',
+                cid: 'logo',
+                primary: path.join(__dirname, '..', 'emailTemplates', 'logo', 'Banner-wd.png'),
+                fallback: path.join(__dirname, '..', '..', 'Front', 'public', 'Banner-wd.png'),
+            },
+            {
+                key: 'signatureLogoUrl',
+                cid: 'signature',
+                primary: path.join(__dirname, '..', 'emailTemplates', 'logo', 'Banner-bd.png'),
+                fallback: path.join(__dirname, '..', '..', 'Front', 'public', 'Banner-bd.png'),
+            },
+        ];
+
+        for (const { key, cid, primary, fallback } of imageConfigs) {
+            if (updatedReplacements[key]) {
+                let filePath = primary;
+                try {
+                    await fs.access(primary);
+                } catch (error) {
+                    filePath = fallback;
+                }
+
+                try {
+                    const imageBuffer = await fs.readFile(filePath);
+                    const mimeType = 'image/png'; // Static MIME type for PNG files
+                    imageAttachments.push({
+                        filename: path.basename(filePath),
+                        content: imageBuffer,
+                        cid: cid,
+                    });
+                    updatedReplacements[key] = `cid:${cid}`;
+                } catch (error) {
+                    updatedReplacements[key] = replacements[key] || process.env[key.toUpperCase()] || '';
+                }
+            }
         }
 
         let htmlContent;
         if (templateName) {
             htmlContent = await loadEmailTemplate(templateName, {
                 subject,
-                ...replacements,
+                ...updatedReplacements,
                 platformUrl: process.env.PLATFORM_URL || 'https://traceflow.example.com',
                 supportEmail: process.env.SUPPORT_EMAIL || 'support@traceflow.example.com',
             });
@@ -98,28 +117,11 @@ async function sendEmail({ to, subject, templateName, replacements = {}, textFal
             subject,
             html: htmlContent,
             text: textFallback,
+            attachments: [...attachments, ...imageAttachments],
         };
 
-        // Add attachments if provided
-        if (attachments.length > 0) {
-            mailOptions.attachments = attachments;
-        }
-
         await transporter.sendMail(mailOptions);
-
-        logger.info(`Email sent successfully to ${to} with ${attachments.length} attachments`, {
-            route: 'smtp',
-            service: 'email',
-            subject,
-            attachmentCount: attachments.length,
-        });
     } catch (error) {
-        logger.error(`Failed to send email to ${to}`, {
-            route: 'smtp',
-            service: 'email',
-            message: error.message,
-            attachmentCount: attachments.length,
-        });
         throw error;
     }
 }

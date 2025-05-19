@@ -29,7 +29,7 @@ async function sendSMS(to, message, context = 'general') {
             label,
             ref: reference,
         };
-
+        // to be removed
         logger.info('Sending SMS', {
             route: 'sms',
             service: 'notification',

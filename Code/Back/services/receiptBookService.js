@@ -10,6 +10,11 @@ const iconv = require('iconv-lite');
 const CsvHeader = require('../models').CsvHeader;
 const archiver = require('archiver');
 const { stringify } = require('csv-stringify');
+const pendingTransfers = new Map();
+const fs = require('fs').promises;
+const path = require('path');
+const { getRedisClient } = require('../config/redis');
+const { v4: uuidv4 } = require('uuid');
 
 class ReceiptBookService {
     // --- Type Management Methods ---
@@ -119,7 +124,7 @@ class ReceiptBookService {
                     {
                         model: User,
                         as: 'CurrentHolder',
-                        attributes: ['userID', 'firstname', 'lastname'],
+                        attributes: ['userID', 'firstname', 'lastname', 'phone'],
                     },
                     {
                         model: ReceiptBookTransfer,
@@ -146,7 +151,19 @@ class ReceiptBookService {
                 throw error;
             }
 
-            return book;
+            // Transform the response to include holder details directly
+            const bookData = book.toJSON();
+            bookData.holder = bookData.CurrentHolder
+                ? {
+                    userID: bookData.CurrentHolder.userID,
+                    firstname: bookData.CurrentHolder.firstname,
+                    lastname: bookData.CurrentHolder.lastname,
+                    phone: bookData.CurrentHolder.phone,
+                }
+                : null;
+            delete bookData.CurrentHolder;
+
+            return bookData;
         } catch (error) {
             throw error;
         }
@@ -175,7 +192,7 @@ class ReceiptBookService {
             const [holders, agents, transfers] = await Promise.all([
                 User.findAll({
                     where: { userID: books.map(book => book.currentHolderID).filter(id => id) },
-                    attributes: ['userID', 'firstname', 'lastname'],
+                    attributes: ['userID', 'firstname', 'lastname', 'phone'],
                 }),
                 Agent.findAll({
                     where: { agentID: books.map(book => book.agentID).filter(id => id) },
@@ -198,7 +215,14 @@ class ReceiptBookService {
 
             const enrichedBooks = books.map(book => {
                 const bookData = book.toJSON();
-                bookData.CurrentHolder = book.currentHolderID ? holderMap.get(book.currentHolderID) : null;
+                bookData.holder = book.currentHolderID
+                    ? {
+                        userID: holderMap.get(book.currentHolderID)?.userID,
+                        firstname: holderMap.get(book.currentHolderID)?.firstname,
+                        lastname: holderMap.get(book.currentHolderID)?.lastname,
+                        phone: holderMap.get(book.currentHolderID)?.phone,
+                    }
+                    : null;
                 bookData.Agent = book.agentID ? agentMap.get(book.agentID) : null;
                 bookData.ReceiptBookTransfers = transferMap.get(book.bookID) || [];
                 bookData.type = bookData.ReceiptBookType ? bookData.ReceiptBookType.name : null;
@@ -221,11 +245,27 @@ class ReceiptBookService {
                 where: { number },
                 attributes: ['bookID', 'number', 'status', 'qrCode', 'agentID', 'currentHolderID', 'typeID'],
                 include: [
-                    { model: User, as: 'CurrentHolder', attributes: ['userID', 'firstname', 'lastname'] },
-                    { model: ReceiptBookTransfer, attributes: ['transferID', 'transferType', 'transferDate'] },
-                    { model: Agent, attributes: ['agentID', 'name', 'lastname'] },
-                    { model: ReceiptStub, attributes: ['stubID', 'status'] },
-                    { model: ReceiptBookType, attributes: ['typeID', 'name'] },
+                    {
+                        model: User,
+                        as: 'CurrentHolder',
+                        attributes: ['userID', 'firstname', 'lastname', 'phone'],
+                    },
+                    {
+                        model: ReceiptBookTransfer,
+                        attributes: ['transferID', 'transferType', 'transferDate'],
+                    },
+                    {
+                        model: Agent,
+                        attributes: ['agentID', 'name', 'lastname'],
+                    },
+                    {
+                        model: ReceiptStub,
+                        attributes: ['stubID', 'status'],
+                    },
+                    {
+                        model: ReceiptBookType,
+                        attributes: ['typeID', 'name'],
+                    },
                 ],
             });
             if (!book) {
@@ -234,8 +274,17 @@ class ReceiptBookService {
                 throw error;
             }
             const bookData = book.toJSON();
+            bookData.holder = bookData.CurrentHolder
+                ? {
+                    userID: bookData.CurrentHolder.userID,
+                    firstname: bookData.CurrentHolder.firstname,
+                    lastname: bookData.CurrentHolder.lastname,
+                    phone: bookData.CurrentHolder.phone,
+                }
+                : null;
             bookData.type = bookData.ReceiptBookType ? bookData.ReceiptBookType.name : null;
             delete bookData.ReceiptBookType;
+            delete bookData.CurrentHolder;
             return bookData;
         } catch (error) {
             throw error;
@@ -314,11 +363,27 @@ class ReceiptBookService {
                 where: whereClause,
                 attributes: ['bookID', 'number', 'status', 'qrCode', 'agentID', 'currentHolderID', 'typeID'],
                 include: [
-                    { model: User, as: 'CurrentHolder', attributes: ['userID', 'firstname', 'lastname'] },
-                    { model: ReceiptBookTransfer, attributes: ['transferID', 'transferType', 'transferDate'] },
-                    { model: Agent, attributes: ['agentID', 'name', 'lastname'] },
-                    { model: ReceiptStub, attributes: ['stubID', 'status'] },
-                    { model: ReceiptBookType, attributes: ['typeID', 'name'] },
+                    {
+                        model: User,
+                        as: 'CurrentHolder',
+                        attributes: ['userID', 'firstname', 'lastname', 'phone'],
+                    },
+                    {
+                        model: ReceiptBookTransfer,
+                        attributes: ['transferID', 'transferType', 'transferDate'],
+                    },
+                    {
+                        model: Agent,
+                        attributes: ['agentID', 'name', 'lastname'],
+                    },
+                    {
+                        model: ReceiptStub,
+                        attributes: ['stubID', 'status'],
+                    },
+                    {
+                        model: ReceiptBookType,
+                        attributes: ['typeID', 'name'],
+                    },
                 ],
             });
             if (!books.length) {
@@ -328,8 +393,17 @@ class ReceiptBookService {
             }
             return books.map(book => {
                 const bookData = book.toJSON();
+                bookData.holder = bookData.CurrentHolder
+                    ? {
+                        userID: bookData.CurrentHolder.userID,
+                        firstname: bookData.CurrentHolder.firstname,
+                        lastname: bookData.CurrentHolder.lastname,
+                        phone: bookData.CurrentHolder.phone,
+                    }
+                    : null;
                 bookData.type = bookData.ReceiptBookType ? bookData.ReceiptBookType.name : null;
                 delete bookData.ReceiptBookType;
+                delete bookData.CurrentHolder;
                 return bookData;
             });
         } catch (error) {
@@ -337,101 +411,36 @@ class ReceiptBookService {
         }
     }
 
-
-
     // --- Receipt Book Transfer ---
-
-
-
-
-
-    static async sendToSupplier(bookIDs, supplierEmail, userID) {
+    static async sendToSupplier(transferID, bookIDs, supplierEmail, isPartial, userID) {
         try {
-            const batchSize = 1000; // Process books in batches of 1000
-            const books = [];
-            for (let i = 0; i < bookIDs.length; i += batchSize) {
-                const batchIDs = bookIDs.slice(i, i + batchSize);
-                const batchBooks = await ReceiptBook.findAll({
-                    where: { bookID: batchIDs, status: 'In Stock', currentHolderID: userID },
+            if (isPartial) {
+                // Partial request handling (unchanged)
+                const books = await ReceiptBook.findAll({
+                    where: { bookID: bookIDs, status: 'In Stock', currentHolderID: userID },
                     include: [{ model: ReceiptBookType, attributes: ['name'] }],
                 });
-                books.push(...batchBooks);
-            }
+                if (books.length !== bookIDs.length) {
+                    const error = new Error('Some books are not in stock or not held by you');
+                    error.status = 400;
+                    throw error;
+                }
 
-            if (books.length !== bookIDs.length) {
-                const error = new Error('Some books are not in stock or not held by you');
-                error.status = 400;
-                throw error;
-            }
+                const bookDetails = books.map(b => ({
+                    number: b.number,
+                    type: b.ReceiptBookType.name,
+                    qrCode: b.qrCode,
+                }));
 
-            // Generate preview table (first 10 books)
-            const previewBooks = books.slice(0, 10);
-            const tableRows = previewBooks.map(b => `
-            <tr>
-                <td>${b.number}</td>
-                <td>${b.ReceiptBookType.name}</td>
-            </tr>
-        `).join('');
-            const receiptBooksTable = `
-            <table>
-                <thead>
-                    <tr>
-                        <th>Book Number</th>
-                        <th>Type</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${tableRows}
-                </tbody>
-            </table>
-        `;
+                if (!pendingTransfers.has(transferID)) {
+                    pendingTransfers.set(transferID, { supplierEmail, books: [] });
+                }
+                pendingTransfers.get(transferID).books.push(...bookDetails);
 
-            // Summarize book types
-            const typeCounts = books.reduce((acc, b) => {
-                const type = b.ReceiptBookType.name;
-                acc[type] = (acc[type] || 0) + 1;
-                return acc;
-            }, {});
-            const bookTypes = Object.entries(typeCounts)
-                .map(([type, count]) => `${type} (${count})`)
-                .join(', ');
-
-            // Generate CSV content
-            const csvData = books.map(b => ({
-                number: b.number,
-                type: b.ReceiptBookType.name,
-            }));
-            const csvContent = await new Promise((resolve, reject) => {
-                stringify(csvData, { header: true, columns: ['number', 'type'] }, (err, output) => {
-                    if (err) reject(err);
-                    else resolve(output);
-                });
-            });
-            const csvStream = Readable.from(csvContent);
-
-            // Generate ZIP file for QR codes
-            const archive = archiver('zip', { zlib: { level: 9 } });
-            const zipBuffers = [];
-            archive.on('data', chunk => zipBuffers.push(chunk));
-            archive.on('error', err => { throw err; });
-
-            books.forEach(b => {
-                archive.append(b.qrCode, { name: `${b.number}.png` });
-            });
-            archive.finalize();
-
-            const zipBuffer = await new Promise((resolve, reject) => {
-                archive.on('end', () => resolve(Buffer.concat(zipBuffers)));
-                archive.on('error', reject);
-            });
-
-            // Update books and log transfers in batches
-            const transaction = await ReceiptBook.sequelize.transaction();
-            try {
-                for (let i = 0; i < books.length; i += batchSize) {
-                    const batchBooks = books.slice(i, i + batchSize);
+                const transaction = await ReceiptBook.sequelize.transaction();
+                try {
                     await Promise.all(
-                        batchBooks.map(async book => {
+                        books.map(async book => {
                             const pendingTransfer = await ReceiptBookTransfer.findOne({
                                 where: { bookID: book.bookID, transferType: 'ToSupplier', status: 'Pending' },
                                 transaction,
@@ -447,46 +456,130 @@ class ReceiptBookService {
                             );
                         })
                     );
+                    await transaction.commit();
+                } catch (error) {
+                    await transaction.rollback();
+                    throw error;
                 }
-                await transaction.commit();
-            } catch (error) {
-                await transaction.rollback();
-                throw error;
+
+                return { message: `${books.length} books processed` };
+            } else {
+                // Final request: save files and send email with token-based links
+                const transfer = pendingTransfers.get(transferID);
+                if (!transfer || transfer.supplierEmail !== supplierEmail) {
+                    const error = new Error('Invalid transfer ID or supplier email');
+                    error.status = 400;
+                    throw error;
+                }
+                const bookDetails = transfer.books;
+                if (bookDetails.length === 0) {
+                    const error = new Error('No books to send');
+                    error.status = 400;
+                    throw error;
+                }
+
+                // Generate CSV content
+                const csvData = bookDetails.map(b => ({ number: b.number, type: b.type }));
+                const csvContent = await new Promise((resolve, reject) => {
+                    stringify(csvData, { header: true, columns: ['number', 'type'] }, (err, output) => {
+                        if (err) reject(err);
+                        else resolve(output);
+                    });
+                });
+
+                // Generate ZIP buffer
+                const archive = archiver('zip', { zlib: { level: 9 } });
+                const zipBuffers = [];
+                archive.on('data', chunk => zipBuffers.push(chunk));
+                archive.on('error', err => { throw err; });
+                bookDetails.forEach(b => {
+                    archive.append(b.qrCode, { name: `${b.number}.png` });
+                });
+                archive.finalize();
+                const zipBuffer = await new Promise((resolve, reject) => {
+                    archive.on('end', () => resolve(Buffer.concat(zipBuffers)));
+                    archive.on('error', reject);
+                });
+
+                // Ensure the upload directory exists
+                const uploadDir = path.join(__dirname, '..', 'Uploads', 'supplier_files');
+                await fs.mkdir(uploadDir, { recursive: true });
+
+                // Save CSV and ZIP files
+                const csvFileName = `${transferID}_books.csv`;
+                const csvFilePath = path.join(uploadDir, csvFileName);
+                await fs.writeFile(csvFilePath, csvContent);
+
+                const zipFileName = `${transferID}_qrcodes.zip`;
+                const zipFilePath = path.join(uploadDir, zipFileName);
+                await fs.writeFile(zipFilePath, zipBuffer);
+
+                // Generate tokens and store in Redis without initial expiration
+                const redisClient = getRedisClient();
+                const csvToken = uuidv4();
+                const zipToken = uuidv4();
+                const maxDownloads = process.env.MAX_FILE_DOWNLOADS || 5;
+
+                await redisClient.hset(`file:${csvToken}`, {
+                    filePath: csvFilePath,
+                    fileName: csvFileName,
+                    downloadCount: 0,
+                    maxDownloads,
+                });
+
+                await redisClient.hset(`file:${zipToken}`, {
+                    filePath: zipFilePath,
+                    fileName: zipFileName,
+                    downloadCount: 0,
+                    maxDownloads,
+                });
+
+                // Generate URLs with tokens
+                const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
+                const csvUrl = `${baseUrl}/api/uploads/supplier_files/${csvFileName}?token=${csvToken}`;
+                const zipUrl = `${baseUrl}/api/uploads/supplier_files/${zipFileName}?token=${zipToken}`;
+
+                // Generate preview table (first 10 books)
+                const previewBooks = bookDetails.slice(0, 10);
+                const receiptBooksTable = `
+          <table>
+            <thead>
+              <tr><th>Book Number</th><th>Type</th></tr>
+            </thead>
+            <tbody>
+              ${previewBooks.map(b => `<tr><td>${b.number}</td><td>${b.type}</td></tr>`).join('')}
+            </tbody>
+          </table>
+        `;
+                const bookTypes = Object.entries(
+                    bookDetails.reduce((acc, b) => {
+                        acc[b.type] = (acc[b.type] || 0) + 1;
+                        return acc;
+                    }, {})
+                ).map(([type, count]) => `${type} (${count})`).join(', ');
+
+                // Send email with token-based links
+                await sendEmail({
+                    to: supplierEmail,
+                    subject: 'Receipt Books Sent for Printing',
+                    templateName: 'supplier_receipt_books',
+                    replacements: {
+                        supplierName: 'Supplier',
+                        totalBooks: bookDetails.length,
+                        bookTypes,
+                        receiptBooksTable,
+                        csvUrl,
+                        zipUrl,
+                        supportEmail: process.env.SUPPORT_EMAIL || 'support@traceflow.example.com',
+                        maxDownloads,
+                    },
+                    textFallback: `The following receipt books have been sent for printing (${bookDetails.length} total). You can download the list and QR codes from the following links (available indefinitely until downloaded, then expire 7 days after first download, limited to ${maxDownloads} downloads each):\nCSV: ${csvUrl}\nZIP: ${zipUrl}`,
+                });
+
+                // Clean up pendingTransfers
+                pendingTransfers.delete(transferID);
+                return { message: `${bookDetails.length} books sent to supplier`, csvUrl, zipUrl };
             }
-
-            // Send email with attachments
-            await sendEmail({
-                to: supplierEmail,
-                subject: 'Receipt Books Sent for Printing',
-                templateName: 'supplier_receipt_books',
-                replacements: {
-                    supplierName: 'Supplier', // Replace with actual supplier name if available
-                    totalBooks: books.length,
-                    bookTypes,
-                    receiptBooksTable,
-                    logoUrl: process.env.LOGO_URL || 'http://localhost:5000/logo/Logo.png',
-                    signatureLogoUrl: process.env.SIGNATURE_LOGO_URL || 'http://localhost:5000/logo/Banner-bd.png',
-                    platformUrl: process.env.PLATFORM_URL || 'http://localhost:5000',
-                    supportEmail: process.env.SUPPORT_EMAIL || 'support@traceflow.com',
-                },
-                textFallback: `The following receipt books have been sent for printing (${books.length} total):\n${books
-                    .map(b => `${b.number} | ${b.ReceiptBookType.name}`)
-                    .join('\n')}\n\nSee attachments for full list and QR codes.`,
-                attachments: [
-                    {
-                        filename: 'receipt_books.csv',
-                        content: csvStream,
-                        encoding: 'utf8',
-                    },
-                    {
-                        filename: 'qr_codes.zip',
-                        content: zipBuffer,
-                        encoding: 'binary',
-                    },
-                ],
-            });
-
-            return { message: `${books.length} books sent to supplier` };
         } catch (error) {
             throw error;
         }
@@ -677,7 +770,6 @@ class ReceiptBookService {
 
     static determineTransferDetails(currentStatus, recipientType, recipient) {
         try {
-
             if (recipientType === 'agent') {
                 return { status: 'Assigned to Agent', transferType: 'ToAgent' };
             }
@@ -747,15 +839,12 @@ class ReceiptBookService {
         }
     }
 
-
-
-
     /**
- * Process receipt book CSV file.
- * @param {Buffer} fileBuffer - Uploaded CSV file buffer.
- * @param {string} actorID - ID of the user performing the action.
- * @returns {Promise<Object>} Detailed processing results.
- */
+     * Process receipt book CSV file.
+     * @param {Buffer} fileBuffer - Uploaded CSV file buffer.
+     * @param {string} actorID - ID of the user performing the action.
+     * @returns {Promise<Object>} Detailed processing results.
+     */
     static async processReceiptBookCSV(fileBuffer, actorID) {
         const results = {
             status: 'pending',

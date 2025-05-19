@@ -57,6 +57,7 @@
     "express-openapi-validator": "^5.4.9",
     "express-rate-limit": "^7.5.0",
     "express-validator": "^7.2.1",
+    "file-type": "^20.5.0",
     "fingerprintjs2": "^2.1.4",
     "google-auth-library": "^9.15.1",
     "googleapis": "^148.0.0",
