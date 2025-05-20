@@ -8,10 +8,8 @@ export type CalendarEvent = {
     summary: string;
     description?: string;
     location?: string;
-    start: { dateTime: string; timeZone: string };
-    end: { dateTime: string; timeZone: string };
-    visitId: string;
-    mapsLink: string;
+    start: { dateTime: string; timeZone?: string };
+    end: { dateTime: string; timeZone?: string };
 };
 
 export type ListCalendarEventsResponse = CalendarEvent[];
@@ -86,6 +84,9 @@ export const logVisitDetails = async (
         if (!data.photos || data.photos.length === 0) {
             throw new Error("At least one photo is required.");
         }
+        if (data.checklistUpdates && !Array.isArray(data.checklistUpdates)) {
+            throw new Error("checklistUpdates must be an array.");
+        }
         const formData = new FormData();
         formData.append("duration", data.duration.toString());
         formData.append("checklistUpdates", JSON.stringify(data.checklistUpdates));
@@ -107,6 +108,7 @@ export const logVisitDetails = async (
         throw new Error(handleApiError(error, "Unable to log visit details."));
     }
 };
+
 export const getVisitById = async (id: string): Promise<VisitByIdResponse> => {
     try {
         if (!id) {
@@ -179,7 +181,6 @@ export const deleteVisit = async (id: string): Promise<DeleteVisitResponse> => {
     }
 };
 
-// Google Calendar API methods
 export const syncVisitToCalendar = async (visitId: string): Promise<SyncCalendarResponse> => {
     try {
         if (!visitId) {

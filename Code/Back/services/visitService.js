@@ -8,6 +8,7 @@ const { sendSMS } = require('../config/sms');
 const path = require('path');
 const fs = require('fs');
 const { sequelize } = require('../config/db');
+const { getKeycloakAdminToken, getGoogleAccessTokenForUser } = require('../utils/tokenExchange');
 
 class VisitService {
     static async createVisit(data, actorID, options = {}) {
@@ -161,15 +162,27 @@ class VisitService {
             const reloadedVisit = await visit.reload({ include: [Reason, Checklist], transaction });
 
             // Google Calendar sync
+            const supervisor = await User.findByPk(supervisorID);
+            if (!supervisor || !supervisor.keycloakId) {
+                throw new Error('Supervisor not found or not linked to Keycloak');
+            }
+
             try {
-                const event = await GoogleCalendarService.createCalendarEvent(supervisorID, visit.visitID);
-                await GoogleCalendarService.notifyCalendarUpdate(supervisorID, {
-                    visitId: visit.visitID,
-                    calendarEventId: event.id,
-                    action: 'created',
+                const adminToken = await getKeycloakAdminToken();
+                const googleToken = await getGoogleAccessTokenForUser(supervisor.keycloakId, adminToken);
+                const calendar = await GoogleCalendarService.getCalendarClient(googleToken);
+                const event = await calendar.events.insert({
+                    calendarId: 'primary',
+                    resource: {
+                        summary: `Visit ${visit.visitID}`,
+                        start: { dateTime: `${visit.date}T${visit.time}` },
+                        end: { dateTime: new Date(new Date(`${visit.date}T${visit.time}`).getTime() + 60 * 60000).toISOString() },
+                    },
                 });
+                visit.calendarEventId = event.data.id;
+                await visit.save({ transaction });
             } catch (error) {
-                throw new Error(`Failed to create Google Calendar event for visit ${visit.visitID}: ${error.message}`);
+                console.error(`Failed to sync visit ${visit.visitID} to Google Calendar: ${error.message}`);
             }
 
             if (isLocalTransaction) await transaction.commit();
@@ -368,21 +381,25 @@ class VisitService {
 
             // Update Google Calendar event
             try {
-                const event = await GoogleCalendarService.updateCalendarEvent(visit.Timesheet.supervisorID, visitID);
-                await GoogleCalendarService.notifyCalendarUpdate(visit.Timesheet.supervisorID, {
+                const adminToken = await getKeycloakAdminToken();
+                const googleToken = await getGoogleAccessTokenForUser(visit.Timesheet.User.keycloakId, adminToken);
+                const event = await GoogleCalendarService.updateCalendarEvent(googleToken, visitID);
+                await GoogleCalendarService.notifyCalendarUpdate(visit.Timesheet.User.keycloakId, {
                     visitId: visitID,
                     calendarEventId: event.id,
                     action: 'updated',
                 });
             } catch (error) {
-                throw error;
+                console.error(`Failed to update calendar event for visit ${visitID}: ${error.message}`);
             }
 
             await transaction.commit();
             return reloadedVisit;
         } catch (error) {
             await transaction.rollback();
-            throw error;
+            const err = new Error('Failed to log visit: ' + error.message);
+            err.status = error.status || 500;
+            throw err;
         }
     }
 
@@ -403,7 +420,7 @@ class VisitService {
             const oldTime = visit.time.replace(/:/g, '-');
             const supervisorName = `${visit.Timesheet.User.firstname.toLowerCase()}_${visit.Timesheet.User.lastname.toLowerCase()}`;
             const folderName = `${oldDate}_${oldTime}_${supervisorName}`;
-            const folderPath = path.join(__dirname, '../uploads/photos', folderName);
+            const folderPath = path.join(__dirname, '../Uploads/photos', folderName);
 
             let photoPaths = visit.photos ? [...visit.photos] : [];
 
@@ -544,14 +561,16 @@ class VisitService {
 
             // Update Google Calendar event
             try {
-                const event = await GoogleCalendarService.updateCalendarEvent(visit.Timesheet.supervisorID, visitID);
-                await GoogleCalendarService.notifyCalendarUpdate(visit.Timesheet.supervisorID, {
+                const adminToken = await getKeycloakAdminToken();
+                const googleToken = await getGoogleAccessTokenForUser(visit.Timesheet.User.keycloakId, adminToken);
+                const event = await GoogleCalendarService.updateCalendarEvent(googleToken, visitID);
+                await GoogleCalendarService.notifyCalendarUpdate(visit.Timesheet.User.keycloakId, {
                     visitId: visitID,
                     calendarEventId: event.id,
                     action: 'updated',
                 });
             } catch (error) {
-                throw error;
+                console.error(`Failed to update calendar event for visit ${visitID}: ${error.message}`);
             }
 
             return visit.reload({ include: [Checklist, Reason] });
@@ -584,7 +603,7 @@ class VisitService {
             const time = visit.time.replace(/:/g, '-');
             const supervisorName = `${visit.Timesheet.User.firstname.toLowerCase()}_${visit.Timesheet.User.lastname.toLowerCase()}`;
             const folderName = `${date}_${time}_${supervisorName}`;
-            const folderPath = path.join(__dirname, '../uploads/photos', folderName);
+            const folderPath = path.join(__dirname, '../Uploads/photos', folderName);
 
             if (fs.existsSync(folderPath)) {
                 fs.rmSync(folderPath, { recursive: true, force: true });
@@ -592,13 +611,15 @@ class VisitService {
 
             // Delete Google Calendar event
             try {
-                await GoogleCalendarService.deleteCalendarEvent(visit.Timesheet.supervisorID, visitID);
-                await GoogleCalendarService.notifyCalendarUpdate(visit.Timesheet.supervisorID, {
+                const adminToken = await getKeycloakAdminToken();
+                const googleToken = await getGoogleAccessTokenForUser(visit.Timesheet.User.keycloakId, adminToken);
+                await GoogleCalendarService.deleteCalendarEvent(googleToken, visitID);
+                await GoogleCalendarService.notifyCalendarUpdate(visit.Timesheet.User.keycloakId, {
                     visitId: visitID,
                     action: 'deleted',
                 });
             } catch (error) {
-                throw error;
+                console.error(`Failed to delete calendar event for visit ${visitID}: ${error.message}`);
             }
 
             await visit.destroy();

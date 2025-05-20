@@ -2141,11 +2141,11 @@ body.dark .confirmation-modal-overlay {
 }
 
 .confirmation-modal-overlay.fade-in {
-    opacity: 1;
+    animation: fadeIn 0.3s ease-in;
 }
 
 .confirmation-modal-overlay.fade-out {
-    opacity: 0;
+    animation: fadeOut 0.3s ease-out;
 }
 
 /* Confirmation Modal */
@@ -5060,7 +5060,7 @@ body.dark .reset-confirm-actions .cancel-button:hover {
     }
 
     to {
-        opacity: 1oppel;
+        opacity: 1;
     }
 }
 

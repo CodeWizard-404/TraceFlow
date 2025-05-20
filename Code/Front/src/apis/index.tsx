@@ -1,17 +1,17 @@
-import Agent from '../models/Agent';
-import { Checklist, VisitChecklist } from '../models/Checklist';
-import { Reason, VisitReason } from '../models/Reason';
-import Timesheet from '../models/Timesheet';
-import Visit from '../models/Visit';
-import User from '../models/User';
-import Role from '../models/Role';
-import Permission from '../models/Permission';
-import ReceiptBook from '../models/ReceiptBook';
-import ReceiptStub from '../models/ReceiptStub';
-import ReceiptBookTransfer from '../models/ReceiptBookTransfer';
-import Delegation from '../models/Delegation';
-import Governorate from '../models/Governorate';
-import Region from '../models/Region';
+import Agent from "../models/Agent";
+import { Checklist, VisitChecklist } from "../models/Checklist";
+import { Reason, VisitReason } from "../models/Reason";
+import ReceiptBook from "../models/ReceiptBook";
+import ReceiptBookTransfer from "../models/ReceiptBookTransfer";
+import Delegation from "../models/Delegation";
+import Governorate from "../models/Governorate";
+import Region from "../models/Region";
+import Timesheet from "../models/Timesheet";
+import Visit from "../models/Visit";
+import User from "../models/User";
+import Role from "../models/Role";
+import Permission from "../models/Permission";
+import ReceiptStub from "../models/ReceiptStub";
 
 export type AxiosErrorResponse = { response?: { data?: { error?: string }; status?: number } };
 
@@ -108,7 +108,7 @@ export type TransferResponse = { message: string; otpID?: string };
 export type UpdateReceiptBookResponse = ReceiptBook;
 export type ValidateTransferResponse = { message: string };
 export interface ReceiptBookBulkUploadResponse {
-    status: 'pending' | 'completed_successfully' | 'completed_with_issues' | 'failed';
+    status: "pending" | "completed_successfully" | "completed_with_issues" | "failed";
     summary: {
         totalRecords: number;
         booksCreated: number;
@@ -138,10 +138,12 @@ export interface ReceiptBookBulkUploadResponse {
     };
 }
 
+
 // Receipt Stub Routes
 export type ArchiveStubResponse = ReceiptStub;
 export type CollectStubResponse = { message: string };
 export type ValidateStubCollectionResponse = ReceiptStub;
+
 
 // Role Routes
 export type AssignRolesResponse = { userID: string; assignedRoles: string[]; totalAssigned: number };
@@ -162,6 +164,13 @@ export type TimesheetsBySupervisorResponse = Timesheet[];
 export type UpdateTimesheetResponse = Timesheet;
 export type ValidateTimesheetResponse = Timesheet;
 export type TimesheetByWeekNumberAndYearResponse = Timesheet;
+
+// Visit Routes
+export type DeleteVisitResponse = { message: string };
+export type LogVisitResponse = Visit;
+export type UpdateVisitResponse = Visit;
+export type VerifyQrResponse = { valid: boolean; message: string; otpID?: string };
+export type VisitByIdResponse = Visit;
 
 // User Routes
 export type AssignGoogleAccountResponse = { userID: string; keycloakId: string; firstname: string; lastname: string; phone: string; email: string; password: string; googleEmail: string };
@@ -196,15 +205,8 @@ export type GovernoratesByUserResponse = Governorate[];
 export type DelegationsByUserResponse = Delegation[];
 export interface LocationDetailsResponse { success: boolean; address?: string; idInfo?: string; message?: string; }
 
-// Visit Routes
-export type DeleteVisitResponse = { message: string };
-export type LogVisitResponse = Visit;
-export type UpdateVisitResponse = Visit;
-export type VerifyQrResponse = { valid: boolean; message: string; otpID?: string };
-export type VisitByIdResponse = Visit;
-
 // Google Maps API response types
-export type GeocodeResponse = { geometry: { location: { lat: number; lng: number } }; formatted_address: string; latitude: number; longitude: number; mock?: boolean; };
-export type DirectionsResponse = { routes: Array<{ legs: Array<{ distance: { text: string; value: number }; duration: { text: string; value: number }; start_address: string; end_address: string; steps: Array<{ polyline: { points: string } }>; }>; }>; mock?: boolean; };
+export type GeocodeResponse = { geometry: { location: { lat: number; lng: number } }; formatted_address: string; latitude: number; longitude: number; mock?: boolean };
+export type DirectionsResponse = { routes: Array<{ legs: Array<{ distance: { text: string; value: number }; duration: { text: string; value: number }; start_address: string; end_address: string; steps: Array<{ polyline: { points: string } }>; }>; }>; mock?: boolean };
 export type PlacesResponse = Array<{ place_id: string; name: string; formatted_address: string; geometry: { location: { lat: number; lng: number } }; }>;
 export type DistanceMatrixResponse = Array<{ elements: Array<{ distance: { text: string; value: number }; duration: { text: string; value: number }; status: string; }>; }>;

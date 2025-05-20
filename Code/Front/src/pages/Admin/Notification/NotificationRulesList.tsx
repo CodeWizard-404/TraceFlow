@@ -340,7 +340,6 @@ const NotificationRulesList: React.FC<NotificationRulesListProps> = React.memo(
                     setRules((prev) =>
                         prev.map((r) => (r.ruleID === updatedRule.ruleID ? updatedRule : r))
                     );
-                    setError(`Rule ${updatedRule.enabled ? 'enabled' : 'disabled'} successfully`);
                 } catch (err: unknown) {
                     console.error('Failed to update rule:', err);
                     setError('Failed to update rule');
@@ -356,7 +355,6 @@ const NotificationRulesList: React.FC<NotificationRulesListProps> = React.memo(
                     await deleteNotificationRule(ruleID);
                     setRules((prev) => prev.filter((r) => r.ruleID !== ruleID));
                     setExpandedRows((prev) => prev.filter((id) => id !== ruleID));
-                    setError('Notification rule deleted successfully');
                 } catch (err: unknown) {
                     console.error('Failed to delete notification rule:', err);
                     setError('Failed to delete notification rule');

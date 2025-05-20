@@ -266,7 +266,6 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
                 },
             } as NotificationRule);
             setRules((prev) => [...prev, newRule]);
-            setError('Notification rule created successfully');
             setView('notifications');
         } catch (err: unknown) {
             console.error('Failed to create notification rule:', err);

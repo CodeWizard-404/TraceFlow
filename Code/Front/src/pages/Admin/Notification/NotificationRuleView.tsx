@@ -320,7 +320,6 @@ const NotificationRuleView: React.FC<NotificationRuleViewProps> = ({
             cachedEntityActions.current = null;
             cachedTypes.current = null;
             lastCacheTime.current = 0;
-            setError('Notification rule updated successfully');
             setView('notifications');
         } catch (err: unknown) {
             console.error('Failed to update notification rule:', err);
@@ -334,7 +333,6 @@ const NotificationRuleView: React.FC<NotificationRuleViewProps> = ({
             await deleteNotificationRule(formData.ruleID!);
             setRules((prev) => prev.filter((r) => r.ruleID !== formData.ruleID));
             setSelectedRule(null);
-            setError('Notification rule deleted successfully');
             setView('notifications');
         } catch (err: unknown) {
             console.error('Failed to delete notification rule:', err);

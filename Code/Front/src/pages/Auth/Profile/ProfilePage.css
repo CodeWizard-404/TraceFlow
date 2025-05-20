@@ -655,9 +655,6 @@ body.dark .search-input {
     color: #e5e7eb;
 }
 
-.search-input::placeholder {
-    color: #9ca3af;
-}
 
 .toggle-read-btn {
     padding: 0.5rem 1.25rem;

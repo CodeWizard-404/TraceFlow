@@ -18,8 +18,7 @@ import {
     createTimesheet,
     SuggestTimesheetResponse,
 } from "../../apis/timesheetAPI";
-import { getAllUsers, getSupervisorsByUser, getUserById } from "../../apis/userAPI";
-import { getReasonsByVisitId } from "../../apis/reasonAPI";
+import { getUsersByRole, getSupervisorsByUser } from "../../apis/userAPI";
 import { updateVisit } from '../../apis/visitAPI';
 import { FaClock, FaMapMarkerAlt, FaRegUser, FaFilter } from "react-icons/fa";
 import TimesheetStatus from "../../models/Enum/TimesheetStatus";
@@ -28,8 +27,6 @@ import { useTranslation } from "react-i18next";
 import CalendarSyncButton from "../../components/Google/CalendarSyncButton";
 import TimesheetSuggestionsModal from "../Timesheet/TimesheetSuggestionsModal";
 import { io } from "socket.io-client";
-import { getLocationDetailsById } from '../../apis/locationApi';
-import { getAgentById } from "../../apis/agentAPI";
 
 const PERMISSIONS = {
     ACCESS_TIMESHEETS: import.meta.env.VITE_PERMISSIONS_ACCESS_TIMESHEETS,
@@ -38,7 +35,6 @@ const PERMISSIONS = {
     CREATE_TIMESHEETS: import.meta.env.VITE_PERMISSIONS_CREATE_TIMESHEETS,
     CREATE_SUPERVISOR_TIMESHEETS: import.meta.env.VITE_PERMISSIONS_CREATE_TIMESHEETS_FOR_SUPERVISOR,
     VALIDATE_TIMESHEETS: import.meta.env.VITE_PERMISSIONS_VALIDATE_TIMESHEETS,
-    READ_USERS: import.meta.env.VITE_PERMISSIONS_READ_USERS,
     READ_SUPERVISORS: import.meta.env.VITE_PERMISSIONS_READ_SUPERVISORS,
 };
 
@@ -72,7 +68,7 @@ interface GeneratedVisit {
     agentID: string | null;
     date: string;
     status: VisitStatus.GENERATED;
-    selected?: boolean; // Added for visit selection
+    selected?: boolean;
 }
 
 const TimesheetsSkeleton: React.FC = () => (
@@ -326,40 +322,34 @@ const VisitCard: React.FC<VisitCardProps> = ({
         }
     }, [drag, userPermissions, isVisited]);
 
-    const [agentName, setAgentName] = useState<string>("");
-    const [supervisorName, setSupervisorName] = useState<string>("");
+    const agentName =
+        "Agent" in visit && visit.Agent && "firstname" in visit.Agent && "lastname" in visit.Agent
+            ? `${(visit.Agent as { firstname: string; lastname: string }).firstname} ${(visit.Agent as { firstname: string; lastname: string }).lastname}`
+            : "";
 
-    useEffect(() => {
-        const fetchNames = async () => {
-            if (isSupervisor && visit.agentID) {
-                try {
-                    const agent = await getAgentById(visit.agentID);
-                    setAgentName(`${agent?.name || 'Unknown'} ${agent?.lastname || ''}`);
-                } catch (error) {
-                    console.error('Failed to fetch agent name:', error);
-                }
-            }
-            if ((isSuperAdmin || isRegionalManager || isDirector) && ("supervisorID" in visit ? visit.supervisorID : weekData.supervisorID)) {
-                try {
-                    const supervisor = await getUserById("supervisorID" in visit ? visit.supervisorID! : weekData.supervisorID!);
-                    setSupervisorName(`${supervisor?.firstname || 'Unknown'} ${supervisor?.lastname || ''}`);
-                } catch (error) {
-                    console.error('Failed to fetch supervisor name:', error);
-                }
-            }
-        };
-        fetchNames();
-    }, [visit, isSupervisor, isSuperAdmin, isRegionalManager, isDirector, weekData.supervisorID]);
+    // If supervisor name is needed, try to get it from the visit or pass it as a prop
+    const supervisorName =
+        "supervisor" in visit &&
+            visit.supervisor &&
+            typeof visit.supervisor === "object" &&
+            "firstname" in visit.supervisor &&
+            "lastname" in visit.supervisor
+            ? `${(visit.supervisor as { firstname: string; lastname: string }).firstname} ${(visit.supervisor as { firstname: string; lastname: string }).lastname}`
+            : "";
 
     let displayLocation = t("visitDetails.whenWhere.na");
-    if (visit.agentID) {
-        displayLocation = locationCache[`agent:${visit.agentID}`] || t("visitDetails.whenWhere.na");
+    if (
+        visit.agentID &&
+        "Agent" in visit &&
+        visit.Agent &&
+        "address" in visit.Agent &&
+        typeof (visit.Agent as { address?: string }).address === "string"
+    ) {
+        displayLocation = (visit.Agent as { address: string }).address;
     } else if (visit.location) {
-        if (isCoordinates(visit.location)) {
-            displayLocation = locationCache[`coords:${visit.location}`] || t("visitDetails.whenWhere.na");
-        } else {
-            displayLocation = locationCache[`direct:${visit.location}`] || visit.location;
-        }
+        displayLocation = isCoordinates(visit.location)
+            ? locationCache[`coords:${visit.location}`] || t("visitDetails.whenWhere.na")
+            : visit.location;
     }
 
     return (
@@ -483,9 +473,6 @@ const Timesheets: React.FC = React.memo(() => {
             canValidateTimesheets: effectivePermissions?.some(
                 (p) => p.name === PERMISSIONS.VALIDATE_TIMESHEETS
             ) ?? false,
-            canReadUsers: effectivePermissions?.some(
-                (p) => p.name === PERMISSIONS.READ_USERS
-            ) ?? false,
             canReadSupervisors: effectivePermissions?.some(
                 (p) => p.name === PERMISSIONS.READ_SUPERVISORS
             ) ?? false,
@@ -563,32 +550,11 @@ const Timesheets: React.FC = React.memo(() => {
         t,
     ]);
 
-    const fetchVisitReasons = useCallback(async () => {
-        try {
-            const allVisits = timesheets.flatMap(ts => ts.Visits || []);
-            const uniqueVisitIds = [...new Set(allVisits.map(visit => visit.visitID))];
-            const reasonsPromises = uniqueVisitIds.map(visitId => getReasonsByVisitId(visitId));
-            const reasonsResults = await Promise.all(reasonsPromises);
-            const reasonsMap = uniqueVisitIds.reduce((acc, visitId, index) => {
-                acc[visitId] = reasonsResults[index];
-                return acc;
-            }, {} as Record<string, VisitReason[]>);
-            setVisitReasons(reasonsMap);
-        } catch (error) {
-            console.error("Failed to fetch visit reasons:", error);
-            setError(t("timesheets.errors.fetchVisitReasons"));
-        }
-    }, [timesheets, t]);
-
     const fetchUsers = useCallback(async () => {
         try {
             let userData: User[] = [];
             if (isSuperAdmin) {
-                userData = (await getAllUsers()).filter((user) =>
-                    user.Roles?.some(
-                        (role) => role.name.toLowerCase() === ROLES.SUPERVISOR.toLowerCase()
-                    )
-                );
+                userData = await getUsersByRole(ROLES.SUPERVISOR);
             } else if (userPermissions.canReadSupervisors && supervisorID) {
                 userData = await getSupervisorsByUser(supervisorID);
             }
@@ -617,12 +583,6 @@ const Timesheets: React.FC = React.memo(() => {
             socket.disconnect();
         };
     }, [user, fetchTimesheets]);
-
-    useEffect(() => {
-        if (timesheets.length > 0) {
-            fetchVisitReasons();
-        }
-    }, [timesheets, fetchVisitReasons]);
 
     useEffect(() => {
         const handleBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -722,43 +682,16 @@ const Timesheets: React.FC = React.memo(() => {
             const newLocationCache = { ...locationCache };
 
             for (const visit of allVisits) {
-                let key: string | null = null;
-                let locationID: string | null = null;
-
-                if (visit.agentID) {
-                    try {
-                        const agentData = await getAgentById(visit.agentID);
-                        if (agentData) {
-                            key = `agent:${visit.agentID}`;
-                            if (agentData.location && isCoordinates(agentData.location)) {
-                                locationID = agentData.delegationID;
-                            } else {
-                                locationID = agentData.delegationID;
-                            }
-                        }
-                    } catch (error) {
-                        console.error(`Failed to fetch agent data for agentID ${visit.agentID}:`, error);
-                    }
-                } else if (visit.location && isCoordinates(visit.location)) {
-                    key = `coords:${visit.location}`;
-                    locationID = visit.location;
-                } else if (visit.location) {
-                    key = `direct:${visit.location}`;
-                    newLocationCache[key] = visit.location;
-                }
-
-                if (key && locationID && !newLocationCache[key]) {
-                    try {
-                        const response = await getLocationDetailsById(locationID);
-                        newLocationCache[key] = response.success && response.address
-                            ? response.address
-                            : t("visitDetails.whenWhere.na");
-                    } catch (error) {
-                        console.error(`Failed to fetch location for ${key}:`, error);
-                        newLocationCache[key] = t("visitDetails.whenWhere.na");
-                    }
-                } else if (key && !newLocationCache[key]) {
-                    newLocationCache[key] = t("visitDetails.whenWhere.na");
+                const key = visit.location ? `coords:${visit.location}` : `agent:${visit.agentID}`;
+                if (!newLocationCache[key]) {
+                    newLocationCache[key] =
+                        "Agent" in visit &&
+                            visit.Agent &&
+                            typeof visit.Agent === "object" &&
+                            "address" in visit.Agent &&
+                            typeof (visit.Agent as { address?: string }).address === "string"
+                            ? (visit.Agent as { address: string }).address
+                            : visit.location || t("visitDetails.whenWhere.na");
                 }
             }
 
@@ -992,6 +925,7 @@ const Timesheets: React.FC = React.memo(() => {
             visits: allVisits,
             status: matchingTimesheets[0]?.status || "Not Scheduled",
             supervisorID: matchingTimesheets[0]?.supervisorID || supervisorID,
+            User: matchingTimesheets[0]?.User,
             supervisorCount: new Set(matchingTimesheets.map((ts) => ts.supervisorID)).size,
         };
     }, [filteredTimesheets, generatedVisits, currentYear, currentWeek, getWeekDays, supervisorID]);
@@ -1065,7 +999,6 @@ const Timesheets: React.FC = React.memo(() => {
         setIsSuggestionsModalOpen(false);
     }, []);
 
-    /* Fix for handleDropVisit function to maintain GeneratedVisit status type */
     const handleDropVisit = useCallback(
         async (
             item: { visitId: string; originalDate: string; time: string; isGenerated: boolean },
@@ -1081,7 +1014,7 @@ const Timesheets: React.FC = React.memo(() => {
                                 ? {
                                     ...visit,
                                     date: targetDate.split('-').reverse().join('/'),
-                                    status: isSupervisor ? VisitStatus.GENERATED : visit.status // Maintain GENERATED status
+                                    status: isSupervisor ? VisitStatus.GENERATED : visit.status
                                 }
                                 : visit
                         )
@@ -1131,7 +1064,7 @@ const Timesheets: React.FC = React.memo(() => {
     useEffect(() => {
         if (
             !permissionsLoaded ||
-            (!userPermissions.canReadUsers && isSupervisor)
+            (!userPermissions.canReadSupervisors && isSupervisor)
         )
             return;
         fetchUsers();

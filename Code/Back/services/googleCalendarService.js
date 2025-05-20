@@ -4,13 +4,11 @@ const GoogleMapsService = require('./googleMapsService');
 const RedisUtils = require('../utils/redisUtils');
 const logger = require('../utils/logger');
 require('dotenv').config();
+const { getGoogleAccessToken } = require('../utils/tokenExchange');
 
 class GoogleCalendarService {
-    static async getCalendarClient(userId) {
-        const user = await User.findByPk(userId);
-        if (!user || !user.googleAccessToken) {
-            throw new Error('User not found or not authenticated with Google');
-        }
+    static async getCalendarClient(keycloakToken) {
+        const googleAccessToken = await getGoogleAccessToken(keycloakToken);
 
         const oauth2Client = new google.auth.OAuth2(
             process.env.GOOGLE_CALENDAR_CLIENT_ID,
@@ -18,22 +16,12 @@ class GoogleCalendarService {
             process.env.GOOGLE_CALENDAR_REDIRECT_URI
         );
 
-        oauth2Client.setCredentials({
-            access_token: user.googleAccessToken,
-            refresh_token: user.googleRefreshToken,
-        });
-
-        oauth2Client.on('tokens', async (tokens) => {
-            if (tokens.refresh_token) user.googleRefreshToken = tokens.refresh_token;
-            user.googleAccessToken = tokens.access_token;
-            await user.save();
-        });
+        oauth2Client.setCredentials({ access_token: googleAccessToken });
 
         return google.calendar({ version: 'v3', auth: oauth2Client });
     }
-
-    static async createCalendarEvent(userId, visitId) {
-        const calendar = await this.getCalendarClient(userId);
+    static async createCalendarEvent(userKeycloakToken, visitId) {
+        const calendar = await this.getCalendarClient(userKeycloakToken);
         const visit = await Visit.findByPk(visitId, { include: [{ model: Agent }, { model: Timesheet }] });
         if (!visit) throw new Error('Visit not found');
 
@@ -65,8 +53,8 @@ class GoogleCalendarService {
         return response.data;
     }
 
-    static async updateCalendarEvent(userId, visitId) {
-        const calendar = await this.getCalendarClient(userId);
+    static async updateCalendarEvent(userKeycloakToken, visitId) {
+        const calendar = await this.getCalendarClient(userKeycloakToken);
         const visit = await Visit.findByPk(visitId, { include: [{ model: Agent }, { model: Timesheet }] });
         if (!visit || !visit.calendarEventId) throw new Error('Visit not found or no calendar event associated');
 
@@ -96,8 +84,8 @@ class GoogleCalendarService {
         return response.data;
     }
 
-    static async deleteCalendarEvent(userId, visitId) {
-        const calendar = await this.getCalendarClient(userId);
+    static async deleteCalendarEvent(userKeycloakToken, visitId) {
+        const calendar = await this.getCalendarClient(userKeycloakToken);
         const visit = await Visit.findByPk(visitId);
         if (!visit || !visit.calendarEventId) throw new Error('Visit not found or no calendar event associated');
 
@@ -110,8 +98,8 @@ class GoogleCalendarService {
         await visit.save();
     }
 
-    static async listCalendarEvents(userId, timesheetId) {
-        const calendar = await this.getCalendarClient(userId);
+    static async listCalendarEvents(userKeycloakToken, timesheetId) {
+        const calendar = await this.getCalendarClient(userKeycloakToken);
         const timesheet = await Timesheet.findByPk(timesheetId);
         if (!timesheet) throw new Error('Timesheet not found');
 

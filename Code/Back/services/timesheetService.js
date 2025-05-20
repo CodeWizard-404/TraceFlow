@@ -3,7 +3,10 @@ const AIService = require('./aiService');
 const { sequelize } = require('../config/db');
 const VisitService = require('./visitService');
 const GoogleCalendarService = require('./googleCalendarService');
+const LocationService = require('./locationsService');
+const GoogleMapsService = require('./googleMapsService');
 const { Op } = require('sequelize');
+const { getKeycloakAdminToken, getGoogleAccessTokenForUser } = require('../utils/tokenExchange');
 
 const ERROR_MESSAGES = {
     INVALID_SUPERVISOR: 'Invalid supervisor ID.',
@@ -18,17 +21,95 @@ const ERROR_MESSAGES = {
 const activeControllers = new Map();
 
 class TimesheetService {
+    /**
+     * Enriches visits with an address attribute based on specified conditions.
+     * @param {Array} timesheets - Array of timesheet objects containing visits.
+     */
+    static async enrichVisitsWithAddresses(timesheets) {
+        const redisClient = GoogleMapsService.redisClient;
+        for (const timesheet of timesheets) {
+            for (const visit of timesheet.Visits || []) {
+                let address;
+                let cacheKey;
+
+                // Case 1: Visit has an agentID
+                if (visit.agentID) {
+                    cacheKey = `agent:${visit.agentID}`;
+                    address = await redisClient.get(cacheKey);
+                    if (!address) {
+                        try {
+                            const agent = await Agent.findByPk(visit.agentID);
+                            if (agent && agent.delegationID) {
+                                const response = await LocationService.getLocationById(agent.delegationID);
+                                address = response.success ? response.address : 'N/A';
+                                await redisClient.set(cacheKey, address);
+                            } else {
+                                console.error(`Agent not found or missing delegationID for agentID: ${visit.agentID}`);
+                                address = 'N/A';
+                            }
+                        } catch (error) {
+                            console.error(`Failed to fetch address for agentID ${visit.agentID}:`, error);
+                            address = 'N/A';
+                        }
+                    }
+                }
+                // Case 2: Visit has a location that's coordinates
+                else if (visit.location && this.isCoordinates(visit.location)) {
+                    cacheKey = `coords:${visit.location}`;
+                    address = await redisClient.get(cacheKey);
+                    if (!address) {
+                        try {
+                            const [lat, lng] = visit.location.split(',').map(Number);
+                            const geocode = await GoogleMapsService.reverseGeocode(lat, lng);
+                            address = geocode.formattedAddress || 'N/A';
+                            await redisClient.set(cacheKey, address);
+                        } catch (error) {
+                            console.error(`Failed to reverse geocode coordinates ${visit.location}:`, error);
+                            address = 'N/A';
+                        }
+                    }
+                }
+                // Case 3: Visit has a location that's not coordinates
+                else if (visit.location) {
+                    cacheKey = `direct:${visit.location}`;
+                    address = visit.location;
+                    await redisClient.set(cacheKey, address);
+                }
+                // Case 4: No agentID or location
+                else {
+                    address = 'N/A';
+                }
+
+                // Add the address attribute to the visit
+                visit.address = address;
+            }
+        }
+    }
+
+    /**
+     * Checks if a string represents coordinates (e.g., "12.34, 56.78").
+     * @param {string} str - The string to check.
+     * @returns {boolean} - True if the string is coordinates, false otherwise.
+     */
+    static isCoordinates(str) {
+        return /^\s*-?\d+\.\d+\s*,\s*-?\d+\.\d+\s*$/.test(str);
+    }
+
+    /**
+     * Fetches all timesheets with enriched visit addresses.
+     * @returns {Promise<Array>} - Array of timesheets.
+     */
     static async listTimesheets() {
         try {
-            return await Timesheet.findAll({
+            const timesheets = await Timesheet.findAll({
                 include: [
                     {
                         model: Visit,
                         include: [
                             {
                                 model: Reason,
-                                attributes: ['reasonID', 'item'], // Only include reasonID and item
-                                through: { attributes: [] }, // Exclude VisitReasons junction table data
+                                attributes: ['reasonID', 'item'],
+                                through: { attributes: [] },
                             },
                             { model: Agent },
                         ],
@@ -36,11 +117,18 @@ class TimesheetService {
                     { model: User },
                 ],
             });
+            await this.enrichVisitsWithAddresses(timesheets);
+            return timesheets;
         } catch (error) {
             throw Object.assign(new Error(ERROR_MESSAGES.DATABASE_ERROR), { status: 500 });
         }
     }
 
+    /**
+     * Fetches a single timesheet by ID with enriched visit addresses.
+     * @param {string} id - Timesheet ID.
+     * @returns {Promise<Object>} - Timesheet object.
+     */
     static async viewTimesheet(id) {
         try {
             const timesheet = await Timesheet.findByPk(id, {
@@ -58,18 +146,24 @@ class TimesheetService {
                     },
                     { model: User },
                 ],
-            })
+            });
             if (!timesheet) {
                 const error = new Error('Timesheet not found');
                 error.status = 404;
                 throw error;
             }
+            await this.enrichVisitsWithAddresses([timesheet]);
             return timesheet;
         } catch (error) {
             throw error.status ? error : Object.assign(new Error(ERROR_MESSAGES.DATABASE_ERROR), { status: 500 });
         }
     }
 
+    /**
+     * Fetches timesheets by supervisor ID with enriched visit addresses.
+     * @param {string} supervisorID - Supervisor ID.
+     * @returns {Promise<Array>} - Array of timesheets.
+     */
     static async getTimesheetsBySupervisor(supervisorID) {
         try {
             const timesheets = await Timesheet.findAll({
@@ -80,8 +174,8 @@ class TimesheetService {
                         include: [
                             {
                                 model: Reason,
-                                attributes: ['reasonID', 'item'], // Only include reasonID and item
-                                through: { attributes: [] }, // Exclude VisitReasons junction table data
+                                attributes: ['reasonID', 'item'],
+                                through: { attributes: [] },
                             },
                             { model: Agent },
                         ],
@@ -89,13 +183,20 @@ class TimesheetService {
                     { model: User },
                 ],
             });
+            await this.enrichVisitsWithAddresses(timesheets);
             return timesheets;
         } catch (error) {
             throw error.status ? error : Object.assign(new Error(ERROR_MESSAGES.DATABASE_ERROR), { status: 500 });
         }
     }
 
-    //get Timesheet by week number and year
+    /**
+     * Fetches a timesheet by week number, year, and supervisor ID with enriched visit addresses.
+     * @param {number} weekNumber - Week number.
+     * @param {number} year - Year.
+     * @param {string} supervisorID - Supervisor ID.
+     * @returns {Promise<Object|null>} - Timesheet object or null.
+     */
     static async getTimesheetByWeekAndYear(weekNumber, year, supervisorID) {
         try {
             const timesheet = await Timesheet.findOne({
@@ -115,11 +216,21 @@ class TimesheetService {
                     { model: User },
                 ],
             });
+            if (timesheet) {
+                await this.enrichVisitsWithAddresses([timesheet]);
+            }
             return timesheet;
         } catch (error) {
             throw error.status ? error : Object.assign(new Error(ERROR_MESSAGES.DATABASE_ERROR), { status: 500 });
         }
     }
+
+    /**
+     * Creates a new timesheet and enriches visits with addresses.
+     * @param {Object} data - Timesheet data.
+     * @param {string} actorID - Actor ID.
+     * @returns {Promise<Object>} - Created timesheet and optional warning.
+     */
     static async createTimesheet(data, actorID) {
         const transaction = await sequelize.transaction();
         try {
@@ -190,18 +301,24 @@ class TimesheetService {
             await timesheetWithVisits.save({ transaction });
 
             await transaction.commit();
-            const reloadedTimesheet = await Timesheet.findByPk(timesheet.timesheetID, { include: [Visit, User] });
+            const reloadedTimesheet = await Timesheet.findByPk(timesheet.timesheetID, {
+                include: [Visit, User]
+            });
+            await this.enrichVisitsWithAddresses([reloadedTimesheet]);
 
             let warning = null;
             try {
-                const syncResults = await GoogleCalendarService.syncTimesheetToCalendar(actorID, timesheet.timesheetID);
-                await GoogleCalendarService.notifyCalendarUpdate(actorID, {
+                const adminToken = await getKeycloakAdminToken();
+                const googleToken = await getGoogleAccessTokenForUser(supervisor.keycloakId, adminToken);
+                const syncResults = await GoogleCalendarService.syncTimesheetToCalendar(googleToken, timesheet.timesheetID);
+                await GoogleCalendarService.notifyCalendarUpdate(supervisor.keycloakId, {
                     timesheetId: timesheet.timesheetID,
                     syncedVisits: syncResults,
                     action: 'synced',
                 });
             } catch (error) {
                 warning = 'Timesheet created successfully, but Google Calendar sync failed.';
+                console.error(`Failed to sync timesheet ${timesheet.timesheetID} to Google Calendar: ${error.message}`);
             }
 
             return {
@@ -214,9 +331,17 @@ class TimesheetService {
         }
     }
 
-    static async validateTimesheet(id, visitIDs, status, actorID) {
+    /**
+     * Validates a timesheet and enriches visits with addresses.
+     * @param {string} id - Timesheet ID.
+     * @param {Object} data - Validation data.
+     * @param {string} actorID - Actor ID.
+     * @returns {Promise<Object>} - Updated timesheet.
+     */
+    static async validateTimesheet(id, data, actorID) {
         const transaction = await sequelize.transaction();
         try {
+            const { visitIDs, status } = data;
             const timesheet = await Timesheet.findByPk(id, { include: [Visit], transaction });
             if (!timesheet) {
                 const error = new Error('Timesheet not found');
@@ -246,16 +371,26 @@ class TimesheetService {
             timesheet.status = status;
             await timesheet.save({ transaction });
             await transaction.commit();
-            return await Timesheet.findByPk(id, { include: [Visit, User] });
+            const updatedTimesheet = await Timesheet.findByPk(id, { include: [Visit, User] });
+            await this.enrichVisitsWithAddresses([updatedTimesheet]);
+            return updatedTimesheet;
         } catch (error) {
             await transaction.rollback();
             throw error.status ? error : Object.assign(new Error(ERROR_MESSAGES.DATABASE_ERROR), { status: 500 });
         }
     }
 
+    /**
+     * Suggests a timesheet (no address enrichment needed here).
+     * @param {string} supervisorId - Supervisor ID.
+     * @param {number} weekNumber - Week number.
+     * @param {number} year - Year.
+     * @param {Object} criteria - Suggestion criteria.
+     * @param {Object} coordinates - Coordinates.
+     * @returns {Promise<Object>} - Suggestions and request ID.
+     */
     static async suggestTimesheet(supervisorId, weekNumber, year, criteria, coordinates) {
         try {
-
             const supervisor = await User.findByPk(supervisorId);
             if (!supervisor) {
                 const error = new Error(ERROR_MESSAGES.INVALID_SUPERVISOR);
@@ -356,6 +491,11 @@ class TimesheetService {
         }
     }
 
+    /**
+     * Cancels a timesheet suggestion request.
+     * @param {string} requestId - Request ID.
+     * @returns {Promise<boolean>} - Success status.
+     */
     static async cancelTimesheetSuggestion(requestId) {
         const controller = activeControllers.get(requestId);
         if (controller) {

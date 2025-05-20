@@ -669,11 +669,12 @@ const ReceiptBooks: React.FC = memo(() => {
   // Fetch Receipt Book Types
   useEffect(() => {
     const fetchTypes = async () => {
+      // Only fetch if user has permission, permissions are loaded, user exists, and cache is stale or unpopulated
       if (
         !userPermissions.canViewTypes ||
         !permissionsLoaded ||
         !user ||
-        (receiptBookTypesCache.data.length > 0 && Date.now() - receiptBookTypesCache.timestamp < CACHE_DURATION)
+        (receiptBookTypesCache.timestamp > 0 && Date.now() - receiptBookTypesCache.timestamp < CACHE_DURATION)
       ) {
         setTypesLoading(false);
         return;
@@ -684,6 +685,8 @@ const ReceiptBooks: React.FC = memo(() => {
         setReceiptBookTypesCache({ data: typesData, timestamp: Date.now() });
         setError(null);
       } catch {
+        // Set cache with empty data to prevent re-fetching
+        setReceiptBookTypesCache((prev) => ({ ...prev, timestamp: Date.now() }));
         setError(t("receiptBooks.types.errors.fetchFailed"));
       } finally {
         setTypesLoading(false);

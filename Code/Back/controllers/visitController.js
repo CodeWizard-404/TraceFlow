@@ -2,6 +2,8 @@ const VisitService = require('../services/visitService');
 const GoogleCalendarService = require('../services/googleCalendarService');
 const NotificationService = require('../services/notificationService');
 const logger = require('../utils/logger');
+const { getKeycloakAdminToken, getGoogleAccessTokenForUser } = require('../utils/tokenExchange');
+const { Visit, Timesheet, User } = require('../models');
 
 class VisitController {
     static async getVisitByID(req, res) {
@@ -58,8 +60,14 @@ class VisitController {
             }
             const visit = await VisitService.logVisit(id, { duration, checklistUpdates, comment, date, time, otpCode }, files, req.user.userID);
             try {
-                const event = await GoogleCalendarService.updateCalendarEvent(req.user.userID, id);
-                await GoogleCalendarService.notifyCalendarUpdate(req.user.userID, {
+                const timesheet = await Timesheet.findByPk(visit.timesheetID, { include: [{ model: User }] });
+                if (!timesheet || !timesheet.User || !timesheet.User.keycloakId) {
+                    throw new Error('Timesheet or supervisor not found or not linked to Keycloak');
+                }
+                const adminToken = await getKeycloakAdminToken();
+                const googleToken = await getGoogleAccessTokenForUser(timesheet.User.keycloakId, adminToken);
+                const event = await GoogleCalendarService.updateCalendarEvent(googleToken, id);
+                await GoogleCalendarService.notifyCalendarUpdate(timesheet.User.keycloakId, {
                     visitId: id,
                     calendarEventId: event.id,
                     action: 'updated',
@@ -91,8 +99,14 @@ class VisitController {
             }
             const visit = await VisitService.updateVisit(id, data, files, req.user.userID);
             try {
-                const event = await GoogleCalendarService.updateCalendarEvent(req.user.userID, id);
-                await GoogleCalendarService.notifyCalendarUpdate(req.user.userID, {
+                const timesheet = await Timesheet.findByPk(visit.timesheetID, { include: [{ model: User }] });
+                if (!timesheet || !timesheet.User || !timesheet.User.keycloakId) {
+                    throw new Error('Timesheet or supervisor not found or not linked to Keycloak');
+                }
+                const adminToken = await getKeycloakAdminToken();
+                const googleToken = await getGoogleAccessTokenForUser(timesheet.User.keycloakId, adminToken);
+                const event = await GoogleCalendarService.updateCalendarEvent(googleToken, id);
+                await GoogleCalendarService.notifyCalendarUpdate(timesheet.User.keycloakId, {
                     visitId: id,
                     calendarEventId: event.id,
                     action: 'updated',
@@ -118,15 +132,24 @@ class VisitController {
             const { id } = req.params;
             if (!id) {
                 logger.warn(`Delete visit failed: Missing visit ID, user: ${req.user.userID}, IP: ${req.ip}`);
-                return res.status(400).json({ doorbell: 'Visit ID is required' });
+                return res.status(400).json({ error: 'Visit ID is required' });
+            }
+            const visit = await Visit.findByPk(id, { include: [{ model: Timesheet, include: [{ model: User }] }] });
+            if (!visit) {
+                logger.warn(`Delete visit failed: Visit not found, user: ${req.user.userID}, IP: ${req.ip}`);
+                return res.status(404).json({ error: 'Visit not found' });
             }
             const result = await VisitService.deleteVisit(id, req.user.userID);
             try {
-                await GoogleCalendarService.deleteCalendarEvent(req.user.userID, id);
-                await GoogleCalendarService.notifyCalendarUpdate(req.user.userID, {
-                    visitId: id,
-                    action: 'deleted',
-                });
+                if (visit.Timesheet.User && visit.Timesheet.User.keycloakId) {
+                    const adminToken = await getKeycloakAdminToken();
+                    const googleToken = await getGoogleAccessTokenForUser(visit.Timesheet.User.keycloakId, adminToken);
+                    await GoogleCalendarService.deleteCalendarEvent(googleToken, id);
+                    await GoogleCalendarService.notifyCalendarUpdate(visit.Timesheet.User.keycloakId, {
+                        visitId: id,
+                        action: 'deleted',
+                    });
+                }
             } catch (error) {
                 logger.warn(`Failed to delete calendar event for visit ${id}: ${error.message}`);
             }
@@ -150,8 +173,14 @@ class VisitController {
                 logger.warn(`Sync visit to calendar failed: Missing visit ID, user: ${req.user.userID}, IP: ${req.ip}`);
                 return res.status(400).json({ error: 'Visit ID is required' });
             }
-            const event = await GoogleCalendarService.createCalendarEvent(req.user.userID, id);
-            await GoogleCalendarService.notifyCalendarUpdate(req.user.userID, {
+            const visit = await Visit.findByPk(id, { include: [{ model: Timesheet, include: [{ model: User }] }] });
+            if (!visit || !visit.Timesheet.User || !visit.Timesheet.User.keycloakId) {
+                throw new Error('Visit or supervisor not found or not linked to Keycloak');
+            }
+            const adminToken = await getKeycloakAdminToken();
+            const googleToken = await getGoogleAccessTokenForUser(visit.Timesheet.User.keycloakId, adminToken);
+            const event = await GoogleCalendarService.createCalendarEvent(googleToken, id);
+            await GoogleCalendarService.notifyCalendarUpdate(visit.Timesheet.User.keycloakId, {
                 visitId: id,
                 calendarEventId: event.id,
                 action: 'created',
@@ -176,7 +205,13 @@ class VisitController {
                 logger.warn(`List calendar events failed: Missing timesheet ID, user: ${req.user.userID}, IP: ${req.ip}`);
                 return res.status(400).json({ error: 'Timesheet ID is required' });
             }
-            const events = await GoogleCalendarService.listCalendarEvents(req.user.userID, timesheetId);
+            const timesheet = await Timesheet.findByPk(timesheetId, { include: [{ model: User }] });
+            if (!timesheet || !timesheet.User || !timesheet.User.keycloakId) {
+                throw new Error('Timesheet or supervisor not found or not linked to Keycloak');
+            }
+            const adminToken = await getKeycloakAdminToken();
+            const googleToken = await getGoogleAccessTokenForUser(timesheet.User.keycloakId, adminToken);
+            const events = await GoogleCalendarService.listCalendarEvents(googleToken, timesheetId);
             logger.info(`Listed calendar events for timesheet ${timesheetId} by user ${req.user.userID}, IP: ${req.ip}`);
             return res.status(200).json(events);
         } catch (error) {

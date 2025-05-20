@@ -238,9 +238,13 @@ const TimesheetForm: React.FC = () => {
         date,
         time: `${time}:00`,
         agentID: isRecruitmentVisit ? null : selectedAgent,
-        location: location, // Use constructed location string
-        reasons: selectedReasons,
-        checklists: selectedChecklists,
+        location: location,
+        reasons: selectedReasons
+          .filter((r) => r.id !== undefined)
+          .map((r) => ({ id: r.id! })),
+        checklists: selectedChecklists
+          .filter((c) => c.id !== undefined)
+          .map((c) => ({ id: c.id! })),
         status: userPermissions.canValidateTimesheets ? "validated" : (userPermissions.canCreateTimesheetsForSupervisors ? "validated" : "pending"),
       }],
     };
