@@ -285,7 +285,6 @@ const VisitCard: React.FC<VisitCardProps> = ({
     visit,
     t,
     isSupervisor,
-    weekData,
     userPermissions,
     visitReasons,
     locationCache,
@@ -352,6 +351,11 @@ const VisitCard: React.FC<VisitCardProps> = ({
             : visit.location;
     }
 
+    // Get reasons for display
+    const displayReasons = isGenerated
+        ? visit.reasons
+        : visitReasons[visitId] || ("Reasons" in visit ? visit.Reasons : []);
+
     return (
         <div
             ref={visitRef}
@@ -405,18 +409,10 @@ const VisitCard: React.FC<VisitCardProps> = ({
             <p className="visit-location">
                 <FaMapMarkerAlt /> {displayLocation}
             </p>
-            {"time" in visit ? (
-                visitReasons[visit.visitID] && visitReasons[visit.visitID].length > 0 && (
-                    <p className="visit-reasons">
-                        {visitReasons[visit.visitID].map((r) => r.item).join(", ")}
-                    </p>
-                )
-            ) : (
-                visit.reasons.length > 0 && (
-                    <p className="visit-reasons">
-                        {visit.reasons.map((r) => r.item).join(", ")}
-                    </p>
-                )
+            {displayReasons.length > 0 && (
+                <p className="visit-reasons">
+                    {displayReasons.map((r) => r.item).join(", ")}
+                </p>
             )}
         </div>
     );
@@ -527,13 +523,28 @@ const Timesheets: React.FC = React.memo(() => {
                 data = await getTimesheetsBySupervisor(supervisorID!);
             }
 
-            setTimesheets(
-                data.filter(
-                    (ts) =>
-                        ts.year === currentYear ||
-                        (ts.year === currentYear - 1 && ts.weekNumber >= 52)
-                )
+            // Filter timesheets and populate visitReasons
+            const filteredTimesheets = data.filter(
+                (ts) =>
+                    ts.year === currentYear ||
+                    (ts.year === currentYear - 1 && ts.weekNumber >= 52)
             );
+
+            // Populate visitReasons from the Reasons array in each visit
+            const newVisitReasons: Record<string, VisitReason[]> = {};
+            filteredTimesheets.forEach((ts) => {
+                (ts.Visits || []).forEach((visit) => {
+                    if (visit.visitID && visit.Reasons) {
+                        newVisitReasons[visit.visitID] = visit.Reasons.map((reason) => ({
+                            reasonID: reason.reasonID,
+                            item: reason.item,
+                        }));
+                    }
+                });
+            });
+
+            setTimesheets(filteredTimesheets);
+            setVisitReasons(newVisitReasons);
         } catch (error) {
             console.error("Failed to fetch timesheets:", error);
             setError(t("timesheets.errors.fetchTimesheets"));
