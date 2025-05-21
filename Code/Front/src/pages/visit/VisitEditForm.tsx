@@ -11,8 +11,10 @@ import Governorate from "../../models/Governorate";
 import Delegation from "../../models/Delegation";
 import { updateVisit } from "../../apis/visitAPI";
 import "./VisitDetails.css";
-import "./VisitValidation.css"
+import "./VisitValidation.css";
 import "../Timesheet/TimesheetForm.css";
+import { useTranslation } from "react-i18next";
+
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 export interface EditTracking {
@@ -182,6 +184,16 @@ const VisitEditForm: React.FC<VisitEditFormProps> = ({
     const isVisited = visit.status === VisitStatus.VISITED;
     const [isRecruitmentVisit, setIsRecruitmentVisit] = useState<boolean>(!visit.agentID);
 
+    // Form Completion Check aligned with TimesheetForm
+    const isFormComplete = isVisited
+        ? editForm.checklists.length > 0
+        : editForm.date &&
+        editForm.time &&
+        (isRecruitmentVisit || editForm.agentID) &&
+        editForm.reasons.length > 0 &&
+        editForm.checklists.length > 0 &&
+        (isSupervisor || selectedSupervisor);
+
     // Initialize edit tracking for supervisors when editing a visited visit
     useEffect(() => {
         if (isSupervisor && isVisited && !editTracking.startTime) {
@@ -191,24 +203,34 @@ const VisitEditForm: React.FC<VisitEditFormProps> = ({
         }
     }, [isSupervisor, isVisited, visit.visitID, visit.duration, editTracking.startTime, setEditTracking]);
 
-    // Reset agent fields when toggling recruitment visit
+    // Handle recruitment visit toggle
     useEffect(() => {
-        if (isRecruitmentVisit) {
+        if (isRecruitmentVisit && !isVisited) {
             setEditForm(prev => ({ ...prev, agentID: "", agentPhone: "", agentSearch: "" }));
             setFetchMode("none");
             setDisableLocationInputs(false);
+            // Pre-select "Recruitment" reason if available
+            const recruitmentReason = reasons.find(r => r.item.toLowerCase() === "recruitment");
+            if (recruitmentReason && !editForm.reasons.some(r => r.id === recruitmentReason.reasonID)) {
+                setEditForm(prev => ({ ...prev, reasons: [{ id: recruitmentReason.reasonID }] }));
+            }
         }
-    }, [isRecruitmentVisit, setEditForm, setFetchMode, setDisableLocationInputs]);
+    }, [isRecruitmentVisit, isVisited, setEditForm, setFetchMode, setDisableLocationInputs, reasons]);
+
+    // Construct location string
+    const location = [regions.find(r => r.regionID === editForm.regionID)?.name, governorates.find(g => g.governorateID === editForm.governorateID)?.name, delegations.find(d => d.delegationID === editForm.delegationID)?.name].filter(Boolean).join(", ") || null;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!visit || !userPermissions.canEditTimesheets) return;
+        if (!visit || !userPermissions.canEditTimesheets || !isFormComplete) {
+            setError(t("timesheetForm.errors.formIncomplete"));
+            return;
+        }
 
         let newStatus = visit.status;
         let updatedDuration: number | undefined = isSuperAdmin && isVisited ? editForm.duration || undefined : visit.duration || undefined;
 
         if (isVisited) {
-            // Case 1: Visited status (editable: comment, checklists, photos, duration)
             newStatus = VisitStatus.VISITED;
             if (isSupervisor && editTracking.startTime) {
                 const editDurationMinutes = Math.round((Date.now() - editTracking.startTime) / 60000);
@@ -216,15 +238,12 @@ const VisitEditForm: React.FC<VisitEditFormProps> = ({
                 localStorage.removeItem(`editStartTime_${visit.visitID}`);
             }
         } else {
-            // Case 2: Non-visited status (pending, validated, rejected)
             if (isSupervisor) {
                 newStatus = VisitStatus.PENDING;
             } else if (isDirector || isRegionalManager || isSuperAdmin) {
                 newStatus = VisitStatus.VALIDATED;
             }
         }
-
-        const location = [regions.find(r => r.regionID === editForm.regionID)?.name, governorates.find(g => g.governorateID === editForm.governorateID)?.name, delegations.find(d => d.delegationID === editForm.delegationID)?.name].filter(Boolean).join(", ") || null;
 
         const updateData: any = {
             status: newStatus,
@@ -305,12 +324,10 @@ const VisitEditForm: React.FC<VisitEditFormProps> = ({
     const handleDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (isSuperAdmin && isVisited) {
             const value = e.target.value;
-            // Allow empty input to clear the field
             if (value === "") {
                 setEditForm(prev => ({ ...prev, duration: null }));
             } else {
                 const numValue = parseInt(value);
-                // Only update if the value is a non-negative integer
                 if (!isNaN(numValue) && numValue >= 0) {
                     setEditForm(prev => ({ ...prev, duration: numValue }));
                 }
@@ -322,12 +339,11 @@ const VisitEditForm: React.FC<VisitEditFormProps> = ({
         count: (visit.photos?.filter(p => !editForm.photosToRemove.includes(p)).length || 0) + newPhotos.length,
     }) || `(${(visit.photos?.filter(p => !editForm.photosToRemove.includes(p)).length || 0) + newPhotos.length} photos)`;
 
-    const isFormComplete = isVisited
-        ? editForm.checklists.length > 0
-        : editForm.date && editForm.time && editForm.regionID && editForm.governorateID && editForm.delegationID && (isRecruitmentVisit || editForm.agentID) && editForm.reasons.length > 0 && editForm.checklists.length > 0 && (isSupervisor || selectedSupervisor);
-
     return (
         <div className="timesheet-form-container">
+            <header className="form-header">
+                <h1>{t("visitDetails.form.title")}</h1>
+            </header>
             <form onSubmit={handleSubmit} className="form-card" role="form">
                 {(isSuperAdmin || isDirector) && !isVisited && (
                     <div className="form-group">
@@ -411,7 +427,7 @@ const VisitEditForm: React.FC<VisitEditFormProps> = ({
                 )}
                 {!isVisited && <hr />}
                 {!isVisited && (
-                    <div className="form-group" >
+                    <div className="form-group" style={{ margin: 0 }}>
                         <label className="custom-checkbox-label" htmlFor="recruitmentVisit">
                             <input
                                 type="checkbox"
@@ -436,6 +452,7 @@ const VisitEditForm: React.FC<VisitEditFormProps> = ({
                                 id="region"
                                 value={editForm.regionID}
                                 onChange={(e) => setEditForm(prev => ({ ...prev, regionID: e.target.value, governorateID: "", delegationID: "" }))}
+                                disabled={disableLocationInputs}
                                 required
                             >
                                 <option value="">{t("timesheetForm.form.placeholders.regionSelect")}</option>
@@ -450,7 +467,7 @@ const VisitEditForm: React.FC<VisitEditFormProps> = ({
                                 id="governorate"
                                 value={editForm.governorateID}
                                 onChange={(e) => setEditForm(prev => ({ ...prev, governorateID: e.target.value, delegationID: "" }))}
-                                disabled={!editForm.regionID}
+                                disabled={!editForm.regionID || disableLocationInputs}
                                 required
                             >
                                 <option value="">{t("timesheetForm.form.placeholders.governorateSelect")}</option>
@@ -465,7 +482,7 @@ const VisitEditForm: React.FC<VisitEditFormProps> = ({
                                 id="delegation"
                                 value={editForm.delegationID}
                                 onChange={(e) => setEditForm(prev => ({ ...prev, delegationID: e.target.value }))}
-                                disabled={!editForm.governorateID}
+                                disabled={!editForm.governorateID || disableLocationInputs}
                                 required
                             >
                                 <option value="">{t("timesheetForm.form.placeholders.delegationSelect")}</option>
@@ -581,7 +598,6 @@ const VisitEditForm: React.FC<VisitEditFormProps> = ({
                                 placeholder={t("visitDetails.form.durationPlaceholder")}
                                 min="0"
                                 step="1"
-                                required
                             />
                             <span className="duration-unit">{t("visitDetails.form.minutes")}</span>
                         </div>
@@ -688,7 +704,7 @@ const VisitEditForm: React.FC<VisitEditFormProps> = ({
                         </div>
                     </>
                 )}
-                <div className="form-actions">
+                <div className="form-actions form-actions-6">
                     <button type="button" className="submit-btn secondary" onClick={handleCancel}>
                         {t("timesheetForm.actions.back")}
                     </button>

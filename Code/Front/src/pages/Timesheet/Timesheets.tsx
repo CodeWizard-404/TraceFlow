@@ -66,7 +66,7 @@ interface GeneratedVisit {
     reasons: Array<{ id: string; item: string }>;
     checklists: Array<{ id: string; item: string }>;
     agentID: string | null;
-    date: string;
+    date: string; // Format: "YYYY-MM-DD"
     status: VisitStatus.GENERATED;
     selected?: boolean;
 }
@@ -143,7 +143,7 @@ interface DayColumnProps {
     t: (key: string, options?: any) => string;
     users: User[];
     isSupervisor: boolean;
-    weekData: { supervisorID?: string };
+    weekData: { User: User };
     userPermissions: {
         canAccessTimesheetDetails: boolean;
         canCreateTimesheets: boolean;
@@ -183,8 +183,7 @@ const DayColumn: React.FC<DayColumnProps> = ({
 
     const dayVisits = sortVisitsByTime(visits.filter((v) => {
         const visitDate = "time" in v ? v.date : v.date;
-        const normalizedVisitDate = visitDate.includes("/") ? visitDate.split("/").reverse().join("-") : visitDate;
-        return normalizedVisitDate.split("T")[0] === dayStr;
+        return visitDate.split("T")[0] === dayStr;
     }));
 
     const dayRef = useRef<HTMLDivElement>(null);
@@ -236,7 +235,7 @@ const DayColumn: React.FC<DayColumnProps> = ({
                             t={t}
                             users={users}
                             isSupervisor={isSupervisor}
-                            weekData={weekData}
+                            weekData={{ User: weekData.User ?? ({} as User) }}
                             userPermissions={userPermissions}
                             visitReasons={visitReasons}
                             locationCache={locationCache}
@@ -264,7 +263,7 @@ interface VisitCardProps {
     t: (key: string, options?: any) => string;
     users: User[];
     isSupervisor: boolean;
-    weekData: { supervisorID?: string };
+    weekData: { User: User };
     userPermissions: {
         canAccessTimesheetDetails: boolean;
         canCreateTimesheets: boolean;
@@ -284,6 +283,7 @@ interface VisitCardProps {
 const VisitCard: React.FC<VisitCardProps> = ({
     visit,
     t,
+    users,
     isSupervisor,
     userPermissions,
     visitReasons,
@@ -321,20 +321,19 @@ const VisitCard: React.FC<VisitCardProps> = ({
         }
     }, [drag, userPermissions, isVisited]);
 
+    // Compute agent name using correct field names
     const agentName =
-        "Agent" in visit && visit.Agent && "firstname" in visit.Agent && "lastname" in visit.Agent
-            ? `${(visit.Agent as { firstname: string; lastname: string }).firstname} ${(visit.Agent as { firstname: string; lastname: string }).lastname}`
+        "Agent" in visit && visit.Agent && "name" in visit.Agent && "lastname" in visit.Agent
+            ? `${(visit.Agent as { name: string; lastname: string }).name} ${(visit.Agent as { name: string; lastname: string }).lastname}`
             : "";
 
-    // If supervisor name is needed, try to get it from the visit or pass it as a prop
-    const supervisorName =
-        "supervisor" in visit &&
-            visit.supervisor &&
-            typeof visit.supervisor === "object" &&
-            "firstname" in visit.supervisor &&
-            "lastname" in visit.supervisor
-            ? `${(visit.supervisor as { firstname: string; lastname: string }).firstname} ${(visit.supervisor as { firstname: string; lastname: string }).lastname}`
-            : "";
+    // Compute supervisor name using supervisorID from visit and users array
+    const supervisor = "supervisorID" in visit && visit.supervisorID
+        ? users.find((u) => u.userID === visit.supervisorID)
+        : null;
+    const supervisorName = supervisor
+        ? `${supervisor.firstname} ${supervisor.lastname}`
+        : t("timesheets.unknownSupervisor");
 
     let displayLocation = t("visitDetails.whenWhere.na");
     if (
@@ -351,7 +350,6 @@ const VisitCard: React.FC<VisitCardProps> = ({
             : visit.location;
     }
 
-    // Get reasons for display
     const displayReasons = isGenerated
         ? visit.reasons
         : visitReasons[visitId] || ("Reasons" in visit ? visit.Reasons : []);
@@ -523,14 +521,12 @@ const Timesheets: React.FC = React.memo(() => {
                 data = await getTimesheetsBySupervisor(supervisorID!);
             }
 
-            // Filter timesheets and populate visitReasons
             const filteredTimesheets = data.filter(
                 (ts) =>
                     ts.year === currentYear ||
                     (ts.year === currentYear - 1 && ts.weekNumber >= 52)
             );
 
-            // Populate visitReasons from the Reasons array in each visit
             const newVisitReasons: Record<string, VisitReason[]> = {};
             filteredTimesheets.forEach((ts) => {
                 (ts.Visits || []).forEach((visit) => {
@@ -717,11 +713,6 @@ const Timesheets: React.FC = React.memo(() => {
     const handleSuggestionsGenerated = useCallback((suggestions: SuggestTimesheetResponse) => {
         const visits: GeneratedVisit[] = suggestions.flatMap(agent =>
             agent.schedule.flatMap(day => {
-                let normalizedDate = day.date;
-                if (day.date.includes("-")) {
-                    const [y, m, d] = day.date.split("-").map(Number);
-                    normalizedDate = `${d.toString().padStart(2, '0')}/${m.toString().padStart(2, '0')}/${y}`;
-                }
                 return day.visits.map(visit => ({
                     startTime: visit.startTime,
                     location: visit.location,
@@ -730,7 +721,7 @@ const Timesheets: React.FC = React.memo(() => {
                     reasons: Array.isArray(visit.reasons) ? visit.reasons : [],
                     checklists: Array.isArray(visit.checklists) ? visit.checklists : [],
                     agentID: agent.agentID,
-                    date: normalizedDate,
+                    date: day.date, // Keep YYYY-MM-DD format
                     status: VisitStatus.GENERATED,
                     selected: true,
                 }));
@@ -781,11 +772,11 @@ const Timesheets: React.FC = React.memo(() => {
                 return;
             }
             const visits = selectedVisits.map(visit => ({
-                date: visit.date.split("/").reverse().join("-"),
+                date: visit.date,
                 time: visit.startTime,
                 agentID: visit.agentID,
-                reasons: visit.reasons.map(r => ({ id: r.id, text: r.item })),
-                checklists: visit.checklists.map(c => ({ id: c.id, text: c.item })),
+                reasons: visit.reasons.map(r => ({ id: r.id, item: r.item })),
+                checklists: visit.checklists.map(c => ({ id: c.id, item: c.item })),
             }));
             await createTimesheet({
                 weekNumber: currentWeek,
@@ -925,11 +916,10 @@ const Timesheets: React.FC = React.memo(() => {
             }))
         );
         const allVisits = [...savedVisits, ...generatedVisits.filter(v => {
-            const dateParts = v.date.split("/").map(Number);
-            const [d, m, y] = dateParts;
-            const visitDate = new Date(y, m - 1, d);
-            return weekDays.some(day => day.toISOString().split("T")[0] === visitDate.toISOString().split("T")[0]);
-        })];
+            return weekDays.some(day => day.toISOString().split("T")[0] === v.date);
+        })].filter((visit) =>
+            visitStatusFilter === "all" ? true : visit.status === visitStatusFilter
+        );
         return {
             weekNumber: currentWeek,
             days: weekDays,
@@ -939,7 +929,7 @@ const Timesheets: React.FC = React.memo(() => {
             User: matchingTimesheets[0]?.User,
             supervisorCount: new Set(matchingTimesheets.map((ts) => ts.supervisorID)).size,
         };
-    }, [filteredTimesheets, generatedVisits, currentYear, currentWeek, getWeekDays, supervisorID]);
+    }, [filteredTimesheets, generatedVisits, currentYear, currentWeek, getWeekDays, supervisorID, visitStatusFilter]);
 
     const generateDayData = useCallback(() => {
         if (!currentDay) return [];
@@ -957,13 +947,13 @@ const Timesheets: React.FC = React.memo(() => {
                 ...generatedVisits
             ].filter((visit) => {
                 const visitDate = 'time' in visit ? visit.date : visit.date;
-                const normalizedVisitDate = visitDate.includes("/")
-                    ? visitDate.split("/").reverse().join("-")
-                    : visitDate;
-                return normalizedVisitDate.split("T")[0] === dateStr;
+                return (
+                    visitDate.split("T")[0] === dateStr &&
+                    (visitStatusFilter === "all" ? true : visit.status === visitStatusFilter)
+                );
             })
         );
-    }, [filteredTimesheets, generatedVisits, currentDay, sortVisitsByTime]);
+    }, [filteredTimesheets, generatedVisits, currentDay, sortVisitsByTime, visitStatusFilter]);
 
     const scrollToCurrent = useCallback(() => {
         const today = new Date();
@@ -1024,7 +1014,7 @@ const Timesheets: React.FC = React.memo(() => {
                             `${visit.agentID}-${visit.date}-${visit.startTime}` === item.visitId
                                 ? {
                                     ...visit,
-                                    date: targetDate.split('-').reverse().join('/'),
+                                    date: targetDate,
                                     status: isSupervisor ? VisitStatus.GENERATED : visit.status
                                 }
                                 : visit
@@ -1082,65 +1072,11 @@ const Timesheets: React.FC = React.memo(() => {
     }, [fetchUsers, permissionsLoaded, userPermissions]);
 
     useEffect(() => {
-        if (
-            userPermissions.canAccessTimesheets ||
-            !isSupervisor
-        ) {
+        if (userPermissions.canAccessTimesheets || !isSupervisor) {
             setFilteredTimesheets(
                 supervisorFilter === "all"
                     ? timesheets.filter((ts) =>
-                        visitStatusFilter === "all"
-                            ? visitReasonSearch
-                                ? ts.Visits?.some((visit) =>
-                                    visit.Reasons?.some((reason) =>
-                                        reason.item
-                                            .toLowerCase()
-                                            .includes(visitReasonSearch.toLowerCase())
-                                    )
-                                )
-                                : true
-                            : ts.Visits?.some((visit) =>
-                                visit.status === visitStatusFilter &&
-                                (visitReasonSearch
-                                    ? visit.Reasons?.some((reason) =>
-                                        reason.item
-                                            .toLowerCase()
-                                            .includes(visitReasonSearch.toLowerCase())
-                                    )
-                                    : true)
-                            )
-                    )
-                    : timesheets.filter(
-                        (ts) =>
-                            ts.supervisorID === supervisorFilter &&
-                            (visitStatusFilter === "all"
-                                ? visitReasonSearch
-                                    ? ts.Visits?.some((visit) =>
-                                        visit.Reasons?.some((reason) =>
-                                            reason.item
-                                                .toLowerCase()
-                                                .includes(visitReasonSearch.toLowerCase())
-                                        )
-                                    )
-                                    : true
-                                : ts.Visits?.some((visit) =>
-                                    visit.status === visitStatusFilter &&
-                                    (visitReasonSearch
-                                        ? visit.Reasons?.some((reason) =>
-                                            reason.item
-                                                .toLowerCase()
-                                                .includes(visitReasonSearch.toLowerCase())
-                                        )
-                                        : true)
-                                )
-                            )
-                    )
-            );
-        } else {
-            setFilteredTimesheets(
-                timesheets.filter((ts) =>
-                    visitStatusFilter === "all"
-                        ? visitReasonSearch
+                        visitReasonSearch
                             ? ts.Visits?.some((visit) =>
                                 visit.Reasons?.some((reason) =>
                                     reason.item
@@ -1149,23 +1085,39 @@ const Timesheets: React.FC = React.memo(() => {
                                 )
                             )
                             : true
-                        : ts.Visits?.some((visit) =>
-                            visit.status === visitStatusFilter &&
+                    )
+                    : timesheets.filter(
+                        (ts) =>
+                            ts.supervisorID === supervisorFilter &&
                             (visitReasonSearch
-                                ? visit.Reasons?.some((reason) =>
-                                    reason.item
-                                        .toLowerCase()
-                                        .includes(visitReasonSearch.toLowerCase())
+                                ? ts.Visits?.some((visit) =>
+                                    visit.Reasons?.some((reason) =>
+                                        reason.item
+                                            .toLowerCase()
+                                            .includes(visitReasonSearch.toLowerCase())
+                                    )
                                 )
                                 : true)
+                    )
+            );
+        } else {
+            setFilteredTimesheets(
+                timesheets.filter((ts) =>
+                    visitReasonSearch
+                        ? ts.Visits?.some((visit) =>
+                            visit.Reasons?.some((reason) =>
+                                reason.item
+                                    .toLowerCase()
+                                    .includes(visitReasonSearch.toLowerCase())
+                            )
                         )
+                        : true
                 )
             );
         }
     }, [
         timesheets,
         supervisorFilter,
-        visitStatusFilter,
         visitReasonSearch,
         userPermissions,
         isSupervisor,
@@ -1205,14 +1157,18 @@ const Timesheets: React.FC = React.memo(() => {
                             </button>
                         ))}
                     </div>
-                    {(isSuperAdmin || isRegionalManager || isDirector) && (
-                        <button
-                            className={`toggle-btn-5 toggle-btn ${isFilterVisible ? "active" : ""}`}
-                            onClick={() => setIsFilterVisible(!isFilterVisible)}
-                            aria-label={t("timesheets.filter.toggle")}
-                        >
-                            <FaFilter /> {t("timesheets.filter.toggle")}
-                        </button>
+                    {(viewMode === "week" || viewMode === "day") && (
+                        <>
+                            {(isSuperAdmin || isRegionalManager || isDirector || isSupervisor) && (
+                                <button
+                                    className={`toggle-btn-5 toggle-btn ${isFilterVisible ? "active" : ""}`}
+                                    onClick={() => setIsFilterVisible(!isFilterVisible)}
+                                    aria-label={t("timesheets.filter.toggle")}
+                                >
+                                    <FaFilter /> {t("timesheets.filter.toggle")}
+                                </button>
+                            )}
+                        </>
                     )}
                     <div className="year-navigation">
                         <button
@@ -1256,7 +1212,7 @@ const Timesheets: React.FC = React.memo(() => {
                     </div>
                 </header>
 
-                {(isFilterVisible && (isSuperAdmin || isRegionalManager || isDirector)) || isSupervisor ? (
+                {(viewMode === "week" || viewMode === "day") && isFilterVisible && (
                     <div className="filter-controls">
                         {isSupervisor ? (
                             <>
@@ -1329,7 +1285,7 @@ const Timesheets: React.FC = React.memo(() => {
                             </>
                         )}
                     </div>
-                ) : null}
+                )}
 
                 {error && <p className="error">{error}</p>}
 
@@ -1592,7 +1548,7 @@ const Timesheets: React.FC = React.memo(() => {
                                         t={t}
                                         users={users}
                                         isSupervisor={!!isSupervisor}
-                                        weekData={weekData}
+                                        weekData={{ User: weekData.User ?? ({} as User) }}
                                         userPermissions={userPermissions}
                                         visitReasons={visitReasons}
                                         locationCache={locationCache}
@@ -1654,7 +1610,7 @@ const Timesheets: React.FC = React.memo(() => {
                                         t={t}
                                         users={users}
                                         isSupervisor={!!isSupervisor}
-                                        weekData={weekData}
+                                        weekData={{ User: weekData.User ?? ({} as User) }}
                                         userPermissions={userPermissions}
                                         visitReasons={visitReasons}
                                         locationCache={locationCache}

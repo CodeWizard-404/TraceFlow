@@ -1,4 +1,4 @@
-const { Visit, Agent, Reason, Checklist, Timesheet, User } = require('../models');
+const { Visit, Agent, Reason, Checklist, Timesheet, User, Delegation, Governorate, Region } = require('../models');
 const { parseTLV } = require('../utils/qrParser');
 const ChecklistService = require('./checklistService');
 const ReasonService = require('./reasonService');
@@ -11,6 +11,28 @@ const { sequelize } = require('../config/db');
 const { getKeycloakAdminToken, getGoogleAccessTokenForUser } = require('../utils/tokenExchange');
 
 class VisitService {
+    static async getFormattedLocation(agentID, providedLocation) {
+        if (agentID) {
+            const agent = await Agent.findByPk(agentID, {
+                include: [
+                    {
+                        model: Delegation,
+                        include: [
+                            {
+                                model: Governorate,
+                                include: [Region]
+                            }
+                        ]
+                    }
+                ]
+            });
+            if (agent && agent.Delegation && agent.Delegation.Governorate && agent.Delegation.Governorate.Region) {
+                return `${agent.Delegation.Governorate.Region.name}, ${agent.Delegation.Governorate.name}, ${agent.Delegation.name}`;
+            }
+        }
+        return providedLocation || null;
+    }
+
     static async createVisit(data, actorID, options = {}) {
         const { date, time, agentID, supervisorID, timesheetID, reasons, checklists, location, status = 'pending' } = data;
 
@@ -79,17 +101,8 @@ class VisitService {
                 }
             }
 
-            // Fetch agent if agentID is provided
-            let visitLocation = location;
-            if (agentID) {
-                const agent = await Agent.findByPk(agentID, { transaction });
-                if (!agent) {
-                    const error = new Error('Agent not found');
-                    error.status = 404;
-                    throw error;
-                }
-                visitLocation = visitLocation || agent.location;
-            }
+            // Get formatted location
+            const visitLocation = await this.getFormattedLocation(agentID, location);
 
             // Create the visit
             const visit = await Visit.create(
@@ -145,15 +158,13 @@ class VisitService {
             // Include the new visit's status in the status check
             const visitStatuses = [
                 ...timesheetWithVisits.Visits.map((v) => v.status),
-                status, // Include the newly created visit's status
+                status,
             ];
             const uniqueStatuses = [...new Set(visitStatuses)];
 
             if (uniqueStatuses.length > 1) {
-                // If visits have different statuses, set timesheet to 'pending'
                 timesheetWithVisits.status = 'pending';
             } else {
-                // If all visits have the same status, set timesheet to that status
                 timesheetWithVisits.status = uniqueStatuses[0];
             }
             await timesheetWithVisits.save({ transaction });
@@ -208,7 +219,6 @@ class VisitService {
                 error.status = 404;
                 throw error;
             }
-            // Skip QR verification and OTP for visits without an agent (e.g., recruitment visits)
             if (!visit.agentID) {
                 return { valid: true, message: 'Verification skipped for recruitment visit' };
             }
@@ -231,7 +241,6 @@ class VisitService {
                 throw error;
             }
 
-            // Generate and send OTP to the agent
             const otp = await OTPService.generateOTP(visit.agentID, 'agent');
             await sendSMS(agent.phone, `Your OTP for visit ${visitId} verification is ${otp.code}`);
 
@@ -263,7 +272,6 @@ class VisitService {
                 throw error;
             }
 
-            // Validate OTP for non-recruitment visits
             if (visit.agentID) {
                 if (!otpCode) {
                     const error = new Error('OTP code is required for non-recruitment visits');
@@ -379,7 +387,6 @@ class VisitService {
                 transaction,
             });
 
-            // Update Google Calendar event
             try {
                 const adminToken = await getKeycloakAdminToken();
                 const googleToken = await getGoogleAccessTokenForUser(visit.Timesheet.User.keycloakId, adminToken);
@@ -498,7 +505,7 @@ class VisitService {
                 visit.timesheetID = targetTimesheet.timesheetID;
             }
 
-            if (agentID !== undefined) { // Allow agentID to be set to null
+            if (agentID !== undefined) {
                 if (agentID) {
                     const agent = await Agent.findByPk(agentID);
                     if (!agent) {
@@ -507,13 +514,13 @@ class VisitService {
                         throw error;
                     }
                     visit.agentID = agentID;
-                    visit.location = location || agent.location; // Use provided location or agent location
+                    visit.location = await this.getFormattedLocation(agentID, location);
                 } else {
                     visit.agentID = null;
-                    visit.location = location; // Use provided location or null
+                    visit.location = location;
                 }
             } else {
-                visit.location = location !== undefined ? location : visit.location;
+                visit.location = await this.getFormattedLocation(visit.agentID, location !== undefined ? location : visit.location);
             }
 
             let parsedChecklists = checklists;
@@ -559,7 +566,6 @@ class VisitService {
 
             await visit.save();
 
-            // Update Google Calendar event
             try {
                 const adminToken = await getKeycloakAdminToken();
                 const googleToken = await getGoogleAccessTokenForUser(visit.Timesheet.User.keycloakId, adminToken);
@@ -609,7 +615,6 @@ class VisitService {
                 fs.rmSync(folderPath, { recursive: true, force: true });
             }
 
-            // Delete Google Calendar event
             try {
                 const adminToken = await getKeycloakAdminToken();
                 const googleToken = await getGoogleAccessTokenForUser(visit.Timesheet.User.keycloakId, adminToken);
@@ -633,7 +638,7 @@ class VisitService {
 
     static async getVisitByID(visitID) {
         try {
-            const visit = await Visit.findByPk(visitID, { include: [Checklist, Reason] });
+            const visit = await Visit.findByPk(visitID, { include: [Checklist, Reason, Agent] });
             if (!visit) {
                 const error = new Error('Visit not found');
                 error.status = 404;

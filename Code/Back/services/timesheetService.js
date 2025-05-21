@@ -3,8 +3,6 @@ const AIService = require('./aiService');
 const { sequelize } = require('../config/db');
 const VisitService = require('./visitService');
 const GoogleCalendarService = require('./googleCalendarService');
-const LocationService = require('./locationsService');
-const GoogleMapsService = require('./googleMapsService');
 const { Op } = require('sequelize');
 const { getKeycloakAdminToken, getGoogleAccessTokenForUser } = require('../utils/tokenExchange');
 
@@ -22,81 +20,7 @@ const activeControllers = new Map();
 
 class TimesheetService {
     /**
-     * Enriches visits with an address attribute based on specified conditions.
-     * @param {Array} timesheets - Array of timesheet objects containing visits.
-     */
-    static async enrichVisitsWithAddresses(timesheets) {
-        const redisClient = GoogleMapsService.redisClient;
-        for (const timesheet of timesheets) {
-            for (const visit of timesheet.Visits || []) {
-                let address;
-                let cacheKey;
-
-                // Case 1: Visit has an agentID
-                if (visit.agentID) {
-                    cacheKey = `agent:${visit.agentID}`;
-                    address = await redisClient.get(cacheKey);
-                    if (!address) {
-                        try {
-                            const agent = await Agent.findByPk(visit.agentID);
-                            if (agent && agent.delegationID) {
-                                const response = await LocationService.getLocationById(agent.delegationID);
-                                address = response.success ? response.address : 'N/A';
-                                await redisClient.set(cacheKey, address);
-                            } else {
-                                console.error(`Agent not found or missing delegationID for agentID: ${visit.agentID}`);
-                                address = 'N/A';
-                            }
-                        } catch (error) {
-                            console.error(`Failed to fetch address for agentID ${visit.agentID}:`, error);
-                            address = 'N/A';
-                        }
-                    }
-                }
-                // Case 2: Visit has a location that's coordinates
-                else if (visit.location && this.isCoordinates(visit.location)) {
-                    cacheKey = `coords:${visit.location}`;
-                    address = await redisClient.get(cacheKey);
-                    if (!address) {
-                        try {
-                            const [lat, lng] = visit.location.split(',').map(Number);
-                            const geocode = await GoogleMapsService.reverseGeocode(lat, lng);
-                            address = geocode.formattedAddress || 'N/A';
-                            await redisClient.set(cacheKey, address);
-                        } catch (error) {
-                            console.error(`Failed to reverse geocode coordinates ${visit.location}:`, error);
-                            address = 'N/A';
-                        }
-                    }
-                }
-                // Case 3: Visit has a location that's not coordinates
-                else if (visit.location) {
-                    cacheKey = `direct:${visit.location}`;
-                    address = visit.location;
-                    await redisClient.set(cacheKey, address);
-                }
-                // Case 4: No agentID or location
-                else {
-                    address = 'N/A';
-                }
-
-                // Add the address attribute to the visit
-                visit.address = address;
-            }
-        }
-    }
-
-    /**
-     * Checks if a string represents coordinates (e.g., "12.34, 56.78").
-     * @param {string} str - The string to check.
-     * @returns {boolean} - True if the string is coordinates, false otherwise.
-     */
-    static isCoordinates(str) {
-        return /^\s*-?\d+\.\d+\s*,\s*-?\d+\.\d+\s*$/.test(str);
-    }
-
-    /**
-     * Fetches all timesheets with enriched visit addresses.
+     * Fetches all timesheets.
      * @returns {Promise<Array>} - Array of timesheets.
      */
     static async listTimesheets() {
@@ -117,7 +41,6 @@ class TimesheetService {
                     { model: User },
                 ],
             });
-            await this.enrichVisitsWithAddresses(timesheets);
             return timesheets;
         } catch (error) {
             throw Object.assign(new Error(ERROR_MESSAGES.DATABASE_ERROR), { status: 500 });
@@ -125,7 +48,7 @@ class TimesheetService {
     }
 
     /**
-     * Fetches a single timesheet by ID with enriched visit addresses.
+     * Fetches a single timesheet by ID.
      * @param {string} id - Timesheet ID.
      * @returns {Promise<Object>} - Timesheet object.
      */
@@ -152,7 +75,6 @@ class TimesheetService {
                 error.status = 404;
                 throw error;
             }
-            await this.enrichVisitsWithAddresses([timesheet]);
             return timesheet;
         } catch (error) {
             throw error.status ? error : Object.assign(new Error(ERROR_MESSAGES.DATABASE_ERROR), { status: 500 });
@@ -160,7 +82,7 @@ class TimesheetService {
     }
 
     /**
-     * Fetches timesheets by supervisor ID with enriched visit addresses.
+     * Fetches timesheets by supervisor ID.
      * @param {string} supervisorID - Supervisor ID.
      * @returns {Promise<Array>} - Array of timesheets.
      */
@@ -183,7 +105,6 @@ class TimesheetService {
                     { model: User },
                 ],
             });
-            await this.enrichVisitsWithAddresses(timesheets);
             return timesheets;
         } catch (error) {
             throw error.status ? error : Object.assign(new Error(ERROR_MESSAGES.DATABASE_ERROR), { status: 500 });
@@ -191,7 +112,7 @@ class TimesheetService {
     }
 
     /**
-     * Fetches a timesheet by week number, year, and supervisor ID with enriched visit addresses.
+     * Fetches a timesheet by week number, year, and supervisor ID.
      * @param {number} weekNumber - Week number.
      * @param {number} year - Year.
      * @param {string} supervisorID - Supervisor ID.
@@ -216,9 +137,6 @@ class TimesheetService {
                     { model: User },
                 ],
             });
-            if (timesheet) {
-                await this.enrichVisitsWithAddresses([timesheet]);
-            }
             return timesheet;
         } catch (error) {
             throw error.status ? error : Object.assign(new Error(ERROR_MESSAGES.DATABASE_ERROR), { status: 500 });
@@ -226,7 +144,7 @@ class TimesheetService {
     }
 
     /**
-     * Creates a new timesheet and enriches visits with addresses.
+     * Creates a new timesheet.
      * @param {Object} data - Timesheet data.
      * @param {string} actorID - Actor ID.
      * @returns {Promise<Object>} - Created timesheet and optional warning.
@@ -304,7 +222,6 @@ class TimesheetService {
             const reloadedTimesheet = await Timesheet.findByPk(timesheet.timesheetID, {
                 include: [Visit, User]
             });
-            await this.enrichVisitsWithAddresses([reloadedTimesheet]);
 
             let warning = null;
             try {
@@ -332,7 +249,7 @@ class TimesheetService {
     }
 
     /**
-     * Validates a timesheet and enriches visits with addresses.
+     * Validates a timesheet.
      * @param {string} id - Timesheet ID.
      * @param {Object} data - Validation data.
      * @param {string} actorID - Actor ID.
@@ -372,7 +289,6 @@ class TimesheetService {
             await timesheet.save({ transaction });
             await transaction.commit();
             const updatedTimesheet = await Timesheet.findByPk(id, { include: [Visit, User] });
-            await this.enrichVisitsWithAddresses([updatedTimesheet]);
             return updatedTimesheet;
         } catch (error) {
             await transaction.rollback();
@@ -381,7 +297,7 @@ class TimesheetService {
     }
 
     /**
-     * Suggests a timesheet (no address enrichment needed here).
+     * Suggests a timesheet.
      * @param {string} supervisorId - Supervisor ID.
      * @param {number} weekNumber - Week number.
      * @param {number} year - Year.

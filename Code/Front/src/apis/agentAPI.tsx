@@ -242,6 +242,8 @@ export const getAgentsByBounds = async (
 // Correct agent location
 export const correctAgentLocation = async (
   agentId: string,
+  latitude: number,
+  longitude: number,
   address: string
 ): Promise<{
   agentId: string;
@@ -251,17 +253,19 @@ export const correctAgentLocation = async (
   delegation?: { id: string; name: string };
 }> => {
   try {
-    if (!agentId || !address) throw new Error("Agent ID and address are required.");
+    if (!agentId || !latitude || !longitude || !address) {
+      throw new Error('Agent ID, latitude, longitude, and address are required.');
+    }
     const response = await api.post<{
       agentId: string;
       latitude: number;
       longitude: number;
       address: string;
       delegation?: { id: string; name: string };
-    }>("/agents/correct-location", { agentId, address });
+    }>('/agents/correct-location', { agentId, latitude, longitude, address });
     return response.data;
   } catch (error) {
-    throw new Error(handleApiError(error, "Unable to correct agent location."));
+    throw new Error(handleApiError(error, 'Unable to correct agent location.'));
   }
 };
 

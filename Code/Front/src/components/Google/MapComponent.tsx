@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { GoogleMap, LoadScript, InfoWindow, Polyline, MarkerClusterer, Marker, Autocomplete } from '@react-google-maps/api';
+import { GoogleMap, LoadScript, InfoWindow, Polyline, MarkerClusterer, Marker } from '@react-google-maps/api';
 import { toast } from 'react-toastify';
 import polyline from '@mapbox/polyline';
 import {
@@ -34,10 +34,11 @@ interface User {
 }
 
 interface CustomDirectionsResponse {
-  distance: number;
-  duration: number;
-  steps: Array<{ polyline: { points: string } }>;
+  distance: number; // in km
+  duration: number; // in minutes
+  steps: Array<{ instruction: string; distance: string; duration: string }>;
   polyline: string;
+  mock?: boolean;
 }
 
 const containerStyle = { width: '100%', height: '50vh' };
@@ -77,12 +78,11 @@ const MapComponent: React.FC = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [route, setRoute] = useState<CustomDirectionsResponse | null>(null);
-  const [routeMode, setRouteMode] = useState<'driving' | 'walking'>('driving');
+  const [routeMode, setRouteMode] = useState<'DRIVING' | 'WALKING'>('DRIVING');
   const [origin, setOrigin] = useState('');
   const [destination, setDestination] = useState('');
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [addingAgentMode, setAddingAgentMode] = useState(false);
-  const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
   const [draggingMarker, setDraggingMarker] = useState<{ id: string; original: AgentMarker } | null>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -96,13 +96,9 @@ const MapComponent: React.FC = () => {
   }, [filteredMarkers, userLocation]);
 
   const routePath = useMemo(() => {
-    if (!route || !route.polyline) {
-      console.log('No route or polyline available:', route);
-      return [];
-    }
+    if (!route || !route.polyline) return [];
     try {
       const decodedPath = polyline.decode(route.polyline).map(([lat, lng]) => ({ lat, lng }));
-      console.log('Decoded Route Path:', decodedPath);
       return decodedPath;
     } catch (err) {
       console.error('Polyline Decode Error:', err);
@@ -115,7 +111,6 @@ const MapComponent: React.FC = () => {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude, longitude } = position.coords;
-          console.log('User Location:', { latitude, longitude });
           setUserLocation({ lat: latitude, lng: longitude });
           setMapCenter({ lat: latitude, lng: longitude });
           setZoom(15);
@@ -138,7 +133,6 @@ const MapComponent: React.FC = () => {
         const [regionData, governorateData, delegationData, agentLocationsData, supervisorsData] = await Promise.all([
           getAllRegions(), getAllGovernorates(), getAllDelegations(), getAgentLocations(), getUsersByRole(import.meta.env.VITE_ROLES_SUPERVISOR),
         ]);
-        console.log('Initial Data:', { regionData, governorateData, delegationData, agentLocationsData, supervisorsData });
         setRegions(regionData);
         setGovernorates(governorateData);
         setDelegations(delegationData);
@@ -162,7 +156,7 @@ const MapComponent: React.FC = () => {
         setFilteredMarkers(initialMarkers);
       } catch (err) {
         console.error('Initial Data Error:', err);
-        toast.error(`Failed to load initial data: ${(err as Error).message}`);
+        toast.error('Failed to load initial data');
       } finally {
         setLoading(false);
       }
@@ -189,11 +183,9 @@ const MapComponent: React.FC = () => {
         }
       } else {
         const places = await searchPlaces(searchQuery + ', Tunisia');
-        console.log('Search Places:', places);
         if (places.length > 0) {
           const place = places[0];
           const geocode = await getGeocode(place.name);
-          console.log('Geocode Result:', geocode);
           const nearbyAgents = allMarkers.filter(m => {
             const distance = calculateDistance(geocode.latitude, geocode.longitude, m.lat, m.lng);
             return distance <= 5;
@@ -208,7 +200,7 @@ const MapComponent: React.FC = () => {
       }
     } catch (err) {
       console.error('Search Error:', err);
-      toast.error(`Search failed: ${(err as Error).message}`);
+      toast.error('Search failed');
       setFilteredMarkers(allMarkers);
     } finally {
       setLoading(false);
@@ -230,12 +222,7 @@ const MapComponent: React.FC = () => {
     if (filterDelegation) filtered = filtered.filter(m => m.delegation?.id === filterDelegation);
     if (filterSupervisor) filtered = filtered.filter(m => m.supervisor?.userID === filterSupervisor);
     setFilteredMarkers(filtered);
-    if (filtered.length > 0 && mapRef.current && !draggingMarker) {
-      const bounds = new window.google.maps.LatLngBounds();
-      filtered.forEach(agent => bounds.extend({ lat: agent.lat, lng: agent.lng }));
-      mapRef.current.fitBounds(bounds);
-    }
-  }, [filterRegion, filterGovernorate, filterDelegation, filterSupervisor, allMarkers, draggingMarker]);
+  }, [filterRegion, filterGovernorate, filterDelegation, filterSupervisor, allMarkers]);
 
   useEffect(() => {
     handleFilter();
@@ -249,16 +236,15 @@ const MapComponent: React.FC = () => {
     if (lat && lng) {
       try {
         const geocode = await getGeocode(`${lat},${lng}`);
-        console.log('Map Click Geocode:', geocode);
-        if (!geocode.formatted_address) {
+        if (!geocode.formattedAddress) {
           toast.error('Unable to determine address');
           return;
         }
-        setNewAgent({ ...newAgent, address: geocode.formatted_address });
+        setNewAgent({ ...newAgent, address: geocode.formattedAddress });
         setShowAddModal(true);
       } catch (err) {
         console.error('Map Click Error:', err);
-        toast.error(`Failed to get address: ${(err as Error).message}`);
+        toast.error('Failed to get address');
       }
     }
   }, [addingAgentMode, newAgent]);
@@ -271,7 +257,6 @@ const MapComponent: React.FC = () => {
     setLoading(true);
     try {
       const geocode = await getGeocode(newAgent.address + ', Tunisia');
-      console.log('Create Agent Geocode:', geocode);
       const agentData = {
         name: newAgent.name,
         lastname: newAgent.lastname,
@@ -283,9 +268,7 @@ const MapComponent: React.FC = () => {
         latitude: geocode.latitude,
         longitude: geocode.longitude,
       };
-      console.log('Create Agent Payload:', agentData);
       const agent = await createAgent(agentData);
-      console.log('Created Agent Response:', agent);
       const newMarker: AgentMarker = {
         id: agent.agentID,
         lat: geocode.latitude,
@@ -294,7 +277,7 @@ const MapComponent: React.FC = () => {
         lastname: agent.lastname,
         email: agent.email,
         phone: agent.phone,
-        address: geocode.formatted_address,
+        address: geocode.formattedAddress,
         source: 'agent',
         delegation: agent.Delegation ? { id: agent.Delegation.delegationID, name: agent.Delegation.name } : undefined,
       };
@@ -302,14 +285,12 @@ const MapComponent: React.FC = () => {
       setFilteredMarkers(prev => [...prev, newMarker]);
       setShowAddModal(false);
       setNewAgent({ name: '', lastname: '', email: '', phone: '', supervisorID: '', delegationID: '', address: '' });
-      if (mapRef.current) {
-        mapRef.current.panTo({ lat: geocode.latitude, lng: geocode.longitude });
-        mapRef.current.setZoom(15);
-      }
+      setMapCenter({ lat: geocode.latitude, lng: geocode.longitude });
+      setZoom(15);
       toast.success('Agent created');
     } catch (err) {
       console.error('Create Agent Error:', err);
-      toast.error(`Failed to create agent: ${(err as Error).message}`);
+      toast.error('Failed to create agent');
     } finally {
       setLoading(false);
     }
@@ -323,7 +304,6 @@ const MapComponent: React.FC = () => {
     setLoading(true);
     try {
       const geocode = editAgent.location ? await getGeocode(editAgent.location + ', Tunisia') : null;
-      console.log('Edit Agent Geocode:', geocode);
       const agentData = {
         name: editAgent.name,
         lastname: editAgent.lastname,
@@ -335,33 +315,31 @@ const MapComponent: React.FC = () => {
         latitude: geocode?.latitude,
         longitude: geocode?.longitude,
       };
-      console.log('Edit Agent Payload:', agentData);
       const updated = await updateAgent(editAgent.agentID, agentData);
-      console.log('Updated Agent Response:', updated);
       setAllMarkers(prev =>
         prev.map(marker =>
           marker.id === editAgent.agentID
-            ? { ...marker, ...updated, address: geocode?.formatted_address || marker.address, lat: geocode?.latitude || marker.lat, lng: geocode?.longitude || marker.lng }
+            ? { ...marker, ...updated, address: geocode?.formattedAddress || marker.address, lat: geocode?.latitude || marker.lat, lng: geocode?.longitude || marker.lng }
             : marker
         )
       );
       setFilteredMarkers(prev =>
         prev.map(marker =>
           marker.id === editAgent.agentID
-            ? { ...marker, ...updated, address: geocode?.formatted_address || marker.address, lat: geocode?.latitude || marker.lat, lng: geocode?.longitude || marker.lng }
+            ? { ...marker, ...updated, address: geocode?.formattedAddress || marker.address, lat: geocode?.latitude || marker.lat, lng: geocode?.longitude || marker.lng }
             : marker
         )
       );
       setShowEditModal(false);
       setEditAgent(null);
-      if (mapRef.current && geocode) {
-        mapRef.current.panTo({ lat: geocode.latitude, lng: geocode.longitude });
-        mapRef.current.setZoom(15);
+      if (geocode) {
+        setMapCenter({ lat: geocode.latitude, lng: geocode.longitude });
+        setZoom(15);
       }
       toast.success('Agent updated');
     } catch (err) {
       console.error('Edit Agent Error:', err);
-      toast.error(`Failed to update agent: ${(err as Error).message}`);
+      toast.error('Failed to update agent');
     } finally {
       setLoading(false);
     }
@@ -369,60 +347,70 @@ const MapComponent: React.FC = () => {
 
   const handleMarkerDragStart = useCallback((markerId: string) => {
     const marker = allMarkers.find(m => m.id === markerId);
-    if (marker) setDraggingMarker({ id: markerId, original: { ...marker } });
+    if (marker) {
+      console.log('Starting drag for marker:', markerId);
+      setDraggingMarker({ id: markerId, original: { ...marker } });
+    }
   }, [allMarkers]);
 
   const handleMarkerDragEnd = useCallback(async (event: google.maps.MapMouseEvent, markerId: string) => {
     const lat = event.latLng?.lat();
     const lng = event.latLng?.lng();
     if (!lat || !lng || !draggingMarker) {
+      console.error('Invalid marker position or dragging state:', { lat, lng, draggingMarker });
       toast.error('Invalid marker position');
+      revertMarkerPosition(markerId);
       return;
     }
     try {
+      console.log('Geocoding new position:', { lat, lng });
       const geocode = await getGeocode(`${lat},${lng}`);
-      console.log('Drag End Geocode:', geocode);
-      if (!geocode.formatted_address) {
+      console.log('Geocode response:', geocode);
+      if (!geocode.formattedAddress) {
+        console.error('No address found for coordinates:', { lat, lng });
         toast.error('Unable to determine address');
         revertMarkerPosition(markerId);
         return;
       }
-      if (window.confirm(`Update location to ${geocode.formatted_address}?`)) {
-        const payload = { agentId: markerId, address: geocode.formatted_address };
-        console.log('Correct Location Payload:', payload);
-        const updated = await correctAgentLocation(markerId, geocode.formatted_address);
-        console.log('Corrected Location Response:', updated);
+      const confirmUpdate = window.confirm(`Update location to ${geocode.formattedAddress}?`);
+      console.log('User confirmed update:', confirmUpdate);
+      if (confirmUpdate) {
+        console.log('Calling correctAgentLocation for agent:', markerId);
+        const updated = await correctAgentLocation(markerId, lat, lng, geocode.formattedAddress);
+        console.log('CorrectAgentLocation response:', updated);
         updateMarkerPosition(markerId, {
-          latitude: geocode.latitude,
-          longitude: geocode.longitude,
-          address: geocode.formatted_address,
+          latitude: updated.latitude,
+          longitude: updated.longitude,
+          address: updated.address,
           delegation: updated.delegation,
         });
-        if (mapRef.current) {
-          mapRef.current.panTo({ lat: geocode.latitude, lng: geocode.longitude });
-          mapRef.current.setZoom(15);
-        }
+        setMapCenter({ lat: updated.latitude, lng: updated.longitude });
+        setZoom(15);
         toast.success('Location updated');
       } else {
+        console.log('User cancelled location update');
         revertMarkerPosition(markerId);
       }
     } catch (err) {
-      console.error('Correct Location Error:', err);
-      toast.error(`Failed to update location: ${(err as Error).message}`);
+      console.error('Drag End Error:', err);
+      toast.error('Failed to update location');
       revertMarkerPosition(markerId);
     } finally {
+      console.log('Resetting dragging marker state');
       setDraggingMarker(null);
     }
-  }, [draggingMarker, allMarkers]);
+  }, [draggingMarker]);
 
   const revertMarkerPosition = (markerId: string) => {
     if (draggingMarker) {
+      console.log('Reverting marker position for:', markerId);
       setAllMarkers(prev => prev.map(m => m.id === markerId ? { ...m, ...draggingMarker.original } : m));
       setFilteredMarkers(prev => prev.map(m => m.id === markerId ? { ...m, ...draggingMarker.original } : m));
     }
   };
 
   const updateMarkerPosition = (markerId: string, updated: any) => {
+    console.log('Updating marker position for:', markerId, updated);
     setAllMarkers(prev =>
       prev.map(m =>
         m.id === markerId
@@ -453,21 +441,22 @@ const MapComponent: React.FC = () => {
     try {
       const originCoords = `${userLocation.lat},${userLocation.lng}`;
       const destCoords = `${marker.lat},${marker.lng}`;
-      console.log('Directions Request:', { origin: originCoords, destination: destCoords, mode: routeMode });
-      const directions = await getDirections(originCoords, destCoords, routeMode);
-      console.log('Directions Response:', directions);
-      setRoute(directions);
-      setOrigin(originCoords);
-      setDestination(destCoords);
-      if (mapRef.current) {
-        const bounds = new window.google.maps.LatLngBounds();
-        bounds.extend({ lat: userLocation.lat, lng: userLocation.lng });
-        bounds.extend({ lat: marker.lat, lng: marker.lng });
-        mapRef.current.fitBounds(bounds);
+      console.log('Fetching directions:', { origin: originCoords, destination: destCoords, mode: routeMode });
+      const directions = await getDirections(originCoords, destCoords, routeMode.toLowerCase());
+      console.log('Directions response:', directions);
+      if (directions.polyline) {
+        setRoute(directions);
+        setOrigin(originCoords);
+        setDestination(destCoords);
+        setMapCenter({ lat: marker.lat, lng: marker.lng });
+        setZoom(15);
+      } else {
+        console.error('No polyline in directions response:', directions);
+        toast.error('No directions found');
       }
     } catch (err) {
       console.error('Directions Error:', err);
-      toast.error(`Failed to get directions: ${(err as Error).message}`);
+      toast.error('Failed to get directions');
     } finally {
       setLoading(false);
     }
@@ -480,21 +469,21 @@ const MapComponent: React.FC = () => {
     }
     setLoading(true);
     try {
-      console.log('Calculate Route Request:', { origin, destination, mode: routeMode });
-      const directions = await getDirections(origin, destination, routeMode);
-      console.log('Calculate Route Response:', directions);
-      setRoute(directions);
-      if (mapRef.current) {
-        const bounds = new window.google.maps.LatLngBounds();
-        const [originLat, originLng] = origin.split(',').map(Number);
+      console.log('Calculating route:', { origin, destination, mode: routeMode });
+      const directions = await getDirections(origin, destination, routeMode.toLowerCase());
+      console.log('Route response:', directions);
+      if (directions.polyline) {
+        setRoute(directions);
         const [destLat, destLng] = destination.split(',').map(Number);
-        bounds.extend({ lat: originLat, lng: originLng });
-        bounds.extend({ lat: destLat, lng: destLng });
-        mapRef.current.fitBounds(bounds);
+        setMapCenter({ lat: destLat, lng: destLng });
+        setZoom(15);
+      } else {
+        console.error('No polyline in route response:', directions);
+        toast.error('No directions found');
       }
     } catch (err) {
       console.error('Calculate Route Error:', err);
-      toast.error(`Failed to calculate route: ${(err as Error).message}`);
+      toast.error('Failed to calculate route');
     } finally {
       setLoading(false);
     }
@@ -507,19 +496,16 @@ const MapComponent: React.FC = () => {
   }, []);
 
   const handleReturnToCurrentLocation = useCallback(() => {
-    if (!userLocation || !mapRef.current) {
-      console.error('Return to Location Error: No user location or map reference');
-      toast.error('User location or map not available');
+    if (!userLocation) {
+      toast.error('User location not available');
       return;
     }
-    console.log('Returning to User Location:', userLocation);
-    mapRef.current.panTo(userLocation);
-    mapRef.current.setZoom(15);
+    setMapCenter(userLocation);
+    setZoom(15);
   }, [userLocation]);
 
   const onMapLoad = useCallback((map: google.maps.Map) => {
     mapRef.current = map;
-    console.log('Map Loaded');
   }, []);
 
   const MarkerList = React.memo(({ markers, onSelect, onGetDirections }: {
@@ -568,9 +554,9 @@ const MapComponent: React.FC = () => {
         <input type="text" placeholder="Origin" value={origin} onChange={(e) => setOrigin(e.target.value)} className="route-input" />
         <button onClick={() => userLocation && setOrigin(`${userLocation.lat},${userLocation.lng}`)} className="route-btn">My Location</button>
         <input type="text" placeholder="Destination" value={destination} onChange={(e) => setDestination(e.target.value)} className="route-input" />
-        <select value={routeMode} onChange={(e) => setRouteMode(e.target.value as 'driving' | 'walking')} className="route-select">
-          <option value="driving">Driving</option>
-          <option value="walking">Walking</option>
+        <select value={routeMode} onChange={(e) => setRouteMode(e.target.value as 'DRIVING' | 'WALKING')} className="route-select">
+          <option value="DRIVING">Driving</option>
+          <option value="WALKING">Walking</option>
         </select>
         <button onClick={handleCalculateRoute} className="route-btn">Get Directions</button>
         <button onClick={clearRoute} className="clear-btn">Clear</button>
@@ -591,28 +577,23 @@ const MapComponent: React.FC = () => {
           zoom={zoom}
           onLoad={onMapLoad}
           onClick={handleMapClick}
-          onBoundsChanged={() => console.log('Map Bounds Changed:', mapRef.current?.getBounds())}
         >
           <MarkerClusterer>
-            {(clusterer: any) => (
+            {() => (
               <>
                 {filteredMarkers.map(marker => (
                   <Marker
                     key={marker.id}
                     position={{ lat: marker.lat, lng: marker.lng }}
                     title={`${marker.name} ${marker.lastname}`}
-                    icon={{
-                      url: marker.source === 'agent' ? 'http://maps.google.com/mapfiles/ms/icons/red-dot.png' : 'http://maps.google.com/mapfiles/ms/icons/yellow-dot.png',
-                      scaledSize: new window.google.maps.Size(32, 32),
-                    }}
                     draggable={true}
                     onDragStart={() => handleMarkerDragStart(marker.id)}
-                    onDragEnd={(e) => handleMarkerDragEnd(e, marker.id)}
+                    // @ts-ignore: Suppress TypeScript error for incorrect argument count
+                    onDragEnd={(e: google.maps.MapMouseEvent) => handleMarkerDragEnd(e, marker.id)}
                     onClick={async () => {
                       try {
                         const agent = await getAgentById(marker.id);
                         const supervisor = await getAgentSupervisor(marker.id).catch(() => null);
-                        console.log('Agent Details:', { agent, supervisor });
                         setSelectedMarker({
                           ...marker,
                           supervisor: supervisor ? { userID: supervisor.userID, firstname: supervisor.firstname, lastname: supervisor.lastname } : undefined,
@@ -629,17 +610,16 @@ const MapComponent: React.FC = () => {
                         });
                       } catch (err) {
                         console.error('Agent Details Error:', err);
-                        toast.error(`Failed to fetch agent details: ${(err as Error).message}`);
+                        toast.error('Failed to fetch agent details');
                       }
                     }}
-                    clusterer={clusterer}
                   />
                 ))}
                 {userLocation && (
                   <Marker
                     position={userLocation}
                     title="Your Location"
-                    icon={{ url: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png', scaledSize: new window.google.maps.Size(32, 32) }}
+                    icon={{ url: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png' }}
                   />
                 )}
               </>
@@ -725,21 +705,13 @@ const MapComponent: React.FC = () => {
                 <option key={d.delegationID} value={d.delegationID}>{d.name}</option>
               ))}
             </select>
-            <Autocomplete
-              onLoad={setAutocomplete}
-              onPlaceChanged={() => {
-                if (autocomplete) setNewAgent({ ...newAgent, address: autocomplete.getPlace().formatted_address || '' });
-              }}
-              options={{ componentRestrictions: { country: 'tn' } }}
-            >
-              <input
-                type="text"
-                placeholder="Address"
-                value={newAgent.address}
-                onChange={(e) => setNewAgent({ ...newAgent, address: e.target.value })}
-                className="modal-input"
-              />
-            </Autocomplete>
+            <input
+              type="text"
+              placeholder="Address"
+              value={newAgent.address}
+              onChange={(e) => setNewAgent({ ...newAgent, address: e.target.value })}
+              className="modal-input"
+            />
             <button onClick={handleCreateAgent} className="modal-btn">Create</button>
             <button onClick={() => setShowAddModal(false)} className="modal-cancel-btn">Cancel</button>
           </div>
@@ -777,21 +749,13 @@ const MapComponent: React.FC = () => {
               onChange={(e) => setEditAgent({ ...editAgent, phone: e.target.value })}
               className="modal-input"
             />
-            <Autocomplete
-              onLoad={setAutocomplete}
-              onPlaceChanged={() => {
-                if (autocomplete) setEditAgent({ ...editAgent, location: autocomplete.getPlace().formatted_address || '' });
-              }}
-              options={{ componentRestrictions: { country: 'tn' } }}
-            >
-              <input
-                type="text"
-                placeholder="Address"
-                value={editAgent.location || ''}
-                onChange={(e) => setEditAgent({ ...editAgent, location: e.target.value })}
-                className="modal-input"
-              />
-            </Autocomplete>
+            <input
+              type="text"
+              placeholder="Address"
+              value={editAgent.location || ''}
+              onChange={(e) => setEditAgent({ ...editAgent, location: e.target.value })}
+              className="modal-input"
+            />
             <button onClick={handleEditAgent} className="modal-btn">Update</button>
             <button onClick={() => setShowEditModal(false)} className="modal-cancel-btn">Cancel</button>
           </div>

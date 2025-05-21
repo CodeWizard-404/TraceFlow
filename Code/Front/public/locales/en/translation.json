@@ -473,7 +473,7 @@
     },
     "actions": {
       "back": "Back",
-      "create": "Create Timesheet",
+      "create": "Create Visit",
       "submitting": "Submitting..."
     },
     "errors": {

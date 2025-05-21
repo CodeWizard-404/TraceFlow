@@ -206,7 +206,7 @@ export type DelegationsByUserResponse = Delegation[];
 export interface LocationDetailsResponse { success: boolean; address?: string; idInfo?: string; message?: string; }
 
 // Google Maps API response types
-export type GeocodeResponse = { geometry: { location: { lat: number; lng: number } }; formatted_address: string; latitude: number; longitude: number; mock?: boolean };
-export type DirectionsResponse = { routes: Array<{ legs: Array<{ distance: { text: string; value: number }; duration: { text: string; value: number }; start_address: string; end_address: string; steps: Array<{ polyline: { points: string } }>; }>; }>; mock?: boolean };
+export type GeocodeResponse = { geometry: { location: { lat: number; lng: number } }; formattedAddress: string; latitude: number; longitude: number; mock?: boolean };
+export type DirectionsResponse = { distance: number; duration: number; steps: Array<{ instruction: string; distance: string; duration: string }>; polyline: string; mock?: boolean; };
 export type PlacesResponse = Array<{ place_id: string; name: string; formatted_address: string; geometry: { location: { lat: number; lng: number } }; }>;
 export type DistanceMatrixResponse = Array<{ elements: Array<{ distance: { text: string; value: number }; duration: { text: string; value: number }; status: string; }>; }>;

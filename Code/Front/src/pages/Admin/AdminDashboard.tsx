@@ -404,27 +404,6 @@ const AdminDashboard: React.FC = React.memo(() => {
             setRoles(updatedRoles);
             setLocalError(null);
             clearError();
-            const resetDetails = (
-                response.details as Array<{
-                    roleName: string;
-                    permissionsAssigned: number;
-                    permissionsRevoked: number;
-                    totalPermissions: number;
-                }>
-            )
-                .map((detail) =>
-                    t("adminDashboard.success.resetRolesDetail", {
-                        roleName: detail.roleName,
-                        permissionsAssigned: detail.permissionsAssigned,
-                        permissionsRevoked: detail.permissionsRevoked,
-                        totalPermissions: detail.totalPermissions,
-                    })
-                )
-                .join(", ");
-            const successMessage = t("adminDashboard.success.resetRoles", {
-                details: resetDetails,
-            });
-            setLocalError(successMessage);
         } catch (err: unknown) {
             console.error("Failed to reset main roles:", err);
             const errorMessage = t("adminDashboard.error.resetRolesFailed");

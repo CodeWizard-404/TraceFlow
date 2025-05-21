@@ -339,34 +339,25 @@ class GoogleMapsService {
         }
     }
 
-    static async updateAgentLocation(agentId, lat, lng) {
+    static async updateAgentLocation(agentId, lat, lng, address) {
         try {
             const agent = await Agent.findByPk(agentId, { include: [Delegation] });
             if (!agent) {
                 throw new Error('Agent not found');
             }
 
-            // Optional: Validate if new location is within delegation bounds (requires delegation coordinates)
             agent.latitude = lat;
             agent.longitude = lng;
             agent.location = `${lat},${lng}`;
+            agent.address = address; // Store the provided address
             await agent.save();
-
-            const cacheKey = `reverseGeocode:${lat}:${lng}`;
-            let address = await this.redisClient?.get(cacheKey);
-            if (!address) {
-                address = await this.reverseGeocode(lat, lng);
-                await this.redisClient?.set(cacheKey, JSON.stringify(address), 'EX', 3600);
-            } else {
-                address = JSON.parse(address);
-            }
 
             return {
                 agentId,
                 latitude: lat,
                 longitude: lng,
-                address: address.formattedAddress,
-                delegation: agent.Delegation ? { id: agent.Delegation.delegationID, name: agent.Delegation.name } : null
+                address,
+                delegation: agent.Delegation ? { id: agent.Delegation.delegationID, name: agent.Delegation.name } : null,
             };
         } catch (error) {
             logger.error(`Failed to update agent location: ${error.message}`);
