@@ -1,11 +1,13 @@
 const axios = require('axios');
 const { User, Role, Permission } = require('../models');
+const VaultService = require('./vaultService');
 require('dotenv').config();
 
 const ERROR_MESSAGES = {
     GOOGLE_LOGIN_FAILED: 'Google login failed. Ensure your account is registered.',
     KEYCLOAK_TOKEN_EXCHANGE_FAILED: 'Failed to exchange Keycloak authorization code.',
     USER_NOT_FOUND: 'No account found with this Google email. Please use an existing account.',
+    CALENDAR_AUTH_FAILED: 'Failed to authorize Google Calendar access.',
 };
 
 class GoogleAuthService {
@@ -107,6 +109,34 @@ class GoogleAuthService {
             );
             err.status = error.response?.status || error.status || 401;
             throw err;
+        }
+    }
+
+
+
+
+
+
+    static async googleCalendarCallback(code, userId) {
+        try {
+            const response = await axios.post(
+                'https://oauth2.googleapis.com/token',
+                new URLSearchParams({
+                    client_id: process.env.GOOGLE_CALENDAR_CLIENT_ID,
+                    client_secret: process.env.GOOGLE_CALENDAR_CLIENT_SECRET,
+                    code,
+                    grant_type: 'authorization_code',
+                    redirect_uri: process.env.GOOGLE_CALENDAR_REDIRECT_URI,
+                }),
+                { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+            );
+
+            const { refresh_token } = response.data;
+            await VaultService.storeRefreshToken(userId, refresh_token);
+
+            return { message: 'Calendar access granted' };
+        } catch (error) {
+            throw new Error(ERROR_MESSAGES.CALENDAR_AUTH_FAILED);
         }
     }
 }

@@ -9,10 +9,185 @@ const { Op } = require('sequelize');
 const path = require('path');
 const fs = require('fs');
 const { sequelize } = require('../config/db');
-const { getKeycloakAdminToken, getGoogleAccessTokenForUser } = require('../utils/tokenExchange');
+const logger = require('../utils/logger');
 
 class VisitService {
+    static async createVisit(data, actorID, options = {}) {
+        const { date, time, agentID, supervisorID, timesheetID, reasons, checklists, location, status = 'pending' } = data;
 
+        if (!date || !time || !supervisorID) {
+            const error = new Error('Missing required fields');
+            error.status = 400;
+            throw error;
+        }
+
+        const transaction = options.transaction || await sequelize.transaction();
+        let isLocalTransaction = !options.transaction;
+
+        try {
+            const dateObj = new Date(date);
+            const year = dateObj.getFullYear();
+            const weekNumber = this.getISOWeekNumber(dateObj);
+
+            let targetTimesheet;
+            if (timesheetID) {
+                targetTimesheet = await Timesheet.findByPk(timesheetID, {
+                    include: [{ model: User }],
+                    transaction
+                });
+                if (!targetTimesheet) {
+                    const error = new Error('Specified timesheet not found');
+                    error.status = 404;
+                    throw error;
+                }
+                if (!targetTimesheet.User) {
+                    const error = new Error('Timesheet has no associated user');
+                    error.status = 500;
+                    throw error;
+                }
+            } else {
+                targetTimesheet = await Timesheet.findOne({
+                    where: {
+                        weekNumber,
+                        year,
+                        supervisorID,
+                    },
+                    include: [{ model: Visit }, { model: User }],
+                    transaction,
+                });
+
+                if (!targetTimesheet) {
+                    try {
+                        targetTimesheet = await Timesheet.create(
+                            {
+                                weekNumber,
+                                year,
+                                supervisorID,
+                                status: status,
+                            },
+                            { transaction }
+                        );
+                        // Fetch the User to ensure association
+                        const user = await User.findByPk(supervisorID, { transaction });
+                        if (!user) {
+                            const error = new Error('Supervisor not found');
+                            error.status = 404;
+                            throw error;
+                        }
+                        targetTimesheet.User = user;
+                    } catch (error) {
+                        if (error.name === 'SequelizeUniqueConstraintError') {
+                            targetTimesheet = await Timesheet.findOne({
+                                where: { weekNumber, year, supervisorID },
+                                include: [{ model: Visit }, { model: User }],
+                                transaction,
+                            });
+                            if (!targetTimesheet) {
+                                throw new Error('Failed to find or create timesheet after unique constraint error');
+                            }
+                        } else {
+                            throw error;
+                        }
+                    }
+                }
+                if (!targetTimesheet.User) {
+                    const error = new Error('Timesheet has no associated user');
+                    error.status = 500;
+                    throw error;
+                }
+            }
+
+            const visitLocation = await this.getFormattedLocation(agentID, location);
+
+            const visit = await Visit.create(
+                {
+                    date,
+                    time,
+                    location: visitLocation,
+                    agentID,
+                    timesheetID: targetTimesheet.timesheetID,
+                    status,
+                },
+                { transaction }
+            );
+
+            if (reasons && Array.isArray(reasons) && reasons.length > 0) {
+                try {
+                    const reasonIds = reasons.map((r) => r.id).filter((id) => id);
+                    if (reasonIds.length > 0) {
+                        const createdReasons = await ReasonService.getItemsByIds(reasonIds, { transaction });
+                        if (createdReasons.length > 0) {
+                            await visit.setReasons(createdReasons, { transaction });
+                        }
+                    }
+                } catch (error) {
+                    throw new Error(`Failed to attach reasons to visit ${visit.visitID}: ${error.message}`);
+                }
+            }
+
+            if (checklists && Array.isArray(checklists) && checklists.length > 0) {
+                try {
+                    const checklistIds = checklists.map((c) => c.id).filter((id) => id);
+                    if (checklistIds.length > 0) {
+                        const createdChecklists = await ChecklistService.getItemsByIds(checklistIds, { transaction });
+                        if (createdChecklists.length > 0) {
+                            await visit.setChecklists(createdChecklists, { transaction });
+                        } else {
+                            throw new Error(`No valid checklists found for visit ${visit.visitID}`);
+                        }
+                    }
+                } catch (error) {
+                    throw new Error(`Failed to attach checklists to visit ${visit.visitID}: ${error.message}`);
+                }
+            }
+
+            const timesheetWithVisits = await Timesheet.findByPk(targetTimesheet.timesheetID, {
+                include: [{ model: Visit }],
+                transaction,
+            });
+
+            const visitStatuses = [
+                ...timesheetWithVisits.Visits.map((v) => v.status),
+                status,
+            ];
+            const uniqueStatuses = [...new Set(visitStatuses)];
+
+            if (uniqueStatuses.length > 1) {
+                timesheetWithVisits.status = 'pending';
+            } else {
+                timesheetWithVisits.status = uniqueStatuses[0];
+            }
+            await timesheetWithVisits.save({ transaction });
+
+            const reloadedVisit = await visit.reload({ include: [Reason, Checklist], transaction });
+
+            try {
+                const userId = targetTimesheet.User.userID;
+                if (typeof userId !== 'string') {
+                    throw new Error(`Invalid userId: ${userId}`);
+                }
+                const event = await GoogleCalendarService.createCalendarEvent(userId, visit.visitID);
+                visit.calendarEventId = event.id;
+                await visit.save({ transaction });
+                logger.info(`Synced visit ${visit.visitID} to Google Calendar`, { userId, visitId: visit.visitID });
+            } catch (error) {
+                logger.error(`Failed to sync visit ${visit.visitID} to Google Calendar: ${error.message}`, {
+                    userId: targetTimesheet.User?.userID || supervisorID,
+                    visitId: visit.visitID
+                });
+            }
+
+            if (isLocalTransaction) await transaction.commit();
+            return reloadedVisit;
+        } catch (error) {
+            if (isLocalTransaction) await transaction.rollback();
+            const err = new Error('Failed to create visit: ' + error.message);
+            err.status = error.status || 500;
+            throw err;
+        }
+    }
+
+    // Other functions (unchanged for this issue, included for completeness)
     static async validateVisitOTP(visitId, otpCode, actorID) {
         const transaction = await sequelize.transaction();
         try {
@@ -164,16 +339,21 @@ class VisitService {
             });
 
             try {
-                const adminToken = await getKeycloakAdminToken();
-                const googleToken = await getGoogleAccessTokenForUser(visit.Timesheet.User.keycloakId, adminToken);
-                const event = await GoogleCalendarService.updateCalendarEvent(googleToken, visitID);
-                await GoogleCalendarService.notifyCalendarUpdate(visit.Timesheet.User.keycloakId, {
+                const userId = visit.Timesheet.User.userID;
+                if (typeof userId !== 'string') {
+                    throw new Error(`Invalid userId: ${userId}`);
+                }
+                const event = await GoogleCalendarService.updateCalendarEvent(userId, visitID);
+                await GoogleCalendarService.notifyCalendarUpdate(userId, {
                     visitId: visitID,
                     calendarEventId: event.id,
                     action: 'updated',
                 });
             } catch (error) {
-                console.error(`Failed to update calendar event for visit ${visitID}: ${error.message}`);
+                logger.error(`Failed to update calendar event for visit ${visitID}: ${error.message}`, {
+                    userId: visit.Timesheet.User?.userID,
+                    visitId: visitID
+                });
             }
 
             await transaction.commit();
@@ -232,168 +412,6 @@ class VisitService {
         }
     }
 
-    // Unchanged methods (included for completeness)
-    static async createVisit(data, actorID, options = {}) {
-        const { date, time, agentID, supervisorID, timesheetID, reasons, checklists, location, status = 'pending' } = data;
-
-        if (!date || !time || !supervisorID) {
-            const error = new Error('Missing required fields');
-            error.status = 400;
-            throw error;
-        }
-
-        const transaction = options.transaction || await sequelize.transaction();
-        let isLocalTransaction = !options.transaction;
-
-        try {
-            const dateObj = new Date(date);
-            const year = dateObj.getFullYear();
-            const weekNumber = this.getISOWeekNumber(dateObj);
-
-            let targetTimesheet;
-            if (timesheetID) {
-                targetTimesheet = await Timesheet.findByPk(timesheetID, { transaction });
-                if (!targetTimesheet) {
-                    const error = new Error('Specified timesheet not found');
-                    error.status = 404;
-                    throw error;
-                }
-            } else {
-                targetTimesheet = await Timesheet.findOne({
-                    where: {
-                        weekNumber,
-                        year,
-                        supervisorID,
-                    },
-                    include: [{ model: Visit }],
-                    transaction,
-                });
-
-                if (!targetTimesheet) {
-                    try {
-                        targetTimesheet = await Timesheet.create(
-                            {
-                                weekNumber,
-                                year,
-                                supervisorID,
-                                status: status,
-                            },
-                            { transaction }
-                        );
-                    } catch (error) {
-                        if (error.name === 'SequelizeUniqueConstraintError') {
-                            targetTimesheet = await Timesheet.findOne({
-                                where: { weekNumber, year, supervisorID },
-                                include: [{ model: Visit }],
-                                transaction,
-                            });
-                            if (!targetTimesheet) {
-                                throw new Error('Failed to find or create timesheet after unique constraint error');
-                            }
-                        } else {
-                            throw error;
-                        }
-                    }
-                }
-            }
-
-            const visitLocation = await this.getFormattedLocation(agentID, location);
-
-            const visit = await Visit.create(
-                {
-                    date,
-                    time,
-                    location: visitLocation,
-                    agentID,
-                    timesheetID: targetTimesheet.timesheetID,
-                    status,
-                },
-                { transaction }
-            );
-
-            if (reasons && Array.isArray(reasons) && reasons.length > 0) {
-                try {
-                    const reasonIds = reasons.map((r) => r.id).filter((id) => id);
-                    if (reasonIds.length > 0) {
-                        const createdReasons = await ReasonService.getItemsByIds(reasonIds, { transaction });
-                        if (createdReasons.length > 0) {
-                            await visit.setReasons(createdReasons, { transaction });
-                        }
-                    }
-                } catch (error) {
-                    throw new Error(`Failed to attach reasons to visit ${visit.visitID}: ${error.message}`);
-                }
-            }
-
-            if (checklists && Array.isArray(checklists) && checklists.length > 0) {
-                try {
-                    const checklistIds = checklists.map((c) => c.id).filter((id) => id);
-                    if (checklistIds.length > 0) {
-                        const createdChecklists = await ChecklistService.getItemsByIds(checklistIds, { transaction });
-                        if (createdChecklists.length > 0) {
-                            await visit.setChecklists(createdChecklists, { transaction });
-                        } else {
-                            throw new Error(`No valid checklists found for visit ${visit.visitID}`);
-                        }
-                    }
-                } catch (error) {
-                    throw new Error(`Failed to attach checklists to visit ${visit.visitID}: ${error.message}`);
-                }
-            }
-
-            const timesheetWithVisits = await Timesheet.findByPk(targetTimesheet.timesheetID, {
-                include: [{ model: Visit }],
-                transaction,
-            });
-
-            const visitStatuses = [
-                ...timesheetWithVisits.Visits.map((v) => v.status),
-                status,
-            ];
-            const uniqueStatuses = [...new Set(visitStatuses)];
-
-            if (uniqueStatuses.length > 1) {
-                timesheetWithVisits.status = 'pending';
-            } else {
-                timesheetWithVisits.status = uniqueStatuses[0];
-            }
-            await timesheetWithVisits.save({ transaction });
-
-            const reloadedVisit = await visit.reload({ include: [Reason, Checklist], transaction });
-
-            const supervisor = await User.findByPk(supervisorID);
-            if (!supervisor || !supervisor.keycloakId) {
-                throw new Error('Supervisor not found or not linked to Keycloak');
-            }
-
-            try {
-                const adminToken = await getKeycloakAdminToken();
-                const googleToken = await getGoogleAccessTokenForUser(supervisor.keycloakId, adminToken);
-                const calendar = await GoogleCalendarService.getCalendarClient(googleToken);
-                const event = await calendar.events.insert({
-                    calendarId: 'primary',
-                    resource: {
-                        summary: `Visit ${visit.visitID}`,
-                        start: { dateTime: `${visit.date}T${visit.time}` },
-                        end: { dateTime: new Date(new Date(`${visit.date}T${visit.time}`).getTime() + 60 * 60000).toISOString() },
-                    },
-                });
-                visit.calendarEventId = event.data.id;
-                await visit.save({ transaction });
-            } catch (error) {
-                console.error(`Failed to sync visit ${visit.visitID} to Google Calendar: ${error.message}`);
-            }
-
-            if (isLocalTransaction) await transaction.commit();
-            return reloadedVisit;
-        } catch (error) {
-            if (isLocalTransaction) await transaction.rollback();
-            const err = new Error('Failed to create visit: ' + error.message);
-            err.status = error.status || 500;
-            throw err;
-        }
-    }
-
     static async getFormattedLocation(agentID, providedLocation) {
         if (agentID) {
             const agent = await Agent.findByPk(agentID, {
@@ -403,11 +421,11 @@ class VisitService {
                         include: [
                             {
                                 model: Governorate,
-                                include: [Region]
-                            }
-                        ]
-                    }
-                ]
+                                include: [Region],
+                            },
+                        ],
+                    },
+                ],
             });
             if (agent && agent.Delegation && agent.Delegation.Governorate && agent.Delegation.Governorate.Region) {
                 return `${agent.Delegation.Governorate.Region.name}, ${agent.Delegation.Governorate.name}, ${agent.Delegation.name}`;
@@ -573,16 +591,21 @@ class VisitService {
             await visit.save();
 
             try {
-                const adminToken = await getKeycloakAdminToken();
-                const googleToken = await getGoogleAccessTokenForUser(visit.Timesheet.User.keycloakId, adminToken);
-                const event = await GoogleCalendarService.updateCalendarEvent(googleToken, visitID);
-                await GoogleCalendarService.notifyCalendarUpdate(visit.Timesheet.User.keycloakId, {
+                const userId = visit.Timesheet.User.userID;
+                if (typeof userId !== 'string') {
+                    throw new Error(`Invalid userId: ${userId}`);
+                }
+                const event = await GoogleCalendarService.updateCalendarEvent(userId, visitID);
+                await GoogleCalendarService.notifyCalendarUpdate(userId, {
                     visitId: visitID,
                     calendarEventId: event.id,
                     action: 'updated',
                 });
             } catch (error) {
-                console.error(`Failed to update calendar event for visit ${visitID}: ${error.message}`);
+                logger.error(`Failed to update calendar event for visit ${visitID}: ${error.message}`, {
+                    userId: visit.Timesheet.User?.userID,
+                    visitId: visitID
+                });
             }
 
             return visit.reload({ include: [Checklist, Reason] });
@@ -622,15 +645,20 @@ class VisitService {
             }
 
             try {
-                const adminToken = await getKeycloakAdminToken();
-                const googleToken = await getGoogleAccessTokenForUser(visit.Timesheet.User.keycloakId, adminToken);
-                await GoogleCalendarService.deleteCalendarEvent(googleToken, visitID);
-                await GoogleCalendarService.notifyCalendarUpdate(visit.Timesheet.User.keycloakId, {
+                const userId = visit.Timesheet.User.userID;
+                if (typeof userId !== 'string') {
+                    throw new Error(`Invalid userId: ${userId}`);
+                }
+                await GoogleCalendarService.deleteCalendarEvent(userId, visitID);
+                await GoogleCalendarService.notifyCalendarUpdate(userId, {
                     visitId: visitID,
                     action: 'deleted',
                 });
             } catch (error) {
-                console.error(`Failed to delete calendar event for visit ${visitID}: ${error.message}`);
+                logger.error(`Failed to delete calendar event for visit ${visitID}: ${error.message}`, {
+                    userId: visit.Timesheet.User?.userID,
+                    visitId: visitID
+                });
             }
 
             await visit.destroy();

@@ -567,50 +567,50 @@ class LocationController {
      * @param {Object} res - Express response object.
      * @returns {Promise<void>} JSON response with directions.
      */
-static async getDirections(req, res) {
-  const actorID = req.user?.userID || 'unknown';
-  try {
-    const { origin, destination, mode, waypoints, optimizeWaypoints } = req.body;
-    if (!origin || !destination) {
-      logger.warn('Failed to fetch directions: Missing origin or destination', {
-        route: 'locations/directions',
-        method: req.method,
-        url: req.originalUrl,
-        status: 400,
-        ip: req.ip,
-        traceId: req.traceId,
-        userId: actorID,
-        metadata: { origin, destination, mode, waypoints, optimizeWaypoints }
-      });
-      return res.status(400).json({ error: 'Origin and destination are required' });
+    static async getDirections(req, res) {
+        const actorID = req.user?.userID || 'unknown';
+        try {
+            const { origin, destination, mode, waypoints, optimizeWaypoints } = req.body;
+            if (!origin || !destination) {
+                logger.warn('Failed to fetch directions: Missing origin or destination', {
+                    route: 'locations/directions',
+                    method: req.method,
+                    url: req.originalUrl,
+                    status: 400,
+                    ip: req.ip,
+                    traceId: req.traceId,
+                    userId: actorID,
+                    metadata: { origin, destination, mode, waypoints, optimizeWaypoints }
+                });
+                return res.status(400).json({ error: 'Origin and destination are required' });
+            }
+            const result = await GoogleMapsService.getDirections(origin, destination, mode, waypoints || [], 'best_guess', optimizeWaypoints);
+            logger.info('Successfully fetched directions', {
+                route: 'locations/directions',
+                method: req.method,
+                url: req.originalUrl,
+                status: 200,
+                ip: req.ip,
+                traceId: req.traceId,
+                userId: actorID,
+                metadata: { origin, destination, mode, waypoints: waypoints || [], optimizeWaypoints }
+            });
+            return res.status(200).json(result);
+        } catch (error) {
+            const errorMessage = error.message || 'Failed to get directions';
+            logger.error('Failed to fetch directions', {
+                route: 'locations/directions',
+                method: req.method,
+                url: req.originalUrl,
+                status: error.status || 500,
+                ip: req.ip,
+                traceId: req.traceId,
+                userId: actorID,
+                metadata: { error: errorMessage, requestBody: req.body }
+            });
+            return res.status(error.status || 500).json({ error: errorMessage });
+        }
     }
-    const result = await GoogleMapsService.getDirections(origin, destination, mode, waypoints || [], 'best_guess', optimizeWaypoints);
-    logger.info('Successfully fetched directions', {
-      route: 'locations/directions',
-      method: req.method,
-      url: req.originalUrl,
-      status: 200,
-      ip: req.ip,
-      traceId: req.traceId,
-      userId: actorID,
-      metadata: { origin, destination, mode, waypoints: waypoints || [], optimizeWaypoints }
-    });
-    return res.status(200).json(result);
-  } catch (error) {
-    const errorMessage = error.message || 'Failed to get directions';
-    logger.error('Failed to fetch directions', {
-      route: 'locations/directions',
-      method: req.method,
-      url: req.originalUrl,
-      status: error.status || 500,
-      ip: req.ip,
-      traceId: req.traceId,
-      userId: actorID,
-      metadata: { error: errorMessage, requestBody: req.body }
-    });
-    return res.status(error.status || 500).json({ error: errorMessage });
-  }
-}
     /**
      * Search for places using Google Maps Places API.
      * @param {Object} req - Express request object with query and location in body.
@@ -730,7 +730,49 @@ static async getDirections(req, res) {
 
 
 
-
+    static async updateUserLocation(req, res) {
+        const actorID = req.user?.userID || 'unknown';
+        try {
+            const { userId, lat, lng } = req.body;
+            if (!userId || !lat || !lng) {
+                logger.warn('Failed to update user location: Missing parameters', {
+                    route: 'locations/update-location',
+                    method: req.method,
+                    url: req.originalUrl,
+                    status: 400,
+                    ip: req.ip,
+                    traceId: req.traceId,
+                    userId: actorID,
+                    metadata: { userId, lat, lng },
+                });
+                return res.status(400).json({ error: 'User ID, latitude, and longitude are required' });
+            }
+            const result = await GoogleMapsService.updateUserLocation(userId, { lat: parseFloat(lat), lng: parseFloat(lng) });
+            logger.info('Successfully updated user location', {
+                route: 'locations/update-location',
+                method: req.method,
+                url: req.originalUrl,
+                status: 200,
+                ip: req.ip,
+                traceId: req.traceId,
+                userId: actorID,
+                metadata: { userId, lat, lng },
+            });
+            return res.status(200).json(result);
+        } catch (error) {
+            logger.error('Failed to update user location', {
+                route: 'locations/update-location',
+                method: req.method,
+                url: req.originalUrl,
+                status: error.status || 500,
+                ip: req.ip,
+                traceId: req.traceId,
+                userId: actorID,
+                metadata: { error: error.message },
+            });
+            return res.status(error.status || 500).json({ error: error.message || 'Failed to update user location' });
+        }
+    }
 
 
 

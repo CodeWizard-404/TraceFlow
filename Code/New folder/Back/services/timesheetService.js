@@ -3,8 +3,8 @@ const AIService = require('./aiService');
 const { sequelize } = require('../config/db');
 const VisitService = require('./visitService');
 const GoogleCalendarService = require('./googleCalendarService');
+const GoogleMapsService = require('./googleMapsService');
 const { Op } = require('sequelize');
-const { getKeycloakAdminToken, getGoogleAccessTokenForUser } = require('../utils/tokenExchange');
 const { nanoid } = require('nanoid');
 
 const ERROR_MESSAGES = {
@@ -14,16 +14,12 @@ const ERROR_MESSAGES = {
     AI_API_UNAVAILABLE: 'AI service is unavailable. Try again later.',
     REQUEST_CANCELED: 'AI request was canceled.',
     MISSING_COORDINATES: 'Supervisor coordinates are required.',
-    INVALID_TIME_INTERVAL: 'Valid time interval is required.'
+    INVALID_TIME_INTERVAL: 'Valid time interval is required.',
 };
 
 const activeControllers = new Map();
 
 class TimesheetService {
-    /**
-     * Fetches all timesheets.
-     * @returns {Promise<Array>} - Array of timesheets.
-     */
     static async listTimesheets() {
         try {
             const timesheets = await Timesheet.findAll({
@@ -48,11 +44,6 @@ class TimesheetService {
         }
     }
 
-    /**
-     * Fetches a single timesheet by ID.
-     * @param {string} id - Timesheet ID.
-     * @returns {Promise<Object>} - Timesheet object.
-     */
     static async viewTimesheet(id) {
         try {
             const timesheet = await Timesheet.findByPk(id, {
@@ -82,11 +73,6 @@ class TimesheetService {
         }
     }
 
-    /**
-     * Fetches timesheets by supervisor ID.
-     * @param {string} supervisorID - Supervisor ID.
-     * @returns {Promise<Array>} - Array of timesheets.
-     */
     static async getTimesheetsBySupervisor(supervisorID) {
         try {
             const timesheets = await Timesheet.findAll({
@@ -112,13 +98,6 @@ class TimesheetService {
         }
     }
 
-    /**
-     * Fetches a timesheet by week number, year, and supervisor ID.
-     * @param {number} weekNumber - Week number.
-     * @param {number} year - Year.
-     * @param {string} supervisorID - Supervisor ID.
-     * @returns {Promise<Object|null>} - Timesheet object or null.
-     */
     static async getTimesheetByWeekAndYear(weekNumber, year, supervisorID) {
         try {
             const timesheet = await Timesheet.findOne({
@@ -144,12 +123,6 @@ class TimesheetService {
         }
     }
 
-    /**
-     * Creates a new timesheet.
-     * @param {Object} data - Timesheet data.
-     * @param {string} actorID - Actor ID.
-     * @returns {Promise<Object>} - Created timesheet and optional warning.
-     */
     static async createTimesheet(data, actorID) {
         const transaction = await sequelize.transaction();
         try {
@@ -221,15 +194,14 @@ class TimesheetService {
 
             await transaction.commit();
             const reloadedTimesheet = await Timesheet.findByPk(timesheet.timesheetID, {
-                include: [Visit, User]
+                include: [Visit, User],
             });
 
             let warning = null;
             try {
-                const adminToken = await getKeycloakAdminToken();
-                const googleToken = await getGoogleAccessTokenForUser(supervisor.keycloakId, adminToken);
-                const syncResults = await GoogleCalendarService.syncTimesheetToCalendar(googleToken, timesheet.timesheetID);
-                await GoogleCalendarService.notifyCalendarUpdate(supervisor.keycloakId, {
+                const userId = supervisorID;
+                const syncResults = await GoogleCalendarService.syncTimesheetToCalendar(userId, timesheet.timesheetID);
+                await GoogleCalendarService.notifyCalendarUpdate(userId, {
                     timesheetId: timesheet.timesheetID,
                     syncedVisits: syncResults,
                     action: 'synced',
@@ -249,13 +221,6 @@ class TimesheetService {
         }
     }
 
-    /**
-     * Validates a timesheet.
-     * @param {string} id - Timesheet ID.
-     * @param {Object} data - Validation data.
-     * @param {string} actorID - Actor ID.
-     * @returns {Promise<Object>} - Updated timesheet.
-     */
     static async validateTimesheet(id, data, actorID) {
         const transaction = await sequelize.transaction();
         try {
@@ -297,15 +262,6 @@ class TimesheetService {
         }
     }
 
-    /**
-         * Suggests a timesheet, cleaning up AI response to match getTimesheetsBySupervisor with checklists.
-         * @param {string} supervisorId - Supervisor ID.
-         * @param {number} weekNumber - Week number.
-         * @param {number} year - Year.
-         * @param {Object} criteria - Suggestion criteria.
-         * @param {Object} coordinates - Coordinates.
-         * @returns {Promise<Object>} - Suggestions and request ID.
-         */
     static async suggestTimesheet(supervisorId, weekNumber, year, criteria, coordinates) {
         try {
             const supervisor = await User.findByPk(supervisorId);
@@ -330,7 +286,7 @@ class TimesheetService {
                 includeRecruitmentVisits = false,
                 recruitmentAreas = [],
                 description = '',
-                filters = {}
+                filters = {},
             } = criteria || {};
 
             if (!coordinates || typeof coordinates.lat !== 'number' || typeof coordinates.lng !== 'number') {
@@ -339,8 +295,14 @@ class TimesheetService {
                 throw error;
             }
 
-            if (!timeInterval || !Number.isInteger(timeInterval.startHour) || !Number.isInteger(timeInterval.endHour) ||
-                timeInterval.startHour < 0 || timeInterval.endHour > 24 || timeInterval.startHour >= timeInterval.endHour) {
+            if (
+                !timeInterval ||
+                !Number.isInteger(timeInterval.startHour) ||
+                !Number.isInteger(timeInterval.endHour) ||
+                timeInterval.startHour < 0 ||
+                timeInterval.endHour > 24 ||
+                timeInterval.startHour >= timeInterval.endHour
+            ) {
                 const error = new Error(ERROR_MESSAGES.INVALID_TIME_INTERVAL);
                 error.status = 400;
                 throw error;
@@ -375,13 +337,13 @@ class TimesheetService {
                 criteria: {
                     recruitmentAreas: includeRecruitmentVisits ? recruitmentAreas : [],
                     description,
-                    filters
+                    filters,
                 },
                 preferredDays,
                 timeInterval,
                 maxVisitsPerAgentPerWeek,
                 includeRecruitmentVisits,
-                coordinates
+                coordinates,
             };
 
             const controller = new AbortController();
@@ -397,7 +359,6 @@ class TimesheetService {
                     controller
                 );
 
-                // Clean up AI suggestions to match getTimesheetsBySupervisor with checklists
                 const cleanedSuggestions = await this.cleanSuggestions(aiSuggestions, supervisorId, weekNumber, year, timesheetData);
 
                 return { suggestions: cleanedSuggestions, requestId };
@@ -412,56 +373,44 @@ class TimesheetService {
         }
     }
 
-    /**
-     * Cleans AI-generated suggestions to match getTimesheetsBySupervisor format with checklists.
-     * @param {Array} aiSuggestions - AI-generated suggestions.
-     * @param {string} supervisorId - Supervisor ID.
-     * @param {number} weekNumber - Week number.
-     * @param {number} year - Year.
-     * @param {Object} timesheetData - Timesheet data including criteria and timeInterval.
-     * @returns {Promise<Array>} - Cleaned suggestions.
-     */
     static async cleanSuggestions(aiSuggestions, supervisorId, weekNumber, year, timesheetData) {
         try {
             const { timeInterval, preferredDays = [], includeRecruitmentVisits, coordinates } = timesheetData;
 
-            // Validate inputs
             const weekStart = AIService.getWeekStartDate(weekNumber, year);
             const validDates = preferredDays.length > 0
                 ? preferredDays
                 : Array.from({ length: 7 }, (_, i) => AIService.getDateString(weekStart, i));
-            const today = new Date('2025-05-21T19:57:00.000Z'); // 20:57 CET
-            const todayDate = today.toISOString().split('T')[0]; // 2025-05-21
+            const today = new Date('2025-05-22T20:44:00.000Z'); // Updated to current CET time
+            const todayDate = today.toISOString().split('T')[0];
             const todayMinutes = (today.getUTCHours() + 1) * 60 + today.getUTCMinutes(); // CET
 
-            // Fetch data
             const [reasons, checklists, agents, supervisor, delegations] = await Promise.all([
                 Reason.findAll({ attributes: ['reasonID', 'item'] }),
                 Checklist.findAll({ attributes: ['checklistID', 'item'] }),
                 Agent.findAll({
                     where: { supervisorID: supervisorId },
-                    include: [{ model: Delegation }]
+                    include: [{ model: Delegation }],
                 }),
                 User.findByPk(supervisorId),
-                Delegation.findAll({ attributes: ['delegationID', 'latitude', 'longitude'] })
+                Delegation.findAll({ attributes: ['delegationID', 'latitude', 'longitude'] }),
             ]);
 
-            const reasonMap = new Map(reasons.map(r => [r.reasonID, r]));
-            const checklistMap = new Map(checklists.map(c => [c.checklistID, c]));
-            const agentMap = new Map(agents.map(a => [a.agentID, a]));
-            const delegationMap = new Map(delegations.map(d => [d.delegationID, { latitude: d.latitude, longitude: d.longitude }]));
+            const reasonMap = new Map(reasons.map((r) => [r.reasonID, r]));
+            const checklistMap = new Map(checklists.map((c) => [c.checklistID, c]));
+            const agentMap = new Map(agents.map((a) => [a.agentID, a]));
+            const delegationMap = new Map(delegations.map((d) => [d.delegationID, { latitude: d.latitude, longitude: d.longitude }]));
 
-            // Geocode recruitment areas
             let recruitmentVisitLocations = [];
             if (includeRecruitmentVisits && timesheetData.criteria.recruitmentAreas?.length > 0) {
                 recruitmentVisitLocations = await Promise.all(
-                    timesheetData.criteria.recruitmentAreas.map(async area => {
+                    timesheetData.criteria.recruitmentAreas.map(async (area) => {
                         try {
                             const geocode = await GoogleMapsService.geocodeAddress(`${area}, Tunisia`, 'tn');
                             return {
                                 latitude: geocode.latitude,
                                 longitude: geocode.longitude,
-                                formattedAddress: geocode.formattedAddress
+                                formattedAddress: geocode.formattedAddress,
                             };
                         } catch (error) {
                             return { latitude: null, longitude: null, formattedAddress: 'Recruitment Location' };
@@ -472,7 +421,6 @@ class TimesheetService {
                 recruitmentVisitLocations = [{ latitude: null, longitude: null, formattedAddress: 'Recruitment Location' }];
             }
 
-            // Validate and process visits
             const validVisits = [];
             const timeToMinutes = (time) => {
                 const [hours, minutes] = time.split(':').map(Number);
@@ -480,36 +428,41 @@ class TimesheetService {
             };
 
             for (const visit of aiSuggestions) {
-                // Validate date
                 if (!visit.date || !validDates.includes(visit.date) || visit.date < todayDate) {
                     console.warn(`Skipping visit with invalid date: ${visit.date}`);
                     continue;
                 }
 
-                // Validate time
                 const visitMinutes = visit.time ? timeToMinutes(visit.time) : null;
-                if (!visit.time || visitMinutes < timeInterval.startHour * 60 || visitMinutes >= timeInterval.endHour * 60 ||
-                    (visit.date === todayDate && visitMinutes <= todayMinutes)) {
+                if (
+                    !visit.time ||
+                    visitMinutes < timeInterval.startHour * 60 ||
+                    visitMinutes >= timeInterval.endHour * 60 ||
+                    (visit.date === todayDate && visitMinutes <= todayMinutes)
+                ) {
                     console.warn(`Skipping visit with invalid time: ${visit.time} on ${visit.date}`);
                     continue;
                 }
 
-                // Validate agentID
                 const isRecruitment = includeRecruitmentVisits && visit.agentID === null;
                 if (!isRecruitment && (!visit.agentID || !agentMap.has(visit.agentID))) {
                     console.warn(`Skipping non-recruitment visit with invalid agentID: ${visit.agentID}`);
                     continue;
                 }
 
-                // Validate reasons and checklists
                 const reasons = Array.isArray(visit.reasons)
-                    ? visit.reasons.map(r => reasonMap.get(r.id)).filter(r => r).map(r => ({ reasonID: r.reasonID, item: r.item }))
+                    ? visit.reasons
+                        .map((r) => reasonMap.get(r.id))
+                        .filter((r) => r)
+                        .map((r) => ({ reasonID: r.reasonID, item: r.item }))
                     : [];
                 const checklists = Array.isArray(visit.checklists)
-                    ? visit.checklists.map(c => checklistMap.get(c.id)).filter(c => c).map(c => ({ checklistID: c.checklistID, item: c.item }))
+                    ? visit.checklists
+                        .map((c) => checklistMap.get(c.id))
+                        .filter((c) => c)
+                        .map((c) => ({ checklistID: c.checklistID, item: c.item }))
                     : [];
 
-                // Strict reason-checklist relevance check
                 let isValidChecklist = false;
                 for (const reason of reasons) {
                     const reasonText = reason.item.toLowerCase();
@@ -537,7 +490,8 @@ class TimesheetService {
                 const agent = visit.agentID ? agentMap.get(visit.agentID) : null;
                 let location, latitude, longitude;
                 if (isRecruitment) {
-                    const recruitmentLocation = recruitmentVisitLocations.find(l => l.formattedAddress === visit.location) || recruitmentVisitLocations[0];
+                    const recruitmentLocation =
+                        recruitmentVisitLocations.find((l) => l.formattedAddress === visit.location) || recruitmentVisitLocations[0];
                     location = visit.location && visit.location !== 'null' ? visit.location : 'Recruitment Location';
                     latitude = recruitmentLocation?.latitude || null;
                     longitude = recruitmentLocation?.longitude || null;
@@ -556,11 +510,10 @@ class TimesheetService {
                     longitude,
                     reasons,
                     checklists,
-                    agent
+                    agent,
                 });
             }
 
-            // Check for duplicate times on the same day
             const visitTimesByDate = {};
             for (const visit of validVisits) {
                 if (!visitTimesByDate[visit.date]) {
@@ -577,38 +530,39 @@ class TimesheetService {
                 visitTimesByDate[visit.date].add(visitMinutes);
             }
 
-            // Sort visits by Google Maps route
             let sortedVisits = validVisits;
             if (validVisits.length > 1) {
                 const waypoints = validVisits
-                    .filter(v => v.latitude && v.longitude)
-                    .map(v => ({ location: { lat: v.latitude, lng: v.longitude }, visit: v }));
+                    .filter((v) => v.latitude && v.longitude)
+                    .map((v) => ({ location: { lat: v.latitude, lng: v.longitude }, visit: v }));
                 if (waypoints.length > 0) {
                     try {
                         const route = await GoogleMapsService.getDirections(
                             `${coordinates.lat},${coordinates.lng}`,
                             `${coordinates.lat},${coordinates.lng}`,
                             'driving',
-                            waypoints.map(w => `${w.location.lat},${w.location.lng}`)
+                            waypoints.map((w) => `${w.location.lat},${w.location.lng}`)
                         );
-                        const orderedVisits = route.steps.flatMap(step =>
-                            waypoints.filter(w => step.instruction.includes(`${w.location.lat},${w.location.lng}`)).map(w => w.visit)
+                        const orderedVisits = route.steps.flatMap((step) =>
+                            waypoints
+                                .filter((w) => step.instruction.includes(`${w.location.lat},${w.location.lng}`))
+                                .map((w) => w.visit)
                         );
-                        const visitsWithoutCoords = validVisits.filter(v => !v.latitude || !v.longitude);
+                        const visitsWithoutCoords = validVisits.filter((v) => !v.latitude || !v.longitude);
                         sortedVisits = [...orderedVisits, ...visitsWithoutCoords];
                     } catch (error) {
                         console.warn('Failed to optimize route:', error.message);
-                        // Fallback to Haversine sorting
                         sortedVisits.sort((a, b) => {
                             if (!a.latitude || !a.longitude || !b.latitude || !b.longitude) return 0;
-                            return AIService.calculateDistance(coordinates.lat, coordinates.lng, a.latitude, a.longitude) -
-                                AIService.calculateDistance(coordinates.lat, coordinates.lng, b.latitude, b.longitude);
+                            return (
+                                AIService.calculateDistance(coordinates.lat, coordinates.lng, a.latitude, a.longitude) -
+                                AIService.calculateDistance(coordinates.lat, coordinates.lng, b.latitude, b.longitude)
+                            );
                         });
                     }
                 }
             }
 
-            // Create single timesheet
             const timesheet = {
                 timesheetID: `ts_suggested_${nanoid()}`,
                 weekNumber,
@@ -616,7 +570,7 @@ class TimesheetService {
                 status: 'pending',
                 supervisorID: supervisorId,
                 User: supervisor,
-                Visits: sortedVisits.map(visit => ({
+                Visits: sortedVisits.map((visit) => ({
                     visitID: `vis_suggested_${nanoid()}`,
                     date: visit.date,
                     time: visit.time,
@@ -629,20 +583,22 @@ class TimesheetService {
                     calendarEventId: null,
                     Reasons: visit.reasons,
                     Checklists: visit.checklists,
-                    Agent: visit.agent ? {
-                        agentID: visit.agent.agentID,
-                        name: visit.agent.name,
-                        lastname: visit.agent.lastname,
-                        email: visit.agent.email,
-                        phone: visit.agent.phone,
-                        location: visit.agent.location,
-                        latitude: visit.agent.latitude,
-                        longitude: visit.agent.longitude,
-                        supervisorID: visit.agent.supervisorID,
-                        delegationID: visit.agent.delegationID,
-                        Delegation: visit.agent.Delegation
-                    } : null
-                }))
+                    Agent: visit.agent
+                        ? {
+                            agentID: visit.agent.agentID,
+                            name: visit.agent.name,
+                            lastname: visit.agent.lastname,
+                            email: visit.agent.email,
+                            phone: visit.agent.phone,
+                            location: visit.agent.location,
+                            latitude: visit.agent.latitude,
+                            longitude: visit.agent.longitude,
+                            supervisorID: visit.agent.supervisorID,
+                            delegationID: visit.agent.delegationID,
+                            Delegation: visit.agent.Delegation,
+                        }
+                        : null,
+                })),
             };
 
             return timesheet.Visits.length > 0 ? [timesheet] : [];
@@ -651,11 +607,6 @@ class TimesheetService {
         }
     }
 
-    /**
-     * Cancels a timesheet suggestion request.
-     * @param {string} requestId - Request ID.
-     * @returns {Promise<boolean>} - Success status.
-     */
     static async cancelTimesheetSuggestion(requestId) {
         const controller = activeControllers.get(requestId);
         if (controller) {

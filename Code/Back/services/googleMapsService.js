@@ -55,42 +55,20 @@ class GoogleMapsService {
     // Get directions
 
     static async getDirections(origin, destination, mode = 'driving', waypoints = [], trafficModel = 'best_guess', optimizeWaypoints = false) {
-        let params; // Declare params in the outer scope
+        let params;
         try {
-            // Validate inputs
             if (!origin || !destination) {
                 throw new Error('Origin and destination are required');
             }
 
-            // Format and validate waypoints
-            let formattedWaypoints = [];
-            try {
-                formattedWaypoints = waypoints.map((wp, index) => {
-                    let location;
-                    if (typeof wp === 'string') {
-                        location = wp;
-                    } else if (wp && typeof wp === 'object' && wp.location) {
-                        location = wp.location;
-                    } else {
-                        throw new Error(`Invalid waypoint format at index ${index}`);
-                    }
+            let formattedWaypoints = waypoints.map((wp, index) => {
+                let location = typeof wp === 'string' ? wp : wp.location;
+                if (!/^-?\d+\.\d{1,15},-?\d+\.\d{1,15}$/.test(location)) {
+                    throw new Error(`Invalid waypoint location format at index ${index}: ${location}`);
+                }
+                return wp.stopover === true ? `via:${location}` : location;
+            });
 
-                    if (!/^-?\d+\.\d{1,15},-?\d+\.\d{1,15}$/.test(location)) {
-                        throw new Error(`Invalid waypoint location format at index ${index}: ${location}`);
-                    }
-
-                    return wp.stopover === true ? `via:${location}` : location;
-                });
-            } catch (waypointError) {
-                logger.error(`Waypoint processing failed: ${waypointError.message}`, {
-                    waypoints,
-                    index: waypointError.message.match(/index (\d+)/)?.[1],
-                    location: waypointError.message.match(/: (.+)$/)?.[1],
-                });
-                throw new Error(`Waypoint processing failed: ${waypointError.message}`);
-            }
-
-            // Create cache key
             const cacheKey = `directions:${origin}:${destination}:${mode}:${waypoints
                 .map((wp) => (typeof wp === 'string' ? wp : wp.location))
                 .join('|')}:${trafficModel}:${optimizeWaypoints}`;
@@ -99,7 +77,6 @@ class GoogleMapsService {
                 return JSON.parse(cachedResult);
             }
 
-            // Direct API call
             const url = 'https://maps.googleapis.com/maps/api/directions/json';
             params = {
                 origin,
@@ -108,7 +85,7 @@ class GoogleMapsService {
                 key: process.env.GOOGLE_MAPS_API_KEY,
                 departure_time: 'now',
                 traffic_model: trafficModel,
-                optimizeWaypoints, // Add optimizeWaypoints parameter
+                optimizeWaypoints,
                 ...(formattedWaypoints.length && { waypoints: formattedWaypoints.join('|') }),
             };
 
@@ -124,6 +101,39 @@ class GoogleMapsService {
                 throw new Error('No directions found');
             }
 
+            // Process traffic data for each leg
+            const trafficSegments = route.legs.map((leg, legIndex) => {
+                const steps = leg.steps.map((step, stepIndex) => {
+                    // Estimate traffic condition based on duration_in_traffic vs duration
+                    let trafficCondition = 'clear';
+                    let color = '#00FF00'; // Green for clear
+                    if (step.duration_in_traffic && step.duration) {
+                        const trafficRatio = step.duration_in_traffic.value / step.duration.value;
+                        if (trafficRatio > 1.5) {
+                            trafficCondition = 'heavy';
+                            color = '#FF0000'; // Red for heavy
+                        } else if (trafficRatio > 1.2) {
+                            trafficCondition = 'moderate';
+                            color = '#FFA500'; // Orange for moderate
+                        }
+                    }
+                    return {
+                        polyline: step.polyline.points,
+                        trafficCondition,
+                        color,
+                        distance: step.distance.text,
+                        duration: step.duration.text,
+                        instruction: step.html_instructions,
+                    };
+                });
+                return {
+                    legIndex,
+                    steps,
+                    distance: leg.distance.value / 1000, // km
+                    duration: leg.duration.value / 60, // minutes
+                };
+            });
+
             const data = {
                 distance: route.legs.reduce((sum, leg) => sum + leg.distance.value, 0) / 1000, // km
                 duration: route.legs.reduce((sum, leg) => sum + leg.duration.value, 0) / 60, // minutes
@@ -136,6 +146,7 @@ class GoogleMapsService {
                 ),
                 polyline: route.overview_polyline.points,
                 waypointOrder: route.waypoint_order || [],
+                trafficSegments, // New field for traffic-colored segments
             };
 
             await this.redisClient?.set(cacheKey, JSON.stringify(data), 'EX', 3600);
@@ -159,7 +170,29 @@ class GoogleMapsService {
 
 
 
-
+    static async updateUserLocation(userId, coordinates) {
+        try {
+            const { lat, lng } = coordinates;
+            if (!lat || !lng) {
+                throw new Error('Latitude and longitude are required');
+            }
+            const address = await this.reverseGeocode(lat, lng);
+            const cacheKey = `userLocation:${userId}`;
+            const locationData = {
+                userId,
+                latitude: lat,
+                longitude: lng,
+                address: address.formattedAddress,
+                timestamp: new Date().toISOString(),
+            };
+            await this.redisClient?.set(cacheKey, JSON.stringify(locationData), 'EX', 3600);
+            await RedisUtils.publishEvent('userLocationUpdate', locationData);
+            return locationData;
+        } catch (error) {
+            logger.error(`Failed to update user location: ${error.message}`);
+            throw new Error(`Failed to update user location: ${error.message}`);
+        }
+    }
 
 
 

@@ -217,6 +217,19 @@ export interface DirectionsResponse {
     }>;
     polyline: string;
     waypointOrder?: number[];
+    trafficSegments?: Array<{
+        legIndex: number;
+        steps: Array<{
+            polyline: string;
+            trafficCondition: 'clear' | 'moderate' | 'heavy';
+            color: string;
+            distance: string;
+            duration: string;
+            instruction: string;
+        }>;
+        distance: number;
+        duration: number;
+    }>;
     mock?: boolean;
 }
 export type PlacesResponse = Array<{ place_id: string; name: string; formatted_address: string; geometry: { location: { lat: number; lng: number } }; }>;

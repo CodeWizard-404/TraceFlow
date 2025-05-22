@@ -11,11 +11,13 @@ export interface User {
     phone: string;
     email: string;
     password: string;
-    googleEmail?: string;
     PFP?: string | null;
     tempResetToken?: string;
     regionalManagerID?: string;
     directorID?: string;
+    isOnline: boolean;
+    hasGoogleAuth: boolean;
+    hasCalendarAccess: boolean;
     Roles?: Role[];
     supervisors?: User[];
     managers?: User[];

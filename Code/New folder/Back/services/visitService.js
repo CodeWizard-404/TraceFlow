@@ -9,10 +9,8 @@ const { Op } = require('sequelize');
 const path = require('path');
 const fs = require('fs');
 const { sequelize } = require('../config/db');
-const { getKeycloakAdminToken, getGoogleAccessTokenForUser } = require('../utils/tokenExchange');
 
 class VisitService {
-
     static async validateVisitOTP(visitId, otpCode, actorID) {
         const transaction = await sequelize.transaction();
         try {
@@ -164,10 +162,9 @@ class VisitService {
             });
 
             try {
-                const adminToken = await getKeycloakAdminToken();
-                const googleToken = await getGoogleAccessTokenForUser(visit.Timesheet.User.keycloakId, adminToken);
-                const event = await GoogleCalendarService.updateCalendarEvent(googleToken, visitID);
-                await GoogleCalendarService.notifyCalendarUpdate(visit.Timesheet.User.keycloakId, {
+                const userId = visit.Timesheet.User.userID;
+                const event = await GoogleCalendarService.updateCalendarEvent(userId, visitID);
+                await GoogleCalendarService.notifyCalendarUpdate(userId, {
                     visitId: visitID,
                     calendarEventId: event.id,
                     action: 'updated',
@@ -232,7 +229,6 @@ class VisitService {
         }
     }
 
-    // Unchanged methods (included for completeness)
     static async createVisit(data, actorID, options = {}) {
         const { date, time, agentID, supervisorID, timesheetID, reasons, checklists, location, status = 'pending' } = data;
 
@@ -361,24 +357,10 @@ class VisitService {
 
             const reloadedVisit = await visit.reload({ include: [Reason, Checklist], transaction });
 
-            const supervisor = await User.findByPk(supervisorID);
-            if (!supervisor || !supervisor.keycloakId) {
-                throw new Error('Supervisor not found or not linked to Keycloak');
-            }
-
             try {
-                const adminToken = await getKeycloakAdminToken();
-                const googleToken = await getGoogleAccessTokenForUser(supervisor.keycloakId, adminToken);
-                const calendar = await GoogleCalendarService.getCalendarClient(googleToken);
-                const event = await calendar.events.insert({
-                    calendarId: 'primary',
-                    resource: {
-                        summary: `Visit ${visit.visitID}`,
-                        start: { dateTime: `${visit.date}T${visit.time}` },
-                        end: { dateTime: new Date(new Date(`${visit.date}T${visit.time}`).getTime() + 60 * 60000).toISOString() },
-                    },
-                });
-                visit.calendarEventId = event.data.id;
+                const userId = supervisorID;
+                const event = await GoogleCalendarService.createCalendarEvent(userId, visit.visitID);
+                visit.calendarEventId = event.id;
                 await visit.save({ transaction });
             } catch (error) {
                 console.error(`Failed to sync visit ${visit.visitID} to Google Calendar: ${error.message}`);
@@ -403,11 +385,11 @@ class VisitService {
                         include: [
                             {
                                 model: Governorate,
-                                include: [Region]
-                            }
-                        ]
-                    }
-                ]
+                                include: [Region],
+                            },
+                        ],
+                    },
+                ],
             });
             if (agent && agent.Delegation && agent.Delegation.Governorate && agent.Delegation.Governorate.Region) {
                 return `${agent.Delegation.Governorate.Region.name}, ${agent.Delegation.Governorate.name}, ${agent.Delegation.name}`;
@@ -573,10 +555,9 @@ class VisitService {
             await visit.save();
 
             try {
-                const adminToken = await getKeycloakAdminToken();
-                const googleToken = await getGoogleAccessTokenForUser(visit.Timesheet.User.keycloakId, adminToken);
-                const event = await GoogleCalendarService.updateCalendarEvent(googleToken, visitID);
-                await GoogleCalendarService.notifyCalendarUpdate(visit.Timesheet.User.keycloakId, {
+                const userId = visit.Timesheet.User.userID;
+                const event = await GoogleCalendarService.updateCalendarEvent(userId, visitID);
+                await GoogleCalendarService.notifyCalendarUpdate(userId, {
                     visitId: visitID,
                     calendarEventId: event.id,
                     action: 'updated',
@@ -622,10 +603,9 @@ class VisitService {
             }
 
             try {
-                const adminToken = await getKeycloakAdminToken();
-                const googleToken = await getGoogleAccessTokenForUser(visit.Timesheet.User.keycloakId, adminToken);
-                await GoogleCalendarService.deleteCalendarEvent(googleToken, visitID);
-                await GoogleCalendarService.notifyCalendarUpdate(visit.Timesheet.User.keycloakId, {
+                const userId = visit.Timesheet.User.userID;
+                await GoogleCalendarService.deleteCalendarEvent(userId, visitID);
+                await GoogleCalendarService.notifyCalendarUpdate(userId, {
                     visitId: visitID,
                     action: 'deleted',
                 });

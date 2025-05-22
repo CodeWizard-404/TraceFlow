@@ -27,6 +27,8 @@ class AuthController {
         return response;
     }
 
+
+
     static async googleCallback(req, res) {
         try {
             res.setHeader('Access-Control-Allow-Origin', process.env.FRONTEND_URL);
@@ -75,6 +77,115 @@ class AuthController {
             res.redirect(`${process.env.FRONTEND_URL}/login?error=${errorMessage}`);
         }
     }
+
+
+    // controllers/authController.js
+    static async googleCalendarAuth(req, res) {
+        try {
+            res.setHeader('Access-Control-Allow-Origin', process.env.FRONTEND_URL);
+            res.setHeader('Access-Control-Allow-Credentials', 'true');
+            const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+                `client_id=${process.env.GOOGLE_CALENDAR_CLIENT_ID}&` +
+                `redirect_uri=${encodeURIComponent(process.env.GOOGLE_CALENDAR_REDIRECT_URI)}&` +
+                `response_type=code&` +
+                `scope=${encodeURIComponent('https://www.googleapis.com/auth/calendar')}&` +
+                `access_type=offline&` +
+                `prompt=consent&` +
+                `state=${req.user.userID}`;
+            logger.info('Generated Google Calendar auth URL', { userId: req.user.userID, authUrl });
+            res.redirect(authUrl);
+        } catch (error) {
+            logger.error('Google calendar auth failed', {
+                traceId: req.traceId,
+                route: 'auth',
+                service: 'api',
+                status: 500,
+                method: req.method,
+                url: req.originalUrl,
+                ip: req.ip,
+                userId: req.user?.userID || null,
+                metadata: { error: error.message }
+            });
+            res.status(500).json({ error: ERROR_MESSAGES.SERVER_ERROR });
+        }
+    }
+
+    static async googleCalendarCallback(req, res) {
+        try {
+            res.setHeader('Access-Control-Allow-Origin', process.env.FRONTEND_URL);
+            res.setHeader('Access-Control-Allow-Credentials', 'true');
+
+            const { code, state } = req.query;
+            if (!code) throw new Error('Missing code parameter');
+            if (!state) throw new Error('Missing state parameter');
+
+            const result = await GoogleAuthService.googleCalendarCallback(code, state);
+            // No need to store session here since Google Calendar auth doesn't generate a new access token
+            const response = { redirect: `${process.env.FRONTEND_URL}/?calendar=success` };
+            logger.info('Google calendar callback result', {
+                userId: state,
+                hasRefreshToken: !!result.refreshToken,
+            });
+
+            logger.info('Google calendar login completed successfully', {
+                traceId: req.traceId,
+                route: 'auth',
+                service: 'api',
+                status: 302,
+                method: req.method,
+                url: req.originalUrl,
+                ip: req.ip,
+                userId: state || null,
+                metadata: {
+                    redirectUrl: response.redirect.substring(0, 100),
+                    userEmail: result.user?.email ? logger.sensitive(result.user.email) : null
+                }
+            });
+
+            setTimeout(() => {
+                res.redirect(`${process.env.FRONTEND_URL}/?calendar=success`);
+            }, 100);
+        } catch (error) {
+            const errorMessage = encodeURIComponent(error.message || 'Google calendar login failed');
+
+            logger.error('Google calendar login callback failed', {
+                traceId: req.traceId,
+                route: 'auth',
+                service: 'api',
+                status: 302,
+                method: req.method,
+                url: req.originalUrl,
+                ip: req.ip,
+                userId: null,
+                metadata: { error: errorMessage }
+            });
+
+            res.redirect(`${process.env.FRONTEND_URL}/login?error=${errorMessage}`);
+        }
+    }
+
+
+    static async getGoogleCalendarAuthUrl(req, res) {
+        try {
+            const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+                `client_id=${process.env.GOOGLE_CALENDAR_CLIENT_ID}&` +
+                `redirect_uri=${encodeURIComponent(process.env.GOOGLE_CALENDAR_REDIRECT_URI)}&` +
+                `response_type=code&` +
+                `scope=${encodeURIComponent('https://www.googleapis.com/auth/calendar')}&` +
+                `access_type=offline&` +
+                `prompt=consent&` +
+                `state=${req.user.userID}`;
+            res.json({ authUrl });
+        } catch (error) {
+            logger.error('Failed to get Google Calendar auth URL', { error: error.message });
+            res.status(500).json({ error: 'Failed to get authorization URL' });
+        }
+    }
+
+
+
+
+
 
     static async login(req, res) {
         try {

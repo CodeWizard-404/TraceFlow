@@ -81,6 +81,7 @@ body.dark {
 
 .search-input:not(:placeholder-shown)+.search-label,
 .search-input:focus+.search-label {
+    transform: translateY(-1.5rem) scale(0.75);
     color: var(--text-muted);
 }
 

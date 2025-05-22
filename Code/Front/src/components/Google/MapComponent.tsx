@@ -7,6 +7,7 @@ import {
   MarkerClusterer,
   Marker,
   Autocomplete,
+  TrafficLayer,
 } from '@react-google-maps/api';
 import { toast } from 'react-toastify';
 import polyline from '@mapbox/polyline';
@@ -27,16 +28,16 @@ import {
   getDirections,
   getGovernoratesByUser,
   getDelegationsByUser,
+  updateUserLocation,
 } from '../../apis/locationApi';
 import { getUsersByRole } from '../../apis/userAPI';
 import './Map.css';
 
-// Define route point type for unified list
 interface RoutePoint {
-  id: string; // Unique ID for drag-and-drop
-  location: string; // Coordinate string (lat,lng)
-  address: string; // Formatted address for display
-  type: 'origin' | 'waypoint' | 'destination'; // Type of point
+  id: string;
+  location: string;
+  address: string;
+  type: 'origin' | 'waypoint' | 'destination';
 }
 
 interface AgentMarker {
@@ -61,13 +62,28 @@ interface User {
   lastname: string;
 }
 
+interface TrafficSegment {
+  legIndex: number;
+  steps: Array<{
+    polyline: string;
+    trafficCondition: 'clear' | 'moderate' | 'heavy';
+    color: string;
+    distance: string;
+    duration: string;
+    instruction: string;
+  }>;
+  distance: number;
+  duration: number;
+}
+
 interface CustomDirectionsResponse {
   distance: number;
   duration: number;
   steps: Array<{ instruction: string; distance: string; duration: string }>;
   polyline: string;
-  waypointOrder?: number[]; // Optimized order of waypoints
+  waypointOrder?: number[];
   mock?: boolean;
+  trafficSegments?: TrafficSegment[];
 }
 
 const containerStyle = { width: '100%', height: '100vh' };
@@ -149,9 +165,14 @@ const MapComponent: React.FC = () => {
   const [assignedDelegations, setAssignedDelegations] = useState<{ delegationID: string; name: string; governorateID?: string }[]>([]);
   const [selectedGovernorate, setSelectedGovernorate] = useState('');
   const [mapStyle, setMapStyle] = useState<keyof typeof mapStyles>('light');
+  const [carMode, setCarMode] = useState(false);
   const mapRef = useRef<google.maps.Map | null>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+  const locationWatchId = useRef<number | null>(null);
+  const watchActive = useRef<boolean>(false); // Track watch state
+  const retryCount = useRef<number>(0); // Persist retry count
+  const lastPosition = useRef<{ lat: number; lng: number; timestamp: number } | null>(null); // Cache last position
 
   const sortedMarkers = useMemo(() => {
     if (!userLocation) return filteredMarkers;
@@ -171,6 +192,28 @@ const MapComponent: React.FC = () => {
     }
   }, [route]);
 
+  const trafficPaths = useMemo(() => {
+    if (!route || !route.trafficSegments) return [];
+    return route.trafficSegments.flatMap((segment) =>
+      segment.steps.map((step) => ({
+        path: polyline.decode(step.polyline).map(([lat, lng]) => ({ lat, lng })),
+        color: step.color,
+      }))
+    );
+  }, [route]);
+
+  // Debug re-renders
+  useEffect(() => {
+    console.log('MapComponent rendered', {
+      carMode,
+      userLocation,
+      mapCenter,
+      routePoints: routePoints.length,
+      timestamp: new Date().toISOString(),
+    });
+  }, [carMode, userLocation, mapCenter, routePoints]);
+
+  // Initial data loading
   useEffect(() => {
     const loadInitialData = async () => {
       try {
@@ -207,13 +250,15 @@ const MapComponent: React.FC = () => {
           navigator.geolocation.getCurrentPosition(
             (position) => {
               const { latitude, longitude } = position.coords;
-              setUserLocation({ lat: latitude, lng: longitude });
-              setMapCenter({ lat: latitude, lng: longitude });
+              const newLocation = { lat: latitude, lng: longitude };
+              setUserLocation(newLocation);
+              setMapCenter(newLocation);
+              lastPosition.current = { ...newLocation, timestamp: Date.now() };
               setZoom(15);
             },
             (error) => {
               console.error('Geolocation Error:', error);
-              toast.error('Unable to get your location');
+              toast.error('Unable to get your location. Please select a location manually.');
             }
           );
         }
@@ -227,6 +272,161 @@ const MapComponent: React.FC = () => {
     loadInitialData();
   }, []);
 
+  // Route calculation
+  const handleCalculateRoute = useCallback(async (optimize: boolean = false) => {
+    if (routePoints.length < 2) {
+      toast.error('At least two points are required for a route');
+      return;
+    }
+    setLoading(true);
+    try {
+      const origin = routePoints[0].location;
+      const destination = routePoints[routePoints.length - 1].location;
+      const waypointsForApi = routePoints
+        .slice(1, routePoints.length - 1)
+        .map((point) => ({
+          location: point.location,
+          stopover: true,
+        }));
+      const directions = await getDirections(
+        origin,
+        destination,
+        routeMode.toLowerCase(),
+        waypointsForApi,
+        optimize
+      );
+      if (directions.polyline) {
+        setRoute(directions);
+        if (optimize && directions.waypointOrder && directions.waypointOrder.length > 0) {
+          const newPoints = [...routePoints];
+          const waypoints = newPoints.slice(1, newPoints.length - 1);
+          const reorderedWaypoints = directions.waypointOrder.map((index) => waypoints[index]);
+          newPoints.splice(1, waypoints.length, ...reorderedWaypoints);
+          setRoutePoints(newPoints);
+        }
+        const [destLat, destLng] = destination.split(',').map(Number);
+        setMapCenter({ lat: destLat, lng: destLng });
+        setZoom(15);
+      } else {
+        toast.error('No directions found');
+      }
+    } catch (err) {
+      console.error('Calculate Route Error:', err);
+      toast.error('Failed to calculate route');
+    } finally {
+      setLoading(false);
+    }
+  }, [routePoints, routeMode]);
+
+  // Car mode geolocation handling
+  useEffect(() => {
+    const maxRetries = 3;
+    const timeout = 15000; // 15 seconds
+    const maximumAge = 5000; // Allow 5-second-old positions
+
+    const handlePosition = async (position: GeolocationPosition) => {
+      const { latitude, longitude } = position.coords;
+      const newLocation = { lat: latitude, lng: longitude };
+      lastPosition.current = { lat: latitude, lng: longitude, timestamp: Date.now() };
+
+      // Update state only if position has changed significantly
+      setUserLocation((prev) => {
+        if (prev && prev.lat === latitude && prev.lng === longitude) return prev;
+        return newLocation;
+      });
+      setMapCenter((prev) => {
+        if (prev.lat === latitude && prev.lng === longitude) return prev;
+        return newLocation;
+      });
+
+      // Update backend
+      try {
+        await updateUserLocation('currentUser', newLocation); // Replace 'currentUser' with actual user ID
+        retryCount.current = 0; // Reset retries on success
+      } catch (err) {
+        console.error('Location Update Error:', err);
+        toast.error('Failed to update location');
+      }
+
+      // Recalculate route if needed
+      if (routePoints.length >= 2) {
+        handleCalculateRoute();
+      }
+    };
+
+    const handleError = (error: GeolocationPositionError) => {
+      console.error('Geolocation Watch Error:', {
+        code: error.code,
+        message: error.message,
+        retryCount: retryCount.current,
+        timestamp: new Date().toISOString(),
+        userAgent: navigator.userAgent,
+      });
+
+      if (error.code === 3 && retryCount.current < maxRetries) {
+        // Timeout: increment retry count and continue watching
+        retryCount.current += 1;
+        toast.warn(`Retrying location acquisition (${retryCount.current}/${maxRetries})`);
+        return;
+      }
+
+      // Max retries reached or other error
+      toast.error(`Unable to track location: ${error.message}`);
+      if (lastPosition.current) {
+        // Fallback to last known position
+        toast.info('Using last known location');
+        setUserLocation({ lat: lastPosition.current.lat, lng: lastPosition.current.lng });
+        setMapCenter({ lat: lastPosition.current.lat, lng: lastPosition.current.lng });
+      } else {
+        // Prompt manual input
+        toast.info('Please select a location manually');
+        setCarMode(true); // Keep car mode active
+      }
+    };
+
+    const startWatching = () => {
+      if (watchActive.current || !navigator.geolocation) return;
+
+      watchActive.current = true;
+      locationWatchId.current = navigator.geolocation.watchPosition(
+        handlePosition,
+        handleError,
+        { enableHighAccuracy: true, timeout, maximumAge }
+      );
+    };
+
+    if (carMode) {
+      startWatching();
+    }
+
+    return () => {
+      if (locationWatchId.current !== null) {
+        navigator.geolocation.clearWatch(locationWatchId.current);
+        locationWatchId.current = null;
+        watchActive.current = false;
+        retryCount.current = 0;
+      }
+    };
+  }, [carMode, handleCalculateRoute]); // Removed routePoints to prevent restarts
+
+  // Manual location handler for car mode
+  const handleManualLocation = useCallback((e: google.maps.MapMouseEvent) => {
+    if (carMode && e.latLng) {
+      const newLocation = { lat: e.latLng.lat(), lng: e.latLng.lng() };
+      setUserLocation(newLocation);
+      setMapCenter(newLocation);
+      lastPosition.current = { ...newLocation, timestamp: Date.now() };
+      updateUserLocation('currentUser', newLocation).catch((err) => {
+        console.error('Manual Location Update Error:', err);
+        toast.error('Failed to update manual location');
+      });
+      toast.info('Location set manually');
+    }
+  }, [carMode]);
+
+
+
+  // Supervisor assignments
   useEffect(() => {
     if (newAgent.supervisorID) {
       Promise.all([
@@ -254,6 +454,7 @@ const MapComponent: React.FC = () => {
     }
   }, [filterSupervisor]);
 
+  // Search handling
   const handleSearch = useCallback(async () => {
     if (!searchQuery) {
       setFilteredMarkers(allMarkers);
@@ -289,6 +490,7 @@ const MapComponent: React.FC = () => {
     };
   }, [searchQuery, handleSearch]);
 
+  // Filter governorates and delegations
   const filteredGovernorates = useMemo(() => {
     let result = governorates;
     if (filterRegion) result = result.filter((g: any) => g.regionID === filterRegion);
@@ -322,27 +524,32 @@ const MapComponent: React.FC = () => {
     handleFilter();
   }, [filterRegion, filterGovernorate, filterSupervisor, handleFilter]);
 
+  // Map interactions
   const handleMapClick = useCallback(async (event: google.maps.MapMouseEvent) => {
-    if (!addingAgentMode) return;
-    setAddingAgentMode(false);
-    const lat = event.latLng?.lat();
-    const lng = event.latLng?.lng();
-    if (lat && lng) {
-      try {
-        const geocode = await getGeocode(`${lat},${lng}`);
-        if (!geocode.formattedAddress) {
-          toast.error('Unable to determine address');
-          return;
+    if (addingAgentMode) {
+      setAddingAgentMode(false);
+      const lat = event.latLng?.lat();
+      const lng = event.latLng?.lng();
+      if (lat && lng) {
+        try {
+          const geocode = await getGeocode(`${lat},${lng}`);
+          if (!geocode.formattedAddress) {
+            toast.error('Unable to determine address');
+            return;
+          }
+          setNewAgent({ ...newAgent, address: geocode.formattedAddress });
+          setShowAddModal(true);
+        } catch (err) {
+          console.error('Map Click Error:', err);
+          toast.error('Failed to get address');
         }
-        setNewAgent({ ...newAgent, address: geocode.formattedAddress });
-        setShowAddModal(true);
-      } catch (err) {
-        console.error('Map Click Error:', err);
-        toast.error('Failed to get address');
       }
+    } else if (carMode) {
+      handleManualLocation(event);
     }
-  }, [addingAgentMode, newAgent]);
+  }, [addingAgentMode, newAgent, carMode, handleManualLocation]);
 
+  // Agent creation
   const handleCreateAgent = useCallback(async () => {
     if (!newAgent.name || !newAgent.lastname || !newAgent.email || !newAgent.phone || !newAgent.delegationID || !newAgent.supervisorID || !newAgent.address) {
       toast.error('All fields are required');
@@ -390,6 +597,7 @@ const MapComponent: React.FC = () => {
     }
   }, [newAgent]);
 
+  // Agent editing
   const handleEditAgent = useCallback(async () => {
     if (!editAgent || !editAgent.agentID) {
       toast.error('No agent selected for editing');
@@ -427,6 +635,7 @@ const MapComponent: React.FC = () => {
     }
   }, [editAgent]);
 
+  // Marker dragging
   const handleMarkerDragStart = useCallback((markerId: string) => {
     const marker = allMarkers.find((m) => m.id === markerId);
     if (marker) setDraggingMarker({ id: markerId, original: { ...marker } });
@@ -497,6 +706,7 @@ const MapComponent: React.FC = () => {
     );
   };
 
+  // Directions and stops
   const handleGetDirections = useCallback(async (marker: AgentMarker) => {
     if (!userLocation) {
       toast.error('User location not available');
@@ -600,51 +810,7 @@ const MapComponent: React.FC = () => {
     }
   }, [userLocation, routePoints, routeMode]);
 
-  const handleCalculateRoute = useCallback(async (optimize: boolean = false) => {
-    if (routePoints.length < 2) {
-      toast.error('At least two points are required for a route');
-      return;
-    }
-    setLoading(true);
-    try {
-      const origin = routePoints[0].location;
-      const destination = routePoints[routePoints.length - 1].location;
-      const waypointsForApi = routePoints
-        .slice(1, routePoints.length - 1)
-        .map((point) => ({
-          location: point.location,
-          stopover: true,
-        }));
-      const directions = await getDirections(
-        origin,
-        destination,
-        routeMode.toLowerCase(),
-        waypointsForApi,
-        optimize
-      );
-      if (directions.polyline) {
-        setRoute(directions);
-        if (optimize && directions.waypointOrder && directions.waypointOrder.length > 0) {
-          const newPoints = [...routePoints];
-          const waypoints = newPoints.slice(1, newPoints.length - 1);
-          const reorderedWaypoints = directions.waypointOrder.map((index) => waypoints[index]);
-          newPoints.splice(1, waypoints.length, ...reorderedWaypoints);
-          setRoutePoints(newPoints);
-        }
-        const [destLat, destLng] = destination.split(',').map(Number);
-        setMapCenter({ lat: destLat, lng: destLng });
-        setZoom(15);
-      } else {
-        toast.error('No directions found');
-      }
-    } catch (err) {
-      console.error('Calculate Route Error:', err);
-      toast.error('Failed to calculate route');
-    } finally {
-      setLoading(false);
-    }
-  }, [routePoints, routeMode]);
-
+  // Route optimization
   const handleOptimizeRoute = useCallback(() => {
     if (routePoints.length < 3) {
       toast.error('At least one waypoint is required to optimize');
@@ -665,6 +831,31 @@ const MapComponent: React.FC = () => {
     }
     setMapCenter(userLocation);
     setZoom(15);
+  }, [userLocation]);
+
+  // Car mode toggle
+  const toggleCarMode = useCallback(async () => {
+    if (!carMode) {
+      try {
+        const permission = await navigator.permissions.query({ name: 'geolocation' });
+        if (permission.state === 'denied') {
+          toast.error('Location access is denied. Please enable it in browser settings.');
+          return;
+        }
+        if (!userLocation && !lastPosition.current) {
+          toast.error('User location not available. Please select a location manually.');
+          return;
+        }
+      } catch (err) {
+        console.error('Permission Check Error:', err);
+        toast.error('Unable to check location permissions.');
+        return;
+      }
+    }
+    setCarMode((prev) => {
+      console.log(prev ? 'Exiting car mode' : 'Entering car mode');
+      return !prev;
+    });
   }, [userLocation]);
 
   const onMapLoad = useCallback((map: google.maps.Map) => {
@@ -690,6 +881,7 @@ const MapComponent: React.FC = () => {
     }
   };
 
+  // Route point dragging
   const handleDragEnd = useCallback(
     (result: any) => {
       if (!result.destination) return;
@@ -728,6 +920,7 @@ const MapComponent: React.FC = () => {
     [routePoints, handleCalculateRoute]
   );
 
+  // Marker list component
   const MarkerList = React.memo(
     ({ markers, onSelect, onGetDirections, onAddStop }: { markers: AgentMarker[]; onSelect: (marker: AgentMarker) => void; onGetDirections: (marker: AgentMarker) => void; onAddStop: (marker: AgentMarker) => void }) => (
       <div className="agent-list">
@@ -749,8 +942,11 @@ const MapComponent: React.FC = () => {
                 onSelect(marker);
               }}
             >
-              <h4>{`${marker.name} ${marker.lastname}`}</h4>
-              <p>{marker.address}</p>
+              <div className="agent-card-header">
+                <h4>{`${marker.name} ${marker.lastname}`}</h4>
+                <span className="agent-status">Active</span>
+              </div>
+              <p className="agent-address">{marker.address}</p>
               <div className="agent-actions">
                 {route ? (
                   <button className="action-button" onClick={(e) => { e.stopPropagation(); onAddStop(marker); }}>Add Stop</button>
@@ -766,6 +962,7 @@ const MapComponent: React.FC = () => {
     )
   );
 
+  // Waypoint list component
   const WaypointList = React.memo(() => (
     <div className="waypoint-list">
       <h3>Route Points</h3>
@@ -835,6 +1032,12 @@ const MapComponent: React.FC = () => {
             <span></span>
             <span></span>
             <span></span>
+          </button>
+          <button
+            className={`car-mode-button ${carMode ? 'active' : ''}`}
+            onClick={toggleCarMode}
+          >
+            {carMode ? 'Exit Car Mode' : 'Enter Car Mode'}
           </button>
           <select
             className="map-style-select"
@@ -963,6 +1166,7 @@ const MapComponent: React.FC = () => {
             disableDefaultUI: true,
           }}
         >
+          {carMode && route && <TrafficLayer />}
           <MarkerClusterer>
             {() => (
               <>
@@ -1032,8 +1236,22 @@ const MapComponent: React.FC = () => {
               </div>
             </InfoWindow>
           )}
-          {routePath.length > 0 && (
-            <Polyline path={routePath} options={{ strokeColor: '#4cb1c7', strokeOpacity: 0.8, strokeWeight: 6 }} />
+          {carMode && trafficPaths.length > 0 ? (
+            trafficPaths.map((segment, index) => (
+              <Polyline
+                key={`traffic-segment-${index}`}
+                path={segment.path}
+                options={{
+                  strokeColor: segment.color,
+                  strokeOpacity: 0.8,
+                  strokeWeight: 6,
+                }}
+              />
+            ))
+          ) : (
+            routePath.length > 0 && (
+              <Polyline path={routePath} options={{ strokeColor: '#4cb1c7', strokeOpacity: 0.8, strokeWeight: 6 }} />
+            )
           )}
         </GoogleMap>
 
@@ -1241,4 +1459,4 @@ const MapComponent: React.FC = () => {
   );
 };
 
-export default MapComponent;
+export default React.memo(MapComponent);

@@ -72,6 +72,7 @@
     "nanoid": "^5.1.5",
     "node-cache": "^5.1.2",
     "node-cron": "^3.0.3",
+    "node-vault": "^0.10.2",
     "nodemailer": "^6.10.0",
     "pino": "^9.6.0",
     "pluralize": "^8.0.0",

@@ -36,6 +36,7 @@ import DirectionsModal from "../../components/Google/VisitDirectionsModal";
 import { io } from 'socket.io-client';
 import User from "../../models/User";
 import { FaRoute } from "react-icons/fa";
+import { fetchUserProfile } from "../../apis/userAPI";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
@@ -77,6 +78,7 @@ const VisitDetailsView: React.FC = () => {
     const [showDirectionsModal, setShowDirectionsModal] = useState<boolean>(false);
     const [destination, setDestination] = useState<{ lat: number; lng: number; address: string } | null>(null);
     const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+    const [hasCalendarAccess, setHasCalendarAccess] = useState<boolean>(false);
 
     const userPermissions = useMemo(
         () => ({
@@ -126,6 +128,18 @@ const VisitDetailsView: React.FC = () => {
             );
         }
     }, [t]);
+
+    useEffect(() => {
+        const fetchUserCalendarAccess = async () => {
+            try {
+                const response = await fetchUserProfile();
+                setHasCalendarAccess(response.hasCalendarAccess || false);
+            } catch (err) {
+                console.error('Failed to fetch calendar access:', err);
+            }
+        };
+        if (user?.userID) fetchUserCalendarAccess();
+    }, [user]);
 
     const fetchVisitData = useCallback(async () => {
         if (!idVisit || !userPermissions.canAccessVisitDetails) {
@@ -207,20 +221,33 @@ const VisitDetailsView: React.FC = () => {
         if (permissionsLoaded) fetchVisitData();
     }, [fetchVisitData, permissionsLoaded]);
 
+    // VisitDetailsView.tsx
     useEffect(() => {
         if (!user?.userID || !idVisit) return;
+        const token = localStorage.getItem('accessToken');
+        if (!token) {
+            console.error('No access token found for socket connection');
+            return;
+        }
+
         const socket = io(SOCKET_URL, {
-            auth: { token: localStorage.getItem('accessToken') }
+            auth: { token },
         });
 
         socket.on('connect', () => {
+            console.log('Socket connected');
             socket.emit('join', user.userID);
         });
 
         socket.on('calendar:update', (data: { visitId: string; calendarEventId?: string; action: 'created' | 'updated' | 'deleted' }) => {
+            console.log('Received calendar update:', data);
             if (data.visitId === idVisit) {
                 setVisit((prev) => prev ? { ...prev, calendarEventId: data.action === 'deleted' ? undefined : data.calendarEventId } : prev);
             }
+        });
+
+        socket.on('connect_error', (err) => {
+            console.error('Socket connection error:', err.message);
         });
 
         return () => {
@@ -427,6 +454,7 @@ const VisitDetailsView: React.FC = () => {
                                     visitId={visit.visitID}
                                     isSupervisor={!!isSupervisor}
                                     hasCalendarEvent={!!visit.calendarEventId}
+                                    hasCalendarAccess={hasCalendarAccess}
                                 />
                             )}
                         </div>

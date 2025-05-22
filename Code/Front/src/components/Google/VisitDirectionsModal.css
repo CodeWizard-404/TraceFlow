@@ -79,19 +79,6 @@ body.dark .map-style-select:hover {
   background: #4a83ce;
 }
 
-.action-button {
-  background: #4cb1c7;
-  color: #fff;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 1rem;
-  font-size: clamp(0.75rem, 3vw, 0.875rem);
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  flex: 1;
-  min-width: 100px;
-}
 
 .action-button-9 {
   width: auto;
