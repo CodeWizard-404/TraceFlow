@@ -218,7 +218,7 @@ button:disabled {
   background: linear-gradient(135deg, #f687b3 0%, #ff3c8a 100%);
 }
 
-.visit-details-log-btn:hover,
+/* .visit-details-log-btn:hover,
 .visit-details-back-btn:hover,
 .validate-visit-btn:hover,
 .reject-visit-btn:hover,
@@ -227,7 +227,7 @@ button:disabled {
 .visit-details-submit-btn:hover,
 .visit-details-cancel-btn:hover {
   transform: scale(1.02);
-}
+} */
 
 .visit-details-log-btn:hover,
 .visit-details-submit-btn:hover,
@@ -593,6 +593,28 @@ body.dark .form-group input:focus, body.dark .form-group textarea:focus, body.da
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
+.directions-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 0.5rem;
+  background-color: #4cb1c7;
+  padding: 0.3rem;
+  padding-bottom: 0.4rem;
+  margin-left: 0.5rem;
+}
+
+.directions-icon:hover {
+  background-color: #3a869e;
+}
+
+body.dark .directions-icon {
+  background-color: #63b3ed;
+}
+
+.directions-icon:hover {
+  background-color: #3a869e;
+}
+
 @media (min-width: 768px) {
   .visit-details-container {
     padding: 2rem;
@@ -668,10 +690,7 @@ body.dark .form-group input:focus, body.dark .form-group textarea:focus, body.da
     font-size: 0.65rem;
   }
 
-  .visit-details-actions-top {
-    flex-direction: column;
-    gap: 0.25rem;
-  }
+
 }
 
 @media (max-width: 480px) {
@@ -684,6 +703,8 @@ body.dark .form-group input:focus, body.dark .form-group textarea:focus, body.da
     font-size: 0.55rem;
   }
 }
+
+
 
 
 

@@ -35,6 +35,7 @@ import CalendarSyncButton from "../../components/Google/CalendarSyncButton";
 import DirectionsModal from "../../components/Google/VisitDirectionsModal";
 import { io } from 'socket.io-client';
 import User from "../../models/User";
+import { FaRoute } from "react-icons/fa";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
@@ -406,10 +407,15 @@ const VisitDetailsView: React.FC = () => {
                                 <FaMapMarkerAlt />
                                 <span
                                     onClick={handleLocationClick}
-                                    style={{ cursor: destination ? 'pointer' : 'default', color: destination ? '#007bff' : 'inherit' }}
+                                    style={{ cursor: destination ? 'pointer' : 'default' }}
                                     aria-label={t("visitDetails.aria.viewDirections")}
                                 >
                                     {" "}{displayLocation}
+                                    {destination && (
+                                        <span className="directions-icon">
+                                            <FaRoute />
+                                        </span>
+                                    )}
                                 </span>
                             </p>
                             {visit.calendarEventId ? (
@@ -612,8 +618,8 @@ const VisitDetailsView: React.FC = () => {
                         onClose={() => setShowDirectionsModal(false)}
                         destination={destination}
                         userLocation={userLocation}
-                        agent={agent}
-                        delegation={locationData.delegationID}
+                        agent={agent ? { name: agent.name, lastname: agent.lastname } : null}
+                        delegation={locationData.delegationID ? { name: displayLocation?.split(', ')[2] || 'Unknown' } : null}
                     />
                 )}
             </section>

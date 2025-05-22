@@ -156,7 +156,8 @@ export const getDirections = async (
     origin: string,
     destination: string,
     mode: string = 'driving',
-    waypoints?: Array<{ location: string; stopover: boolean }>
+    waypoints?: Array<{ location: string; stopover: boolean }>,
+    optimizeWaypoints: boolean = false
 ): Promise<DirectionsResponse> => {
     try {
         if (!origin || !destination) throw new Error("Origin and destination are required.");
@@ -165,12 +166,15 @@ export const getDirections = async (
             destination,
             mode,
             waypoints,
+            optimizeWaypoints,
         });
         return response.data;
     } catch (error) {
         throw new Error(handleApiError(error, "Unable to get directions."));
     }
 };
+
+
 export const searchPlaces = async (query: string, location?: { lat: number; lng: number }, radius: number = 5000): Promise<PlacesResponse> => {
     try {
         if (!query) throw new Error("Query is required.");

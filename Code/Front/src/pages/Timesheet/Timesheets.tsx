@@ -1400,9 +1400,6 @@ const Timesheets: React.FC = React.memo(() => {
                         )}
                     </div>
                 )}
-
-                {error && <p className="error">{error}</p>}
-
                 {viewMode === "year" && (
                     <section className="year-view">
                         {yearData.map(({ month, weeks }) => (

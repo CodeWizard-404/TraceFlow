@@ -570,7 +570,7 @@ class LocationController {
 static async getDirections(req, res) {
   const actorID = req.user?.userID || 'unknown';
   try {
-    const { origin, destination, mode, waypoints } = req.body;
+    const { origin, destination, mode, waypoints, optimizeWaypoints } = req.body;
     if (!origin || !destination) {
       logger.warn('Failed to fetch directions: Missing origin or destination', {
         route: 'locations/directions',
@@ -580,11 +580,11 @@ static async getDirections(req, res) {
         ip: req.ip,
         traceId: req.traceId,
         userId: actorID,
-        metadata: { origin, destination, mode, waypoints }
+        metadata: { origin, destination, mode, waypoints, optimizeWaypoints }
       });
       return res.status(400).json({ error: 'Origin and destination are required' });
     }
-    const result = await GoogleMapsService.getDirections(origin, destination, mode, waypoints || []);
+    const result = await GoogleMapsService.getDirections(origin, destination, mode, waypoints || [], 'best_guess', optimizeWaypoints);
     logger.info('Successfully fetched directions', {
       route: 'locations/directions',
       method: req.method,
@@ -593,7 +593,7 @@ static async getDirections(req, res) {
       ip: req.ip,
       traceId: req.traceId,
       userId: actorID,
-      metadata: { origin, destination, mode, waypoints: waypoints || [] }
+      metadata: { origin, destination, mode, waypoints: waypoints || [], optimizeWaypoints }
     });
     return res.status(200).json(result);
   } catch (error) {

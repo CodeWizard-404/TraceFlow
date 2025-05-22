@@ -5,22 +5,13 @@ import polyline from '@mapbox/polyline';
 import { getDirections } from '../../apis/locationApi';
 import './VisitDirectionsModal.css';
 
-interface Agent {
-  name: string;
-  lastname: string;
-}
-
-interface Delegation {
-  name: string;
-}
-
 interface DirectionsModalProps {
   isOpen: boolean;
   onClose: () => void;
   destination: { lat: number; lng: number; address: string };
   userLocation: { lat: number; lng: number } | null;
-  agent: Agent | null;
-  delegation: Delegation | null;
+  agent: { name: string; lastname: string } | null;
+  delegation: { name: string } | null;
 }
 
 interface CustomDirectionsResponse {
@@ -30,7 +21,7 @@ interface CustomDirectionsResponse {
   polyline: string;
 }
 
-const containerStyle = { width: '100%', height: '100vh' };
+const containerStyle = { width: '100%', height: '100%' };
 const defaultCenter = { lat: 36.8065, lng: 10.1815 };
 const libraries: ('places' | 'geometry')[] = ['places', 'geometry'];
 
@@ -49,10 +40,12 @@ const mapStyles = {
     { elementType: 'labels.text.stroke', stylers: [{ color: '#212121' }] },
     { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#424242' }] },
     { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#616161' }] },
-    { featureType: 'water', stylers: [{ color: '#0288d1' }] },
+    { featureType: 'water', stylers: [{ color: '#63b3ed' }] },
+    { featureType: 'satellite', elementType: 'geometry', stylers: [{ visibility: 'simplified' }] },
+    { featureType: 'satellite', elementType: 'labels.text.fill', stylers: [{ color: '#ffffff' }] },
   ],
   satellite: [],
-  terrain: [{ featureType: 'landscape', stylers: [{ color: '#dcedc8' }] }],
+  terrain: [],
   retro: [
     { elementType: 'geometry', stylers: [{ color: '#ebe3cd' }] },
     { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#f5f5f5' }] },
@@ -69,11 +62,18 @@ const DirectionsModal: React.FC<DirectionsModalProps> = ({
   delegation,
 }) => {
   const [directions, setDirections] = useState<CustomDirectionsResponse | null>(null);
-  const [mapCenter, setMapCenter] = useState(userLocation || defaultCenter);
-  const [mapStyle, setMapStyle] = useState<keyof typeof mapStyles>('satellite');
+  const [mapStyle, setMapStyle] = useState<keyof typeof mapStyles>(
+    document.body.classList.contains('dark') ? 'dark' : 'light'
+  );
+  const [isSummaryCollapsed, setIsSummaryCollapsed] = useState(true);
   const mapRef = useRef<google.maps.Map | null>(null);
 
-  // Clean HTML tags and normalize RTL text
+  const displayName = agent
+    ? `${agent.name} ${agent.lastname}`
+    : delegation
+      ? delegation.name
+      : destination.address;
+
   const cleanInstruction = (instruction: string): string => {
     const div = document.createElement('div');
     div.innerHTML = instruction;
@@ -83,7 +83,6 @@ const DirectionsModal: React.FC<DirectionsModalProps> = ({
     return text;
   };
 
-  // Parse directions steps
   const parsedSteps = useMemo(() => {
     if (!directions?.steps) return [];
     return directions.steps.map(step => ({
@@ -92,7 +91,6 @@ const DirectionsModal: React.FC<DirectionsModalProps> = ({
     }));
   }, [directions]);
 
-  // Decode polyline for route
   const routePath = useMemo(() => {
     if (!directions?.polyline) return [];
     try {
@@ -102,20 +100,6 @@ const DirectionsModal: React.FC<DirectionsModalProps> = ({
       return [];
     }
   }, [directions]);
-
-  // Determine display name for header
-  const displayName = useMemo(() => {
-    if (agent) {
-      return `${agent.name} ${agent.lastname}`.trim();
-    }
-    return delegation?.name || destination.address;
-  }, [agent, delegation, destination.address]);
-
-  useEffect(() => {
-    if (isOpen && userLocation) {
-      setMapCenter(userLocation);
-    }
-  }, [isOpen, userLocation]);
 
   useEffect(() => {
     const fetchDirections = async () => {
@@ -136,6 +120,17 @@ const DirectionsModal: React.FC<DirectionsModalProps> = ({
     fetchDirections();
   }, [isOpen, userLocation, destination]);
 
+  useEffect(() => {
+    if (!mapRef.current || !userLocation || !destination || !routePath.length) return;
+
+    const bounds = new google.maps.LatLngBounds();
+    bounds.extend(new google.maps.LatLng(userLocation.lat, userLocation.lng));
+    bounds.extend(new google.maps.LatLng(destination.lat, destination.lng));
+    routePath.forEach(point => bounds.extend(new google.maps.LatLng(point.lat, point.lng)));
+
+    mapRef.current.fitBounds(bounds, { top: 50, bottom: isSummaryCollapsed ? 50 : 200, left: 50, right: 50 });
+  }, [userLocation, destination, routePath, isSummaryCollapsed]);
+
   const onMapLoad = useCallback((map: google.maps.Map) => {
     mapRef.current = map;
   }, []);
@@ -147,103 +142,129 @@ const DirectionsModal: React.FC<DirectionsModalProps> = ({
     }
   };
 
+  const handleCenterRoute = () => {
+    if (!mapRef.current || !userLocation || !destination || !routePath.length) return;
+
+    const bounds = new google.maps.LatLngBounds();
+    bounds.extend(new google.maps.LatLng(userLocation.lat, userLocation.lng));
+    bounds.extend(new google.maps.LatLng(destination.lat, destination.lng));
+    routePath.forEach(point => bounds.extend(new google.maps.LatLng(point.lat, point.lng)));
+
+    mapRef.current.fitBounds(bounds, { top: 50, bottom: isSummaryCollapsed ? 50 : 200, left: 50, right: 50 });
+  };
+
+  const toggleSummary = () => {
+    setIsSummaryCollapsed(prev => !prev);
+  };
+
   if (!isOpen) return null;
 
   return (
-    <div className="map-container">
-      <div className="map-frame">
-        <LoadScript
-          googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}
-          libraries={libraries}
-        >
-          <GoogleMap
-            mapContainerStyle={containerStyle}
-            center={mapCenter}
-            zoom={15}
-            onLoad={onMapLoad}
-            options={{
-              styles: mapStyles[mapStyle],
-              mapTypeId: mapStyle === 'satellite' ? 'satellite' : 'roadmap',
-              mapTypeControl: false,
-              streetViewControl: false,
-              fullscreenControl: false,
-              zoomControl: true,
-              gestureHandling: 'greedy',
-            }}
+    <div className="modal-overlay">
+      <div className="modal-content">
+        <button className="close-button" onClick={onClose} aria-label="Close modal">
+          ×
+        </button>
+        <div className="map-frame">
+          <LoadScript
+            googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}
+            libraries={libraries}
           >
-            {userLocation && (
-              <Marker
-                position={userLocation}
-                title="Your Location"
-                icon={{
-                  url: 'https://maps.gstatic.com/mapfiles/ms2/micons/man.png',
-                }}
-              />
-            )}
-            <Marker
-              position={destination}
-              title="Destination"
-              icon={{
-                url: 'https://maps.gstatic.com/mapfiles/ms2/micons/red.png',
+            <div className="controls-bar">
+              <select
+                value={mapStyle}
+                onChange={(e) => handleMapStyleChange(e.target.value as keyof typeof mapStyles)}
+                className="map-style-select"
+                aria-label="Select map style"
+              >
+                {Object.keys(mapStyles).map((style) => (
+                  <option key={style} value={style}>
+                    {style.charAt(0).toUpperCase() + style.slice(1)}
+                  </option>
+                ))}
+              </select>
+              <button
+                className="action-button action-button-9"
+                onClick={handleCenterRoute}
+                aria-label="Center route"
+              >
+                Center Route
+              </button>
+            </div>
+            <GoogleMap
+              mapContainerStyle={containerStyle}
+              center={defaultCenter}
+              zoom={15}
+              onLoad={onMapLoad}
+              options={{
+                styles: mapStyles[mapStyle],
+                mapTypeId: mapStyle === 'satellite' ? 'satellite' : 'roadmap',
+                mapTypeControl: false,
+                streetViewControl: false,
+                fullscreenControl: false,
+                zoomControl: true,
+                gestureHandling: 'greedy',
               }}
-            />
-            {routePath.length > 0 && (
-              <Polyline
-                path={routePath}
-                options={{
-                  strokeColor: '#4cb1c7',
-                  strokeOpacity: 0.8,
-                  strokeWeight: 6,
+            >
+              {userLocation && (
+                <Marker
+                  position={userLocation}
+                  title="Your Location"
+                  icon={{
+                    url: 'https://maps.gstatic.com/mapfiles/ms2/micons/man.png',
+                  }}
+                />
+              )}
+              <Marker
+                position={destination}
+                title="Destination"
+                icon={{
+                  url: 'https://maps.gstatic.com/mapfiles/ms2/micons/red.png',
                 }}
               />
-            )}
-          </GoogleMap>
-        </LoadScript>
-        <div className="controls-bar">
-          <select
-            value={mapStyle}
-            onChange={(e) => handleMapStyleChange(e.target.value as keyof typeof mapStyles)}
-            className="map-style-select"
-            aria-label="Select map style"
-          >
-            {Object.keys(mapStyles).map((style) => (
-              <option key={style} value={style}>
-                {style.charAt(0).toUpperCase() + style.slice(1)}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="route-summary">
-          <div className="directions-header">
-            <h3>Directions to {displayName}</h3>
+              {routePath.length > 0 && (
+                <Polyline
+                  path={routePath}
+                  options={{
+                    strokeColor: document.body.classList.contains('dark') ? '#63b3ed' : '#4cb1c7',
+                    strokeOpacity: 0.8,
+                    strokeWeight: 6,
+                  }}
+                />
+              )}
+            </GoogleMap>
             {directions && (
-              <div className="route-overview">
-                <span>{(directions.distance / 1000).toFixed(2)} km</span>
-                <span>{(directions.duration / 60).toFixed(1)} min</span>
-              </div>
-            )}
-          </div>
-          {directions ? (
-            <div className="directions-steps">
-              {parsedSteps.map((step, index) => (
-                <div key={index} className="step-card">
-                  <div className="step-number">{index + 1}</div>
-                  <div className="step-content">
-                    <p className="step-instruction">{step.instruction}</p>
-                    <div className="step-meta">
-                      <span>{step.distance}</span>
-                      <span>{step.duration}</span>
-                    </div>
+              <div className={`route-summary ${isSummaryCollapsed ? 'collapsed' : ''}`}>
+                <button
+                  className="action-button toggle-summary-button"
+                  onClick={toggleSummary}
+                  aria-label={isSummaryCollapsed ? 'Expand directions' : 'Collapse directions'}
+                >
+                  {isSummaryCollapsed ? 'Show Directions' : 'Hide Directions'}
+                </button>
+                <div className="route-summary-content">
+                  <h3>Directions to {displayName}</h3>
+                  <p>Distance: {(directions.distance / 1000).toFixed(2)} km</p>
+                  <p>Duration: {(directions.duration / 60).toFixed(1)} min</p>
+                  <div className="agent-list">
+                    {parsedSteps.map((step, index) => (
+                      <div key={index} className="agent-card">
+                        <h4>Step {index + 1}</h4>
+                        <p>{step.instruction}</p>
+                        <div className="agent-actions">
+                          <span>{step.distance}</span>
+                          <span>{step.duration}</span>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="loading-message">Loading directions...</div>
-          )}
-          <button className="cancel-button" onClick={onClose}>
-            Close
-          </button>
+              </div>
+            )}
+            {!directions && (
+              <div className="loading-overlay">Loading directions...</div>
+            )}
+          </LoadScript>
         </div>
       </div>
     </div>

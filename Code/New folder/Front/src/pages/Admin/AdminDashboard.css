@@ -203,7 +203,6 @@ body.dark .filter-card button.active {
 
 .filter-card button:hover:not(.active) {
     background: #eef2f6;
-    transform: scale(1.02);
 }
 
 body.dark .filter-card button:hover:not(.active) {
@@ -1482,7 +1481,6 @@ body.dark .pagination span {
 
 .override-button:hover {
     opacity: 0.9;
-    transform: scale(1.1);
 }
 
 body.dark .override-button.grant {
@@ -1740,7 +1738,6 @@ body.dark .revoke-button {
 
 .revoke-button:hover {
     background: #c81a65;
-    transform: scale(1.1);
 }
 
 body.dark .revoke-button:hover {
@@ -2158,7 +2155,6 @@ body.dark .confirmation-modal-overlay {
     width: 90%;
     font-family: 'Inter', sans-serif;
     text-align: center;
-    transform: scale(0.95);
     transition: transform 0.3s ease-in-out;
 }
 
@@ -2167,13 +2163,7 @@ body.dark .confirmation-modal {
     box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.3);
 }
 
-.confirmation-modal-overlay.fade-in .confirmation-modal {
-    transform: scale(1);
-}
 
-.confirmation-modal-overlay.fade-out .confirmation-modal {
-    transform: scale(0.95);
-}
 
 .confirmation-modal p {
     font-size: 1rem;
@@ -2772,7 +2762,6 @@ body.dark .list-button.edit {
     background: #2d8a9e;
     /* Darker shade, no gradient */
     color: #fff;
-    transform: scale(1.1);
 }
 
 body.dark .list-button.edit:hover {
@@ -2791,7 +2780,6 @@ body.dark .list-button.delete {
 
 .list-button.delete:hover {
     background: #c81a65;
-    transform: scale(1.1);
 }
 
 body.dark .list-button.delete:hover {
@@ -2809,7 +2797,6 @@ body.dark .list-button.save {
 
 .list-button.save:hover {
     background: #2d8a9e;
-    transform: scale(1.1);
 }
 
 body.dark .list-button.save:hover {
@@ -2827,7 +2814,6 @@ body.dark .list-button.cancel {
 
 .list-button.cancel:hover {
     background: #4b5563;
-    transform: scale(1.1);
 }
 
 body.dark .list-button.cancel:hover {
@@ -3109,7 +3095,6 @@ body.dark .pagination button {
 
 .pagination button:hover:not(:disabled) {
     background: #3a8fa2;
-    transform: scale(1.05);
 }
 
 body.dark .pagination button:hover:not(:disabled) {
@@ -3150,13 +3135,6 @@ body.dark .pagination button:disabled {
 
 }
 
-
-
-.reset-button:hover:not(:disabled) {
-    /* Hover state */
-    transform: scale(1.05);
-    /* Matches action-button hover */
-}
 
 
 .reset-button:disabled {
@@ -4385,7 +4363,6 @@ body.dark .pill {
 .pill:hover {
     background: #4cb1c7;
     color: #fff;
-    transform: scale(1.05);
 }
 
 body.dark .pill:hover {
@@ -4740,7 +4717,6 @@ body.dark .u-profile-image {
 }
 
 .u-profile-image:hover {
-    transform: scale(1.05);
     box-shadow: 0 0.25rem 0.75rem rgba(76, 177, 199, 0.3);
 }
 
@@ -4768,7 +4744,6 @@ body.dark .u-profile-image-placeholder {
 }
 
 .u-profile-image-placeholder:hover {
-    transform: scale(1.05);
     box-shadow: 0 0.25rem 0.75rem rgba(76, 177, 199, 0.3);
 }
 

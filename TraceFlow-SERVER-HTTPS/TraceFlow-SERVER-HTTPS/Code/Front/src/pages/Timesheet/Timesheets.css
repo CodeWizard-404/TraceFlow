@@ -787,7 +787,6 @@ body.dark .supervisor-search {
 
 .filter-toggle-btn:hover {
   background: #3a8fa2;
-  transform: scale(1.05);
   /* Slight grow effect */
 }
 

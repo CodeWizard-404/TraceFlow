@@ -10,6 +10,7 @@ import {
 } from '@react-google-maps/api';
 import { toast } from 'react-toastify';
 import polyline from '@mapbox/polyline';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import {
   getAgentLocations,
   getAgentSupervisor,
@@ -29,6 +30,14 @@ import {
 } from '../../apis/locationApi';
 import { getUsersByRole } from '../../apis/userAPI';
 import './Map.css';
+
+// Define route point type for unified list
+interface RoutePoint {
+  id: string; // Unique ID for drag-and-drop
+  location: string; // Coordinate string (lat,lng)
+  address: string; // Formatted address for display
+  type: 'origin' | 'waypoint' | 'destination'; // Type of point
+}
 
 interface AgentMarker {
   id: string;
@@ -57,6 +66,7 @@ interface CustomDirectionsResponse {
   duration: number;
   steps: Array<{ instruction: string; distance: string; duration: string }>;
   polyline: string;
+  waypointOrder?: number[]; // Optimized order of waypoints
   mock?: boolean;
 }
 
@@ -64,7 +74,6 @@ const containerStyle = { width: '100%', height: '100vh' };
 const defaultCenter = { lat: 36.8065, lng: 10.1815 };
 const libraries: ('places' | 'geometry')[] = ['places', 'geometry'];
 
-// Custom map styles
 const mapStyles = {
   light: [
     { elementType: 'geometry', stylers: [{ color: '#f5f5f5' }] },
@@ -83,7 +92,7 @@ const mapStyles = {
     { featureType: 'water', stylers: [{ color: '#0288d1' }] },
   ],
   satellite: [],
-  terrain: [{ featureType: 'landscape', stylers: [{ color: '#dcedc8' }] }],
+  terrain: [],
   retro: [
     { elementType: 'geometry', stylers: [{ color: '#ebe3cd' }] },
     { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#f5f5f5' }] },
@@ -129,13 +138,13 @@ const MapComponent: React.FC = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [route, setRoute] = useState<CustomDirectionsResponse | null>(null);
   const [routeMode, setRouteMode] = useState<'DRIVING' | 'WALKING'>('DRIVING');
-  const [origin, setOrigin] = useState('');
-  const [destination, setDestination] = useState('');
-  const [waypoints, setWaypoints] = useState<string[]>([]);
+  const [routePoints, setRoutePoints] = useState<RoutePoint[]>([]);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [addingAgentMode, setAddingAgentMode] = useState(false);
   const [draggingMarker, setDraggingMarker] = useState<{ id: string; original: AgentMarker } | null>(null);
   const [showControls, setShowControls] = useState(false);
+  const [filterSectionOpen, setFilterSectionOpen] = useState(false);
+  const [directionsSectionOpen, setDirectionsSectionOpen] = useState(false);
   const [assignedGovernorates, setAssignedGovernorates] = useState<{ governorateID: string; name: string }[]>([]);
   const [assignedDelegations, setAssignedDelegations] = useState<{ delegationID: string; name: string; governorateID?: string }[]>([]);
   const [selectedGovernorate, setSelectedGovernorate] = useState('');
@@ -311,7 +320,7 @@ const MapComponent: React.FC = () => {
 
   useEffect(() => {
     handleFilter();
-  }, [filterRegion, filterGovernorate, filterDelegation, filterSupervisor, handleFilter]);
+  }, [filterRegion, filterGovernorate, filterSupervisor, handleFilter]);
 
   const handleMapClick = useCallback(async (event: google.maps.MapMouseEvent) => {
     if (!addingAgentMode) return;
@@ -497,12 +506,28 @@ const MapComponent: React.FC = () => {
     try {
       const originCoords = `${userLocation.lat},${userLocation.lng}`;
       const destCoords = `${marker.lat},${marker.lng}`;
-      const directions = await getDirections(originCoords, destCoords, routeMode.toLowerCase());
+      const [originGeocode, destGeocode] = await Promise.all([
+        getGeocode(originCoords),
+        getGeocode(destCoords),
+      ]);
+      const newPoints: RoutePoint[] = [
+        {
+          id: 'origin',
+          location: originCoords,
+          address: originGeocode.formattedAddress || originCoords,
+          type: 'origin',
+        },
+        {
+          id: 'destination',
+          location: destCoords,
+          address: destGeocode.formattedAddress || destCoords,
+          type: 'destination',
+        },
+      ];
+      const directions = await getDirections(originCoords, destCoords, routeMode.toLowerCase(), []);
       if (directions.polyline) {
         setRoute(directions);
-        setOrigin(originCoords);
-        setDestination(destCoords);
-        setWaypoints([]);
+        setRoutePoints(newPoints);
         setMapCenter({ lat: marker.lat, lng: marker.lng });
         setZoom(15);
       } else {
@@ -517,53 +542,95 @@ const MapComponent: React.FC = () => {
   }, [userLocation, routeMode]);
 
   const handleAddStop = useCallback(async (marker: AgentMarker) => {
-    if (!userLocation || !origin) {
-      toast.error('User location or origin not available');
+    if (!userLocation) {
+      toast.error('User location not available');
       return;
     }
     setLoading(true);
-    let newStop = '';
-    let newWaypoints: string[] = [];
     try {
-      newStop = `${marker.lat},${marker.lng}`;
-      newWaypoints = [...waypoints, newStop];
+      const newStop = `${marker.lat},${marker.lng}`;
+      const geocode = await getGeocode(newStop);
+      const newWaypoint: RoutePoint = {
+        id: `wp-${Date.now()}`,
+        location: newStop,
+        address: geocode.formattedAddress || newStop,
+        type: 'waypoint',
+      };
+      let newPoints = [...routePoints];
+      if (newPoints.length === 0) {
+        newPoints = [{
+          id: 'origin',
+          location: `${userLocation.lat},${userLocation.lng}`,
+          address: 'My Location',
+          type: 'origin',
+        }, newWaypoint];
+      } else {
+        const destIndex = newPoints.findIndex((p) => p.type === 'destination');
+        if (destIndex >= 0) {
+          newPoints.splice(destIndex, 0, newWaypoint);
+        } else {
+          newPoints.push(newWaypoint);
+        }
+      }
+      const origin = newPoints[0].location;
+      const destination = newPoints[newPoints.length - 1].location;
+      const waypointsForApi = newPoints.slice(1, newPoints.length - 1).map((wp) => ({
+        location: wp.location,
+        stopover: true,
+      }));
       const directions = await getDirections(
         origin,
-        destination || newStop,
+        destination,
         routeMode.toLowerCase(),
-        newWaypoints.map((wp) => ({ location: wp, stopover: true }))
+        waypointsForApi
       );
       if (directions.polyline) {
         setRoute(directions);
-        setWaypoints(newWaypoints);
+        setRoutePoints(newPoints);
         setMapCenter({ lat: marker.lat, lng: marker.lng });
         setZoom(15);
       } else {
         toast.error('No directions found');
       }
     } catch (err: any) {
-      console.error('Add Stop Error:', err, { origin, destination: destination || newStop, waypoints: newWaypoints });
-      toast.error(err.message || 'Failed to add stop. Please check the coordinates and try again.');
+      console.error('Add Stop Error:', err);
+      toast.error(err.message || 'Failed to add stop');
     } finally {
       setLoading(false);
     }
-  }, [userLocation, origin, destination, waypoints, routeMode]);
+  }, [userLocation, routePoints, routeMode]);
 
-  const handleCalculateRoute = useCallback(async () => {
-    if (!origin || !destination) {
-      toast.error('Origin and destination are required');
+  const handleCalculateRoute = useCallback(async (optimize: boolean = false) => {
+    if (routePoints.length < 2) {
+      toast.error('At least two points are required for a route');
       return;
     }
     setLoading(true);
     try {
+      const origin = routePoints[0].location;
+      const destination = routePoints[routePoints.length - 1].location;
+      const waypointsForApi = routePoints
+        .slice(1, routePoints.length - 1)
+        .map((point) => ({
+          location: point.location,
+          stopover: true,
+        }));
       const directions = await getDirections(
         origin,
         destination,
         routeMode.toLowerCase(),
-        waypoints.map((wp) => ({ location: wp, stopover: true }))
+        waypointsForApi,
+        optimize
       );
       if (directions.polyline) {
         setRoute(directions);
+        if (optimize && directions.waypointOrder && directions.waypointOrder.length > 0) {
+          const newPoints = [...routePoints];
+          const waypoints = newPoints.slice(1, newPoints.length - 1);
+          const reorderedWaypoints = directions.waypointOrder.map((index) => waypoints[index]);
+          newPoints.splice(1, waypoints.length, ...reorderedWaypoints);
+          setRoutePoints(newPoints);
+        }
         const [destLat, destLng] = destination.split(',').map(Number);
         setMapCenter({ lat: destLat, lng: destLng });
         setZoom(15);
@@ -572,21 +639,23 @@ const MapComponent: React.FC = () => {
       }
     } catch (err) {
       console.error('Calculate Route Error:', err);
-      toast.error(
-        typeof err === 'object' && err !== null && 'message' in err
-          ? (err as { message?: string }).message || 'Failed to calculate route'
-          : 'Failed to calculate route'
-      );
+      toast.error('Failed to calculate route');
     } finally {
       setLoading(false);
     }
-  }, [origin, destination, routeMode, waypoints]);
+  }, [routePoints, routeMode]);
+
+  const handleOptimizeRoute = useCallback(() => {
+    if (routePoints.length < 3) {
+      toast.error('At least one waypoint is required to optimize');
+      return;
+    }
+    handleCalculateRoute(true);
+  }, [handleCalculateRoute, routePoints]);
 
   const clearRoute = useCallback(() => {
     setRoute(null);
-    setOrigin('');
-    setDestination('');
-    setWaypoints([]);
+    setRoutePoints([]);
   }, []);
 
   const handleReturnToCurrentLocation = useCallback(() => {
@@ -620,6 +689,44 @@ const MapComponent: React.FC = () => {
       }
     }
   };
+
+  const handleDragEnd = useCallback(
+    (result: any) => {
+      if (!result.destination) return;
+      const newPoints = [...routePoints];
+      const [moved] = newPoints.splice(result.source.index, 1);
+      newPoints.splice(result.destination.index, 0, moved);
+      newPoints[0].type = 'origin';
+      newPoints[newPoints.length - 1].type = 'destination';
+      for (let i = 1; i < newPoints.length - 1; i++) {
+        newPoints[i].type = 'waypoint';
+      }
+      setRoutePoints(newPoints);
+      if (newPoints.length >= 2) {
+        handleCalculateRoute();
+      }
+    },
+    [routePoints, handleCalculateRoute]
+  );
+
+  const handleRemovePoint = useCallback(
+    (index: number) => {
+      const newPoints = [...routePoints].filter((_, i) => i !== index);
+      if (newPoints.length >= 2) {
+        newPoints[0].type = 'origin';
+        newPoints[newPoints.length - 1].type = 'destination';
+        for (let i = 1; i < newPoints.length - 1; i++) {
+          newPoints[i].type = 'waypoint';
+        }
+        setRoutePoints(newPoints);
+        handleCalculateRoute();
+      } else {
+        setRoutePoints(newPoints);
+        setRoute(null);
+      }
+    },
+    [routePoints, handleCalculateRoute]
+  );
 
   const MarkerList = React.memo(
     ({ markers, onSelect, onGetDirections, onAddStop }: { markers: AgentMarker[]; onSelect: (marker: AgentMarker) => void; onGetDirections: (marker: AgentMarker) => void; onAddStop: (marker: AgentMarker) => void }) => (
@@ -659,6 +766,50 @@ const MapComponent: React.FC = () => {
     )
   );
 
+  const WaypointList = React.memo(() => (
+    <div className="waypoint-list">
+      <h3>Route Points</h3>
+      {routePoints.length === 0 ? (
+        <p>No route points added</p>
+      ) : (
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <Droppable droppableId="routePoints">
+            {(provided) => (
+              <ul {...provided.droppableProps} ref={provided.innerRef}>
+                {routePoints.map((point, index) => (
+                  <Draggable key={point.id} draggableId={point.id} index={index}>
+                    {(provided, snapshot) => (
+                      <li
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                        {...provided.dragHandleProps}
+                        className={`waypoint-item ${point.type} ${snapshot.isDragging ? 'dragging' : ''}`}
+                      >
+                        <span>{`${index + 1}. ${point.address} (${point.type.charAt(0).toUpperCase() + point.type.slice(1)})`}</span>
+                        <button
+                          onClick={() => handleRemovePoint(index)}
+                          className="remove-waypoint"
+                        >
+                          Remove
+                        </button>
+                      </li>
+                    )}
+                  </Draggable>
+                ))}
+                {provided.placeholder}
+              </ul>
+            )}
+          </Droppable>
+        </DragDropContext>
+      )}
+      {routePoints.length > 2 && (
+        <button onClick={handleOptimizeRoute} className="action-button">
+          Optimize Route
+        </button>
+      )}
+    </div>
+  ));
+
   if (loading) return <div className="loading-overlay">Loading...</div>;
 
   return (
@@ -666,16 +817,24 @@ const MapComponent: React.FC = () => {
       <LoadScript googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY} libraries={libraries}>
         <div className="controls-bar">
           <Autocomplete onLoad={onAutocompleteLoad} onPlaceChanged={onPlaceChanged}>
-            <input
-              type="text"
-              placeholder="Search agents"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="search-input"
-            />
+            <div className="search-input-container">
+              <input
+                type="text"
+                placeholder="Search agents"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="search-input"
+              />
+              <label className="search-label">Search agents</label>
+            </div>
           </Autocomplete>
-          <button className="menu-button" onClick={() => setShowControls(!showControls)}>
-            ☰
+          <button
+            className={`menu-button ${showControls ? 'active' : ''}`}
+            onClick={() => setShowControls(!showControls)}
+          >
+            <span></span>
+            <span></span>
+            <span></span>
           </button>
           <select
             className="map-style-select"
@@ -688,10 +847,16 @@ const MapComponent: React.FC = () => {
           </select>
         </div>
 
-        {showControls && (
-          <div className="control-panel">
-            <div className="filter-section">
+        <div className={`control-panel ${showControls ? 'active' : ''}`}>
+          <div className="filter-section">
+            <div
+              className="section-header"
+              onClick={() => setFilterSectionOpen(!filterSectionOpen)}
+            >
               <h3>Filters</h3>
+              <span>{filterSectionOpen ? '▲' : '▼'}</span>
+            </div>
+            <div className={`section-content ${filterSectionOpen ? 'active' : ''}`}>
               <select value={filterRegion} onChange={(e) => setFilterRegion(e.target.value)} className="filter-select">
                 <option value="">All Regions</option>
                 {regions.map((r) => (
@@ -717,20 +882,75 @@ const MapComponent: React.FC = () => {
                 ))}
               </select>
             </div>
-            <div className="directions-section">
+          </div>
+          <div className="directions-section">
+            <div
+              className="section-header"
+              onClick={() => setDirectionsSectionOpen(!directionsSectionOpen)}
+            >
               <h3>Directions</h3>
-              <input type="text" placeholder="Origin" value={origin} onChange={(e) => setOrigin(e.target.value)} className="route-input" />
-              <button onClick={() => userLocation && setOrigin(`${userLocation.lat},${userLocation.lng}`)} className="action-button">My Location</button>
-              <input type="text" placeholder="Destination" value={destination} onChange={(e) => setDestination(e.target.value)} className="route-input" />
+              <span>{directionsSectionOpen ? '▲' : '▼'}</span>
+            </div>
+            <div className={`section-content ${directionsSectionOpen ? 'active' : ''}`}>
+              <div className="modal-input-container">
+                <input
+                  type="text"
+                  placeholder="Origin"
+                  value={routePoints.length > 0 ? routePoints[0].address : ''}
+                  onChange={(e) => {
+                    if (routePoints.length > 0) {
+                      const newPoints = [...routePoints];
+                      newPoints[0].address = e.target.value;
+                      setRoutePoints(newPoints);
+                    }
+                  }}
+                  className="route-input"
+                />
+                <label className="modal-label">Origin</label>
+              </div>
+              <button onClick={() => {
+                if (userLocation) {
+                  const newPoints = routePoints.length > 0 ? [...routePoints] : [];
+                  const originPoint: RoutePoint = {
+                    id: 'origin',
+                    location: `${userLocation.lat},${userLocation.lng}`,
+                    address: 'My Location',
+                    type: 'origin',
+                  };
+                  if (newPoints.length === 0) {
+                    newPoints.push(originPoint);
+                  } else {
+                    newPoints[0] = originPoint;
+                  }
+                  setRoutePoints(newPoints);
+                }
+              }} className="action-button">My Location</button>
+              <div className="modal-input-container">
+                <input
+                  type="text"
+                  placeholder="Destination"
+                  value={routePoints.length > 1 ? routePoints[routePoints.length - 1].address : ''}
+                  onChange={(e) => {
+                    if (routePoints.length > 1) {
+                      const newPoints = [...routePoints];
+                      newPoints[newPoints.length - 1].address = e.target.value;
+                      setRoutePoints(newPoints);
+                    }
+                  }}
+                  className="route-input"
+                />
+                <label className="modal-label">Destination</label>
+              </div>
               <select value={routeMode} onChange={(e) => setRouteMode(e.target.value as 'DRIVING' | 'WALKING')} className="route-select">
                 <option value="DRIVING">Driving</option>
                 <option value="WALKING">Walking</option>
               </select>
-              <button onClick={handleCalculateRoute} className="action-button">Get Directions</button>
+              <button onClick={() => handleCalculateRoute()} className="action-button">Get Directions</button>
               <button onClick={clearRoute} className="cancel-button">Clear</button>
             </div>
           </div>
-        )}
+          <WaypointList />
+        </div>
 
         <GoogleMap
           mapContainerStyle={containerStyle}
@@ -850,28 +1070,85 @@ const MapComponent: React.FC = () => {
           <div className="modal-overlay">
             <div className="modal-content">
               <h2>Add New Agent</h2>
-              <input type="text" placeholder="Name" value={newAgent.name} onChange={(e) => setNewAgent({ ...newAgent, name: e.target.value })} className="modal-input" />
-              <input type="text" placeholder="Last Name" value={newAgent.lastname} onChange={(e) => setNewAgent({ ...newAgent, lastname: e.target.value })} className="modal-input" />
-              <input type="email" placeholder="Email" value={newAgent.email} onChange={(e) => setNewAgent({ ...newAgent, email: e.target.value })} className="modal-input" />
-              <input type="tel" placeholder="Phone" value={newAgent.phone} onChange={(e) => setNewAgent({ ...newAgent, phone: e.target.value })} className="modal-input" />
-              <select value={newAgent.supervisorID} onChange={(e) => setNewAgent({ ...newAgent, supervisorID: e.target.value })} className="modal-select">
-                <option value="">Select Supervisor</option>
-                {supervisors.map((sup) => (
-                  <option key={sup.userID} value={sup.userID}>{`${sup.firstname} ${sup.lastname}`}</option>
-                ))}
-              </select>
-              <select value={selectedGovernorate} onChange={(e) => setSelectedGovernorate(e.target.value)} className="modal-select">
-                <option value="">Select Governorate</option>
-                {assignedGovernorates.map((g) => (
-                  <option key={g.governorateID} value={g.governorateID}>{g.name}</option>
-                ))}
-              </select>
-              <select value={newAgent.delegationID} onChange={(e) => setNewAgent({ ...newAgent, delegationID: e.target.value })} className="modal-select">
-                <option value="">Select Delegation</option>
-                {assignedDelegations.filter((d) => d.governorateID === selectedGovernorate).map((d) => (
-                  <option key={d.delegationID} value={d.delegationID}>{d.name}</option>
-                ))}
-              </select>
+              <div className="modal-input-container">
+                <input
+                  type="text"
+                  placeholder="Name"
+                  value={newAgent.name}
+                  onChange={(e) => setNewAgent({ ...newAgent, name: e.target.value })}
+                  className="modal-input"
+                />
+                <label className="modal-label">Name</label>
+              </div>
+              <div className="modal-input-container">
+                <input
+                  type="text"
+                  placeholder="Last Name"
+                  value={newAgent.lastname}
+                  onChange={(e) => setNewAgent({ ...newAgent, lastname: e.target.value })}
+                  className="modal-input"
+                />
+                <label className="modal-label">Last Name</label>
+              </div>
+              <div className="modal-input-container">
+                <input
+                  type="email"
+                  placeholder="Email"
+                  value={newAgent.email}
+                  onChange={(e) => setNewAgent({ ...newAgent, email: e.target.value })}
+                  className="modal-input"
+                />
+                <label className="modal-label">Email</label>
+              </div>
+              <div className="modal-input-container">
+                <input
+                  type="tel"
+                  placeholder="Phone"
+                  value={newAgent.phone}
+                  onChange={(e) => setNewAgent({ ...newAgent, phone: e.target.value })}
+                  className="modal-input"
+                />
+                <label className="modal-label">Phone</label>
+              </div>
+              <div className="modal-input-container">
+                <select
+                  value={newAgent.supervisorID}
+                  onChange={(e) => setNewAgent({ ...newAgent, supervisorID: e.target.value })}
+                  className="modal-select"
+                >
+                  <option value="">Select Supervisor</option>
+                  {supervisors.map((sup) => (
+                    <option key={sup.userID} value={sup.userID}>{`${sup.firstname} ${sup.lastname}`}</option>
+                  ))}
+                </select>
+                <label className="modal-label">Supervisor</label>
+              </div>
+              <div className="modal-input-container">
+                <select
+                  value={selectedGovernorate}
+                  onChange={(e) => setSelectedGovernorate(e.target.value)}
+                  className="modal-select"
+                >
+                  <option value="">Select Governorate</option>
+                  {assignedGovernorates.map((g) => (
+                    <option key={g.governorateID} value={g.governorateID}>{g.name}</option>
+                  ))}
+                </select>
+                <label className="modal-label">Governorate</label>
+              </div>
+              <div className="modal-input-container">
+                <select
+                  value={newAgent.delegationID}
+                  onChange={(e) => setNewAgent({ ...newAgent, delegationID: e.target.value })}
+                  className="modal-select"
+                >
+                  <option value="">Select Delegation</option>
+                  {assignedDelegations.filter((d) => d.governorateID === selectedGovernorate).map((d) => (
+                    <option key={d.delegationID} value={d.delegationID}>{d.name}</option>
+                  ))}
+                </select>
+                <label className="modal-label">Delegation</label>
+              </div>
               <p><strong>Address:</strong> {newAgent.address}</p>
               <div className="modal-actions">
                 <button onClick={handleCreateAgent} className="action-button">Create</button>
@@ -885,25 +1162,75 @@ const MapComponent: React.FC = () => {
           <div className="modal-overlay">
             <div className="modal-content">
               <h2>Edit Agent</h2>
-              <input type="text" placeholder="Name" value={editAgent.name || ''} onChange={(e) => setEditAgent({ ...editAgent, name: e.target.value })} className="modal-input" />
-              <input type="text" placeholder="Last Name" value={editAgent.lastname || ''} onChange={(e) => setEditAgent({ ...editAgent, lastname: e.target.value })} className="modal-input" />
-              <input type="email" placeholder="Email" value={editAgent.email || ''} onChange={(e) => setEditAgent({ ...editAgent, email: e.target.value })} className="modal-input" />
-              <input type="tel" placeholder="Phone" value={editAgent.phone || ''} onChange={(e) => setEditAgent({ ...editAgent, phone: e.target.value })} className="modal-input" />
-              <select value={editAgent.supervisorID || ''} onChange={(e) => setEditAgent({ ...editAgent, supervisorID: e.target.value })} className="modal-select">
-                <option value="">Select Supervisor</option>
-                {supervisors.map((sup) => (
-                  <option key={sup.userID} value={sup.userID}>{`${sup.firstname} ${sup.lastname}`}</option>
-                ))}
-              </select>
-              <select value={editAgent.delegationID || ''} onChange={(e) => setEditAgent({ ...editAgent, delegationID: e.target.value })} className="modal-select">
-                <option value="">Select Delegation</option>
-                {delegations.map((d) => (
-                  <option key={d.delegationID} value={d.delegationID}>{d.name}</option>
-                ))}
-              </select>
+              <div className="modal-input-container">
+                <input
+                  type="text"
+                  placeholder="Name"
+                  value={editAgent.name || ''}
+                  onChange={(e) => setEditAgent({ ...editAgent, name: e.target.value })}
+                  className="modal-input"
+                />
+                <label className="modal-label">Name</label>
+              </div>
+              <div className="modal-input-container">
+                <input
+                  type="text"
+                  placeholder="Last Name"
+                  value={editAgent.lastname || ''}
+                  onChange={(e) => setEditAgent({ ...editAgent, lastname: e.target.value })}
+                  className="modal-input"
+                />
+                <label className="modal-label">Last Name</label>
+              </div>
+              <div className="modal-input-container">
+                <input
+                  type="email"
+                  placeholder="Email"
+                  value={editAgent.email || ''}
+                  onChange={(e) => setEditAgent({ ...editAgent, email: e.target.value })}
+                  className="modal-input"
+                />
+                <label className="modal-label">Email</label>
+              </div>
+              <div className="modal-input-container">
+                <input
+                  type="tel"
+                  placeholder="Phone"
+                  value={editAgent.phone || ''}
+                  onChange={(e) => setEditAgent({ ...editAgent, phone: e.target.value })}
+                  className="modal-input"
+                />
+                <label className="modal-label">Phone</label>
+              </div>
+              <div className="modal-input-container">
+                <select
+                  value={editAgent.supervisorID || ''}
+                  onChange={(e) => setEditAgent({ ...editAgent, supervisorID: e.target.value })}
+                  className="modal-select"
+                >
+                  <option value="">Select Supervisor</option>
+                  {supervisors.map((sup) => (
+                    <option key={sup.userID} value={sup.userID}>{`${sup.firstname} ${sup.lastname}`}</option>
+                  ))}
+                </select>
+                <label className="modal-label">Supervisor</label>
+              </div>
+              <div className="modal-input-container">
+                <select
+                  value={editAgent.delegationID || ''}
+                  onChange={(e) => setEditAgent({ ...editAgent, delegationID: e.target.value })}
+                  className="modal-select"
+                >
+                  <option value="">Select Delegation</option>
+                  {delegations.map((d) => (
+                    <option key={d.delegationID} value={d.delegationID}>{d.name}</option>
+                  ))}
+                </select>
+                <label className="modal-label">Delegation</label>
+              </div>
               <p><strong>Address:</strong> {editAgent.location}</p>
               <div className="modal-actions">
-                <button onClick={handleEditAgent} className="action-button">Update</button>
+                <button onClick={handleEditAgent} className="action-button">Save</button>
                 <button onClick={() => setShowEditModal(false)} className="cancel-button">Cancel</button>
               </div>
             </div>

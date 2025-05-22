@@ -275,19 +275,16 @@ body.dark .scanned-list li button:hover {
   font-size: 0.875rem;
   color: #fff;
   opacity: 0;
-  transform: scale(0);
   transition: all 0.2s ease;
 }
 
 .book-selection-section .custom-checkbox-input:checked+.custom-checkbox {
   background: #4cb1c7;
   border-color: #4cb1c7;
-  transform: scale(1.1);
 }
 
 .book-selection-section .custom-checkbox-input:checked+.custom-checkbox .check-icon {
   opacity: 1;
-  transform: scale(1);
 }
 
 .book-selection-section .custom-checkbox-input:focus+.custom-checkbox {

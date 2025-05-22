@@ -361,7 +361,6 @@ body.dark .actions button {
 
 .actions button:hover {
     background: #272727;
-    transform: scale(1.1);
 }
 
 body.dark .actions button:hover {

@@ -78,7 +78,6 @@ body.dark .address-display {
 
 .current-location-btn:hover:not(:disabled) {
     background: #3a8fa2;
-    transform: translateX(-50%) scale(1.1);
 }
 
 .current-location-btn:disabled {
@@ -98,7 +97,6 @@ body.dark .address-display {
 
 .save-location-btn:hover:not(:disabled) {
     background: #3a8fa2;
-    transform: translateX(-50%) scale(1.1);
 }
 
 .save-location-btn:disabled {
@@ -117,7 +115,6 @@ body.dark .address-display {
 
 .close-btn:hover {
     background: #b70a4f;
-    transform: scale(1.1);
 }
 
 /* Dark Mode Button Styles */

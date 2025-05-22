@@ -207,6 +207,17 @@ export interface LocationDetailsResponse { success: boolean; address?: string; i
 
 // Google Maps API response types
 export type GeocodeResponse = { geometry: { location: { lat: number; lng: number } }; formattedAddress: string; latitude: number; longitude: number; mock?: boolean };
-export type DirectionsResponse = { distance: number; duration: number; steps: Array<{ instruction: string; distance: string; duration: string }>; polyline: string; mock?: boolean; };
+export interface DirectionsResponse {
+    distance: number;
+    duration: number;
+    steps: Array<{
+        instruction: string;
+        distance: string;
+        duration: string;
+    }>;
+    polyline: string;
+    waypointOrder?: number[];
+    mock?: boolean;
+}
 export type PlacesResponse = Array<{ place_id: string; name: string; formatted_address: string; geometry: { location: { lat: number; lng: number } }; }>;
 export type DistanceMatrixResponse = Array<{ elements: Array<{ distance: { text: string; value: number }; duration: { text: string; value: number }; status: string; }>; }>;

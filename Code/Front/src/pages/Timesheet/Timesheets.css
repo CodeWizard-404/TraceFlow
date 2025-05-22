@@ -787,7 +787,6 @@ body.dark .supervisor-search {
 
 .filter-toggle-btn:hover {
   background: #3a8fa2;
-  transform: scale(1.05);
   /* Slight grow effect */
 }
 
@@ -1048,8 +1047,13 @@ body.dark .filter-select:focus {
   }
 
   .toggle-btn-5 {
+    background-color: #ffffff !important;
+  }
+
+  body.dark .toggle-btn-5 {
     background-color: #262626 !important;
   }
+
 
   .filter-controls {
     flex-direction: column;
@@ -1144,8 +1148,12 @@ body.dark .filter-select:focus {
   }
 }
 
+
+
 @media (max-width: 768px) {
   .days-grid {
+    display: flex;
+    flex-wrap: wrap;
     grid-template-columns: repeat(3, 1fr);
     /* Equal column widths for first 6 days */
   }

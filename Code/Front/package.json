@@ -17,6 +17,7 @@
     "@googlemaps/extended-component-library": "^0.6.13",
     "@googlemaps/google-maps-services-js": "^3.4.1",
     "@googlemaps/markerclusterer": "^2.5.3",
+    "@hello-pangea/dnd": "^18.0.1",
     "@hookform/resolvers": "^5.0.0",
     "@mapbox/polyline": "^1.2.1",
     "@radix-ui/react-label": "^2.1.2",

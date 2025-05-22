@@ -221,6 +221,7 @@ button:disabled {
   background: linear-gradient(135deg, #f687b3 0%, #ff3c8a 100%);
 }
 
+/* 
 .visit-details-log-btn:hover,
 .visit-details-back-btn:hover,
 .validate-visit-btn:hover,
@@ -230,7 +231,7 @@ button:disabled {
 .visit-details-submit-btn:hover,
 .visit-details-cancel-btn:hover {
   transform: scale(1.02);
-}
+} */
 
 .visit-details-log-btn:hover,
 .visit-details-submit-btn:hover,
