@@ -5,6 +5,7 @@ const logger = require('../utils/logger');
 const RedisUtils = require('../utils/redisUtils');
 const { Op } = require('sequelize');
 require('dotenv').config();
+const axios = require('axios');
 
 class GoogleMapsService {
     static async initialize() {
@@ -100,29 +101,71 @@ class GoogleMapsService {
     }
 
     // Get directions
-    static async getDirections(origin, destination, mode = 'driving', waypoints = [], trafficModel = 'best_guess') {
-        if (!this.client) {
-            return { mock: true, origin, destination };
-        }
 
+    static async getDirections(origin, destination, mode = 'driving', waypoints = [], trafficModel = 'best_guess') {
+        let params; // Declare params in the outer scope
         try {
-            const cacheKey = `directions:${origin}:${destination}:${mode}:${waypoints.join('|')}:${trafficModel}`;
+            // Validate inputs
+            if (!origin || !destination) {
+                throw new Error('Origin and destination are required');
+            }
+
+            // Format and validate waypoints
+            let formattedWaypoints = [];
+            try {
+                formattedWaypoints = waypoints.map((wp, index) => {
+                    let location;
+                    if (typeof wp === 'string') {
+                        location = wp;
+                    } else if (wp && typeof wp === 'object' && wp.location) {
+                        location = wp.location;
+                    } else {
+                        throw new Error(`Invalid waypoint format at index ${index}`);
+                    }
+
+                    if (!/^-?\d+\.\d{1,15},-?\d+\.\d{1,15}$/.test(location)) {
+                        throw new Error(`Invalid waypoint location format at index ${index}: ${location}`);
+                    }
+
+                    return wp.stopover === true ? `via:${location}` : location;
+                });
+            } catch (waypointError) {
+                logger.error(`Waypoint processing failed: ${waypointError.message}`, {
+                    waypoints,
+                    index: waypointError.message.match(/index (\d+)/)?.[1],
+                    location: waypointError.message.match(/: (.+)$/)?.[1],
+                });
+                throw new Error(`Waypoint processing failed: ${waypointError.message}`);
+            }
+
+            // Create cache key
+            const cacheKey = `directions:${origin}:${destination}:${mode}:${waypoints
+                .map((wp) => (typeof wp === 'string' ? wp : wp.location))
+                .join('|')}:${trafficModel}`;
             let cachedResult = await this.redisClient?.get(cacheKey);
             if (cachedResult) {
                 return JSON.parse(cachedResult);
             }
 
-            const params = {
+            // Direct API call
+            const url = 'https://maps.googleapis.com/maps/api/directions/json';
+            params = {
                 origin,
                 destination,
                 mode,
                 key: process.env.GOOGLE_MAPS_API_KEY,
                 departure_time: 'now',
                 traffic_model: trafficModel,
-                ...(waypoints.length && { waypoints: waypoints.join('|') }),
+                ...(formattedWaypoints.length && { waypoints: formattedWaypoints.join('|') }),
             };
 
-            const response = await this.client.directions({ params });
+            logger.debug('Directions API params', { params });
+
+            const response = await axios.get(url, { params });
+            if (response.data.status !== 'OK') {
+                throw new Error(`Directions API error: ${response.data.status}`);
+            }
+
             const route = response.data.routes[0];
             if (!route) {
                 throw new Error('No directions found');
@@ -131,21 +174,31 @@ class GoogleMapsService {
             const data = {
                 distance: route.legs.reduce((sum, leg) => sum + leg.distance.value, 0) / 1000, // km
                 duration: route.legs.reduce((sum, leg) => sum + leg.duration.value, 0) / 60, // minutes
-                steps: route.legs.flatMap(leg => leg.steps.map(step => ({
-                    instruction: step.html_instructions,
-                    distance: step.distance.text,
-                    duration: step.duration.text,
-                }))),
+                steps: route.legs.flatMap((leg) =>
+                    leg.steps.map((step) => ({
+                        instruction: step.html_instructions,
+                        distance: step.distance.text,
+                        duration: step.duration.text,
+                    }))
+                ),
                 polyline: route.overview_polyline.points,
             };
 
             await this.redisClient?.set(cacheKey, JSON.stringify(data), 'EX', 3600);
             return data;
         } catch (error) {
-            logger.error(`Failed to get directions: ${error.message}`);
+            logger.error(`Failed to get directions: ${error.message}`, {
+                origin,
+                destination,
+                mode,
+                waypoints,
+                trafficModel,
+                params: params || 'undefined',
+            });
             throw new Error(`Failed to get directions: ${error.message}`);
         }
     }
+
 
     // Get distance matrix
     static async getDistanceMatrix(origins, destinations, mode = 'driving') {

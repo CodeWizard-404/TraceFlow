@@ -1,8 +1,34 @@
 import { AxiosError } from "axios";
 import api from "./axiosConfig";
-import { VerifyQrResponse, LogVisitResponse, VisitByIdResponse, UpdateVisitResponse, DeleteVisitResponse } from ".";
+import { VisitByIdResponse, UpdateVisitResponse, DeleteVisitResponse } from ".";
 
-// Types for Google Calendar API responses
+// Updated VerifyQrResponse to remove otpID
+export type VerifyQrResponse = {
+    valid: boolean;
+    message: string;
+};
+
+// ValidateOTPResponse type
+export type ValidateOTPResponse = {
+    valid: boolean;
+    message: string;
+};
+
+// Existing types for other responses
+export type LogVisitResponse = {
+    visitID: string;
+    date: string;
+    time: string;
+    duration?: number;
+    location?: string;
+    status: string;
+    photos?: string[];
+    comment?: string;
+    agentID?: string;
+    timesheetID: string;
+    checklists?: Array<{ checklistID: string; checked: boolean }>;
+};
+
 export type CalendarEvent = {
     id: string;
     summary: string;
@@ -31,7 +57,7 @@ const handleApiError = (error: unknown, defaultMessage: string): string => {
     if (error instanceof AxiosError) {
         const axiosError = error as AxiosError<AxiosErrorResponse>;
         if (axiosError.response) {
-            return axiosError.message;
+            return axiosError.message; // Use backend's error message
         }
         switch (axiosError.status) {
             case 400:
@@ -65,6 +91,21 @@ export const verifyQrCode = async (data: { qrData: string; visitId: string }): P
     }
 };
 
+export const validateOTP = async (data: { visitId: string; otpCode: string }): Promise<ValidateOTPResponse> => {
+    try {
+        if (!data.visitId || !data.otpCode) {
+            throw new Error("Visit ID and OTP code are required.");
+        }
+        const response = await api.post<ValidateOTPResponse>(`/visits/${data.visitId}/validate-otp`, {
+            visitId: data.visitId,
+            otpCode: data.otpCode,
+        });
+        return response.data;
+    } catch (error) {
+        throw new Error(handleApiError(error, "Unable to validate OTP."));
+    }
+};
+
 export const logVisitDetails = async (
     id: string,
     data: {
@@ -74,7 +115,6 @@ export const logVisitDetails = async (
         comment?: string;
         date?: string;
         time?: string;
-        otpCode?: string;
     }
 ): Promise<LogVisitResponse> => {
     try {
@@ -93,7 +133,6 @@ export const logVisitDetails = async (
         if (data.comment) formData.append("comment", data.comment);
         if (data.date) formData.append("date", data.date);
         if (data.time) formData.append("time", data.time);
-        if (data.otpCode) formData.append("otpCode", data.otpCode);
         data.photos.forEach((photo) => {
             formData.append("photos", photo);
         });

@@ -1,6 +1,7 @@
 const axios = require('axios');
 const { nanoid } = require('nanoid');
 const { User, Role, Permission, TrustedDevice } = require('../models');
+const { Op } = require('sequelize');
 const otpService = require('./otpService');
 const { sendEmail } = require('../config/smtp');
 const { sendSMS } = require('../config/sms');
@@ -30,6 +31,7 @@ const ERROR_MESSAGES = {
     GOOGLE_LOGIN_FAILED: 'Google login failed. Ensure your account is registered.',
     INVALID_GOOGLE_CODE: 'Invalid Google authorization code.',
     SESSION_NOT_FOUND: 'Session not found. Please log in again.',
+    NO_EMAIL_FOR_PHONE: 'No email associated with this phone number.',
 };
 
 const verificationCache = new Map();
@@ -94,15 +96,32 @@ class AuthService {
 
     static async syncKeycloakUser(identifier, keycloakId) {
         try {
-            let user = await User.findOne({ where: { email: identifier } });
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            const phoneRegex = /^\+?\d{8,11}$/;
+            const isEmail = emailRegex.test(identifier);
+            const isPhone = phoneRegex.test(identifier);
+
+            if (!isEmail && !isPhone) {
+                throw Object.assign(new Error('Invalid email or phone number'), { status: 400 });
+            }
+
+            let user = await User.findOne({
+                where: {
+                    [Op.or]: [
+                        { email: isEmail ? identifier : null },
+                        { phone: isPhone ? identifier : null },
+                    ],
+                },
+            });
+
             if (!user) {
                 user = await User.create({
                     userID: `usr_${nanoid()}`,
                     keycloakId,
-                    email: identifier,
+                    email: isEmail ? identifier : 'N/A',
+                    phone: isPhone ? identifier : 'N/A',
                     firstname: 'Unknown',
                     lastname: 'User',
-                    phone: 'N/A',
                     password: 'KEYCLOAK_MANAGED',
                 });
             } else if (!user.keycloakId) {
@@ -164,6 +183,29 @@ class AuthService {
     }
 
     async login(identifier, password, deviceIdentifier, otpMethod = 'email', res) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const phoneRegex = /^\+?\d{8,11}$/;
+        const isEmail = emailRegex.test(identifier);
+        const isPhone = phoneRegex.test(identifier);
+
+        if (!isEmail && !isPhone) {
+            throw Object.assign(new Error('Invalid email or phone number'), { status: 400 });
+        }
+
+        let loginIdentifier = identifier;
+        let user;
+
+        if (isPhone) {
+            user = await User.findOne({ where: { phone: identifier } });
+            if (!user) {
+                throw Object.assign(new Error(ERROR_MESSAGES.USER_NOT_FOUND), { status: 404 });
+            }
+            if (!user.email || user.email === 'N/A' || !emailRegex.test(user.email)) {
+                throw Object.assign(new Error(ERROR_MESSAGES.NO_EMAIL_FOR_PHONE), { status: 400 });
+            }
+            loginIdentifier = user.email;
+        }
+
         let loginResponse;
         try {
             loginResponse = await axios.post(
@@ -172,7 +214,7 @@ class AuthService {
                     grant_type: 'password',
                     client_id: CLIENT_ID,
                     client_secret: CLIENT_SECRET,
-                    username: identifier,
+                    username: loginIdentifier,
                     password,
                     scope: 'openid email profile roles',
                 })
@@ -224,7 +266,7 @@ class AuthService {
         try {
             const adminToken = await this.constructor.getKeycloakAdminToken();
             keycloakUserResponse = await axios.get(
-                `${KEYCLOAK_URL}/admin/realms/${REALM}/users?username=${identifier}&exact=true`,
+                `${KEYCLOAK_URL}/admin/realms/${REALM}/users?username=${loginIdentifier}&exact=true`,
                 { headers: { Authorization: `Bearer ${adminToken}` } }
             );
             if (!keycloakUserResponse.data.length) {
@@ -237,7 +279,7 @@ class AuthService {
         }
 
         const keycloakId = keycloakUserResponse.data[0].id;
-        const user = await this.constructor.syncKeycloakUser(identifier, keycloakId);
+        user = user || (await this.constructor.syncKeycloakUser(identifier, keycloakId));
 
         const userWithDetails = await User.findOne({
             where: { keycloakId },
@@ -266,7 +308,7 @@ class AuthService {
         if (trustedDevice) {
             await trustedDevice.update({ lastUsed: new Date() });
             await this.storeSession(user.userID, loginResponse.data.access_token);
-            await this.cacheUserDetails(user.userID); // Cache user details
+            await this.cacheUserDetails(user.userID);
             return this.generateLoginResponse(
                 userWithDetails,
                 loginResponse.data.access_token,
@@ -276,8 +318,6 @@ class AuthService {
             );
         }
 
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        const phoneRegex = /^\+?\d{8,11}$/;
         const hasValidEmail = user.email && emailRegex.test(user.email);
         const hasValidPhone = user.phone && user.phone !== 'N/A' && phoneRegex.test(user.phone);
 
@@ -427,7 +467,7 @@ class AuthService {
         }
 
         await this.storeSession(userID, tempToken);
-        await this.cacheUserDetails(userID); // Cache user details
+        await this.cacheUserDetails(userID);
         const result = this.generateLoginResponse(userWithDetails, tempToken, refreshToken, 900, res);
         verificationCache.set(cacheKey, result);
         setTimeout(() => verificationCache.delete(cacheKey), CACHE_TTL);
@@ -675,13 +715,6 @@ class AuthService {
         return { userID, tempToken, message: 'OTP verified. Proceed to reset password.' };
     }
 
-    /**
-     * Reset user password
-     * @param {string} userID - User ID
-     * @param {string} newPassword - New password
-     * @param {string} tempToken - Temporary reset token
-     * @returns {Promise<Object>} Success message
-     */
     async resetPassword(userID, newPassword, tempToken) {
         const user = await User.findByPk(userID);
         if (!user) {
@@ -700,7 +733,6 @@ class AuthService {
             );
             await User.update({ tempResetToken: null }, { where: { userID } });
 
-            // Notify user of password reset
             await UserService.notifyPasswordReset(userID, newPassword);
         } catch (error) {
             throw Object.assign(new Error(ERROR_MESSAGES.PASSWORD_UPDATE_FAILED), { status: 500 });

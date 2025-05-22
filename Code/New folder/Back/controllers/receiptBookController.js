@@ -256,12 +256,62 @@ class ReceiptBookController {
     static async getAllReceiptBooks(req, res) {
         const actorID = req.user?.userID || 'unknown';
         try {
-            const startTime = Date.now();
-            const receiptBooks = await ReceiptBookService.getAllReceiptBooks();
-            const responseBooks = receiptBooks.map(book => ({
+            const {
+                page = 1,
+                limit = 10,
+                sortField = 'number',
+                sortOrder = 'ASC',
+                searchQuery = '',
+                filterType = 'all',
+                filterStatus = 'all',
+            } = req.query;
+
+            // Validate sortField
+            const validSortFields = ['number', 'holder', 'bookStatus', 'stubStatus', 'type'];
+            if (!validSortFields.includes(sortField)) {
+                logger.warn('Invalid sort field provided', {
+                    route: 'receipt-books',
+                    method: req.method,
+                    url: req.originalUrl,
+                    status: 400,
+                    ip: req.ip,
+                    traceId: req.traceId,
+                    userId: actorID,
+                    metadata: { sortField }
+                });
+                return res.status(400).json({ error: 'Invalid sort field' });
+            }
+
+            // Validate sortOrder
+            if (!['ASC', 'DESC'].includes(sortOrder.toUpperCase())) {
+                logger.warn('Invalid sort order provided', {
+                    route: 'receipt-books',
+                    method: req.method,
+                    url: req.originalUrl,
+                    status: 400,
+                    ip: req.ip,
+                    traceId: req.traceId,
+                    userId: actorID,
+                    metadata: { sortOrder }
+                });
+                return res.status(400).json({ error: 'Invalid sort order' });
+            }
+
+            const result = await ReceiptBookService.getAllReceiptBooks(
+                parseInt(page),
+                parseInt(limit),
+                sortField,
+                sortOrder,
+                searchQuery,
+                filterType,
+                filterStatus
+            );
+
+            const responseBooks = result.books.map(book => ({
                 ...book,
                 qrCode: book.qrCode ? Buffer.from(book.qrCode).toString('base64') : null,
             }));
+
             logger.info('Successfully fetched receipt books', {
                 route: 'receipt-books',
                 method: req.method,
@@ -270,9 +320,15 @@ class ReceiptBookController {
                 ip: req.ip,
                 traceId: req.traceId,
                 userId: actorID,
-                metadata: { bookCount: responseBooks.length, durationMs: Date.now() - startTime }
+                metadata: { bookCount: responseBooks.length },
             });
-            return res.status(200).json(responseBooks);
+
+            return res.status(200).json({
+                books: responseBooks,
+                totalCount: result.totalCount,
+                currentPage: result.currentPage,
+                totalPages: result.totalPages,
+            });
         } catch (error) {
             logger.error('Failed to fetch receipt books', {
                 route: 'receipt-books',
@@ -282,11 +338,12 @@ class ReceiptBookController {
                 ip: req.ip,
                 traceId: req.traceId,
                 userId: actorID,
-                metadata: { error: error.message }
+                metadata: { error: error.message },
             });
-            return res.status(error.status || 500).json({ error: error.message || 'Failed to retrieve receipt books' });
+            return res.status(error.status || 500).json({ error: error.message });
         }
     }
+
 
     /**
      * Get a receipt book by ID.
@@ -590,9 +647,9 @@ class ReceiptBookController {
     static async sendToSupplier(req, res) {
         const actorID = req.user?.userID || 'unknown';
         try {
-            const { bookIDs, supplierEmail } = req.body;
-            if (!Array.isArray(bookIDs) || !supplierEmail) {
-                logger.warn('Send to supplier failed: Missing bookIDs or supplierEmail', {
+            const { transferID, bookIDs, supplierEmail, isPartial } = req.body;
+            if (!transferID || (!isPartial && !supplierEmail) || (isPartial && (!Array.isArray(bookIDs) || !supplierEmail))) {
+                logger.warn('Send to supplier failed: Missing required fields', {
                     route: 'receipt-books/send-to-supplier',
                     method: req.method,
                     url: req.originalUrl,
@@ -600,17 +657,18 @@ class ReceiptBookController {
                     ip: req.ip,
                     traceId: req.traceId,
                     userId: actorID,
-                    metadata: {}
                 });
-                return res.status(400).json({ error: 'Book IDs (array) and supplier email are required' });
+                return res.status(400).json({ error: 'Transfer ID, book IDs (array, if partial), and supplier email are required' });
             }
-            const result = await ReceiptBookService.sendToSupplier(bookIDs, supplierEmail, actorID);
-            await NotificationService.triggerNotification({
-                event: 'receipt_book:sent_to_supplier',
-                data: { bookIDs, supplierEmail },
-                metadata: { sentBy: req.user.email }
-            });
-            logger.info('Successfully sent receipt books to supplier', {
+            const result = await ReceiptBookService.sendToSupplier(transferID, bookIDs || [], supplierEmail, isPartial, actorID);
+            if (!isPartial) {
+                await NotificationService.triggerNotification({
+                    event: 'receipt_book:sent_to_supplier',
+                    data: { bookCount: result.message.match(/\d+/)?.[0] || 0, supplierEmail },
+                    metadata: { sentBy: req.user.email },
+                });
+            }
+            logger.info('Successfully processed send to supplier request', {
                 route: 'receipt-books/send-to-supplier',
                 method: req.method,
                 url: req.originalUrl,
@@ -618,7 +676,7 @@ class ReceiptBookController {
                 ip: req.ip,
                 traceId: req.traceId,
                 userId: actorID,
-                metadata: { bookCount: bookIDs.length, supplierEmail }
+                metadata: { transferID, isPartial, bookCount: bookIDs?.length || 0 },
             });
             return res.status(200).json(result);
         } catch (error) {
@@ -630,7 +688,7 @@ class ReceiptBookController {
                 ip: req.ip,
                 traceId: req.traceId,
                 userId: actorID,
-                metadata: { error: error.message }
+                metadata: { error: error.message },
             });
             return res.status(error.status || 400).json({ error: error.message || 'Failed to send books to supplier' });
         }
@@ -924,6 +982,79 @@ class ReceiptBookController {
                 metadata: { error: error.message }
             });
             return res.status(error.status || 400).json({ error: error.message || 'Failed to delete receipt book' });
+        }
+    }
+
+
+
+    /**
+ * Upload and process a CSV file to create receipt books in bulk.
+ * @param {Object} req - Express request object with CSV file in req.file.
+ * @param {Object} res - Express response object.
+ * @returns {Promise<void>} JSON response with processing results or error.
+ */
+    static async uploadReceiptBooksCSV(req, res) {
+        const actorID = req.user?.userID || 'unknown';
+        try {
+            if (!req.file) {
+                logger.warn('Upload receipt books CSV failed: No file uploaded', {
+                    route: 'receipt-books/upload-csv',
+                    method: req.method,
+                    url: req.originalUrl,
+                    status: 400,
+                    ip: req.ip,
+                    traceId: req.traceId,
+                    userId: actorID,
+                    metadata: {}
+                });
+                return res.status(400).json({ error: 'CSV file is required' });
+            }
+
+            const result = await ReceiptBookService.processReceiptBookCSV(req.file.buffer, actorID);
+
+            // Trigger notification for successful uploads
+            if (result.summary.booksCreated > 0) {
+                await NotificationService.triggerNotification({
+                    event: 'receipt_book:bulk_created',
+                    data: {
+                        totalBooks: result.summary.booksCreated,
+                        actorID
+                    },
+                    metadata: { createdBy: req.user.email }
+                });
+            }
+
+            logger.info('Successfully processed receipt books CSV', {
+                route: 'receipt-books/upload-csv',
+                method: req.method,
+                url: req.originalUrl,
+                status: 200,
+                ip: req.ip,
+                traceId: req.traceId,
+                userId: actorID,
+                metadata: {
+                    totalRecords: result.summary.totalRecords,
+                    booksCreated: result.summary.booksCreated,
+                    recordsSkipped: result.summary.recordsSkipped,
+                    errorsEncountered: result.summary.errorsEncountered
+                }
+            });
+
+            return res.status(200).json(result);
+        } catch (error) {
+            logger.error('Failed to process receipt books CSV', {
+                route: 'receipt-books/upload-csv',
+                method: req.method,
+                url: req.originalUrl,
+                status: error.status || 500,
+                ip: req.ip,
+                traceId: req.traceId,
+                userId: actorID,
+                metadata: { error: error.message }
+            });
+            return res.status(error.status || 500).json({
+                error: error.message || 'Failed to process receipt books CSV'
+            });
         }
     }
 }

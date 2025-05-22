@@ -1,9 +1,10 @@
-// timesheetController.js
 const { validationResult } = require('express-validator');
 const TimesheetService = require('../services/timesheetService');
 const GoogleCalendarService = require('../services/googleCalendarService');
 const NotificationService = require('../services/notificationService');
 const logger = require('../utils/logger');
+const { getKeycloakAdminToken, getGoogleAccessTokenForUser } = require('../utils/tokenExchange');
+const { Timesheet, User } = require('../models');
 
 const ERROR_MESSAGES = {
     MISSING_FIELDS: 'Please fill in all required fields.',
@@ -11,6 +12,8 @@ const ERROR_MESSAGES = {
     INVALID_SUPERVISOR: 'Invalid supervisor ID.',
     INVALID_WEEK_START: 'Invalid week start date.',
     REQUEST_CANCELED: 'AI request was canceled.',
+    INVALID_COORDINATES: 'Valid coordinates (lat, lng) are required.',
+    INVALID_TIME_INTERVAL: 'Valid time interval (startHour, endHour) is required.'
 };
 
 class TimesheetController {
@@ -125,6 +128,43 @@ class TimesheetController {
         }
     }
 
+    static async getTimesheetByWeekNumberAndYear(req, res) {
+        const actorID = req.user?.userID || 'unknown';
+        try {
+            const errors = validationResult(req);
+            if (!errors.isEmpty()) {
+                throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
+            }
+            const { weekNumber, year, supervisorID } = req.params;
+            const timesheet = await TimesheetService.getTimesheetByWeekAndYear(weekNumber, year, supervisorID);
+            logger.info('Successfully fetched timesheet by week number and year', {
+                route: 'timesheets/weekNumberAndYear',
+                method: req.method,
+                url: req.originalUrl,
+                status: 200,
+                ip: req.ip,
+                traceId: req.traceId,
+                userId: actorID,
+                metadata: { weekNumber, year },
+            });
+            return res.status(200).json(timesheet);
+        } catch (error) {
+            const response = TimesheetController.formatError(error);
+            const status = error.message === ERROR_MESSAGES.MISSING_FIELDS ? 400 : error.status || 500;
+            logger.error('Failed to fetch timesheet by week number and year', {
+                route: 'timesheets/weekNumberAndYear',
+                method: req.method,
+                url: req.originalUrl,
+                status,
+                ip: req.ip,
+                traceId: req.traceId,
+                userId: actorID,
+                metadata: { error: response.error },
+            });
+            return res.status(status).json(response);
+        }
+    }
+
     static async createTimesheet(req, res) {
         const actorID = req.user?.userID || 'unknown';
         try {
@@ -186,10 +226,17 @@ class TimesheetController {
             }
             const { id } = req.params;
             const { visitIDs = [], status } = req.body;
-            const timesheet = await TimesheetService.validateTimesheet(id, visitIDs, status, actorID);
+            const timesheet = await TimesheetService.validateTimesheet(id, { visitIDs, status }, actorID);
+
             try {
-                const syncResults = await GoogleCalendarService.syncTimesheetToCalendar(req.user.userID, id);
-                await GoogleCalendarService.notifyCalendarUpdate(req.user.userID, {
+                const supervisor = await User.findByPk(timesheet.supervisorID);
+                if (!supervisor || !supervisor.keycloakId) {
+                    throw new Error('Supervisor not found or not linked to Keycloak');
+                }
+                const adminToken = await getKeycloakAdminToken();
+                const googleToken = await getGoogleAccessTokenForUser(supervisor.keycloakId, adminToken);
+                const syncResults = await GoogleCalendarService.syncTimesheetToCalendar(googleToken, id);
+                await GoogleCalendarService.notifyCalendarUpdate(supervisor.keycloakId, {
                     timesheetId: id,
                     syncedVisits: syncResults,
                     action: 'synced',
@@ -197,11 +244,13 @@ class TimesheetController {
             } catch (error) {
                 logger.warn(`Failed to sync timesheet ${id} to calendar after validation: ${error.message}`);
             }
+
             await NotificationService.triggerNotification({
                 event: 'timesheet:validated',
                 data: { timesheetId: id, status, supervisorID: timesheet.supervisorID },
                 metadata: { validatedBy: req.user.email },
             });
+
             logger.info('Successfully validated timesheet', {
                 route: 'timesheets/validate',
                 method: req.method,
@@ -212,6 +261,7 @@ class TimesheetController {
                 userId: actorID,
                 metadata: { timesheetID: id, status, visitCount: visitIDs.length },
             });
+
             return res.status(200).json(timesheet);
         } catch (error) {
             const response = TimesheetController.formatError(error);
@@ -238,8 +288,14 @@ class TimesheetController {
                 throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
             }
             const { id } = req.params;
-            const syncResults = await GoogleCalendarService.syncTimesheetToCalendar(req.user.userID, id);
-            await GoogleCalendarService.notifyCalendarUpdate(req.user.userID, {
+            const timesheet = await Timesheet.findByPk(id, { include: [{ model: User }] });
+            if (!timesheet || !timesheet.User || !timesheet.User.keycloakId) {
+                throw new Error('Timesheet or supervisor not found or not linked to Keycloak');
+            }
+            const adminToken = await getKeycloakAdminToken();
+            const googleToken = await getGoogleAccessTokenForUser(timesheet.User.keycloakId, adminToken);
+            const syncResults = await GoogleCalendarService.syncTimesheetToCalendar(googleToken, id);
+            await GoogleCalendarService.notifyCalendarUpdate(timesheet.User.keycloakId, {
                 timesheetId: id,
                 syncedVisits: syncResults,
                 action: 'synced',
@@ -284,8 +340,34 @@ class TimesheetController {
             if (!errors.isEmpty()) {
                 throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
             }
-            const { supervisorId, weekNumber, year, criteria } = req.body;
-            const { suggestions, requestId } = await TimesheetService.suggestTimesheet(supervisorId, weekNumber, year, criteria || {});
+            const { supervisorId, weekNumber, year, criteria, coordinates } = req.body;
+
+            logger.info('Received suggestTimesheet request in controller', {
+                supervisorId,
+                weekNumber,
+                year,
+                criteria,
+                coordinates,
+                actorID
+            });
+
+            if (!coordinates || typeof coordinates.lat !== 'number' || typeof coordinates.lng !== 'number') {
+                throw Object.assign(new Error(ERROR_MESSAGES.INVALID_COORDINATES), { status: 400 });
+            }
+
+            if (!criteria?.timeInterval || !Number.isInteger(criteria.timeInterval.startHour) ||
+                !Number.isInteger(criteria.timeInterval.endHour) || criteria.timeInterval.startHour < 0 ||
+                criteria.timeInterval.endHour > 24 || criteria.timeInterval.startHour >= criteria.timeInterval.endHour) {
+                throw Object.assign(new Error(ERROR_MESSAGES.INVALID_TIME_INTERVAL), { status: 400 });
+            }
+
+            const { suggestions, requestId } = await TimesheetService.suggestTimesheet(
+                supervisorId,
+                weekNumber,
+                year,
+                criteria,
+                coordinates
+            );
             await NotificationService.triggerNotification({
                 event: 'timesheet:suggested',
                 data: { supervisorId, weekNumber, year, suggestionCount: suggestions.length },

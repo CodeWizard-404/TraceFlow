@@ -26,16 +26,15 @@ import { useAuth } from "../../context/AuthContext";
 import VisitStatus from "../../models/Enum/VisitStatus";
 import Visit from "../../models/Visit";
 import Agent from "../../models/Agent";
-import Region from "../../models/Region";
-import Governorate from "../../models/Governorate";
-import Delegation from "../../models/Delegation";
-import { getAgentById } from "../../apis/agentAPI";
+import { getAgentById, getAgentSupervisor } from "../../apis/agentAPI";
 import { validateTimesheet } from "../../apis/timesheetAPI";
 import { getVisitById, deleteVisit } from "../../apis/visitAPI";
-import { getAllRegions, getGovernoratesByRegion, getDelegationsByGovernorate } from "../../apis/locationApi";
+import { getAllRegions, getGovernoratesByRegion, getDelegationsByGovernorate, getGeocode } from "../../apis/locationApi";
 import { useTranslation } from "react-i18next";
 import CalendarSyncButton from "../../components/Google/CalendarSyncButton";
+import DirectionsModal from "../../components/Google/VisitDirectionsModal";
 import { io } from 'socket.io-client';
+import User from "../../models/User";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
@@ -64,6 +63,7 @@ const VisitDetailsView: React.FC = () => {
 
     const [visit, setVisit] = useState<Visit | null>(null);
     const [agent, setAgent] = useState<Agent | null>(null);
+    const [supervisor, setSupervisor] = useState<User | null>(null);
     const [displayLocation, setDisplayLocation] = useState<string | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
@@ -73,6 +73,9 @@ const VisitDetailsView: React.FC = () => {
         governorateID: string;
         delegationID: string;
     }>({ regionID: "", governorateID: "", delegationID: "" });
+    const [showDirectionsModal, setShowDirectionsModal] = useState<boolean>(false);
+    const [destination, setDestination] = useState<{ lat: number; lng: number; address: string } | null>(null);
+    const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
 
     const userPermissions = useMemo(
         () => ({
@@ -103,6 +106,26 @@ const VisitDetailsView: React.FC = () => {
         [user]
     );
 
+    const isVisitSupervisor = useMemo(
+        () => supervisor?.userID === user?.userID,
+        [supervisor, user]
+    );
+
+    useEffect(() => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const { latitude, longitude } = position.coords;
+                    setUserLocation({ lat: latitude, lng: longitude });
+                },
+                (error) => {
+                    console.error('Geolocation error:', error);
+                    setError(t("visitDetails.error.locationAccess"));
+                }
+            );
+        }
+    }, [t]);
+
     const fetchVisitData = useCallback(async () => {
         if (!idVisit || !userPermissions.canAccessVisitDetails) {
             navigate("/access-denied");
@@ -119,6 +142,13 @@ const VisitDetailsView: React.FC = () => {
                 ? await getAgentById(visitData.agentID)
                 : null;
             setAgent(agentData);
+
+            // Fetch supervisor if agent exists
+            let supervisorData = null;
+            if (agentData?.agentID) {
+                supervisorData = await getAgentSupervisor(agentData.agentID);
+                setSupervisor(supervisorData);
+            }
 
             // Parse location string and fetch IDs
             let regionID = "", governorateID = "", delegationID = "";
@@ -142,6 +172,26 @@ const VisitDetailsView: React.FC = () => {
             }
             setLocationData({ regionID, governorateID, delegationID });
             setDisplayLocation(visitData.location || t("visitDetails.whenWhere.na"));
+
+            // Set destination for directions
+            if (agentData?.latitude && agentData?.longitude && agentData?.location) {
+                setDestination({
+                    lat: agentData.latitude,
+                    lng: agentData.longitude,
+                    address: agentData.location,
+                });
+            } else if (visitData.address) {
+                try {
+                    const geocode = await getGeocode(visitData.address);
+                    setDestination({
+                        lat: geocode.latitude,
+                        lng: geocode.longitude,
+                        address: geocode.formattedAddress,
+                    });
+                } catch (err) {
+                    console.error('Geocode error:', err);
+                }
+            }
         } catch (err: unknown) {
             const errorMessage =
                 err instanceof Error ? err.message : t("visitDetails.error.fetchFailed");
@@ -250,6 +300,12 @@ const VisitDetailsView: React.FC = () => {
         setSelectedImage(`${BASE_URL}${photo}`);
     const handleCloseFullscreen = () => setSelectedImage(null);
 
+    const handleLocationClick = () => {
+        if (destination) {
+            setShowDirectionsModal(true);
+        }
+    };
+
     const photosCount =
         t("visitDetails.photos.count", { count: visit?.photos?.length || 0 }) ||
         `(${visit?.photos?.length || 0} photos)`;
@@ -347,7 +403,14 @@ const VisitDetailsView: React.FC = () => {
                                 <FaClock /> {visit.time.split(":").slice(0, 2).join(":")}
                             </p>
                             <p>
-                                <FaMapMarkerAlt /> {displayLocation}
+                                <FaMapMarkerAlt />
+                                <span
+                                    onClick={handleLocationClick}
+                                    style={{ cursor: destination ? 'pointer' : 'default', color: destination ? '#007bff' : 'inherit' }}
+                                    aria-label={t("visitDetails.aria.viewDirections")}
+                                >
+                                    {" "}{displayLocation}
+                                </span>
                             </p>
                             {visit.calendarEventId ? (
                                 <p>
@@ -385,6 +448,22 @@ const VisitDetailsView: React.FC = () => {
                             )}
                         </div>
                     </div>
+
+                    {!isVisitSupervisor && supervisor && (
+                        <div className="visit-details-card">
+                            <h2>
+                                <FaUser /> {t("visitDetails.supervisor.title")}
+                            </h2>
+                            <div className="card-content">
+                                <p>
+                                    <BsPersonLinesFill /> {supervisor.firstname} {supervisor.lastname}
+                                </p>
+                                <p>
+                                    <FaPhone /> {supervisor.phone || t("visitDetails.agent.na")}
+                                </p>
+                            </div>
+                        </div>
+                    )}
 
                     <div className="visit-details-card">
                         <h2>
@@ -525,6 +604,17 @@ const VisitDetailsView: React.FC = () => {
                             <FaTimes />
                         </button>
                     </div>
+                )}
+
+                {showDirectionsModal && destination && (
+                    <DirectionsModal
+                        isOpen={showDirectionsModal}
+                        onClose={() => setShowDirectionsModal(false)}
+                        destination={destination}
+                        userLocation={userLocation}
+                        agent={agent}
+                        delegation={locationData.delegationID}
+                    />
                 )}
             </section>
         </div>

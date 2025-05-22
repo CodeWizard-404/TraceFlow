@@ -82,6 +82,9 @@ export const getAgentSupervisor = async (id: string): Promise<SupervisorResponse
     const response = await api.get<SupervisorResponse>(`/agents/${id}/supervisor`);
     return response.data;
   } catch (error) {
+    if ((error as AxiosError).response?.status === 404) {
+      return null;
+    }
     throw new Error(handleApiError(error, "Supervisor not found."));
   }
 };

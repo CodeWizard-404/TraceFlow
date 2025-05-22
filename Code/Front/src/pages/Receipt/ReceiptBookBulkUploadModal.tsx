@@ -27,6 +27,7 @@ const BACKEND_FIELDS = [
 interface ReceiptBookBulkUploadModalProps {
     isOpen: boolean;
     onClose: () => void;
+    onUploadSuccess: () => void;
     setError: (error: string | null) => void;
 }
 

@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
@@ -9,15 +10,18 @@ import {
   FaCheck,
   FaCamera,
   FaTimes,
+  FaMapMarkerAlt,
 } from "react-icons/fa";
 import "./VisitValidation.css";
 import { getAgentById } from "../../apis/agentAPI";
 import { getVisitById, logVisitDetails } from "../../apis/visitAPI";
+import { correctAgentLocation } from "../../apis/agentAPI";
 import Visit from "../../models/Visit";
 import Agent from "../../models/Agent";
 import { useAuth } from "../../context/AuthContext";
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
+import LocationCorrectionModal from "../../components/Google/LocationCorrectionModal";
 
 const PERMISSIONS = {
   LOG_VISITS: import.meta.env.VITE_PERMISSIONS_LOG_VISITS,
@@ -39,7 +43,6 @@ const VisitValidation: React.FC = () => {
   const [qrScanTime, setQrScanTime] = useState<string | null>(null);
   const [photos, setPhotos] = useState<File[]>([]);
   const [comment, setComment] = useState<string>("");
-  const [otpCode, setOtpCode] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -47,11 +50,16 @@ const VisitValidation: React.FC = () => {
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
   const [flashEffect, setFlashEffect] = useState<boolean>(false);
   const [isNonRecruitment, setIsNonRecruitment] = useState<boolean>(false);
+  const [showLocationModal, setShowLocationModal] = useState<boolean>(false);
+  const [correctedLocation, setCorrectedLocation] = useState<{
+    lat: number;
+    lng: number;
+    address: string;
+  } | null>(null);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  const otpID = (location.state as { otpID?: string })?.otpID;
 
   const userPermissions = useMemo(
     () => ({
@@ -62,7 +70,41 @@ const VisitValidation: React.FC = () => {
     [effectivePermissions]
   );
 
-  // Helper function to manage visit start time in localStorage
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          setUserLocation({ lat: latitude, lng: longitude });
+        },
+        (error) => {
+          console.error('Geolocation error:', error);
+          setError(t("visitValidation.error.locationAccess"));
+        }
+      );
+    }
+  }, [t]);
+
+  useEffect(() => {
+    // Store original overflow values
+    const originalBodyOverflow = document.body.style.overflow;
+    const originalHtmlOverflow = document.documentElement.style.overflow;
+
+    if (isCameraActive || showLocationModal) {
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = originalBodyOverflow || '';
+      document.documentElement.style.overflow = originalHtmlOverflow || '';
+    }
+
+    return () => {
+      // Restore original overflow on unmount
+      document.body.style.overflow = originalBodyOverflow || '';
+      document.documentElement.style.overflow = originalHtmlOverflow || '';
+    };
+  }, [isCameraActive, showLocationModal]);
+
   const getVisitStartTime = (visitId: string): number => {
     const key = `visit_start_time_${visitId}`;
     const storedTime = localStorage.getItem(key);
@@ -74,7 +116,6 @@ const VisitValidation: React.FC = () => {
     return newStartTime;
   };
 
-  // Helper function to clear visit start time from localStorage
   const clearVisitStartTime = (visitId: string) => {
     const key = `visit_start_time_${visitId}`;
     localStorage.removeItem(key);
@@ -111,7 +152,7 @@ const VisitValidation: React.FC = () => {
           const agentData = await getAgentById(visitData.agentID);
           setAgent(agentData);
         } else {
-          setAgent(null); // Explicitly set null for recruitment visits
+          setAgent(null);
         }
         const initialChecklist =
           visitData.Checklists?.map((cl) => ({
@@ -120,7 +161,6 @@ const VisitValidation: React.FC = () => {
             checked: cl.VisitChecklist?.checked || false,
           })) || [];
         setChecklist(initialChecklist);
-        // Initialize start time in localStorage when visit data is loaded
         getVisitStartTime(idVisit);
       } catch (err) {
         setError(t("visitValidation.error.fetchFailed"));
@@ -228,35 +268,29 @@ const VisitValidation: React.FC = () => {
     );
   };
 
+  const handleLocationCorrection = (location: { lat: number; lng: number; address: string }) => {
+    setCorrectedLocation(location);
+  };
+
   const handleValidate = async () => {
     if (
       !visit ||
       !idVisit ||
       !userPermissions.canLogVisits ||
-      photos.length === 0 ||
-      (isNonRecruitment && !otpCode)
+      photos.length === 0
     ) {
       setError(
         photos.length === 0
           ? t("visitValidation.error.noPhotos")
-          : isNonRecruitment && !otpCode
-            ? t("visitValidation.error.noOtp")
-            : t("visitValidation.error.accessDenied")
+          : t("visitValidation.error.accessDenied")
       );
       return;
     }
-
-    console.log("Photos before sending:", photos);
-    console.log("Photos length:", photos.length);
-    console.log("QR Scan Date:", qrScanDate);
-    console.log("QR Scan Time:", qrScanTime);
-    console.log("OTP Code:", otpCode);
 
     setIsSubmitting(true);
     setError(null);
 
     try {
-      // Retrieve start time from localStorage
       const startTime = getVisitStartTime(idVisit);
       const currentTime = Date.now();
       const durationMs = currentTime - startTime;
@@ -274,12 +308,20 @@ const VisitValidation: React.FC = () => {
         comment,
         date: qrScanDate ?? undefined,
         time: qrScanTime ?? undefined,
-        status: "visited", // Set status to visited
-        otpCode: isNonRecruitment ? otpCode : undefined,
+        status: "visited",
       };
 
       await logVisitDetails(idVisit, updatedVisitData);
-      // Clear start time from localStorage after successful submission
+
+      if (isNonRecruitment && correctedLocation && agent?.agentID) {
+        await correctAgentLocation(
+          agent.agentID,
+          correctedLocation.lat,
+          correctedLocation.lng,
+          correctedLocation.address
+        );
+      }
+
       clearVisitStartTime(idVisit);
       stopCamera();
       navigate("/timesheet");
@@ -375,23 +417,24 @@ const VisitValidation: React.FC = () => {
               {agent?.phone || t("visitValidation.visitDetails.recruitmentVisit")}
             </p>
           </div>
+          {isNonRecruitment && (
+            <div className="detail-item">
+              <span>
+                <FaMapMarkerAlt /> {t("visitValidation.visitDetails.location")}
+              </span>
+              <p>
+                {correctedLocation?.address || agent?.location || t("visitValidation.visitDetails.noLocation")}
+              </p>
+              <button
+                className="correct-location-btn"
+                onClick={() => setShowLocationModal(true)}
+                aria-label={t("visitValidation.aria.correctLocation")}
+              >
+                <FaMapMarkerAlt /> {t("visitValidation.actions.correctLocation")}
+              </button>
+            </div>
+          )}
         </div>
-
-        {isNonRecruitment && otpID && (
-          <div className="otp-section">
-            <h2>{t("visitValidation.otp.title")}</h2>
-            <input
-              type="text"
-              value={otpCode}
-              onChange={(e) => setOtpCode(e.target.value)}
-              placeholder={t("visitValidation.otp.placeholder")}
-              className="otp-input"
-              aria-label={t("visitValidation.otp.label")}
-              maxLength={6}
-              pattern="\d{6}"
-            />
-          </div>
-        )}
 
         <div className="reasons-section">
           <h2>
@@ -569,7 +612,7 @@ const VisitValidation: React.FC = () => {
           <button
             className={`validate-btn ${isSubmitting ? "submitting" : ""}`}
             onClick={handleValidate}
-            disabled={isSubmitting || photos.length === 0 || (isNonRecruitment && !otpCode)}
+            disabled={isSubmitting || photos.length === 0}
             aria-label={t("visitValidation.aria.validateButton")}
           >
             <FaCheck />{" "}
@@ -603,6 +646,15 @@ const VisitValidation: React.FC = () => {
             <FaTimes />
           </button>
         </div>
+      )}
+      {isNonRecruitment && agent?.agentID && (
+        <LocationCorrectionModal
+          isOpen={showLocationModal}
+          onClose={() => setShowLocationModal(false)}
+          agentId={agent.agentID}
+          onLocationCorrected={handleLocationCorrection}
+          userLocation={userLocation}
+        />
       )}
     </div>
   );

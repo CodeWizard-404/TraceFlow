@@ -1,5 +1,4 @@
 const { getRedisClient } = require('../config/redis');
-const logger = require('./logger');
 
 class RedisUtils {
     constructor() {
@@ -54,13 +53,11 @@ class RedisUtils {
     async publishEvent(channel, data, retries = 3) {
         try {
             await this.redis.publish(channel, JSON.stringify(data));
-            logger.info(`Published to ${channel}`, { service: 'redis' });
         } catch (error) {
             if (retries > 0) {
                 await new Promise(resolve => setTimeout(resolve, 1000));
                 return this.publishEvent(channel, data, retries - 1);
             }
-            logger.error(`Failed to publish to ${channel}`, { error: error.message });
             throw error;
         }
     }

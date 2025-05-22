@@ -1,10 +1,11 @@
-const { Timesheet, Visit, Agent, User, Delegation, Reason } = require('../models');
+const { Timesheet, Visit, Agent, User, Delegation, Reason, Checklist } = require('../models');
 const AIService = require('./aiService');
 const { sequelize } = require('../config/db');
 const VisitService = require('./visitService');
 const GoogleCalendarService = require('./googleCalendarService');
 const { Op } = require('sequelize');
 const { getKeycloakAdminToken, getGoogleAccessTokenForUser } = require('../utils/tokenExchange');
+const { nanoid } = require('nanoid');
 
 const ERROR_MESSAGES = {
     INVALID_SUPERVISOR: 'Invalid supervisor ID.',
@@ -297,14 +298,14 @@ class TimesheetService {
     }
 
     /**
-     * Suggests a timesheet.
-     * @param {string} supervisorId - Supervisor ID.
-     * @param {number} weekNumber - Week number.
-     * @param {number} year - Year.
-     * @param {Object} criteria - Suggestion criteria.
-     * @param {Object} coordinates - Coordinates.
-     * @returns {Promise<Object>} - Suggestions and request ID.
-     */
+         * Suggests a timesheet, cleaning up AI response to match getTimesheetsBySupervisor with checklists.
+         * @param {string} supervisorId - Supervisor ID.
+         * @param {number} weekNumber - Week number.
+         * @param {number} year - Year.
+         * @param {Object} criteria - Suggestion criteria.
+         * @param {Object} coordinates - Coordinates.
+         * @returns {Promise<Object>} - Suggestions and request ID.
+         */
     static async suggestTimesheet(supervisorId, weekNumber, year, criteria, coordinates) {
         try {
             const supervisor = await User.findByPk(supervisorId);
@@ -388,14 +389,18 @@ class TimesheetService {
             activeControllers.set(requestId, controller);
 
             try {
-                const suggestions = await AIService.generateTimesheetSuggestions(
+                const aiSuggestions = await AIService.generateTimesheetSuggestions(
                     supervisorId,
                     weekNumber,
                     year,
                     timesheetData,
                     controller
                 );
-                return { suggestions, requestId };
+
+                // Clean up AI suggestions to match getTimesheetsBySupervisor with checklists
+                const cleanedSuggestions = await this.cleanSuggestions(aiSuggestions, supervisorId, weekNumber, year, timesheetData);
+
+                return { suggestions: cleanedSuggestions, requestId };
             } finally {
                 activeControllers.delete(requestId);
             }
@@ -404,6 +409,245 @@ class TimesheetService {
                 throw error;
             }
             throw error.status ? error : Object.assign(new Error(ERROR_MESSAGES.AI_API_UNAVAILABLE), { status: 503 });
+        }
+    }
+
+    /**
+     * Cleans AI-generated suggestions to match getTimesheetsBySupervisor format with checklists.
+     * @param {Array} aiSuggestions - AI-generated suggestions.
+     * @param {string} supervisorId - Supervisor ID.
+     * @param {number} weekNumber - Week number.
+     * @param {number} year - Year.
+     * @param {Object} timesheetData - Timesheet data including criteria and timeInterval.
+     * @returns {Promise<Array>} - Cleaned suggestions.
+     */
+    static async cleanSuggestions(aiSuggestions, supervisorId, weekNumber, year, timesheetData) {
+        try {
+            const { timeInterval, preferredDays = [], includeRecruitmentVisits, coordinates } = timesheetData;
+
+            // Validate inputs
+            const weekStart = AIService.getWeekStartDate(weekNumber, year);
+            const validDates = preferredDays.length > 0
+                ? preferredDays
+                : Array.from({ length: 7 }, (_, i) => AIService.getDateString(weekStart, i));
+            const today = new Date('2025-05-21T19:57:00.000Z'); // 20:57 CET
+            const todayDate = today.toISOString().split('T')[0]; // 2025-05-21
+            const todayMinutes = (today.getUTCHours() + 1) * 60 + today.getUTCMinutes(); // CET
+
+            // Fetch data
+            const [reasons, checklists, agents, supervisor, delegations] = await Promise.all([
+                Reason.findAll({ attributes: ['reasonID', 'item'] }),
+                Checklist.findAll({ attributes: ['checklistID', 'item'] }),
+                Agent.findAll({
+                    where: { supervisorID: supervisorId },
+                    include: [{ model: Delegation }]
+                }),
+                User.findByPk(supervisorId),
+                Delegation.findAll({ attributes: ['delegationID', 'latitude', 'longitude'] })
+            ]);
+
+            const reasonMap = new Map(reasons.map(r => [r.reasonID, r]));
+            const checklistMap = new Map(checklists.map(c => [c.checklistID, c]));
+            const agentMap = new Map(agents.map(a => [a.agentID, a]));
+            const delegationMap = new Map(delegations.map(d => [d.delegationID, { latitude: d.latitude, longitude: d.longitude }]));
+
+            // Geocode recruitment areas
+            let recruitmentVisitLocations = [];
+            if (includeRecruitmentVisits && timesheetData.criteria.recruitmentAreas?.length > 0) {
+                recruitmentVisitLocations = await Promise.all(
+                    timesheetData.criteria.recruitmentAreas.map(async area => {
+                        try {
+                            const geocode = await GoogleMapsService.geocodeAddress(`${area}, Tunisia`, 'tn');
+                            return {
+                                latitude: geocode.latitude,
+                                longitude: geocode.longitude,
+                                formattedAddress: geocode.formattedAddress
+                            };
+                        } catch (error) {
+                            return { latitude: null, longitude: null, formattedAddress: 'Recruitment Location' };
+                        }
+                    })
+                );
+            } else if (includeRecruitmentVisits) {
+                recruitmentVisitLocations = [{ latitude: null, longitude: null, formattedAddress: 'Recruitment Location' }];
+            }
+
+            // Validate and process visits
+            const validVisits = [];
+            const timeToMinutes = (time) => {
+                const [hours, minutes] = time.split(':').map(Number);
+                return hours * 60 + minutes;
+            };
+
+            for (const visit of aiSuggestions) {
+                // Validate date
+                if (!visit.date || !validDates.includes(visit.date) || visit.date < todayDate) {
+                    console.warn(`Skipping visit with invalid date: ${visit.date}`);
+                    continue;
+                }
+
+                // Validate time
+                const visitMinutes = visit.time ? timeToMinutes(visit.time) : null;
+                if (!visit.time || visitMinutes < timeInterval.startHour * 60 || visitMinutes >= timeInterval.endHour * 60 ||
+                    (visit.date === todayDate && visitMinutes <= todayMinutes)) {
+                    console.warn(`Skipping visit with invalid time: ${visit.time} on ${visit.date}`);
+                    continue;
+                }
+
+                // Validate agentID
+                const isRecruitment = includeRecruitmentVisits && visit.agentID === null;
+                if (!isRecruitment && (!visit.agentID || !agentMap.has(visit.agentID))) {
+                    console.warn(`Skipping non-recruitment visit with invalid agentID: ${visit.agentID}`);
+                    continue;
+                }
+
+                // Validate reasons and checklists
+                const reasons = Array.isArray(visit.reasons)
+                    ? visit.reasons.map(r => reasonMap.get(r.id)).filter(r => r).map(r => ({ reasonID: r.reasonID, item: r.item }))
+                    : [];
+                const checklists = Array.isArray(visit.checklists)
+                    ? visit.checklists.map(c => checklistMap.get(c.id)).filter(c => c).map(c => ({ checklistID: c.checklistID, item: c.item }))
+                    : [];
+
+                // Strict reason-checklist relevance check
+                let isValidChecklist = false;
+                for (const reason of reasons) {
+                    const reasonText = reason.item.toLowerCase();
+                    for (const checklist of checklists) {
+                        const checklistText = checklist.item.toLowerCase();
+                        if (
+                            (reasonText.includes('inventory') && checklistText.includes('inventory')) ||
+                            (reasonText.includes('complaint') && checklistText.includes('product') || checklistText.includes('customer')) ||
+                            (reasonText.includes('equipment') && checklistText.includes('security') || checklistText.includes('cash')) ||
+                            (reasonText.includes('safety') && checklistText.includes('cleanliness')) ||
+                            (reasonText.includes('supplier') && checklistText.includes('receipt'))
+                        ) {
+                            isValidChecklist = true;
+                            break;
+                        }
+                    }
+                    if (isValidChecklist) break;
+                }
+
+                if (reasons.length === 0 || checklists.length === 0 || !isValidChecklist) {
+                    console.warn(`Skipping visit on ${visit.date} at ${visit.time}: invalid reasons, checklists, or relevance`);
+                    continue;
+                }
+
+                const agent = visit.agentID ? agentMap.get(visit.agentID) : null;
+                let location, latitude, longitude;
+                if (isRecruitment) {
+                    const recruitmentLocation = recruitmentVisitLocations.find(l => l.formattedAddress === visit.location) || recruitmentVisitLocations[0];
+                    location = visit.location && visit.location !== 'null' ? visit.location : 'Recruitment Location';
+                    latitude = recruitmentLocation?.latitude || null;
+                    longitude = recruitmentLocation?.longitude || null;
+                } else {
+                    location = agent?.location || VisitService.getFormattedLocation(visit.agentID, null) || 'Unknown Location';
+                    latitude = agent?.latitude || delegationMap.get(agent?.delegationID)?.latitude || null;
+                    longitude = agent?.longitude || delegationMap.get(agent?.delegationID)?.longitude || null;
+                }
+
+                validVisits.push({
+                    date: visit.date,
+                    time: visit.time,
+                    agentID: visit.agentID,
+                    location,
+                    latitude,
+                    longitude,
+                    reasons,
+                    checklists,
+                    agent
+                });
+            }
+
+            // Check for duplicate times on the same day
+            const visitTimesByDate = {};
+            for (const visit of validVisits) {
+                if (!visitTimesByDate[visit.date]) {
+                    visitTimesByDate[visit.date] = new Set();
+                }
+                const visitMinutes = timeToMinutes(visit.time);
+                for (const existingMinutes of visitTimesByDate[visit.date]) {
+                    if (Math.abs(visitMinutes - existingMinutes) < 60) {
+                        console.warn(`Skipping visit on ${visit.date} at ${visit.time}: time conflict`);
+                        validVisits.splice(validVisits.indexOf(visit), 1);
+                        break;
+                    }
+                }
+                visitTimesByDate[visit.date].add(visitMinutes);
+            }
+
+            // Sort visits by Google Maps route
+            let sortedVisits = validVisits;
+            if (validVisits.length > 1) {
+                const waypoints = validVisits
+                    .filter(v => v.latitude && v.longitude)
+                    .map(v => ({ location: { lat: v.latitude, lng: v.longitude }, visit: v }));
+                if (waypoints.length > 0) {
+                    try {
+                        const route = await GoogleMapsService.getDirections(
+                            `${coordinates.lat},${coordinates.lng}`,
+                            `${coordinates.lat},${coordinates.lng}`,
+                            'driving',
+                            waypoints.map(w => `${w.location.lat},${w.location.lng}`)
+                        );
+                        const orderedVisits = route.steps.flatMap(step =>
+                            waypoints.filter(w => step.instruction.includes(`${w.location.lat},${w.location.lng}`)).map(w => w.visit)
+                        );
+                        const visitsWithoutCoords = validVisits.filter(v => !v.latitude || !v.longitude);
+                        sortedVisits = [...orderedVisits, ...visitsWithoutCoords];
+                    } catch (error) {
+                        console.warn('Failed to optimize route:', error.message);
+                        // Fallback to Haversine sorting
+                        sortedVisits.sort((a, b) => {
+                            if (!a.latitude || !a.longitude || !b.latitude || !b.longitude) return 0;
+                            return AIService.calculateDistance(coordinates.lat, coordinates.lng, a.latitude, a.longitude) -
+                                AIService.calculateDistance(coordinates.lat, coordinates.lng, b.latitude, b.longitude);
+                        });
+                    }
+                }
+            }
+
+            // Create single timesheet
+            const timesheet = {
+                timesheetID: `ts_suggested_${nanoid()}`,
+                weekNumber,
+                year,
+                status: 'pending',
+                supervisorID: supervisorId,
+                User: supervisor,
+                Visits: sortedVisits.map(visit => ({
+                    visitID: `vis_suggested_${nanoid()}`,
+                    date: visit.date,
+                    time: visit.time,
+                    location: visit.location,
+                    status: 'pending',
+                    photos: [],
+                    comment: null,
+                    agentID: visit.agentID,
+                    timesheetID: timesheet.timesheetID,
+                    calendarEventId: null,
+                    Reasons: visit.reasons,
+                    Checklists: visit.checklists,
+                    Agent: visit.agent ? {
+                        agentID: visit.agent.agentID,
+                        name: visit.agent.name,
+                        lastname: visit.agent.lastname,
+                        email: visit.agent.email,
+                        phone: visit.agent.phone,
+                        location: visit.agent.location,
+                        latitude: visit.agent.latitude,
+                        longitude: visit.agent.longitude,
+                        supervisorID: visit.agent.supervisorID,
+                        delegationID: visit.agent.delegationID,
+                        Delegation: visit.agent.Delegation
+                    } : null
+                }))
+            };
+
+            return timesheet.Visits.length > 0 ? [timesheet] : [];
+        } catch (error) {
+            throw Object.assign(new Error('Failed to clean suggestions: ' + error.message), { status: 500 });
         }
     }
 

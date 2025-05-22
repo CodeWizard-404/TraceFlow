@@ -14,7 +14,20 @@ class CsvHeaderController {
     static async getHeaders(req, res) {
         const actorID = req.user?.userID || 'unknown';
         try {
-            const { csvType = 'agent' } = req.query;
+            const { csvType } = req.query;
+            if (!csvType) {
+                logger.warn('Failed to fetch CSV headers: Missing csvType', {
+                    route: 'csv-headers',
+                    method: req.method,
+                    url: req.originalUrl,
+                    status: 400,
+                    ip: req.ip,
+                    traceId: req.traceId,
+                    userId: actorID,
+                    metadata: {}
+                });
+                return res.status(400).json({ error: 'csvType is required' });
+            }
             const headers = await CsvHeaderService.getHeaders(csvType);
             logger.info('Successfully fetched CSV headers', {
                 route: 'csv-headers',
@@ -51,9 +64,9 @@ class CsvHeaderController {
     static async updateHeaders(req, res) {
         const actorID = req.user?.userID || 'unknown';
         try {
-            const { csvType = 'agent', headers } = req.body;
-            if (!headers || !Array.isArray(headers)) {
-                logger.warn('Failed to update CSV headers: Missing or invalid headers', {
+            const { csvType, headers } = req.body;
+            if (!csvType || !headers || !Array.isArray(headers)) {
+                logger.warn('Failed to update CSV headers: Missing or invalid csvType or headers', {
                     route: 'csv-headers',
                     method: req.method,
                     url: req.originalUrl,
@@ -63,7 +76,7 @@ class CsvHeaderController {
                     userId: actorID,
                     metadata: { csvType }
                 });
-                return res.status(400).json({ error: 'Headers array is required' });
+                return res.status(400).json({ error: 'csvType and headers array are required' });
             }
             const result = await CsvHeaderService.updateHeaders(csvType, headers, actorID);
             if (!result.success) {

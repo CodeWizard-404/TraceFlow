@@ -16,7 +16,7 @@ class LocationController {
      */
     static async getLocationDetailsById(req, res) {
         const actorID = req.user?.userID || 'unknown';
-        const id = parseInt(req.query.id, 10);
+        const id = req.query.id; // Remove parseInt, keep as string
 
         try {
             const result = await LocationService.getLocationById(id);

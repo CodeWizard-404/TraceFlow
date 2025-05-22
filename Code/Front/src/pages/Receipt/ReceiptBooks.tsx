@@ -38,7 +38,7 @@ import "../Admin/AdminDashboard.css";
 const ITEMS_PER_PAGE = 10;
 const CACHE_DURATION = 30 * 60 * 1000;
 const SKELETON_ROWS = 10;
-const SEARCH_DEBOUNCE_MS = 500; // Increased to 500ms for better balance
+const SEARCH_DEBOUNCE_MS = 500;
 
 // Permissions and Roles
 const PERMISSIONS = {
@@ -493,8 +493,8 @@ const ReceiptBooks: React.FC = memo(() => {
   const [view, setView] = useState<"list" | "create" | "edit" | "types" | "createType" | "editType" | "bulkUpload">(
     "list"
   );
-  const [searchInput, setSearchInput] = useState(""); // Local state for input
-  const [searchQuery, setSearchQuery] = useState(""); // State for API search
+  const [searchInput, setSearchInput] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [sortField, setSortField] = useState<"number" | "holder" | "bookStatus" | "stubStatus" | "type">("number");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [filterType, setFilterType] = useState<string>("all");
@@ -543,7 +543,7 @@ const ReceiptBooks: React.FC = memo(() => {
     () =>
       debounce((query: string) => {
         setSearchQuery(query);
-        setCurrentPage(1); // Reset to first page on new search
+        setCurrentPage(1);
       }, SEARCH_DEBOUNCE_MS),
     []
   );
@@ -552,8 +552,8 @@ const ReceiptBooks: React.FC = memo(() => {
   const handleSearchInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const value = e.target.value;
-      setSearchInput(value); // Update input state immediately
-      debouncedSearch(value); // Trigger debounced search
+      setSearchInput(value);
+      debouncedSearch(value);
     },
     [debouncedSearch]
   );
@@ -567,30 +567,11 @@ const ReceiptBooks: React.FC = memo(() => {
 
   // Fetch Receipt Books
   const fetchReceiptBooks = useCallback(async () => {
-    console.log('fetchReceiptBooks called', {
-      canView: userPermissions.canView,
-      permissionsLoaded,
-      user: !!user,
-    });
     if (!userPermissions.canView || !permissionsLoaded || !user) {
-      console.log('fetchReceiptBooks aborted due to:', {
-        canView: userPermissions.canView,
-        permissionsLoaded,
-        user: !!user,
-      });
       return;
     }
     setLoading(true);
     try {
-      console.log('Fetching receipt books with params:', {
-        currentPage,
-        limit: ITEMS_PER_PAGE,
-        sortField,
-        sortOrder,
-        searchQuery,
-        filterType,
-        filterStatus,
-      });
       const response = await getAllReceiptBooks(
         currentPage,
         ITEMS_PER_PAGE,
@@ -628,8 +609,7 @@ const ReceiptBooks: React.FC = memo(() => {
         timestamp: Date.now(),
       });
       setError(null);
-    } catch (error) {
-      console.error('fetchReceiptBooks error:', error);
+    } catch {
       setError(t("receiptBooks.errors.fetchFailed"));
     } finally {
       setLoading(false);
@@ -648,11 +628,36 @@ const ReceiptBooks: React.FC = memo(() => {
     t,
   ]);
 
-  // Fetch receipt books on mount and when dependencies change
+  // Fetch Receipt Book Types
+  const fetchReceiptBookTypes = useCallback(async (force = false) => {
+    if (!userPermissions.canViewTypes || !permissionsLoaded || !user) {
+      return;
+    }
+    if (!force && receiptBookTypesCache.timestamp > 0 && Date.now() - receiptBookTypesCache.timestamp < CACHE_DURATION) {
+      setTypesLoading(false);
+      return;
+    }
+    setTypesLoading(true);
+    try {
+      const typesData = await getAllReceiptBookTypes();
+      setReceiptBookTypesCache({ data: typesData, timestamp: Date.now() });
+      setError(null);
+    } catch {
+      setReceiptBookTypesCache((prev) => ({ ...prev, timestamp: Date.now() }));
+      setError(t("receiptBooks.types.errors.fetchFailed"));
+    } finally {
+      setTypesLoading(false);
+    }
+  }, [userPermissions.canViewTypes, permissionsLoaded, user, receiptBookTypesCache.timestamp, t]);
+
+  // Initial fetches
   useEffect(() => {
-    console.log('Triggering fetchReceiptBooks');
     fetchReceiptBooks();
   }, [fetchReceiptBooks]);
+
+  useEffect(() => {
+    fetchReceiptBookTypes(false);
+  }, [fetchReceiptBookTypes]);
 
   // Real-Time Updates
   useEffect(() => {
@@ -665,35 +670,6 @@ const ReceiptBooks: React.FC = memo(() => {
     onNotification(handleReceiptBookEvent);
     return () => offNotification();
   }, [fetchReceiptBooks]);
-
-  // Fetch Receipt Book Types
-  useEffect(() => {
-    const fetchTypes = async () => {
-      // Only fetch if user has permission, permissions are loaded, user exists, and cache is stale or unpopulated
-      if (
-        !userPermissions.canViewTypes ||
-        !permissionsLoaded ||
-        !user ||
-        (receiptBookTypesCache.timestamp > 0 && Date.now() - receiptBookTypesCache.timestamp < CACHE_DURATION)
-      ) {
-        setTypesLoading(false);
-        return;
-      }
-      setTypesLoading(true);
-      try {
-        const typesData = await getAllReceiptBookTypes();
-        setReceiptBookTypesCache({ data: typesData, timestamp: Date.now() });
-        setError(null);
-      } catch {
-        // Set cache with empty data to prevent re-fetching
-        setReceiptBookTypesCache((prev) => ({ ...prev, timestamp: Date.now() }));
-        setError(t("receiptBooks.types.errors.fetchFailed"));
-      } finally {
-        setTypesLoading(false);
-      }
-    };
-    fetchTypes();
-  }, [userPermissions.canViewTypes, permissionsLoaded, user, receiptBookTypesCache.timestamp, t]);
 
   // Handlers
   const handleCreate = useCallback(async () => {
@@ -845,6 +821,10 @@ const ReceiptBooks: React.FC = memo(() => {
         <ReceiptBookBulkUploadModal
           isOpen={isBulkUploadModalOpen}
           onClose={() => setIsBulkUploadModalOpen(false)}
+          onUploadSuccess={() => {
+            fetchReceiptBooks();
+            fetchReceiptBookTypes(true);
+          }}
           setError={setError}
         />
       )}
@@ -996,7 +976,10 @@ const ReceiptBooks: React.FC = memo(() => {
           <div>
             <button
               className="action-button-0"
-              onClick={fetchReceiptBooks}
+              onClick={() => {
+                fetchReceiptBooks();
+                fetchReceiptBookTypes(true);
+              }}
               aria-label={t("receiptBooks.actions.aria.refresh")}
             >
               <FaSyncAlt aria-hidden="true" /> {t("receiptBooks.actions.refresh")}
@@ -1110,11 +1093,7 @@ const ReceiptBooks: React.FC = memo(() => {
                 <div className="error-message" role="alert">
                   {error}
                   <button
-                    onClick={() => {
-                      setError(null);
-                      setTypesLoading(true);
-                      setReceiptBookTypesCache({ data: [], timestamp: 0 });
-                    }}
+                    onClick={() => fetchReceiptBookTypes(true)}
                     className="action-button-2"
                     aria-label={t("receiptBooks.types.actions.aria.retry")}
                   >

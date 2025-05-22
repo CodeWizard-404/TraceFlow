@@ -13,7 +13,6 @@ import { updateVisit } from "../../apis/visitAPI";
 import "./VisitDetails.css";
 import "./VisitValidation.css";
 import "../Timesheet/TimesheetForm.css";
-import { useTranslation } from "react-i18next";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 

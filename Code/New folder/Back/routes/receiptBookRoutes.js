@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { requirePermission } = require('../config/security');
 const ReceiptBookController = require('../controllers/receiptBookController');
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage() });
 
 // Receipt Book Type Routes
 router.post('/types', requirePermission('manage_receipt_book_types'), ReceiptBookController.createReceiptBookType);
@@ -18,6 +20,11 @@ router.post('/holder/:holderID', requirePermission('access_receipt_books_by_hold
 router.get('/number/:number', requirePermission('access_receipt_books_by_number'), ReceiptBookController.getReceiptBookByNumber);
 router.put('/:bookID', requirePermission('update_receipt_books'), ReceiptBookController.updateReceiptBook);
 router.delete('/:bookID', requirePermission('delete_receipt_books'), ReceiptBookController.deleteReceiptBook);
+router.post('/upload-csv',
+    requirePermission('create_receipt_books'),
+    upload.single('csvFile'),
+    ReceiptBookController.uploadReceiptBooksCSV
+);
 
 // Transfer Routes
 router.post('/send', requirePermission('send_receipt_books'), ReceiptBookController.sendToSupplier);

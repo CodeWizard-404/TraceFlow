@@ -37,7 +37,7 @@ io.use(async (socket, next) => {
 });
 
 io.on('connection', (socket) => {
-    socket.join(socket.user.userID); // Only join user-specific room
+    socket.join(socket.user.userID);
 
     socket.on('join', (room) => socket.join(room));
     socket.on('leave', (room) => socket.leave(room));

@@ -1,252 +1,37 @@
-const { Visit, Agent, Reason, Checklist, Timesheet, User, Delegation, Governorate, Region } = require('../models');
+const { Visit, Agent, Reason, Checklist, Timesheet, User, Delegation, Governorate, Region, OTP } = require('../models');
 const { parseTLV } = require('../utils/qrParser');
 const ChecklistService = require('./checklistService');
 const ReasonService = require('./reasonService');
 const GoogleCalendarService = require('./googleCalendarService');
 const OTPService = require('./otpService');
 const { sendSMS } = require('../config/sms');
+const { Op } = require('sequelize');
 const path = require('path');
 const fs = require('fs');
 const { sequelize } = require('../config/db');
 const { getKeycloakAdminToken, getGoogleAccessTokenForUser } = require('../utils/tokenExchange');
 
 class VisitService {
-    static async getFormattedLocation(agentID, providedLocation) {
-        if (agentID) {
-            const agent = await Agent.findByPk(agentID, {
-                include: [
-                    {
-                        model: Delegation,
-                        include: [
-                            {
-                                model: Governorate,
-                                include: [Region]
-                            }
-                        ]
-                    }
-                ]
-            });
-            if (agent && agent.Delegation && agent.Delegation.Governorate && agent.Delegation.Governorate.Region) {
-                return `${agent.Delegation.Governorate.Region.name}, ${agent.Delegation.Governorate.name}, ${agent.Delegation.name}`;
-            }
-        }
-        return providedLocation || null;
-    }
 
-    static async createVisit(data, actorID, options = {}) {
-        const { date, time, agentID, supervisorID, timesheetID, reasons, checklists, location, status = 'pending' } = data;
-
-        // Validate required fields
-        if (!date || !time || !supervisorID) {
-            const error = new Error('Missing required fields');
-            error.status = 400;
-            throw error;
-        }
-
-        const transaction = options.transaction || await sequelize.transaction();
-        let isLocalTransaction = !options.transaction;
-
+    static async validateVisitOTP(visitId, otpCode, actorID) {
+        const transaction = await sequelize.transaction();
         try {
-            // Calculate week number and year from date
-            const dateObj = new Date(date);
-            const year = dateObj.getFullYear();
-            const weekNumber = this.getISOWeekNumber(dateObj);
-
-            // Check for existing timesheet
-            let targetTimesheet;
-            if (timesheetID) {
-                targetTimesheet = await Timesheet.findByPk(timesheetID, { transaction });
-                if (!targetTimesheet) {
-                    const error = new Error('Specified timesheet not found');
-                    error.status = 404;
-                    throw error;
-                }
-            } else {
-                targetTimesheet = await Timesheet.findOne({
-                    where: {
-                        weekNumber,
-                        year,
-                        supervisorID,
-                    },
-                    include: [{ model: Visit }],
-                    transaction,
-                });
-
-                if (!targetTimesheet) {
-                    try {
-                        targetTimesheet = await Timesheet.create(
-                            {
-                                weekNumber,
-                                year,
-                                supervisorID,
-                                status: status,
-                            },
-                            { transaction }
-                        );
-                    } catch (error) {
-                        if (error.name === 'SequelizeUniqueConstraintError') {
-                            // Retry to find the timesheet
-                            targetTimesheet = await Timesheet.findOne({
-                                where: { weekNumber, year, supervisorID },
-                                include: [{ model: Visit }],
-                                transaction,
-                            });
-                            if (!targetTimesheet) {
-                                throw new Error('Failed to find or create timesheet after unique constraint error');
-                            }
-                        } else {
-                            throw error;
-                        }
-                    }
-                }
-            }
-
-            // Get formatted location
-            const visitLocation = await this.getFormattedLocation(agentID, location);
-
-            // Create the visit
-            const visit = await Visit.create(
-                {
-                    date,
-                    time,
-                    location: visitLocation,
-                    agentID,
-                    timesheetID: targetTimesheet.timesheetID,
-                    status,
-                },
-                { transaction }
-            );
-
-            // Attach reasons
-            if (reasons && Array.isArray(reasons) && reasons.length > 0) {
-                try {
-                    const reasonIds = reasons.map((r) => r.id).filter((id) => id);
-                    if (reasonIds.length > 0) {
-                        const createdReasons = await ReasonService.getItemsByIds(reasonIds, { transaction });
-                        if (createdReasons.length > 0) {
-                            await visit.setReasons(createdReasons, { transaction });
-                        }
-                    }
-                } catch (error) {
-                    throw new Error(`Failed to attach reasons to visit ${visit.visitID}: ${error.message}`);
-                }
-            }
-
-            // Attach checklists
-            if (checklists && Array.isArray(checklists) && checklists.length > 0) {
-                try {
-                    const checklistIds = checklists.map((c) => c.id).filter((id) => id);
-                    if (checklistIds.length > 0) {
-                        const createdChecklists = await ChecklistService.getItemsByIds(checklistIds, { transaction });
-                        if (createdChecklists.length > 0) {
-                            await visit.setChecklists(createdChecklists, { transaction });
-                        } else {
-                            throw new Error(`No valid checklists found for visit ${visit.visitID}`);
-                        }
-                    }
-                } catch (error) {
-                    throw new Error(`Failed to attach checklists to visit ${visit.visitID}: ${error.message}`);
-                }
-            }
-
-            // Update timesheet status based on all visits
-            const timesheetWithVisits = await Timesheet.findByPk(targetTimesheet.timesheetID, {
-                include: [{ model: Visit }],
-                transaction,
-            });
-
-            // Include the new visit's status in the status check
-            const visitStatuses = [
-                ...timesheetWithVisits.Visits.map((v) => v.status),
-                status,
-            ];
-            const uniqueStatuses = [...new Set(visitStatuses)];
-
-            if (uniqueStatuses.length > 1) {
-                timesheetWithVisits.status = 'pending';
-            } else {
-                timesheetWithVisits.status = uniqueStatuses[0];
-            }
-            await timesheetWithVisits.save({ transaction });
-
-            // Reload visit with associations
-            const reloadedVisit = await visit.reload({ include: [Reason, Checklist], transaction });
-
-            // Google Calendar sync
-            const supervisor = await User.findByPk(supervisorID);
-            if (!supervisor || !supervisor.keycloakId) {
-                throw new Error('Supervisor not found or not linked to Keycloak');
-            }
-
-            try {
-                const adminToken = await getKeycloakAdminToken();
-                const googleToken = await getGoogleAccessTokenForUser(supervisor.keycloakId, adminToken);
-                const calendar = await GoogleCalendarService.getCalendarClient(googleToken);
-                const event = await calendar.events.insert({
-                    calendarId: 'primary',
-                    resource: {
-                        summary: `Visit ${visit.visitID}`,
-                        start: { dateTime: `${visit.date}T${visit.time}` },
-                        end: { dateTime: new Date(new Date(`${visit.date}T${visit.time}`).getTime() + 60 * 60000).toISOString() },
-                    },
-                });
-                visit.calendarEventId = event.data.id;
-                await visit.save({ transaction });
-            } catch (error) {
-                console.error(`Failed to sync visit ${visit.visitID} to Google Calendar: ${error.message}`);
-            }
-
-            if (isLocalTransaction) await transaction.commit();
-            return reloadedVisit;
-        } catch (error) {
-            if (isLocalTransaction) await transaction.rollback();
-            const err = new Error('Failed to create visit: ' + error.message);
-            err.status = error.status || 500;
-            throw err;
-        }
-    }
-
-    static async verifyQRCode(qrData, visitId, actorID) {
-        if (!qrData || !visitId) {
-            const error = new Error('Missing required parameters');
-            error.status = 400;
-            throw error;
-        }
-        try {
-            const visit = await Visit.findByPk(visitId);
+            const visit = await Visit.findByPk(visitId, { transaction });
             if (!visit) {
                 const error = new Error('Visit not found');
                 error.status = 404;
                 throw error;
             }
             if (!visit.agentID) {
-                return { valid: true, message: 'Verification skipped for recruitment visit' };
+                await transaction.commit();
+                return { valid: true, message: 'OTP validation skipped for recruitment visit' };
             }
-            const parsedQR = parseTLV(qrData);
-            let agentPhoneFromQR = parsedQR['29']?.['03'] || parsedQR['02'];
-            if (typeof agentPhoneFromQR === 'object' && agentPhoneFromQR !== null) {
-                agentPhoneFromQR = Object.values(agentPhoneFromQR).join('').replace(/[^0-9+]/g, '');
-            } else {
-                agentPhoneFromQR = agentPhoneFromQR?.replace(/[^0-9+]/g, '');
-            }
-            if (!agentPhoneFromQR) {
-                const error = new Error('Invalid QR code - missing agent phone number');
-                error.status = 400;
-                throw error;
-            }
-            const agent = await Agent.findByPk(visit.agentID);
-            if (agent.phone !== agentPhoneFromQR) {
-                const error = new Error(`Phone mismatch:\nQR: ${agentPhoneFromQR}\nVisit: ${agent.phone}`);
-                error.status = 400;
-                throw error;
-            }
-
-            const otp = await OTPService.generateOTP(visit.agentID, 'agent');
-            await sendSMS(agent.phone, `Your OTP for visit ${visitId} verification is ${otp.code}`);
-
-            return { valid: true, message: 'Verification successful, OTP sent to agent', otpID: otp.otpID };
+            await OTPService.validateOTP(visit.agentID, otpCode, 'agent');
+            await transaction.commit();
+            return { valid: true, message: 'OTP validated successfully' };
         } catch (error) {
-            const err = new Error(error.message);
+            await transaction.rollback();
+            const err = new Error('Failed to validate OTP: ' + error.message);
             err.status = error.status || 500;
             throw err;
         }
@@ -255,7 +40,7 @@ class VisitService {
     static async logVisit(visitID, data, files, actorID) {
         const transaction = await sequelize.transaction();
         try {
-            const { duration, checklistUpdates, comment, date, time, otpCode } = data;
+            const { duration, checklistUpdates, comment, date, time } = data;
             if (!files || files.length === 0) {
                 const error = new Error('At least one photo is required to log a visit');
                 error.status = 400;
@@ -270,15 +55,6 @@ class VisitService {
                 const error = new Error('Visit not found');
                 error.status = 404;
                 throw error;
-            }
-
-            if (visit.agentID) {
-                if (!otpCode) {
-                    const error = new Error('OTP code is required for non-recruitment visits');
-                    error.status = 400;
-                    throw error;
-                }
-                await OTPService.validateOTP(visit.agentID, otpCode, 'agent');
             }
 
             const newDate = date || visit.date;
@@ -408,6 +184,236 @@ class VisitService {
             err.status = error.status || 500;
             throw err;
         }
+    }
+
+    static async verifyQRCode(qrData, visitId, actorID) {
+        if (!qrData || !visitId) {
+            const error = new Error('Missing required parameters');
+            error.status = 400;
+            throw error;
+        }
+        try {
+            const visit = await Visit.findByPk(visitId);
+            if (!visit) {
+                const error = new Error('Visit not found');
+                error.status = 404;
+                throw error;
+            }
+            if (!visit.agentID) {
+                return { valid: true, message: 'Verification skipped for recruitment visit' };
+            }
+            const parsedQR = parseTLV(qrData);
+            let agentPhoneFromQR = parsedQR['29']?.['03'] || parsedQR['02'];
+            if (typeof agentPhoneFromQR === 'object' && agentPhoneFromQR !== null) {
+                agentPhoneFromQR = Object.values(agentPhoneFromQR).join('').replace(/[^0-9+]/g, '');
+            } else {
+                agentPhoneFromQR = agentPhoneFromQR?.replace(/[^0-9+]/g, '');
+            }
+            if (!agentPhoneFromQR) {
+                const error = new Error('Invalid QR code - missing agent phone number');
+                error.status = 400;
+                throw error;
+            }
+            const agent = await Agent.findByPk(visit.agentID);
+            if (agent.phone !== agentPhoneFromQR) {
+                const error = new Error(`Phone mismatch:\nQR: ${agentPhoneFromQR}\nVisit: ${agent.phone}`);
+                error.status = 400;
+                throw error;
+            }
+
+            const otp = await OTPService.generateOTP(visit.agentID, 'agent');
+            await sendSMS(agent.phone, `Your OTP for visit ${visitId} verification is ${otp.code}`);
+
+            return { valid: true, message: 'Verification successful, OTP sent to agent' };
+        } catch (error) {
+            const err = new Error(error.message);
+            err.status = error.status || 500;
+            throw err;
+        }
+    }
+
+    // Unchanged methods (included for completeness)
+    static async createVisit(data, actorID, options = {}) {
+        const { date, time, agentID, supervisorID, timesheetID, reasons, checklists, location, status = 'pending' } = data;
+
+        if (!date || !time || !supervisorID) {
+            const error = new Error('Missing required fields');
+            error.status = 400;
+            throw error;
+        }
+
+        const transaction = options.transaction || await sequelize.transaction();
+        let isLocalTransaction = !options.transaction;
+
+        try {
+            const dateObj = new Date(date);
+            const year = dateObj.getFullYear();
+            const weekNumber = this.getISOWeekNumber(dateObj);
+
+            let targetTimesheet;
+            if (timesheetID) {
+                targetTimesheet = await Timesheet.findByPk(timesheetID, { transaction });
+                if (!targetTimesheet) {
+                    const error = new Error('Specified timesheet not found');
+                    error.status = 404;
+                    throw error;
+                }
+            } else {
+                targetTimesheet = await Timesheet.findOne({
+                    where: {
+                        weekNumber,
+                        year,
+                        supervisorID,
+                    },
+                    include: [{ model: Visit }],
+                    transaction,
+                });
+
+                if (!targetTimesheet) {
+                    try {
+                        targetTimesheet = await Timesheet.create(
+                            {
+                                weekNumber,
+                                year,
+                                supervisorID,
+                                status: status,
+                            },
+                            { transaction }
+                        );
+                    } catch (error) {
+                        if (error.name === 'SequelizeUniqueConstraintError') {
+                            targetTimesheet = await Timesheet.findOne({
+                                where: { weekNumber, year, supervisorID },
+                                include: [{ model: Visit }],
+                                transaction,
+                            });
+                            if (!targetTimesheet) {
+                                throw new Error('Failed to find or create timesheet after unique constraint error');
+                            }
+                        } else {
+                            throw error;
+                        }
+                    }
+                }
+            }
+
+            const visitLocation = await this.getFormattedLocation(agentID, location);
+
+            const visit = await Visit.create(
+                {
+                    date,
+                    time,
+                    location: visitLocation,
+                    agentID,
+                    timesheetID: targetTimesheet.timesheetID,
+                    status,
+                },
+                { transaction }
+            );
+
+            if (reasons && Array.isArray(reasons) && reasons.length > 0) {
+                try {
+                    const reasonIds = reasons.map((r) => r.id).filter((id) => id);
+                    if (reasonIds.length > 0) {
+                        const createdReasons = await ReasonService.getItemsByIds(reasonIds, { transaction });
+                        if (createdReasons.length > 0) {
+                            await visit.setReasons(createdReasons, { transaction });
+                        }
+                    }
+                } catch (error) {
+                    throw new Error(`Failed to attach reasons to visit ${visit.visitID}: ${error.message}`);
+                }
+            }
+
+            if (checklists && Array.isArray(checklists) && checklists.length > 0) {
+                try {
+                    const checklistIds = checklists.map((c) => c.id).filter((id) => id);
+                    if (checklistIds.length > 0) {
+                        const createdChecklists = await ChecklistService.getItemsByIds(checklistIds, { transaction });
+                        if (createdChecklists.length > 0) {
+                            await visit.setChecklists(createdChecklists, { transaction });
+                        } else {
+                            throw new Error(`No valid checklists found for visit ${visit.visitID}`);
+                        }
+                    }
+                } catch (error) {
+                    throw new Error(`Failed to attach checklists to visit ${visit.visitID}: ${error.message}`);
+                }
+            }
+
+            const timesheetWithVisits = await Timesheet.findByPk(targetTimesheet.timesheetID, {
+                include: [{ model: Visit }],
+                transaction,
+            });
+
+            const visitStatuses = [
+                ...timesheetWithVisits.Visits.map((v) => v.status),
+                status,
+            ];
+            const uniqueStatuses = [...new Set(visitStatuses)];
+
+            if (uniqueStatuses.length > 1) {
+                timesheetWithVisits.status = 'pending';
+            } else {
+                timesheetWithVisits.status = uniqueStatuses[0];
+            }
+            await timesheetWithVisits.save({ transaction });
+
+            const reloadedVisit = await visit.reload({ include: [Reason, Checklist], transaction });
+
+            const supervisor = await User.findByPk(supervisorID);
+            if (!supervisor || !supervisor.keycloakId) {
+                throw new Error('Supervisor not found or not linked to Keycloak');
+            }
+
+            try {
+                const adminToken = await getKeycloakAdminToken();
+                const googleToken = await getGoogleAccessTokenForUser(supervisor.keycloakId, adminToken);
+                const calendar = await GoogleCalendarService.getCalendarClient(googleToken);
+                const event = await calendar.events.insert({
+                    calendarId: 'primary',
+                    resource: {
+                        summary: `Visit ${visit.visitID}`,
+                        start: { dateTime: `${visit.date}T${visit.time}` },
+                        end: { dateTime: new Date(new Date(`${visit.date}T${visit.time}`).getTime() + 60 * 60000).toISOString() },
+                    },
+                });
+                visit.calendarEventId = event.data.id;
+                await visit.save({ transaction });
+            } catch (error) {
+                console.error(`Failed to sync visit ${visit.visitID} to Google Calendar: ${error.message}`);
+            }
+
+            if (isLocalTransaction) await transaction.commit();
+            return reloadedVisit;
+        } catch (error) {
+            if (isLocalTransaction) await transaction.rollback();
+            const err = new Error('Failed to create visit: ' + error.message);
+            err.status = error.status || 500;
+            throw err;
+        }
+    }
+
+    static async getFormattedLocation(agentID, providedLocation) {
+        if (agentID) {
+            const agent = await Agent.findByPk(agentID, {
+                include: [
+                    {
+                        model: Delegation,
+                        include: [
+                            {
+                                model: Governorate,
+                                include: [Region]
+                            }
+                        ]
+                    }
+                ]
+            });
+            if (agent && agent.Delegation && agent.Delegation.Governorate && agent.Delegation.Governorate.Region) {
+                return `${agent.Delegation.Governorate.Region.name}, ${agent.Delegation.Governorate.name}, ${agent.Delegation.name}`;
+            }
+        }
+        return providedLocation || null;
     }
 
     static async updateVisit(visitID, data, files = [], actorID) {

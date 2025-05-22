@@ -857,9 +857,9 @@ class AgentController {
     static async correctAgentLocation(req, res) {
         const actorID = req.user?.userID || 'unknown';
         try {
-            const { agentId, address } = req.body;
-            if (!agentId || !address) {
-                logger.warn('Correct agent location failed: Missing agentId or address', {
+            const { agentId, latitude, longitude, address } = req.body;
+            if (!agentId || !latitude || !longitude || !address) {
+                logger.warn('Correct agent location failed: Missing required fields', {
                     route: 'agents/correct-location',
                     method: req.method,
                     url: req.originalUrl,
@@ -868,11 +868,10 @@ class AgentController {
                     traceId: req.traceId,
                     userId: actorID,
                 });
-                return res.status(400).json({ error: 'Agent ID and address are required' });
+                return res.status(400).json({ error: 'Agent ID, latitude, longitude, and address are required' });
             }
 
-            const geocode = await GoogleMapsService.geocodeAddress(address, 'tn');
-            const result = await GoogleMapsService.updateAgentLocation(agentId, geocode.latitude, geocode.longitude);
+            const result = await GoogleMapsService.updateAgentLocation(agentId, latitude, longitude, address);
 
             logger.info('Successfully corrected agent location', {
                 route: 'agents/correct-location',
@@ -882,7 +881,7 @@ class AgentController {
                 ip: req.ip,
                 traceId: req.traceId,
                 userId: actorID,
-                metadata: { agentId, address }
+                metadata: { agentId, latitude, longitude, address },
             });
             return res.status(200).json(result);
         } catch (error) {
@@ -894,7 +893,7 @@ class AgentController {
                 ip: req.ip,
                 traceId: req.traceId,
                 userId: actorID,
-                metadata: { error: error.message }
+                metadata: { error: error.message },
             });
             return res.status(500).json({ error: 'Internal server error' });
         }

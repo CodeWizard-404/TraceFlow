@@ -113,7 +113,6 @@ ensureRedisInitialized().then(() => {
     });
 
     app.use((err, req, res, next) => {
-        console.error(`Server error: ${err.message}`, { ip: req.ip, stack: err.stack, route: 'general', service: 'api' });
         res.status(err.status || 500).json({
             error: err.message || 'Something went wrong!',
         });

@@ -446,6 +446,8 @@ const Timesheets: React.FC = React.memo(() => {
     const [error, setError] = useState<string | null>(null);
     const [locationCache, setLocationCache] = useState<Record<string, string | undefined>>({});
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState<boolean>(false);
+    const [supervisorSearchInput, setSupervisorSearchInput] = useState<string>("");
+    const [visitReasonSearchInput, setVisitReasonSearchInput] = useState<string>("");
 
     const userPermissions = useMemo(
         () => ({
@@ -495,12 +497,18 @@ const Timesheets: React.FC = React.memo(() => {
     );
 
     const debouncedSetSupervisorSearch = useMemo(
-        () => debounce((value: string) => setSupervisorSearch(value), 50),
+        () => debounce((value: string) => {
+            console.log('Supervisor search updated:', value);
+            setSupervisorSearch(value);
+        }, 300),
         []
     );
 
     const debouncedSetVisitReasonSearch = useMemo(
-        () => debounce((value: string) => setVisitReasonSearch(value), 50),
+        () => debounce((value: string) => {
+            console.log('Visit reason search updated:', value);
+            setVisitReasonSearch(value);
+        }, 300),
         []
     );
 
@@ -539,6 +547,7 @@ const Timesheets: React.FC = React.memo(() => {
                 });
             });
 
+            console.log('Fetched timesheets:', filteredTimesheets.length);
             setTimesheets(filteredTimesheets);
             setVisitReasons(newVisitReasons);
         } catch (error) {
@@ -565,6 +574,7 @@ const Timesheets: React.FC = React.memo(() => {
             } else if (userPermissions.canReadSupervisors && supervisorID) {
                 userData = await getSupervisorsByUser(supervisorID);
             }
+            console.log('Fetched users:', userData.length);
             setUsers(userData);
         } catch (error) {
             console.error("Failed to fetch users:", error);
@@ -709,6 +719,25 @@ const Timesheets: React.FC = React.memo(() => {
             fetchLocations();
         }
     }, [timesheets, generatedVisits, t]);
+
+    const filteredSupervisors = useMemo(
+        () => {
+            const result = supervisorSearch
+                ? users.filter(
+                    (user) =>
+                        `${user.firstname} ${user.lastname}`
+                            .toLowerCase()
+                            .includes(supervisorSearch.toLowerCase()) ||
+                        (user.phone &&
+                            user.phone.toLowerCase().includes(supervisorSearch.toLowerCase())) ||
+                        user.userID.toLowerCase().includes(supervisorSearch.toLowerCase())
+                )
+                : users;
+            console.log('Filtered supervisors:', result.length);
+            return result;
+        },
+        [users, supervisorSearch]
+    );
 
     const handleSuggestionsGenerated = useCallback((suggestions: SuggestTimesheetResponse) => {
         const visits: GeneratedVisit[] = suggestions.flatMap(agent =>
@@ -915,26 +944,59 @@ const Timesheets: React.FC = React.memo(() => {
                 status: visit.status || VisitStatus.PENDING,
             }))
         );
+        const supervisorIds = supervisorSearch
+            ? filteredSupervisors.map(s => s.userID)
+            : undefined;
         const allVisits = [...savedVisits, ...generatedVisits.filter(v => {
             return weekDays.some(day => day.toISOString().split("T")[0] === v.date);
-        })].filter((visit) =>
-            visitStatusFilter === "all" ? true : visit.status === visitStatusFilter
-        );
+        })].filter((visit) => {
+            const statusMatch = visitStatusFilter === "all" ? true : visit.status === visitStatusFilter;
+            const reasonMatch = visitReasonSearch
+                ? ("reasons" in visit
+                    ? visit.reasons.some((reason) =>
+                        reason.item.toLowerCase().includes(visitReasonSearch.toLowerCase())
+                    )
+                    : visitReasons[visit.visitID]?.some((reason) =>
+                        reason.item.toLowerCase().includes(visitReasonSearch.toLowerCase())
+                    ))
+                : true;
+            const supervisorMatch = supervisorIds
+                ? "supervisorID" in visit && supervisorIds.includes(visit.supervisorID!)
+                : true;
+            return statusMatch && reasonMatch && supervisorMatch;
+        });
+        console.log('Filtered visits for week view (supervisor):', allVisits.length);
         return {
             weekNumber: currentWeek,
             days: weekDays,
             visits: allVisits,
             status: matchingTimesheets[0]?.status || "Not Scheduled",
+            timesheetID: matchingTimesheets[0]?.timesheetID,
             supervisorID: matchingTimesheets[0]?.supervisorID || supervisorID,
             User: matchingTimesheets[0]?.User,
             supervisorCount: new Set(matchingTimesheets.map((ts) => ts.supervisorID)).size,
         };
-    }, [filteredTimesheets, generatedVisits, currentYear, currentWeek, getWeekDays, supervisorID, visitStatusFilter]);
+    }, [
+        filteredTimesheets,
+        generatedVisits,
+        currentYear,
+        currentWeek,
+        getWeekDays,
+        supervisorID,
+        visitStatusFilter,
+        visitReasonSearch,
+        visitReasons,
+        supervisorSearch,
+        filteredSupervisors
+    ]);
 
     const generateDayData = useCallback(() => {
         if (!currentDay) return [];
         const dateStr = currentDay.toISOString().split("T")[0];
-        return sortVisitsByTime(
+        const supervisorIds = supervisorSearch
+            ? filteredSupervisors.map(s => s.userID)
+            : undefined;
+        const filteredVisits = sortVisitsByTime(
             [
                 ...filteredTimesheets
                     .flatMap((ts) =>
@@ -947,13 +1009,35 @@ const Timesheets: React.FC = React.memo(() => {
                 ...generatedVisits
             ].filter((visit) => {
                 const visitDate = 'time' in visit ? visit.date : visit.date;
-                return (
-                    visitDate.split("T")[0] === dateStr &&
-                    (visitStatusFilter === "all" ? true : visit.status === visitStatusFilter)
-                );
+                const statusMatch = visitStatusFilter === "all" ? true : visit.status === visitStatusFilter;
+                const reasonMatch = visitReasonSearch
+                    ? ("reasons" in visit
+                        ? visit.reasons.some((reason) =>
+                            reason.item.toLowerCase().includes(visitReasonSearch.toLowerCase())
+                        )
+                        : visitReasons[visit.visitID]?.some((reason) =>
+                            reason.item.toLowerCase().includes(visitReasonSearch.toLowerCase())
+                        ))
+                    : true;
+                const supervisorMatch = supervisorIds
+                    ? "supervisorID" in visit && supervisorIds.includes(visit.supervisorID!)
+                    : true;
+                return visitDate.split("T")[0] === dateStr && statusMatch && reasonMatch && supervisorMatch;
             })
         );
-    }, [filteredTimesheets, generatedVisits, currentDay, sortVisitsByTime, visitStatusFilter]);
+        console.log('Filtered visits for day view (supervisor):', filteredVisits.length);
+        return filteredVisits;
+    }, [
+        filteredTimesheets,
+        generatedVisits,
+        currentDay,
+        sortVisitsByTime,
+        visitStatusFilter,
+        visitReasonSearch,
+        visitReasons,
+        supervisorSearch,
+        filteredSupervisors
+    ]);
 
     const scrollToCurrent = useCallback(() => {
         const today = new Date();
@@ -971,25 +1055,57 @@ const Timesheets: React.FC = React.memo(() => {
         }, 0);
     }, [viewMode, currentWeek, updateCurrentWeekAndDay]);
 
+    const yearData = useMemo(() => generateYearData(), [generateYearData]);
+    const monthData = useMemo(() => generateMonthData(), [generateMonthData]);
+    const weekData = useMemo(() => generateWeekData(), [generateWeekData]);
+    const dayData = useMemo(() => generateDayData(), [generateDayData]);
+
     const handleValidateTimesheet = useCallback(
-        async (timesheetID: string) => {
-            if (!userPermissions.canValidateTimesheets) return;
+        async () => {
+            if (!userPermissions.canValidateTimesheets || !weekData.timesheetID) {
+                console.log('Validation skipped: No permissions or timesheetID');
+                return;
+            }
             try {
-                const timesheet = filteredTimesheets.find(
-                    (ts) => ts.timesheetID === timesheetID
-                );
-                if (!timesheet) return;
-                await validateTimesheet(timesheetID, {
-                    visitIDs: timesheet.Visits?.map((v) => v.visitID) || [],
+                // Get visible visits with Pending status
+                const pendingVisitIds = weekData.visits
+                    .filter((visit) =>
+                        "visitID" in visit &&
+                        visit.status === VisitStatus.PENDING
+                    )
+                    .map((visit) => (visit as VisitWithSupervisor).visitID);
+
+                console.log('Pending visit IDs for validation:', pendingVisitIds);
+
+                if (pendingVisitIds.length === 0) {
+                    setError(t("timesheets.errors.noPendingVisits"));
+                    return;
+                }
+
+                // Show confirmation dialog
+                const confirmMessage = t("timesheets.confirmValidate", {
+                    count: pendingVisitIds.length,
+                });
+                if (!window.confirm(confirmMessage)) {
+                    console.log('Validation cancelled by user');
+                    return;
+                }
+
+                // Call API to validate
+                await validateTimesheet(weekData.timesheetID, {
+                    visitIDs: pendingVisitIds,
                     status: "validated",
                 });
+                console.log('Timesheet validated successfully:', weekData.timesheetID);
+
+                // Refresh timesheets
                 await fetchTimesheets();
             } catch (error) {
                 console.error("Failed to validate timesheet:", error);
                 setError(t("timesheets.errors.validateTimesheet"));
             }
         },
-        [userPermissions.canValidateTimesheets, filteredTimesheets, fetchTimesheets, t]
+        [userPermissions.canValidateTimesheets, weekData, fetchTimesheets, t]
     );
 
     const handleOpenSuggestionsModal = useCallback(() => {
@@ -1037,19 +1153,7 @@ const Timesheets: React.FC = React.memo(() => {
         [fetchTimesheets, t, isSupervisor]
     );
 
-    const filteredSupervisors = useMemo(
-        () =>
-            supervisorSearch
-                ? users.filter(
-                    (user) =>
-                        `${user.firstname} ${user.lastname}`
-                            .toLowerCase()
-                            .includes(supervisorSearch.toLowerCase()) ||
-                        user.phone?.toLowerCase().includes(supervisorSearch.toLowerCase())
-                )
-                : users,
-        [users, supervisorSearch]
-    );
+
 
     useEffect(() => {
         if (!permissionsLoaded || !supervisorID) return;
@@ -1073,51 +1177,46 @@ const Timesheets: React.FC = React.memo(() => {
 
     useEffect(() => {
         if (userPermissions.canAccessTimesheets || !isSupervisor) {
-            setFilteredTimesheets(
-                supervisorFilter === "all"
-                    ? timesheets.filter((ts) =>
-                        visitReasonSearch
-                            ? ts.Visits?.some((visit) =>
-                                visit.Reasons?.some((reason) =>
-                                    reason.item
-                                        .toLowerCase()
-                                        .includes(visitReasonSearch.toLowerCase())
-                                )
-                            )
-                            : true
-                    )
-                    : timesheets.filter(
-                        (ts) =>
-                            ts.supervisorID === supervisorFilter &&
-                            (visitReasonSearch
-                                ? ts.Visits?.some((visit) =>
-                                    visit.Reasons?.some((reason) =>
-                                        reason.item
-                                            .toLowerCase()
-                                            .includes(visitReasonSearch.toLowerCase())
-                                    )
-                                )
-                                : true)
-                    )
-            );
-        } else {
-            setFilteredTimesheets(
-                timesheets.filter((ts) =>
-                    visitReasonSearch
-                        ? ts.Visits?.some((visit) =>
-                            visit.Reasons?.some((reason) =>
-                                reason.item
-                                    .toLowerCase()
-                                    .includes(visitReasonSearch.toLowerCase())
-                            )
+            const supervisorIds = supervisorSearch
+                ? filteredSupervisors.map(s => s.userID)
+                : undefined;
+            const filtered = timesheets.filter((ts) => {
+                const supervisorMatch = supervisorIds
+                    ? supervisorIds.includes(ts.supervisorID)
+                    : supervisorFilter === "all" || ts.supervisorID === supervisorFilter;
+                const reasonMatch = visitReasonSearch
+                    ? (ts.Visits || []).some((visit) =>
+                        (visit.Reasons || []).some((reason) =>
+                            reason.item
+                                .toLowerCase()
+                                .includes(visitReasonSearch.toLowerCase())
                         )
-                        : true
-                )
+                    )
+                    : true;
+                return supervisorMatch && reasonMatch;
+            });
+            console.log('Filtered timesheets by supervisor/reason:', filtered.length);
+            setFilteredTimesheets(filtered);
+        } else {
+            const filtered = timesheets.filter((ts) =>
+                visitReasonSearch
+                    ? (ts.Visits || []).some((visit) =>
+                        (visit.Reasons || []).some((reason) =>
+                            reason.item
+                                .toLowerCase()
+                                .includes(visitReasonSearch.toLowerCase())
+                        )
+                    )
+                    : true
             );
+            console.log('Filtered timesheets by reason (supervisor):', filtered.length);
+            setFilteredTimesheets(filtered);
         }
     }, [
         timesheets,
         supervisorFilter,
+        supervisorSearch,
+        filteredSupervisors,
         visitReasonSearch,
         userPermissions,
         isSupervisor,
@@ -1128,10 +1227,7 @@ const Timesheets: React.FC = React.memo(() => {
         localStorage.setItem("lastViewMode", viewMode);
     }, [supervisorFilter, viewMode]);
 
-    const yearData = useMemo(() => generateYearData(), [generateYearData]);
-    const monthData = useMemo(() => generateMonthData(), [generateMonthData]);
-    const weekData = useMemo(() => generateWeekData(), [generateWeekData]);
-    const dayData = useMemo(() => generateDayData(), [generateDayData]);
+
 
     if (loading || !permissionsLoaded) {
         return <TimesheetsSkeleton />;
@@ -1219,7 +1315,10 @@ const Timesheets: React.FC = React.memo(() => {
                                 <select
                                     className="filter-select visit-status-filter"
                                     value={visitStatusFilter}
-                                    onChange={(e) => setVisitStatusFilter(e.target.value)}
+                                    onChange={(e) => {
+                                        console.log('Visit status filter changed:', e.target.value);
+                                        setVisitStatusFilter(e.target.value);
+                                    }}
                                     aria-label={t("timesheets.filter.visitStatusSelect")}
                                 >
                                     <option value="all">{t("timesheets.filter.allStatuses")}</option>
@@ -1232,8 +1331,11 @@ const Timesheets: React.FC = React.memo(() => {
                                 <input
                                     type="text"
                                     placeholder={t("timesheets.filter.reasonPlaceholder")}
-                                    value={visitReasonSearch}
-                                    onChange={(e) => debouncedSetVisitReasonSearch(e.target.value)}
+                                    value={visitReasonSearchInput}
+                                    onChange={(e) => {
+                                        setVisitReasonSearchInput(e.target.value);
+                                        debouncedSetVisitReasonSearch(e.target.value);
+                                    }}
                                     className="filter-input visit-reason-search"
                                     aria-label={t("timesheets.filter.reasonPlaceholder")}
                                 />
@@ -1243,15 +1345,21 @@ const Timesheets: React.FC = React.memo(() => {
                                 <input
                                     type="text"
                                     placeholder={t("timesheets.filter.searchPlaceholder")}
-                                    value={supervisorSearch}
-                                    onChange={(e) => debouncedSetSupervisorSearch(e.target.value)}
+                                    value={supervisorSearchInput}
+                                    onChange={(e) => {
+                                        setSupervisorSearchInput(e.target.value);
+                                        debouncedSetSupervisorSearch(e.target.value);
+                                    }}
                                     className="filter-input supervisor-search"
                                     aria-label={t("timesheets.filter.searchPlaceholder")}
                                 />
                                 <select
                                     className="filter-select supervisor-filter"
                                     value={supervisorFilter}
-                                    onChange={(e) => setSupervisorFilter(e.target.value)}
+                                    onChange={(e) => {
+                                        console.log('Supervisor filter changed:', e.target.value);
+                                        setSupervisorFilter(e.target.value);
+                                    }}
                                     aria-label={t("timesheets.filter.supervisorSelect")}
                                 >
                                     <option value="all">{t("timesheets.filter.allSupervisors")}</option>
@@ -1264,7 +1372,10 @@ const Timesheets: React.FC = React.memo(() => {
                                 <select
                                     className="filter-select visit-status-filter"
                                     value={visitStatusFilter}
-                                    onChange={(e) => setVisitStatusFilter(e.target.value)}
+                                    onChange={(e) => {
+                                        console.log('Visit status filter changed:', e.target.value);
+                                        setVisitStatusFilter(e.target.value);
+                                    }}
                                     aria-label={t("timesheets.filter.visitStatusSelect")}
                                 >
                                     <option value="all">{t("timesheets.filter.allStatuses")}</option>
@@ -1277,8 +1388,11 @@ const Timesheets: React.FC = React.memo(() => {
                                 <input
                                     type="text"
                                     placeholder={t("timesheets.filter.reasonPlaceholder")}
-                                    value={visitReasonSearch}
-                                    onChange={(e) => debouncedSetVisitReasonSearch(e.target.value)}
+                                    value={visitReasonSearchInput}
+                                    onChange={(e) => {
+                                        setVisitReasonSearchInput(e.target.value);
+                                        debouncedSetVisitReasonSearch(e.target.value);
+                                    }}
                                     className="filter-input visit-reason-search"
                                     aria-label={t("timesheets.filter.reasonPlaceholder")}
                                 />
@@ -1491,13 +1605,11 @@ const Timesheets: React.FC = React.memo(() => {
                                         {t("timesheets.weekView.status")}: {weekData.status}
                                     </p>
                                 </div>
-                                {weekData.supervisorID &&
+                                {weekData.timesheetID &&
                                     userPermissions.canValidateTimesheets && (
                                         <button
                                             className="create-btn"
-                                            onClick={() =>
-                                                handleValidateTimesheet(weekData.supervisorID!)
-                                            }
+                                            onClick={handleValidateTimesheet}
                                             aria-label={t("timesheets.actions.validate")}
                                         >
                                             {t("timesheets.actions.validate")}

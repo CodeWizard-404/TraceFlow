@@ -6,6 +6,66 @@ const { getKeycloakAdminToken, getGoogleAccessTokenForUser } = require('../utils
 const { Visit, Timesheet, User } = require('../models');
 
 class VisitController {
+    static async validateOTP(req, res) {
+        try {
+            const { visitId, otpCode } = req.body;
+            if (!visitId || !otpCode) {
+                logger.warn(`Validate OTP failed: Missing visitId or otpCode, user: ${req.user.userID}, IP: ${req.ip}`);
+                return res.status(400).json({ error: 'visitId and otpCode are required' });
+            }
+            const result = await VisitService.validateVisitOTP(visitId, otpCode, req.user.userID);
+            logger.info(`OTP validated for visit ${visitId} by user ${req.user.userID}, IP: ${req.ip}`);
+            return res.status(200).json(result);
+        } catch (error) {
+            logger.error(`OTP validation error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
+            return res.status(error.status || 500).json({ error: error.message || 'Failed to validate OTP' });
+        }
+    }
+
+    static async logVisit(req, res) {
+        try {
+            const { id } = req.params;
+            const { duration, checklistUpdates, comment, date, time } = req.body;
+            const files = req.files || [];
+            if (!id) {
+                logger.warn(`Log visit failed: Missing visit ID, user: ${req.user.userID}, IP: ${req.ip}`);
+                return res.status(400).json({ error: 'Visit ID is required' });
+            }
+            if (!files || files.length === 0) {
+                logger.warn(`Log visit failed: At least one photo is required to log a visit, user: ${req.user.userID}, IP: ${req.ip}`);
+                return res.status(400).json({ error: 'At least one photo is required to log a visit' });
+            }
+            const visit = await VisitService.logVisit(id, { duration, checklistUpdates, comment, date, time }, files, req.user.userID);
+            try {
+                const timesheet = await Timesheet.findByPk(visit.timesheetID, { include: [{ model: User }] });
+                if (!timesheet || !timesheet.User || !timesheet.User.keycloakId) {
+                    throw new Error('Timesheet or supervisor not found or not linked to Keycloak');
+                }
+                const adminToken = await getKeycloakAdminToken();
+                const googleToken = await getGoogleAccessTokenForUser(timesheet.User.keycloakId, adminToken);
+                const event = await GoogleCalendarService.updateCalendarEvent(googleToken, id);
+                await GoogleCalendarService.notifyCalendarUpdate(timesheet.User.keycloakId, {
+                    visitId: id,
+                    calendarEventId: event.id,
+                    action: 'updated',
+                });
+            } catch (error) {
+                logger.warn(`Failed to update calendar event for visit ${id}: ${error.message}`);
+            }
+            await NotificationService.triggerNotification({
+                event: 'visit:logged',
+                data: { visitId: id, duration, comment },
+                metadata: { loggedBy: req.user.email },
+            });
+            logger.info(`Visit ${id} logged by user ${req.user.userID}, IP: ${req.ip}`);
+            return res.status(200).json(visit);
+        } catch (error) {
+            logger.error(`Log visit error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
+            return res.status(error.status || 500).json({ error: error.message || 'Failed to log visit' });
+        }
+    }
+
+    // Other methods (getVisitByID, verifyQRCode, updateVisit, deleteVisit, syncVisitToCalendar, listCalendarEvents) remain unchanged
     static async getVisitByID(req, res) {
         try {
             const { id } = req.params;
@@ -42,49 +102,6 @@ class VisitController {
         } catch (error) {
             logger.error(`QR verification error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
             return res.status(error.status || 500).json({ error: error.message || 'Failed to verify QR code' });
-        }
-    }
-
-    static async logVisit(req, res) {
-        try {
-            const { id } = req.params;
-            const { duration, checklistUpdates, comment, date, time, otpCode } = req.body;
-            const files = req.files || [];
-            if (!id) {
-                logger.warn(`Log visit failed: Missing visit ID, user: ${req.user.userID}, IP: ${req.ip}`);
-                return res.status(400).json({ error: 'Visit ID is required' });
-            }
-            if (!files || files.length === 0) {
-                logger.warn(`Log visit failed: At least one photo is required to log a visit, user: ${req.user.userID}, IP: ${req.ip}`);
-                return res.status(400).json({ error: 'At least one photo is required to log a visit' });
-            }
-            const visit = await VisitService.logVisit(id, { duration, checklistUpdates, comment, date, time, otpCode }, files, req.user.userID);
-            try {
-                const timesheet = await Timesheet.findByPk(visit.timesheetID, { include: [{ model: User }] });
-                if (!timesheet || !timesheet.User || !timesheet.User.keycloakId) {
-                    throw new Error('Timesheet or supervisor not found or not linked to Keycloak');
-                }
-                const adminToken = await getKeycloakAdminToken();
-                const googleToken = await getGoogleAccessTokenForUser(timesheet.User.keycloakId, adminToken);
-                const event = await GoogleCalendarService.updateCalendarEvent(googleToken, id);
-                await GoogleCalendarService.notifyCalendarUpdate(timesheet.User.keycloakId, {
-                    visitId: id,
-                    calendarEventId: event.id,
-                    action: 'updated',
-                });
-            } catch (error) {
-                logger.warn(`Failed to update calendar event for visit ${id}: ${error.message}`);
-            }
-            await NotificationService.triggerNotification({
-                event: 'visit:logged',
-                data: { visitId: id, duration, comment },
-                metadata: { loggedBy: req.user.email },
-            });
-            logger.info(`Visit ${id} logged by user ${req.user.userID}, IP: ${req.ip}`);
-            return res.status(200).json(visit);
-        } catch (error) {
-            logger.error(`Log visit error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
-            return res.status(error.status || 500).json({ error: error.message || 'Failed to log visit' });
         }
     }
 

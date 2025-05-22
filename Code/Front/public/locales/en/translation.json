@@ -101,7 +101,8 @@
       "agent": "Agent",
       "phone": "Phone",
       "na": "N/A",
-      "recruitmentVisit": "Recruitment Visit (No Agent)"
+      "recruitmentVisit": "Recruitment Visit (No Agent)",
+      "location": "Location"
     },
     "reasons": {
       "title": "Reasons",
@@ -130,7 +131,8 @@
       "validating": "Validating...",
       "back": "Back",
       "cancel": "Cancel",
-      "submit": "Submit Validation"
+      "submit": "Submit Validation",
+      "correctLocation": "Correct Location"
     },
     "success": {
       "title": "Success",
@@ -291,30 +293,46 @@
   },
   "qrScan": {
     "title": "Scan QR Code",
-    "description": "Align the QR code within the frame to validate the visit.",
-    "loading": "Loading...",
+    "description": "Scan the QR code provided by the agent to verify the visit.",
+    "recruitmentDescription": "This is a recruitment visit. No QR code scan required.",
     "status": {
-      "startingCamera": "Starting camera...",
-      "scanning": "Scanning...",
-      "detected": "QR Code Detected",
-      "checking": "Checking...",
-      "validating": "Validating..."
+      "scanning": "Scanning for QR code...",
+      "detected": "QR code detected!",
+      "checking": "Verifying QR code...",
+      "validating": "QR code verified!",
+      "recruitmentVisit": "Recruitment visit detected. Proceeding...",
+      "startingCamera": "Starting camera..."
     },
     "error": {
-      "title": "Oops!",
-      "noVisit": "No visit selected.",
-      "authRequired": "Authentication required.",
-      "accessDenied": "Access Denied: You lack permission to scan visits.",
-      "mismatch": "Mismatch error"
+      "title": "Error",
+      "noVisit": "No visit data provided.",
+      "accessDenied": "You do not have permission to scan visits.",
+      "mismatch": "Invalid QR code. Please try again.",
+      "cameraAccessDenied": "Camera access denied. Please allow camera permissions.",
+      "noCamera": "No camera found on this device.",
+      "cameraFailed": "Failed to start camera. Please try again.",
+      "noOTP": "Please enter the OTP code.",
+      "invalidOTP": "Invalid OTP code. Please try again.",
+      "otpExpired": "OTP has expired. Please scan the QR code again."
     },
+    "form": {
+      "otp": "Enter OTP sent to the agent's phone",
+      "placeholders": {
+        "enterOTP": "Enter OTP code"
+      }
+    },
+    "otpTimer": "OTP expires in",
     "actions": {
-      "back": "Back"
+      "back": "Back",
+      "validateOTP": "Validate OTP"
     },
     "aria": {
-      "backButton": "Return to previous page",
       "qrReader": "QR code scanner, current status: {{status}}",
-      "errorMessage": "Error message"
-    }
+      "errorMessage": "Error message",
+      "backButton": "Back button",
+      "validateOTP": "Validate OTP button"
+    },
+    "loading": "Loading..."
   },
   "timesheets": {
     "loading": "Loading Timesheet...",

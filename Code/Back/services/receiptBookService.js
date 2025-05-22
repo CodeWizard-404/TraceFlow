@@ -423,23 +423,29 @@ class ReceiptBookService {
 
     static async deleteReceiptBook(bookID, userID) {
         try {
-            const book = await this.getReceiptBookById(bookID);
-            if (!['In Stock', 'With Stock Manager'].includes(book.status)) {
+            // Fetch book details for validation using getReceiptBookById
+            const bookData = await this.getReceiptBookById(bookID);
+            if (!['In Stock', 'With Stock Manager'].includes(bookData.status)) {
                 const error = new Error('Receipt book can only be deleted if In Stock or With Stock Manager');
                 error.status = 400;
                 throw error;
             }
-            if (book.currentHolderID !== userID) {
-                const error = new Error('Only the current holder can delete this receipt book');
-                error.status = 403;
+
+            // Fetch the Sequelize model instance for deletion
+            const book = await ReceiptBook.findByPk(bookID);
+            if (!book) {
+                const error = new Error('Receipt book not found');
+                error.status = 404;
                 throw error;
             }
+
             await Promise.all([
                 ReceiptStub.destroy({ where: { bookID } }),
                 ReceiptBookTransfer.destroy({ where: { bookID } }),
                 book.destroy(),
             ]);
-            return { message: `Receipt Book #${book.number} deleted successfully` };
+
+            return { message: `Receipt Book #${bookData.number} deleted successfully` };
         } catch (error) {
             throw error;
         }
