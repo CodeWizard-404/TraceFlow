@@ -52,9 +52,6 @@ class GoogleMapsService {
 
 
 
-
-
-
     // Get directions
 
     static async getDirections(origin, destination, mode = 'driving', waypoints = [], trafficModel = 'best_guess', optimizeWaypoints = false) {
