@@ -236,10 +236,10 @@ class TimesheetController {
 
             try {
                 const supervisor = await User.findByPk(timesheet.supervisorID);
-                if (!supervisor || !supervisor.keycloakId) {
-                    throw new Error('Supervisor not found or not linked to Keycloak');
+                if (!supervisor) {
+                    throw new Error('Supervisor not found');
                 }
-                const userId = supervisor.keycloakId;
+                const userId = supervisor.keycloakId || supervisor.userID;
                 if (typeof userId !== 'string') {
                     throw new Error(`Invalid userId: ${userId}`);
                 }

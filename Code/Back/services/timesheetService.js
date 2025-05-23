@@ -6,6 +6,7 @@ const GoogleCalendarService = require('./googleCalendarService');
 const GoogleMapsService = require('./googleMapsService');
 const { Op } = require('sequelize');
 const { nanoid } = require('nanoid');
+const logger = require('../utils/logger');
 
 const ERROR_MESSAGES = {
     INVALID_SUPERVISOR: 'Invalid supervisor ID.',
@@ -33,7 +34,7 @@ class TimesheetService {
                                 through: { attributes: [] },
                             },
                             { model: Agent },
-                            { model: Checklist, attributes: ['checklistID', 'item'], through: { attributes: [] } }
+                            { model: Checklist, attributes: ['checklistID', 'item'], through: { attributes: [] } },
                         ],
                     },
                     { model: User },
@@ -58,7 +59,7 @@ class TimesheetService {
                                 through: { attributes: [] },
                             },
                             { model: Agent },
-                            { model: Checklist, attributes: ['checklistID', 'item'], through: { attributes: [] } }
+                            { model: Checklist, attributes: ['checklistID', 'item'], through: { attributes: [] } },
                         ],
                     },
                     { model: User },
@@ -89,7 +90,7 @@ class TimesheetService {
                                 through: { attributes: [] },
                             },
                             { model: Agent },
-                            { model: Checklist, attributes: ['checklistID', 'item'], through: { attributes: [] } }
+                            { model: Checklist, attributes: ['checklistID', 'item'], through: { attributes: [] } },
                         ],
                     },
                     { model: User },
@@ -115,7 +116,7 @@ class TimesheetService {
                                 through: { attributes: [] },
                             },
                             { model: Agent },
-                            { model: Checklist, attributes: ['checklistID', 'item'], through: { attributes: [] } }
+                            { model: Checklist, attributes: ['checklistID', 'item'], through: { attributes: [] } },
                         ],
                     },
                     { model: User },
@@ -151,7 +152,7 @@ class TimesheetService {
                             weekNumber,
                             year,
                             supervisorID,
-                            status: ['pending', 'visited', 'rejected', 'validated'].includes(status) ? status : status,
+                            status,
                         },
                         { transaction }
                     );
@@ -180,7 +181,7 @@ class TimesheetService {
                             supervisorID,
                             status: ['pending', 'visited', 'rejected', 'validated'].includes(visit.status)
                                 ? visit.status
-                                : (visit.status ? 'pending' : 'pending'),
+                                : 'pending',
                         },
                         actorID,
                         { transaction }
@@ -206,16 +207,19 @@ class TimesheetService {
                         include: [
                             { model: Reason, attributes: ['reasonID', 'item'], through: { attributes: [] } },
                             { model: Checklist, attributes: ['checklistID', 'item'], through: { attributes: [] } },
-                            { model: Agent }
-                        ]
+                            { model: Agent },
+                        ],
                     },
-                    { model: User }
+                    { model: User },
                 ],
             });
 
             let warning = null;
             try {
-                const userId = supervisorID;
+                const userId = supervisor.keycloakId || supervisor.userID;
+                if (typeof userId !== 'string') {
+                    throw new Error(`Invalid userId: ${userId}`);
+                }
                 const syncResults = await GoogleCalendarService.syncTimesheetToCalendar(userId, timesheet.timesheetID);
                 await GoogleCalendarService.notifyCalendarUpdate(userId, {
                     timesheetId: timesheet.timesheetID,
@@ -224,7 +228,10 @@ class TimesheetService {
                 });
             } catch (error) {
                 warning = 'Timesheet created successfully, but Google Calendar sync failed.';
-                console.error(`Failed to sync timesheet ${timesheet.timesheetID} to Google Calendar: ${error.message}`);
+                logger.error(`Failed to sync timesheet ${timesheet.timesheetID} to Google Calendar: ${error.message}`, {
+                    userId: supervisorID,
+                    timesheetId: timesheet.timesheetID,
+                });
             }
 
             return {
@@ -241,7 +248,20 @@ class TimesheetService {
         const transaction = await sequelize.transaction();
         try {
             const { visitIDs, status } = data;
-            const timesheet = await Timesheet.findByPk(id, { include: [Visit], transaction });
+            const timesheet = await Timesheet.findByPk(id, {
+                include: [
+                    {
+                        model: Visit,
+                        include: [
+                            { model: Reason, attributes: ['reasonID', 'item'], through: { attributes: [] } },
+                            { model: Checklist, attributes: ['checklistID', 'item'], through: { attributes: [] } },
+                            { model: Agent },
+                        ],
+                    },
+                    { model: User },
+                ],
+                transaction,
+            });
             if (!timesheet) {
                 const error = new Error('Timesheet not found');
                 error.status = 404;
@@ -269,9 +289,26 @@ class TimesheetService {
             }
             timesheet.status = status;
             await timesheet.save({ transaction });
-            await transaction
 
-                .commit();
+            try {
+                const userId = timesheet.User.keycloakId || timesheet.User.userID;
+                if (typeof userId !== 'string') {
+                    throw new Error(`Invalid userId: ${userId}`);
+                }
+                const syncResults = await GoogleCalendarService.syncTimesheetToCalendar(userId, id);
+                await GoogleCalendarService.notifyCalendarUpdate(userId, {
+                    timesheetId: id,
+                    syncedVisits: syncResults,
+                    action: 'synced',
+                });
+            } catch (error) {
+                logger.warn(`Failed to sync timesheet ${id} to calendar after validation: ${error.message}`, {
+                    userId: timesheet.supervisorID,
+                    timesheetId: id,
+                });
+            }
+
+            await transaction.commit();
             const updatedTimesheet = await Timesheet.findByPk(id, {
                 include: [
                     {
@@ -279,11 +316,11 @@ class TimesheetService {
                         include: [
                             { model: Reason, attributes: ['reasonID', 'item'], through: { attributes: [] } },
                             { model: Checklist, attributes: ['checklistID', 'item'], through: { attributes: [] } },
-                            { model: Agent }
-                        ]
+                            { model: Agent },
+                        ],
                     },
-                    { model: User }
-                ]
+                    { model: User },
+                ],
             });
             return updatedTimesheet;
         } catch (error) {

@@ -41,8 +41,12 @@ class VisitController {
                 if (!timesheet || !timesheet.User) {
                     throw new Error('Timesheet or supervisor not found');
                 }
-                const event = await GoogleCalendarService.updateCalendarEvent(timesheet.User.userID, id);
-                await GoogleCalendarService.notifyCalendarUpdate(timesheet.User.userID, {
+                const userId = timesheet.User.userID;
+                if (typeof userId !== 'string') {
+                    throw new Error(`Invalid userId: ${userId}`);
+                }
+                const event = await GoogleCalendarService.updateCalendarEvent(userId, id);
+                await GoogleCalendarService.notifyCalendarUpdate(userId, {
                     visitId: id,
                     calendarEventId: event.id,
                     action: 'updated',
@@ -117,8 +121,12 @@ class VisitController {
                 if (!timesheet || !timesheet.User) {
                     throw new Error('Timesheet or supervisor not found');
                 }
-                const event = await GoogleCalendarService.updateCalendarEvent(timesheet.User.userID, id);
-                await GoogleCalendarService.notifyCalendarUpdate(timesheet.User.userID, {
+                const userId = timesheet.User.userID;
+                if (typeof userId !== 'string') {
+                    throw new Error(`Invalid userId: ${userId}`);
+                }
+                const event = await GoogleCalendarService.updateCalendarEvent(userId, id);
+                await GoogleCalendarService.notifyCalendarUpdate(userId, {
                     visitId: id,
                     calendarEventId: event.id,
                     action: 'updated',
@@ -153,9 +161,13 @@ class VisitController {
             }
             const result = await VisitService.deleteVisit(id, req.user.userID);
             try {
-                if (visit.Timesheet.User) {
-                    await GoogleCalendarService.deleteCalendarEvent(visit.Timesheet.User.userID, id);
-                    await GoogleCalendarService.notifyCalendarUpdate(visit.Timesheet.User.userID, {
+                if (visit.Timesheet?.User) {
+                    const userId = visit.Timesheet.User.userID;
+                    if (typeof userId !== 'string') {
+                        throw new Error(`Invalid userId: ${userId}`);
+                    }
+                    await GoogleCalendarService.deleteCalendarEvent(userId, id);
+                    await GoogleCalendarService.notifyCalendarUpdate(userId, {
                         visitId: id,
                         action: 'deleted',
                     });
@@ -246,7 +258,11 @@ class VisitController {
             if (!timesheet || !timesheet.User) {
                 throw new Error('Timesheet or supervisor not found');
             }
-            const events = await GoogleCalendarService.listCalendarEvents(timesheet.User.userID, timesheetId);
+            const userId = timesheet.User.userID;
+            if (typeof userId !== 'string') {
+                throw new Error(`Invalid userId: ${userId}`);
+            }
+            const events = await GoogleCalendarService.listCalendarEvents(userId, timesheetId);
             logger.info(`Listed calendar events for timesheet ${timesheetId} by user ${req.user.userID}, IP: ${req.ip}`);
             return res.status(200).json(events);
         } catch (error) {
@@ -254,79 +270,6 @@ class VisitController {
             return res.status(error.status || 500).json({ error: error.message || 'Failed to list calendar events' });
         }
     }
-
-
-
-    static async handleCalendarWebhook(req, res) {
-        try {
-            const userId = req.headers['x-goog-resource-token'];
-            const eventId = req.body?.resourceId;
-            if (!userId || !eventId) {
-                logger.warn('Invalid webhook payload', { headers: req.headers, body: req.body });
-                return res.status(400).json({ error: 'Invalid webhook payload' });
-            }
-
-            const calendar = await GoogleCalendarService.getCalendarClient(userId);
-            const event = await calendar.events.get({
-                calendarId: 'primary',
-                eventId
-            });
-
-            const visitId = event.data.extendedProperties?.private?.visitId;
-            if (!visitId) {
-                logger.debug('Non-visit event modified, ignoring', { userId, eventId });
-                return res.status(200).json({ message: 'Ignored' });
-            }
-
-            const visit = await Visit.findByPk(visitId, {
-                include: [
-                    { model: Agent },
-                    { model: Timesheet, include: [User] },
-                    { model: Reason, attributes: ['reasonID', 'item'], through: { attributes: [] } },
-                    { model: Checklist, attributes: ['checklistID', 'item'], through: { attributes: [] } }
-                ]
-            });
-            if (!visit) {
-                logger.warn('Visit not found for event', { userId, visitId, eventId });
-                return res.status(404).json({ error: 'Visit not found' });
-            }
-
-            // Check if restricted fields were modified
-            const expectedDescription = `Status: ${visit.status}\n` +
-                (visit.Reasons?.length ? `Reasons:\n${visit.Reasons.map(r => `- ${r.item}`).join('\n')}\n` : '') +
-                (visit.Checklists?.length ? `Checklists:\n${visit.Checklists.map(c => `- ${c.item}`).join('\n')}\n` : '') +
-                (visit.status === 'visited' && visit.photos?.length ? `Photos:\n${visit.photos.map(p => `- ${p}`).join('\n')}\n` : '') +
-                (visit.status === 'visited' && visit.comment ? `Comment: ${visit.comment}` : '');
-
-            const expectedSummary = `Visit to ${visit.Agent?.name || 'Unknown'} ${visit.Agent?.lastname || ''}`;
-            const isLocked = event.data.extendedProperties?.private?.lockedFields === 'true';
-
-            if (isLocked && (
-                event.data.summary !== expectedSummary ||
-                event.data.description !== expectedDescription ||
-                event.data.location !== (visit.latitude && visit.longitude ? `${visit.latitude},${visit.longitude}` : visit.location)
-            )) {
-                logger.warn('Unauthorized changes detected, reverting event', { userId, visitId, eventId });
-                await GoogleCalendarService.updateCalendarEvent(userId, visitId);
-                return res.status(200).json({ message: 'Reverted unauthorized changes' });
-            }
-
-            // Update visit date/time if changed
-            const newStart = new Date(event.data.start.dateTime);
-            const newEnd = new Date(event.data.end.dateTime);
-            visit.date = newStart.toISOString().split('T')[0];
-            visit.time = newStart.toTimeString().slice(0, 5);
-            visit.duration = Math.round((newEnd - newStart) / 60000);
-            await visit.save();
-
-            logger.info('Processed calendar event update', { userId, visitId, eventId });
-            return res.status(200).json({ message: 'Processed' });
-        } catch (error) {
-            logger.error(`Webhook processing error: ${error.message}`, { userId: req.headers['x-goog-resource-token'] });
-            return res.status(500).json({ error: 'Failed to process webhook' });
-        }
-    }
-
 
 }
 

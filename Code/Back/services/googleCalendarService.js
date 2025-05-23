@@ -507,25 +507,6 @@ class GoogleCalendarService {
     }
 
 
-    static async setupCalendarWatch(userId) {
-        try {
-            const calendar = await this.getCalendarClient(userId);
-            const response = await calendar.events.watch({
-                calendarId: 'primary',
-                resource: {
-                    id: `watch-${userId}-${Date.now()}`,
-                    type: 'web_hook',
-                    address: process.env.CALENDAR_WEBHOOK_URL, // Your webhook endpoint
-                    token: userId
-                }
-            });
-            logger.info(`Set up calendar watch for user ${userId}`, { resourceId: response.data.id });
-            return response.data;
-        } catch (error) {
-            logger.error(`Failed to set up calendar watch: ${error.message}`, { userId });
-            throw error;
-        }
-    }
 }
 
 module.exports = GoogleCalendarService;

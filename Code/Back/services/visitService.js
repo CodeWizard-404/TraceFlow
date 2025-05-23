@@ -63,7 +63,7 @@ class VisitService {
                                 weekNumber,
                                 year,
                                 supervisorID,
-                                status: ['pending', 'visited', 'rejected', 'validated'].includes(status) ? status : status,
+                                status,
                             },
                             { transaction }
                         );
@@ -105,7 +105,7 @@ class VisitService {
                     location: visitLocation,
                     agentID,
                     timesheetID: targetTimesheet.timesheetID,
-                    status: ['pending', 'visited', 'rejected', 'validated'].includes(status) ? status : status,
+                    status,
                 },
                 { transaction }
             );
@@ -296,7 +296,7 @@ class VisitService {
                         if (fs.existsSync(oldPhotoPath)) {
                             fs.renameSync(oldPhotoPath, newPhotoPath);
                         }
-                        updatedPhotoPaths.push(`/uploads/photos/${newFolderName}/${filename}`);
+                        updatedPhotoPaths.push(`/Uploads/photos/${newFolderName}/${filename}`);
                     }
                     photoPaths = updatedPhotoPaths;
                 }
@@ -311,7 +311,7 @@ class VisitService {
             const newPhotoPaths = files.map((file) => {
                 const destPath = path.join(newFolderPath, file.filename);
                 fs.renameSync(file.path, destPath);
-                return `/uploads/photos/${newFolderName}/${file.filename}`;
+                return `/Uploads/photos/${newFolderName}/${file.filename}`;
             });
             photoPaths = [...photoPaths, ...newPhotoPaths];
 
@@ -439,6 +439,7 @@ class VisitService {
     }
 
     static async updateVisit(visitID, data, files = [], actorID) {
+        const transaction = await sequelize.transaction();
         try {
             const { date, time, duration, location, status, comment, agentID, checklists, reasons, photosToRemove, supervisorID } = data;
 
@@ -448,6 +449,7 @@ class VisitService {
                     { model: Reason, attributes: ['reasonID', 'item'], through: { attributes: [] } },
                     { model: Checklist, attributes: ['checklistID', 'item'], through: { attributes: [] } }
                 ],
+                transaction
             });
             if (!visit) {
                 const error = new Error('Visit not found');
@@ -489,7 +491,7 @@ class VisitService {
                 files.forEach((file) => {
                     const destPath = path.join(folderPath, file.filename);
                     fs.renameSync(file.path, destPath);
-                    const newPhotoPath = `/uploads/photos/${folderName}/${file.filename}`;
+                    const newPhotoPath = `/Uploads/photos/${folderName}/${file.filename}`;
                     photoPaths.push(newPhotoPath);
                 });
             }
@@ -508,6 +510,7 @@ class VisitService {
                         year: newYear,
                         supervisorID: supervisorID,
                     },
+                    transaction
                 });
                 if (!targetTimesheet) {
                     targetTimesheet = await Timesheet.create({
@@ -515,7 +518,7 @@ class VisitService {
                         year: newYear,
                         supervisorID: supervisorID,
                         status: 'pending',
-                    });
+                    }, { transaction });
                 }
                 visit.timesheetID = targetTimesheet.timesheetID;
             } else if (newWeekNumber !== oldTimesheet.weekNumber || newYear !== oldTimesheet.year) {
@@ -525,6 +528,7 @@ class VisitService {
                         year: newYear,
                         supervisorID: oldTimesheet.supervisorID,
                     },
+                    transaction
                 });
                 if (!targetTimesheet) {
                     targetTimesheet = await Timesheet.create({
@@ -532,27 +536,27 @@ class VisitService {
                         year: newYear,
                         supervisorID: oldTimesheet.supervisorID,
                         status: 'pending',
-                    });
+                    }, { transaction });
                 }
                 visit.timesheetID = targetTimesheet.timesheetID;
             }
 
             if (agentID !== undefined) {
                 if (agentID) {
-                    const agent = await Agent.findByPk(agentID);
+                    const agent = await Agent.findByPk(agentID, { transaction });
                     if (!agent) {
                         const error = new Error('Agent not found');
                         error.status = 404;
                         throw error;
                     }
                     visit.agentID = agentID;
-                    visit.location = await this.getFormattedLocation(agentID, location);
+                    visit.location = await this.getFormattedLocation(agentID, location, { transaction });
                 } else {
                     visit.agentID = null;
                     visit.location = location;
                 }
             } else {
-                visit.location = await this.getFormattedLocation(visit.agentID, location !== undefined ? location : visit.location);
+                visit.location = await this.getFormattedLocation(visit.agentID, location !== undefined ? location : visit.location, { transaction });
             }
 
             let parsedChecklists = checklists;
@@ -574,19 +578,19 @@ class VisitService {
 
             if (parsedChecklists && Array.isArray(parsedChecklists)) {
                 const checklistIds = parsedChecklists.map((c) => c.id);
-                const updatedChecklists = await ChecklistService.getItemsByIds(checklistIds);
-                await visit.setChecklists(updatedChecklists);
+                const updatedChecklists = await ChecklistService.getItemsByIds(checklistIds, { transaction });
+                await visit.setChecklists(updatedChecklists, { transaction });
                 for (const checklist of parsedChecklists) {
                     if (checklist.checked !== undefined) {
-                        await ChecklistService.updateChecklistStatus(visitID, checklist.id, checklist.checked);
+                        await ChecklistService.updateChecklistStatus(visitID, checklist.id, checklist.checked, { transaction });
                     }
                 }
             }
 
             if (parsedReasons && Array.isArray(parsedReasons)) {
                 const reasonIds = parsedReasons.map((r) => r.id);
-                const updatedReasons = await ReasonService.getItemsByIds(reasonIds);
-                await visit.setReasons(updatedReasons);
+                const updatedReasons = await ReasonService.getItemsByIds(reasonIds, { transaction });
+                await visit.setReasons(updatedReasons, { transaction });
             }
 
             visit.date = newDate;
@@ -596,7 +600,7 @@ class VisitService {
             visit.photos = photoPaths;
             visit.comment = comment !== undefined ? comment : visit.comment;
 
-            await visit.save();
+            await visit.save({ transaction });
 
             try {
                 const userId = visit.Timesheet.User.userID;
@@ -616,8 +620,11 @@ class VisitService {
                 });
             }
 
-            return visit.reload({ include: [Checklist, Reason, Agent] });
+            const reloadedVisit = await visit.reload({ include: [Checklist, Reason, Agent], transaction });
+            await transaction.commit();
+            return reloadedVisit;
         } catch (error) {
+            await transaction.rollback();
             const err = new Error('Failed to update visit: ' + error.message);
             err.status = error.status || 500;
             throw err;
@@ -633,9 +640,11 @@ class VisitService {
     }
 
     static async deleteVisit(visitID, actorID) {
+        const transaction = await sequelize.transaction();
         try {
             const visit = await Visit.findByPk(visitID, {
                 include: [{ model: Timesheet, include: [User] }],
+                transaction
             });
             if (!visit) {
                 const error = new Error('Visit not found');
@@ -669,9 +678,11 @@ class VisitService {
                 });
             }
 
-            await visit.destroy();
+            await visit.destroy({ transaction });
+            await transaction.commit();
             return { message: 'Visit and associated photos deleted successfully' };
         } catch (error) {
+            await transaction.rollback();
             const err = new Error('Failed to delete visit: ' + error.message);
             err.status = error.status || 500;
             throw err;
