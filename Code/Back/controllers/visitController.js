@@ -3,7 +3,7 @@ const GoogleCalendarService = require('../services/googleCalendarService');
 const VaultService = require('../services/vaultService');
 const NotificationService = require('../services/notificationService');
 const logger = require('../utils/logger');
-const { Visit, Timesheet, User } = require('../models');
+const { Visit, Timesheet, User, Reason, Checklist, Agent } = require('../models');
 
 class VisitController {
     static async validateOTP(req, res) {
@@ -25,7 +25,7 @@ class VisitController {
     static async logVisit(req, res) {
         try {
             const { id } = req.params;
-            const { duration, checklistUpdates, comment, date, time } = req.body;
+            const { duration, checklistUpdates, comment, date, time, status } = req.body;
             const files = req.files || [];
             if (!id) {
                 logger.warn(`Log visit failed: Missing visit ID, user: ${req.user.userID}, IP: ${req.ip}`);
@@ -35,7 +35,7 @@ class VisitController {
                 logger.warn(`Log visit failed: At least one photo is required to log a visit, user: ${req.user.userID}, IP: ${req.ip}`);
                 return res.status(400).json({ error: 'At least one photo is required to log a visit' });
             }
-            const visit = await VisitService.logVisit(id, { duration, checklistUpdates, comment, date, time }, files, req.user.userID);
+            const visit = await VisitService.logVisit(id, { duration, checklistUpdates, comment, date, time, status }, files, req.user.userID);
             try {
                 const timesheet = await Timesheet.findByPk(visit.timesheetID, { include: [{ model: User }] });
                 if (!timesheet || !timesheet.User) {
@@ -52,7 +52,7 @@ class VisitController {
             }
             await NotificationService.triggerNotification({
                 event: 'visit:logged',
-                data: { visitId: id, duration, comment },
+                data: { visitId: id, duration, comment, status },
                 metadata: { loggedBy: req.user.email },
             });
             logger.info(`Visit ${id} logged by user ${req.user.userID}, IP: ${req.ip}`);
@@ -105,13 +105,13 @@ class VisitController {
     static async updateVisit(req, res) {
         try {
             const { id } = req.params;
-            const data = req.body;
+            const { date, time, duration, location, status, comment, agentID, checklists, reasons, photosToRemove, supervisorID } = req.body;
             const files = req.files || [];
             if (!id) {
                 logger.warn(`Update visit failed: Missing visit ID, user: ${req.user.userID}, IP: ${req.ip}`);
                 return res.status(400).json({ error: 'Visit ID is required' });
             }
-            const visit = await VisitService.updateVisit(id, data, files, req.user.userID);
+            const visit = await VisitService.updateVisit(id, { date, time, duration, location, status, comment, agentID, checklists, reasons, photosToRemove, supervisorID }, files, req.user.userID);
             try {
                 const timesheet = await Timesheet.findByPk(visit.timesheetID, { include: [{ model: User }] });
                 if (!timesheet || !timesheet.User) {
@@ -128,7 +128,7 @@ class VisitController {
             }
             await NotificationService.triggerNotification({
                 event: 'visit:updated',
-                data: { visitId: id, updates: Object.keys(data) },
+                data: { visitId: id, updates: Object.keys(req.body), status },
                 metadata: { updatedBy: req.user.email },
             });
             logger.info(`Updated visit ${id} by user ${req.user.userID}, IP: ${req.ip}`);
@@ -179,14 +179,14 @@ class VisitController {
     static async syncVisitToCalendar(req, res) {
         try {
             const visitId = req.params.visitId;
-            // Fetch visit with necessary associations
             const visit = await Visit.findByPk(visitId, {
                 include: [
-                    { model: Timesheet, include: [User] }
+                    { model: Timesheet, include: [User] },
+                    { model: Reason, attributes: ['reasonID', 'item'], through: { attributes: [] } },
+                    { model: Checklist, attributes: ['checklistID', 'item'], through: { attributes: [] } }
                 ]
             });
 
-            // Validate visit existence and associations
             if (!visit) {
                 logger.error(`Visit not found`, { visitId, userID: req.user.userID });
                 return res.status(404).json({ error: 'Visit not found' });
@@ -200,20 +200,22 @@ class VisitController {
                 return res.status(404).json({ error: 'User not found for this timesheet' });
             }
 
-            // Extract and validate userId
             const userId = visit.Timesheet.User.userID;
             if (typeof userId !== 'string') {
                 logger.error(`Invalid userId type: expected string, got ${typeof userId}`, { userId, visitId });
                 return res.status(500).json({ error: 'Invalid user ID type' });
             }
 
-            // Retrieve access token and create calendar event
             const accessToken = await VaultService.getAccessToken(userId);
-            await GoogleCalendarService.createCalendarEvent(userId, visitId);
+            const event = await GoogleCalendarService.createCalendarEvent(userId, visitId);
+            await GoogleCalendarService.notifyCalendarUpdate(userId, {
+                visitId,
+                calendarEventId: event.id,
+                action: 'created',
+            });
 
             return res.status(200).json({ id: visitId });
         } catch (error) {
-            // Handle specific credential errors
             if (error.message.includes('Invalid Credentials')) {
                 const visit = await Visit.findByPk(req.params.visitId, {
                     include: [{ model: Timesheet, include: [User] }]
@@ -228,7 +230,6 @@ class VisitController {
                 return res.status(401).json({ error: 'Invalid Google Calendar credentials. Please re-authorize.' });
             }
 
-            // General error logging and response
             logger.error(`Sync visit to calendar error: ${error.message}`, { userID: req.user.userID, IP: req.ip, visitId: req.params.visitId });
             return res.status(500).json({ error: 'Failed to sync visit to calendar' });
         }
@@ -253,6 +254,80 @@ class VisitController {
             return res.status(error.status || 500).json({ error: error.message || 'Failed to list calendar events' });
         }
     }
+
+
+
+    static async handleCalendarWebhook(req, res) {
+        try {
+            const userId = req.headers['x-goog-resource-token'];
+            const eventId = req.body?.resourceId;
+            if (!userId || !eventId) {
+                logger.warn('Invalid webhook payload', { headers: req.headers, body: req.body });
+                return res.status(400).json({ error: 'Invalid webhook payload' });
+            }
+
+            const calendar = await GoogleCalendarService.getCalendarClient(userId);
+            const event = await calendar.events.get({
+                calendarId: 'primary',
+                eventId
+            });
+
+            const visitId = event.data.extendedProperties?.private?.visitId;
+            if (!visitId) {
+                logger.debug('Non-visit event modified, ignoring', { userId, eventId });
+                return res.status(200).json({ message: 'Ignored' });
+            }
+
+            const visit = await Visit.findByPk(visitId, {
+                include: [
+                    { model: Agent },
+                    { model: Timesheet, include: [User] },
+                    { model: Reason, attributes: ['reasonID', 'item'], through: { attributes: [] } },
+                    { model: Checklist, attributes: ['checklistID', 'item'], through: { attributes: [] } }
+                ]
+            });
+            if (!visit) {
+                logger.warn('Visit not found for event', { userId, visitId, eventId });
+                return res.status(404).json({ error: 'Visit not found' });
+            }
+
+            // Check if restricted fields were modified
+            const expectedDescription = `Status: ${visit.status}\n` +
+                (visit.Reasons?.length ? `Reasons:\n${visit.Reasons.map(r => `- ${r.item}`).join('\n')}\n` : '') +
+                (visit.Checklists?.length ? `Checklists:\n${visit.Checklists.map(c => `- ${c.item}`).join('\n')}\n` : '') +
+                (visit.status === 'visited' && visit.photos?.length ? `Photos:\n${visit.photos.map(p => `- ${p}`).join('\n')}\n` : '') +
+                (visit.status === 'visited' && visit.comment ? `Comment: ${visit.comment}` : '');
+
+            const expectedSummary = `Visit to ${visit.Agent?.name || 'Unknown'} ${visit.Agent?.lastname || ''}`;
+            const isLocked = event.data.extendedProperties?.private?.lockedFields === 'true';
+
+            if (isLocked && (
+                event.data.summary !== expectedSummary ||
+                event.data.description !== expectedDescription ||
+                event.data.location !== (visit.latitude && visit.longitude ? `${visit.latitude},${visit.longitude}` : visit.location)
+            )) {
+                logger.warn('Unauthorized changes detected, reverting event', { userId, visitId, eventId });
+                await GoogleCalendarService.updateCalendarEvent(userId, visitId);
+                return res.status(200).json({ message: 'Reverted unauthorized changes' });
+            }
+
+            // Update visit date/time if changed
+            const newStart = new Date(event.data.start.dateTime);
+            const newEnd = new Date(event.data.end.dateTime);
+            visit.date = newStart.toISOString().split('T')[0];
+            visit.time = newStart.toTimeString().slice(0, 5);
+            visit.duration = Math.round((newEnd - newStart) / 60000);
+            await visit.save();
+
+            logger.info('Processed calendar event update', { userId, visitId, eventId });
+            return res.status(200).json({ message: 'Processed' });
+        } catch (error) {
+            logger.error(`Webhook processing error: ${error.message}`, { userId: req.headers['x-goog-resource-token'] });
+            return res.status(500).json({ error: 'Failed to process webhook' });
+        }
+    }
+
+
 }
 
 module.exports = VisitController;

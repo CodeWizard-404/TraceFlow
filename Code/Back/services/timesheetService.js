@@ -33,6 +33,7 @@ class TimesheetService {
                                 through: { attributes: [] },
                             },
                             { model: Agent },
+                            { model: Checklist, attributes: ['checklistID', 'item'], through: { attributes: [] } }
                         ],
                     },
                     { model: User },
@@ -57,6 +58,7 @@ class TimesheetService {
                                 through: { attributes: [] },
                             },
                             { model: Agent },
+                            { model: Checklist, attributes: ['checklistID', 'item'], through: { attributes: [] } }
                         ],
                     },
                     { model: User },
@@ -87,6 +89,7 @@ class TimesheetService {
                                 through: { attributes: [] },
                             },
                             { model: Agent },
+                            { model: Checklist, attributes: ['checklistID', 'item'], through: { attributes: [] } }
                         ],
                     },
                     { model: User },
@@ -112,6 +115,7 @@ class TimesheetService {
                                 through: { attributes: [] },
                             },
                             { model: Agent },
+                            { model: Checklist, attributes: ['checklistID', 'item'], through: { attributes: [] } }
                         ],
                     },
                     { model: User },
@@ -147,7 +151,7 @@ class TimesheetService {
                             weekNumber,
                             year,
                             supervisorID,
-                            status,
+                            status: ['pending', 'visited', 'rejected', 'validated'].includes(status) ? status : status,
                         },
                         { transaction }
                     );
@@ -174,7 +178,9 @@ class TimesheetService {
                             ...visit,
                             timesheetID: timesheet.timesheetID,
                             supervisorID,
-                            status: visit.status || 'pending',
+                            status: ['pending', 'visited', 'rejected', 'validated'].includes(visit.status)
+                                ? visit.status
+                                : (visit.status ? 'pending' : 'pending'),
                         },
                         actorID,
                         { transaction }
@@ -194,7 +200,17 @@ class TimesheetService {
 
             await transaction.commit();
             const reloadedTimesheet = await Timesheet.findByPk(timesheet.timesheetID, {
-                include: [Visit, User],
+                include: [
+                    {
+                        model: Visit,
+                        include: [
+                            { model: Reason, attributes: ['reasonID', 'item'], through: { attributes: [] } },
+                            { model: Checklist, attributes: ['checklistID', 'item'], through: { attributes: [] } },
+                            { model: Agent }
+                        ]
+                    },
+                    { model: User }
+                ],
             });
 
             let warning = null;
@@ -231,7 +247,7 @@ class TimesheetService {
                 error.status = 404;
                 throw error;
             }
-            if (!['pending', 'validated'].includes(status)) {
+            if (!['pending', 'visited', 'rejected', 'validated'].includes(status)) {
                 const error = new Error('Invalid status');
                 error.status = 400;
                 throw error;
@@ -247,14 +263,28 @@ class TimesheetService {
                     throw error;
                 }
                 for (const visit of visits) {
-                    visit.status = status === 'validated' ? 'validated' : 'pending';
+                    visit.status = status;
                     await visit.save({ transaction });
                 }
             }
             timesheet.status = status;
             await timesheet.save({ transaction });
-            await transaction.commit();
-            const updatedTimesheet = await Timesheet.findByPk(id, { include: [Visit, User] });
+            await transaction
+
+                .commit();
+            const updatedTimesheet = await Timesheet.findByPk(id, {
+                include: [
+                    {
+                        model: Visit,
+                        include: [
+                            { model: Reason, attributes: ['reasonID', 'item'], through: { attributes: [] } },
+                            { model: Checklist, attributes: ['checklistID', 'item'], through: { attributes: [] } },
+                            { model: Agent }
+                        ]
+                    },
+                    { model: User }
+                ]
+            });
             return updatedTimesheet;
         } catch (error) {
             await transaction.rollback();
@@ -381,7 +411,7 @@ class TimesheetService {
             const validDates = preferredDays.length > 0
                 ? preferredDays
                 : Array.from({ length: 7 }, (_, i) => AIService.getDateString(weekStart, i));
-            const today = new Date('2025-05-22T20:44:00.000Z'); // Updated to current CET time
+            const today = new Date('2025-05-23T10:17:00.000Z'); // Updated to current CET time
             const todayDate = today.toISOString().split('T')[0];
             const todayMinutes = (today.getUTCHours() + 1) * 60 + today.getUTCMinutes(); // CET
 
@@ -511,6 +541,7 @@ class TimesheetService {
                     reasons,
                     checklists,
                     agent,
+                    status: ['pending', 'visited', 'rejected', 'validated'].includes(visit.status) ? visit.status : 'pending',
                 });
             }
 
@@ -575,7 +606,7 @@ class TimesheetService {
                     date: visit.date,
                     time: visit.time,
                     location: visit.location,
-                    status: 'pending',
+                    status: visit.status,
                     photos: [],
                     comment: null,
                     agentID: visit.agentID,

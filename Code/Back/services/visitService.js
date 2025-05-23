@@ -63,11 +63,10 @@ class VisitService {
                                 weekNumber,
                                 year,
                                 supervisorID,
-                                status: status,
+                                status: ['pending', 'visited', 'rejected', 'validated'].includes(status) ? status : status,
                             },
                             { transaction }
                         );
-                        // Fetch the User to ensure association
                         const user = await User.findByPk(supervisorID, { transaction });
                         if (!user) {
                             const error = new Error('Supervisor not found');
@@ -106,7 +105,7 @@ class VisitService {
                     location: visitLocation,
                     agentID,
                     timesheetID: targetTimesheet.timesheetID,
-                    status,
+                    status: ['pending', 'visited', 'rejected', 'validated'].includes(status) ? status : status,
                 },
                 { transaction }
             );
@@ -159,7 +158,7 @@ class VisitService {
             }
             await timesheetWithVisits.save({ transaction });
 
-            const reloadedVisit = await visit.reload({ include: [Reason, Checklist], transaction });
+            const reloadedVisit = await visit.reload({ include: [Reason, Checklist, Agent], transaction });
 
             try {
                 const userId = targetTimesheet.User.userID;
@@ -169,6 +168,11 @@ class VisitService {
                 const event = await GoogleCalendarService.createCalendarEvent(userId, visit.visitID);
                 visit.calendarEventId = event.id;
                 await visit.save({ transaction });
+                await GoogleCalendarService.notifyCalendarUpdate(userId, {
+                    visitId: visit.visitID,
+                    calendarEventId: event.id,
+                    action: 'created',
+                });
                 logger.info(`Synced visit ${visit.visitID} to Google Calendar`, { userId, visitId: visit.visitID });
             } catch (error) {
                 logger.error(`Failed to sync visit ${visit.visitID} to Google Calendar: ${error.message}`, {
@@ -187,7 +191,6 @@ class VisitService {
         }
     }
 
-    // Other functions (unchanged for this issue, included for completeness)
     static async validateVisitOTP(visitId, otpCode, actorID) {
         const transaction = await sequelize.transaction();
         try {
@@ -215,7 +218,7 @@ class VisitService {
     static async logVisit(visitID, data, files, actorID) {
         const transaction = await sequelize.transaction();
         try {
-            const { duration, checklistUpdates, comment, date, time } = data;
+            const { duration, checklistUpdates, comment, date, time, status } = data;
             if (!files || files.length === 0) {
                 const error = new Error('At least one photo is required to log a visit');
                 error.status = 400;
@@ -223,7 +226,11 @@ class VisitService {
             }
 
             const visit = await Visit.findByPk(visitID, {
-                include: [{ model: Timesheet, include: [User] }],
+                include: [
+                    { model: Timesheet, include: [User] },
+                    { model: Reason, attributes: ['reasonID', 'item'], through: { attributes: [] } },
+                    { model: Checklist, attributes: ['checklistID', 'item'], through: { attributes: [] } }
+                ],
                 transaction,
             });
             if (!visit) {
@@ -330,13 +337,10 @@ class VisitService {
             visit.duration = duration || visit.duration;
             visit.photos = photoPaths;
             visit.comment = comment || visit.comment;
-            visit.status = 'visited';
+            visit.status = ['pending', 'visited', 'rejected', 'validated'].includes(status) ? status : 'visited';
             await visit.save({ transaction });
 
-            const reloadedVisit = await Visit.findByPk(visitID, {
-                include: [Checklist],
-                transaction,
-            });
+            const reloadedVisit = await visit.reload({ include: [Reason, Checklist, Agent], transaction });
 
             try {
                 const userId = visit.Timesheet.User.userID;
@@ -439,7 +443,11 @@ class VisitService {
             const { date, time, duration, location, status, comment, agentID, checklists, reasons, photosToRemove, supervisorID } = data;
 
             const visit = await Visit.findByPk(visitID, {
-                include: [{ model: Timesheet, include: [User] }, Checklist, Reason],
+                include: [
+                    { model: Timesheet, include: [User] },
+                    { model: Reason, attributes: ['reasonID', 'item'], through: { attributes: [] } },
+                    { model: Checklist, attributes: ['checklistID', 'item'], through: { attributes: [] } }
+                ],
             });
             if (!visit) {
                 const error = new Error('Visit not found');
@@ -584,7 +592,7 @@ class VisitService {
             visit.date = newDate;
             visit.time = time || visit.time;
             visit.duration = duration !== undefined ? duration : visit.duration;
-            visit.status = status || visit.status;
+            visit.status = ['pending', 'visited', 'rejected', 'validated'].includes(status) ? status : visit.status;
             visit.photos = photoPaths;
             visit.comment = comment !== undefined ? comment : visit.comment;
 
@@ -608,7 +616,7 @@ class VisitService {
                 });
             }
 
-            return visit.reload({ include: [Checklist, Reason] });
+            return visit.reload({ include: [Checklist, Reason, Agent] });
         } catch (error) {
             const err = new Error('Failed to update visit: ' + error.message);
             err.status = error.status || 500;

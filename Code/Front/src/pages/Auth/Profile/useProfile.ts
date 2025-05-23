@@ -179,7 +179,6 @@ export const useProfile = () => {
                     email: fullUser.email || user.email || "",
                     PFP: fullUser.PFP || user.PFP || null,
                     password: "",
-                    googleEmail: fullUser.googleEmail || user.googleEmail,
                     tempResetToken: fullUser.tempResetToken,
                     regionalManagerID: fullUser.regionalManagerID,
                     directorID: fullUser.directorID,
@@ -189,6 +188,9 @@ export const useProfile = () => {
                     Regions: fullUser.Regions || user.Regions,
                     Governorates: fullUser.Governorates || user.Governorates,
                     Delegations: fullUser.Delegations || user.Delegations,
+                    isOnline: fullUser.isOnline ?? false,
+                    hasGoogleAuth: fullUser.hasGoogleAuth ?? false,
+                    hasCalendarAccess: fullUser.hasCalendarAccess ?? false,
                 };
 
                 setProfileData(completeUser);
@@ -260,7 +262,6 @@ export const useProfile = () => {
                         email: user.email || "",
                         PFP: null,
                         password: "",
-                        googleEmail: user.googleEmail,
                         tempResetToken: undefined,
                         regionalManagerID: user.regionalManagerID,
                         directorID: user.directorID,
@@ -270,6 +271,9 @@ export const useProfile = () => {
                         Regions: user.Regions,
                         Governorates: user.Governorates,
                         Delegations: user.Delegations,
+                        isOnline: user.isOnline ?? false,
+                        hasGoogleAuth: user.hasGoogleAuth ?? false,
+                        hasCalendarAccess: user.hasCalendarAccess ?? false,
                     };
                     setProfileData(fallbackUser);
                     setProfilePic(loadLastValidPFP());
@@ -306,7 +310,6 @@ export const useProfile = () => {
                                 email: updatedUser.email || user.email || "",
                                 PFP: updatedUser.PFP || user.PFP || null,
                                 password: "",
-                                googleEmail: updatedUser.googleEmail || user.googleEmail,
                                 tempResetToken: updatedUser.tempResetToken,
                                 regionalManagerID: updatedUser.regionalManagerID,
                                 directorID: updatedUser.directorID,
@@ -316,6 +319,9 @@ export const useProfile = () => {
                                 Regions: updatedUser.Regions || user.Regions,
                                 Governorates: updatedUser.Governorates || user.Governorates,
                                 Delegations: updatedUser.Delegations || user.Delegations,
+                                isOnline: updatedUser.isOnline ?? false,
+                                hasGoogleAuth: updatedUser.hasGoogleAuth ?? false,
+                                hasCalendarAccess: updatedUser.hasCalendarAccess ?? false,
                             };
                             setProfileData(completeUser);
                             if (completeUser.PFP && completeUser.PFP.trim()) {

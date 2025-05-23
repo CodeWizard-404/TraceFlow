@@ -173,8 +173,8 @@ export type VerifyQrResponse = { valid: boolean; message: string; otpID?: string
 export type VisitByIdResponse = Visit;
 
 // User Routes
-export type AssignGoogleAccountResponse = { userID: string; keycloakId: string; firstname: string; lastname: string; phone: string; email: string; password: string; googleEmail: string };
-export type CreateUserResponse = { userID: string; keycloakId: string; email: string; firstname: string; lastname: string; phone: string; password: string; googleEmail: string };
+export type AssignGoogleAccountResponse = { userID: string; keycloakId: string; firstname: string; lastname: string; phone: string; email: string; password: string; };
+export type CreateUserResponse = { userID: string; keycloakId: string; email: string; firstname: string; lastname: string; phone: string; password: string; };
 export type DeleteUserResponse = { message: string };
 export type AssignRegionalManagerResponse = { supervisorID: string; regionalManagerID: string; message: string };
 export type RevokeRegionalManagerResponse = { supervisorID: string; regionalManagerID: string | null; message: string; cascadeApplied: { governorates: boolean; delegations: boolean; agents: boolean }; affectedCounts: { governorates: number; delegations: number; agents: number } };

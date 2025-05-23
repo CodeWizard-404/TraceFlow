@@ -84,7 +84,7 @@ class UserService {
      * @param {Object} data - Input data to validate.
      * @throws {Error} If validation fails.
      */
-    static validateInput({ email, phone, password, firstname, lastname, userID, role, ids, googleEmail, regionID, governorateID, delegationID, agentID }) {
+    static validateInput({ email, phone, password, firstname, lastname, userID, role, ids, regionID, governorateID, delegationID, agentID }) {
         const errors = [];
 
         if (email !== undefined && (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))) {
@@ -119,9 +119,6 @@ class UserService {
             errors.push(ERROR_MESSAGES.INVALID_IDS);
         }
 
-        if (googleEmail !== undefined && (!googleEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(googleEmail))) {
-            errors.push(ERROR_MESSAGES.INVALID_GOOGLE_EMAIL);
-        }
 
         if (regionID !== undefined && !regionID) {
             errors.push(ERROR_MESSAGES.INVALID_REGION_ID);
@@ -243,7 +240,6 @@ class UserService {
                 lastname,
                 phone,
                 password: 'KEYCLOAK_MANAGED',
-                googleEmail: null,
             });
         } catch (error) {
             // Rollback Keycloak user creation
@@ -339,7 +335,6 @@ class UserService {
                 where: {
                     [Op.or]: [
                         userData.email ? { email: userData.email } : null,
-                        userData.email ? { googleEmail: userData.email } : null,
                         userData.phone ? { phone: userData.phone } : null,
                     ].filter(Boolean),
                     userID: { [Op.ne]: userID },
@@ -349,9 +344,6 @@ class UserService {
                 const errors = [];
                 if (userData.email && existingUser.email === userData.email) {
                     errors.push(ERROR_MESSAGES.DUPLICATE_EMAIL);
-                }
-                if (userData.email && existingUser.googleEmail === userData.email) {
-                    errors.push(ERROR_MESSAGES.GOOGLE_EMAIL_ALREADY_LINKED);
                 }
                 if (userData.phone && existingUser.phone === userData.phone) {
                     errors.push(ERROR_MESSAGES.DUPLICATE_PHONE);
@@ -416,7 +408,6 @@ class UserService {
                 firstname: userData.firstname || user.firstname,
                 lastname: userData.lastname || user.lastname,
                 phone: userData.phone || user.phone,
-                googleEmail: userData.email || user.googleEmail || user.email,
                 PFP: userData.PFP === null ? null : (userData.PFP !== undefined ? userData.PFP : user.PFP),
             });
         } catch (error) {
@@ -581,7 +572,7 @@ class UserService {
                     { model: Governorate, through: { attributes: [] }, attributes: ['governorateID', 'name'] },
                     { model: Delegation, through: { attributes: [] }, attributes: ['delegationID', 'name'] },
                 ],
-                attributes: ['userID', 'email', 'firstname', 'lastname', 'phone', 'googleEmail', 'regionalManagerID', 'directorID', 'createdAt', 'updatedAt'],
+                attributes: ['userID', 'email', 'firstname', 'lastname', 'phone', 'regionalManagerID', 'directorID', 'createdAt', 'updatedAt'],
             });
             if (!users.length) {
                 return [];

@@ -1239,6 +1239,7 @@
       "first": "First",
       "last": "Last",
       "resetRolesConfirm": "Are you sure you want to reset roles?",
+      "modifyPreMadeRolesWarning": "Warning: Modifying pre-made roles may affect system functionality.",
       "confirm": "Confirm",
       "cancel": "Cancel",
       "edit": "Edit",
