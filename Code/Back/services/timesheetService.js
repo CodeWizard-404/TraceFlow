@@ -216,7 +216,7 @@ class TimesheetService {
 
             let warning = null;
             try {
-                const userId = supervisor.keycloakId || supervisor.userID;
+                const userId = supervisor.userID;
                 if (typeof userId !== 'string') {
                     throw new Error(`Invalid userId: ${userId}`);
                 }
@@ -291,7 +291,7 @@ class TimesheetService {
             await timesheet.save({ transaction });
 
             try {
-                const userId = timesheet.User.keycloakId || timesheet.User.userID;
+                const userId = timesheet.User.userID;
                 if (typeof userId !== 'string') {
                     throw new Error(`Invalid userId: ${userId}`);
                 }

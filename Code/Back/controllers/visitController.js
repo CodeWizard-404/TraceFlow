@@ -242,7 +242,12 @@ class VisitController {
                 return res.status(401).json({ error: 'Invalid Google Calendar credentials. Please re-authorize.' });
             }
 
-            logger.error(`Sync visit to calendar error: ${error.message}`, { userID: req.user.userID, IP: req.ip, visitId: req.params.visitId });
+            logger.error(`Sync visit to calendar error: ${error.message}`, {
+                method: req.method,
+                url: req.originalUrl,
+                userID: req.user.userID,
+                visitId: req.params.visitId,
+            });
             return res.status(500).json({ error: 'Failed to sync visit to calendar' });
         }
     }

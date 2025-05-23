@@ -18,7 +18,6 @@
 
 .header-container {
     max-width: 1440px;
-    /* Updated to match your stated limit */
     margin: 0 auto;
     display: flex;
     justify-content: space-between;
@@ -26,7 +25,6 @@
     flex-wrap: nowrap;
     gap: 0.9375rem;
     position: relative;
-    /* Serve as positioning context for notification panel */
 }
 
 .logo {
@@ -350,6 +348,10 @@
     align-items: center;
 }
 
+/* Mobile Buttons */
+.mobile-buttons {
+    display: none;
+}
 
 /* Responsive Design */
 @media (max-width: 1024px) {
@@ -360,6 +362,16 @@
     .header-container {
         flex-wrap: nowrap;
         justify-content: space-between;
+    }
+
+    .mobile-buttons {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    }
+
+    .desktop-only {
+        display: none;
     }
 
     .menu-toggle {
@@ -378,8 +390,9 @@
         left: 0;
         box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.05);
         border-top: 1px solid rgba(76, 177, 199, 0.2);
-        transition: transform 0.3s ease-in-out;
-        transform: translateY(-10px);
+        transform: translateY(-50px);
+        opacity: 0;
+        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease-in-out;
         z-index: 999;
     }
 
@@ -391,20 +404,26 @@
     .header-nav.open {
         display: flex;
         transform: translateY(0);
-        transition: transform 0.3s ease-in-out;
+        opacity: 1;
+        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease-in-out;
+        margin: 0.75rem;
+        padding: 1rem;
+        width: 100vw;
+        transform: translateX(-1.75rem);
     }
 
     .nav-link {
         font-size: 1rem;
         padding: 0.5rem 0;
-        width: 100%;
-        text-align: center;
+        width: 90%;
+        text-align: left;
     }
 
     .button-group {
         align-self: flex-end;
         flex-direction: row;
         gap: 0.5rem;
+        margin-right: 1rem;
     }
 
     .theme-toggle-btn,
@@ -491,8 +510,6 @@
         font-size: 0.8rem;
     }
 }
-
-
 
 
 

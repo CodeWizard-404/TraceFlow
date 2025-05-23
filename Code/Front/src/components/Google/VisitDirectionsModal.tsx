@@ -40,7 +40,7 @@ const mapStyles = {
     { elementType: 'labels.text.stroke', stylers: [{ color: '#212121' }] },
     { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#424242' }] },
     { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#616161' }] },
-    { featureType: 'water', stylers: [{ color: '#63b3ed' }] },
+    { featureType: 'water', stylers: [{ color: '#808080' }] },
     { featureType: 'satellite', elementType: 'geometry', stylers: [{ visibility: 'simplified' }] },
     { featureType: 'satellite', elementType: 'labels.text.fill', stylers: [{ color: '#ffffff' }] },
   ],

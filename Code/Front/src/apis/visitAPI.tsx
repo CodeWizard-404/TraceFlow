@@ -38,7 +38,6 @@ export type CalendarEvent = {
     end: { dateTime: string; timeZone?: string };
 };
 
-export type ListCalendarEventsResponse = CalendarEvent[];
 
 export type SyncCalendarResponse = CalendarEvent;
 
@@ -232,14 +231,3 @@ export const syncVisitToCalendar = async (visitId: string): Promise<SyncCalendar
     }
 };
 
-export const listCalendarEvents = async (timesheetId: string): Promise<ListCalendarEventsResponse> => {
-    try {
-        if (!timesheetId) {
-            throw new Error("Timesheet ID is required.");
-        }
-        const response = await api.get<ListCalendarEventsResponse>(`/visits/timesheet/${timesheetId}/calendar-events`);
-        return response.data;
-    } catch (error) {
-        throw new Error(handleApiError(error, "Unable to list calendar events."));
-    }
-};

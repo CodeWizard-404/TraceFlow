@@ -18,7 +18,7 @@ import {
     createTimesheet,
     SuggestTimesheetResponse,
 } from "../../apis/timesheetAPI";
-import { getUsersByRole, getSupervisorsByUser } from "../../apis/userAPI";
+import { getUsersByRole, getSupervisorsByUser, fetchUserProfile } from "../../apis/userAPI";
 import { updateVisit } from '../../apis/visitAPI';
 import { FaClock, FaMapMarkerAlt, FaRegUser, FaFilter } from "react-icons/fa";
 import TimesheetStatus from "../../models/Enum/TimesheetStatus";
@@ -448,6 +448,7 @@ const Timesheets: React.FC = React.memo(() => {
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState<boolean>(false);
     const [supervisorSearchInput, setSupervisorSearchInput] = useState<string>("");
     const [visitReasonSearchInput, setVisitReasonSearchInput] = useState<string>("");
+    const [hasCalendarAccess, setHasCalendarAccess] = useState<boolean>(false);
 
     const userPermissions = useMemo(
         () => ({
@@ -613,6 +614,19 @@ const Timesheets: React.FC = React.memo(() => {
         window.addEventListener('beforeunload', handleBeforeUnload);
         return () => window.removeEventListener('beforeunload', handleBeforeUnload);
     }, [hasUnsavedChanges, t]);
+
+    useEffect(() => {
+        const fetchUserCalendarAccess = async () => {
+            try {
+                const response = await fetchUserProfile();
+                setHasCalendarAccess(response.hasCalendarAccess || false);
+            } catch (err) {
+                console.error('Failed to fetch calendar access:', err);
+            }
+        };
+        if (user?.userID) fetchUserCalendarAccess();
+    }, [user]);
+
 
     const getWeekNumber = useCallback((date: Date): number => {
         const year = date.getFullYear();
@@ -1551,6 +1565,7 @@ const Timesheets: React.FC = React.memo(() => {
                                 <CalendarSyncButton
                                     timesheetId={filteredTimesheets[0].timesheetID}
                                     isSupervisor={!!isSupervisor}
+                                    hasCalendarAccess={hasCalendarAccess}
                                 />
                             )}
                             <div className="week-header-middle">

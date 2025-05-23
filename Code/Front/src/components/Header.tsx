@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
@@ -24,6 +24,9 @@ function Header() {
   const { user, userRoles, effectivePermissions, permissionsLoaded, logout } = useAuth();
   const { unreadCount } = useNotification();
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const toggleMenu = () => setIsMenuOpen((prev) => !prev);
 
@@ -76,13 +79,31 @@ function Header() {
     { path: "/profile", label: t("header.navbar.profile"), visible: () => true },
   ];
 
-  const navigate = useNavigate();
-
   const handleNavClick = (path: string) => {
     navigate(path);
     setIsMenuOpen(false);
     setShowNotificationPanel(false);
   };
+
+  // Close menu on outside click in mobile view
+  useEffect(() => {
+    const handleClickOutside = (event: { target: any; }) => {
+      if (isMenuOpen && menuRef.current && !menuRef.current.contains(event.target)) {
+        setIsMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isMenuOpen]);
+
+  // Close menu on route change
+  useEffect(() => {
+    setIsMenuOpen(false);
+    setShowNotificationPanel(false);
+  }, [location]);
 
   return (
     <header className={`header ${theme === "dark" ? "dark" : ""}`}>
@@ -92,6 +113,35 @@ function Header() {
           src={theme === "dark" ? "/Banner-wd.png" : "/Banner-bl.png"}
           alt={t("header.logoAlt")}
         />
+        <div className="mobile-buttons">
+          <motion.button
+            className="theme-toggle-btn"
+            onClick={toggleTheme}
+            aria-label={t("header.aria.themeToggle", {
+              mode: t(`header.${theme === "light" ? "darkMode" : "lightMode"}`),
+            })}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            {theme === "light" ? <FaMoon /> : <FaSun />}
+            <span className="btn-text">{t("header.theme")}</span>
+          </motion.button>
+          {user && (
+            <motion.button
+              className="notification-btn"
+              onClick={() => setShowNotificationPanel((prev) => !prev)}
+              aria-label={t("header.aria.notifications", { count: unreadCount })}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <FaBell />
+              {unreadCount > 0 && (
+                <span className="notification-badge">{unreadCount}</span>
+              )}
+              <span className="btn-text">{t("header.notifications")}</span>
+            </motion.button>
+          )}
+        </div>
         <button
           className="menu-toggle"
           onClick={toggleMenu}
@@ -100,7 +150,7 @@ function Header() {
         >
           {isMenuOpen ? <FaTimes /> : <FaBars />}
         </button>
-        <nav className={`header-nav ${isMenuOpen ? "open" : ""}`}>
+        <nav className={`header-nav ${isMenuOpen ? "open" : ""}`} ref={menuRef}>
           {permissionsLoaded &&
             user &&
             navItems.map((item) =>
@@ -116,7 +166,7 @@ function Header() {
               ) : null
             )}
           <div className="button-group">
-            <div className="icon-btn-wrapper">
+            <div className="icon-btn-wrapper desktop-only">
               <motion.button
                 className="theme-toggle-btn"
                 onClick={toggleTheme}
@@ -133,7 +183,7 @@ function Header() {
             <div className="icon-btn-wrapper">
               <motion.button
                 className="lang-toggle-btn"
-                aria-label={t("header.selectLanguage")}
+                aria-label={t("header.aria.selectLanguage")}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
@@ -164,7 +214,7 @@ function Header() {
             </div>
             {user && (
               <>
-                <div className="icon-btn-wrapper">
+                <div className="icon-btn-wrapper desktop-only">
                   <motion.button
                     className="notification-btn"
                     onClick={() => setShowNotificationPanel((prev) => !prev)}

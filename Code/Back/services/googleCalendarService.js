@@ -140,7 +140,7 @@ class GoogleCalendarService {
                 }
             }
 
-            // Build description
+            // Build description with image links
             let description = `Status: ${visit.status}\n`;
             if (visit.Reasons && visit.Reasons.length > 0) {
                 description += `Reasons:\n${visit.Reasons.map(r => `- ${r.item}`).join('\n')}\n`;
@@ -149,7 +149,7 @@ class GoogleCalendarService {
                 description += `Checklists:\n${visit.Checklists.map(c => `- ${c.item}`).join('\n')}\n`;
             }
             if (visit.status === 'visited' && visit.photos && visit.photos.length > 0) {
-                description += `Photos:\n${visit.photos.map(p => `- ${p}`).join('\n')}\n`;
+                description += `Photos: ${visit.photos.length}\n`;
             }
             if (visit.status === 'visited' && visit.comment) {
                 description += `Comment: ${visit.comment}`;
@@ -169,13 +169,13 @@ class GoogleCalendarService {
                 end: { dateTime: endDateTime.toISOString(), timeZone: 'Africa/Tunis' },
                 colorId: getColorId(visit.status),
                 attendees,
-                guestsCanModify: true, // Allow attendees to modify
+                guestsCanModify: true,
                 extendedProperties: {
                     private: {
                         visitId: visit.visitID,
                         timesheetId: visit.timesheetID,
                         agentPhone: visit.Agent?.phone || '',
-                        lockedFields: 'true' // Custom flag to indicate restricted editing
+                        lockedFields: 'true'
                     }
                 }
             };
@@ -192,7 +192,7 @@ class GoogleCalendarService {
             const response = await calendar.events.insert({
                 calendarId: 'primary',
                 resource: event,
-                sendUpdates: 'all' // Notify attendees
+                sendUpdates: 'all'
             });
 
             // Set ACL for regional manager (if exists)
@@ -318,7 +318,7 @@ class GoogleCalendarService {
                 }
             }
 
-            // Build description with reasons, checklists, photos, and comments
+            // Build description with image links
             let description = `Status: ${visit.status}`;
             if (visit.Reasons && visit.Reasons.length > 0) {
                 description += `\n\nReasons:\n${visit.Reasons.map(r => `- ${r.item}`).join('\n')}`;
@@ -327,14 +327,14 @@ class GoogleCalendarService {
                 description += `\n\nChecklists:\n${visit.Checklists.map(c => `- ${c.item}`).join('\n')}`;
             }
             if (visit.status === 'visited' && visit.photos && visit.photos.length > 0) {
-                description += `\n\nPhotos:\n${visit.photos.map(p => `- ${p}`).join('\n')}`;
+                description += `Photos: ${visit.photos.length}\n`;
             }
             if (visit.status === 'visited' && visit.comment) {
                 description += `\n\nComment: ${visit.comment}`;
             }
 
             const event = {
-                summary: `Visit : ${visit.Agent?.name || 'Unknown'} ${visit.Agent?.lastname || ''}`,
+                summary: `Visit: ${visit.Agent?.name || 'Unknown'} ${visit.Agent?.lastname || ''}`,
                 location: latitude && longitude ? `${latitude},${longitude}` : location,
                 description,
                 start: { dateTime: startDateTime.toISOString(), timeZone: 'Africa/Tunis' },
@@ -432,6 +432,11 @@ class GoogleCalendarService {
             logger.info(`Listed calendar events for timesheet ${timesheetId}`, { userId });
             return response.data.items;
         } catch (error) {
+            if (error.message.includes('Invalid Credentials') || error.response?.status === 401) {
+                logger.error(`Invalid Google Calendar credentials`, { userId, timesheetId });
+                await VaultService.clearTokens(userId);
+                throw new Error('Invalid Google Calendar credentials. Please re-authorize.');
+            }
             logger.error(`Failed to list calendar events for timesheet ${timesheetId}: ${error.message}`, { userId, timesheetId });
             throw error;
         }

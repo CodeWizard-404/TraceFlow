@@ -2,6 +2,8 @@ const vault = require('node-vault');
 require('dotenv').config();
 const axios = require('axios');
 const logger = require('../utils/logger');
+const { google } = require('googleapis');
+const { User } = require('../models');
 
 const options = {
     apiVersion: 'v1',
@@ -46,13 +48,19 @@ class VaultService {
             const { access_token, expires_at, refresh_token } = result.data.data;
             if (!access_token || !refresh_token) {
                 logger.error('Missing access_token or refresh_token in Vault', { userId });
+                await this.clearTokens(userId);
                 throw new Error('Missing access_token or refresh_token in Vault');
             }
             // Check if access token is expired
             if (Date.now() >= expires_at) {
                 logger.info('Access token expired, refreshing', { userId });
-                const newAccessToken = await this.refreshAccessToken(userId, refresh_token);
-                return newAccessToken;
+                return await this.refreshAccessToken(userId, refresh_token);
+            }
+            // Validate access token
+            const isValid = await this.validateAccessToken(userId, access_token);
+            if (!isValid) {
+                logger.info('Access token invalid, refreshing', { userId });
+                return await this.refreshAccessToken(userId, refresh_token);
             }
             logger.info('Retrieved valid access token from Vault', { userId });
             return access_token;
@@ -62,7 +70,26 @@ class VaultService {
                 error: error.message,
                 vaultError: error.response?.data || error
             });
+            await this.clearTokens(userId);
             throw new Error(`Failed to get access token from Vault: ${error.message}`);
+        }
+    }
+
+    static async validateAccessToken(userId, accessToken) {
+        try {
+            const oauth2Client = new google.auth.OAuth2();
+            oauth2Client.setCredentials({ access_token: accessToken });
+            const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+            // Test token by listing calendars (minimal API call)
+            await calendar.calendarList.list();
+            return true;
+        } catch (error) {
+            logger.error('Access token validation failed', {
+                userId,
+                error: error.message,
+                errorDetails: error.response?.data || error
+            });
+            return false;
         }
     }
 
@@ -76,6 +103,7 @@ class VaultService {
             const refresh_token = result.data.data.refresh_token;
             if (!refresh_token) {
                 logger.error('No refresh token found in Vault', { userId });
+                await this.clearTokens(userId);
                 throw new Error('No refresh token found in Vault');
             }
             logger.info('Retrieved refresh token from Vault', { userId });
@@ -86,6 +114,7 @@ class VaultService {
                 error: error.message,
                 vaultError: error.response?.data || error
             });
+            await this.clearTokens(userId);
             throw new Error(`Failed to get refresh token from Vault: ${error.message}`);
         }
     }
@@ -116,7 +145,25 @@ class VaultService {
                 userId,
                 errorDetails: error.response?.data || error
             });
+            await this.clearTokens(userId);
             throw new Error(`Failed to refresh Google access token: ${error.response?.data?.error || error.message}`);
+        }
+    }
+
+    static async clearTokens(userId) {
+        try {
+            await vaultClient.delete(`secret/data/google-calendar/${userId}`);
+            await User.update(
+                { hasCalendarAccess: false },
+                { where: { userID: userId } }
+            );
+            logger.info('Cleared tokens from Vault and updated hasCalendarAccess', { userId });
+        } catch (error) {
+            logger.error('Failed to clear tokens from Vault', {
+                userId,
+                error: error.message,
+                vaultError: error.response?.data || error
+            });
         }
     }
 }

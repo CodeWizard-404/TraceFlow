@@ -17,10 +17,9 @@ const CalendarSyncButton: React.FC<CalendarSyncButtonProps> = ({ visitId, timesh
     const [loading, setLoading] = useState(false);
     const [allVisitsSynced, setAllVisitsSynced] = useState(false);
 
-    // Check timesheet sync status on mount if timesheetId is provided
     useEffect(() => {
         const checkTimesheetSyncStatus = async () => {
-            if (!timesheetId || !isSupervisor || visitId) return;
+            if (!timesheetId || !isSupervisor || visitId || !hasCalendarAccess) return;
             try {
                 const events = await api.get(`/visits/timesheet/${timesheetId}/calendar-events`);
                 const visits = await api.get(`/timesheets/${timesheetId}`);
@@ -28,12 +27,20 @@ const CalendarSyncButton: React.FC<CalendarSyncButtonProps> = ({ visitId, timesh
                     events.data.some((event: any) => event.extendedProperties?.private?.visitId === visit.visitID)
                 );
                 setAllVisitsSynced(allSynced);
-            } catch (err) {
-                console.error('Failed to check timesheet sync status:', err);
+            } catch (err: any) {
+                if (err.response?.status === 401 || err.message?.includes('Invalid Credentials')) {
+                    setAllVisitsSynced(false);
+                    toast.error('Calendar access expired or invalid. Please re-authorize.', {
+                        onClick: () => handleCalendarAuth(),
+                    });
+                } else {
+                    console.error('Failed to check timesheet sync status:', err);
+                    setAllVisitsSynced(false);
+                }
             }
         };
         checkTimesheetSyncStatus();
-    }, [timesheetId, isSupervisor, visitId]);
+    }, [timesheetId, isSupervisor, visitId, hasCalendarAccess]);
 
     const handleTimesheetSync = async () => {
         if (!isSupervisor || !timesheetId) return;
@@ -106,28 +113,30 @@ const CalendarSyncButton: React.FC<CalendarSyncButtonProps> = ({ visitId, timesh
         );
     }
 
-    if (timesheetId && isSupervisor && !visitId) {
-        return (
-            <button
-                onClick={handleTimesheetSync}
-                disabled={loading}
-                className="sync-btn"
-            >
-                {loading ? 'Syncing...' : allVisitsSynced ? 'Synced' : 'Sync Timesheet to Calendar'}
-            </button>
-        );
-    }
+    if (hasCalendarAccess) {
+        if (timesheetId && isSupervisor && !visitId) {
+            return (
+                <button
+                    onClick={handleTimesheetSync}
+                    disabled={loading}
+                    className="sync-btn"
+                >
+                    {loading ? 'Syncing...' : allVisitsSynced ? 'Synced' : 'Sync Timesheet to Calendar'}
+                </button>
+            );
+        }
 
-    if (visitId && isSupervisor) {
-        return (
-            <button
-                onClick={handleVisitSync}
-                disabled={loading || hasCalendarEvent}
-                className="sync-btn"
-            >
-                {loading ? 'Syncing...' : hasCalendarEvent ? 'Synced' : 'Sync to Calendar'}
-            </button>
-        );
+        if (visitId && isSupervisor) {
+            return (
+                <button
+                    onClick={handleVisitSync}
+                    disabled={loading || hasCalendarEvent}
+                    className="sync-btn"
+                >
+                    {loading ? 'Syncing...' : hasCalendarEvent ? 'Synced' : 'Sync to Calendar'}
+                </button>
+            );
+        }
     }
 
     return null;

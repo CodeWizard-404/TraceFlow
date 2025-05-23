@@ -239,7 +239,7 @@ class TimesheetController {
                 if (!supervisor) {
                     throw new Error('Supervisor not found');
                 }
-                const userId = supervisor.keycloakId || supervisor.userID;
+                const userId = supervisor.userID;
                 if (typeof userId !== 'string') {
                     throw new Error(`Invalid userId: ${userId}`);
                 }
@@ -420,7 +420,7 @@ class TimesheetController {
                 return res.status(404).json({ error: 'User not found for this timesheet' });
             }
 
-            const userId = timesheet.User.keycloakId || timesheet.User.userID;
+            const userId = timesheet.User.userID;
             if (typeof userId !== 'string') {
                 logger.error(`Invalid userId type: expected string, got ${typeof userId}`, { userId, timesheetId: id });
                 return res.status(500).json({ error: 'Invalid user ID type' });
@@ -452,7 +452,12 @@ class TimesheetController {
 
             return res.status(200).json({ timesheetId: id, syncedVisits: syncResults });
         } catch (error) {
-            logger.error(`Sync timesheet to calendar error: ${error.message}`, { req });
+            logger.error(`Sync timesheet to calendar error: ${error.message}`, {
+                method: req.method,
+                url: req.originalUrl,
+                userId: actorID,
+                timesheetId: req.params.id,
+            });
             return res.status(500).json({ error: 'Failed to sync timesheet to calendar' });
         }
     }

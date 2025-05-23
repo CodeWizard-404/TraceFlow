@@ -82,6 +82,7 @@
     "qrcode": "^1.5.4",
     "rate-limiter-flexible": "^7.1.0",
     "redoc-express": "^2.1.0",
+    "safe-json-stringify": "^1.2.0",
     "sequelize": "^6.37.7",
     "sequelize-to-json": "^0.10.4",
     "socket.io": "^4.7.2",

@@ -15,9 +15,9 @@ export interface User {
     tempResetToken?: string;
     regionalManagerID?: string;
     directorID?: string;
-    isOnline: boolean;
-    hasGoogleAuth: boolean;
-    hasCalendarAccess: boolean;
+    isOnline?: boolean;
+    hasGoogleAuth?: boolean;
+    hasCalendarAccess?: boolean;
     Roles?: Role[];
     supervisors?: User[];
     managers?: User[];
