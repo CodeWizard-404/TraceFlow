@@ -6,3 +6,4 @@ keycloak/Front/.env
 Mobile/lib/utils/constants.dart
 keycloak/Back/logs/auth.log
 /vault_1.19.4_windows_386
+/Code/vault_1.19.4_windows_386
