@@ -1,0 +1,16 @@
+C:\Users\Kayto>keytool -list -v -keystore C:/Users/Kayto/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android
+Alias name: androiddebugkey
+Creation date: Sep 11, 2024
+Entry type: PrivateKeyEntry
+Certificate chain length: 1
+Certificate[1]:
+Owner: C=US, O=Android, CN=Android Debug
+Issuer: C=US, O=Android, CN=Android Debug
+Serial number: 1
+Valid from: Wed Sep 11 23:55:10 CET 2024 until: Fri Sep 04 23:55:10 CET 2054
+Certificate fingerprints:
+         SHA1: 63:AC:F1:8C:8C:2D:FC:B7:8D:5B:54:BE:50:BA:09:35:3B:4B:2C:96
+         SHA256: 39:CC:2C:C5:55:67:2B:C5:26:6D:5A:96:26:91:68:69:64:13:6E:AE:91:3F:44:86:B9:AF:CF:3A:B5:49:60:CB
+Signature algorithm name: SHA256withRSA
+Subject Public Key Algorithm: 2048-bit RSA key
+Version: 1

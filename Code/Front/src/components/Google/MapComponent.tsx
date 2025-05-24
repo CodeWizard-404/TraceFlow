@@ -86,7 +86,7 @@ interface CustomDirectionsResponse {
   trafficSegments?: TrafficSegment[];
 }
 
-const containerStyle = { width: '100%', height: '100vh' };
+const containerStyle = { width: '100%', height: '70vh' };
 const defaultCenter = { lat: 36.8065, lng: 10.1815 };
 const libraries: ('places' | 'geometry')[] = ['places', 'geometry'];
 
@@ -151,6 +151,11 @@ const MapComponent: React.FC = () => {
   const [showEditPanel, setShowEditPanel] = useState(false);
   const [showFilterPanel, setShowFilterPanel] = useState(false);
   const [showDirectionsPanel, setShowDirectionsPanel] = useState(false);
+  const [isFilterPanelCollapsed, setIsFilterPanelCollapsed] = useState(false);
+  const [isDirectionsPanelCollapsed, setIsDirectionsPanelCollapsed] = useState(false);
+  const [isRoutesPanelCollapsed, setIsRoutesPanelCollapsed] = useState(false);
+  const [isAddAgentPanelCollapsed, setIsAddAgentPanelCollapsed] = useState(false);
+  const [isEditAgentPanelCollapsed, setIsEditAgentPanelCollapsed] = useState(false);
   const [route, setRoute] = useState<CustomDirectionsResponse | null>(null);
   const [routeMode, setRouteMode] = useState<'DRIVING' | 'WALKING'>('DRIVING');
   const [routePoints, setRoutePoints] = useState<RoutePoint[]>([]);
@@ -170,9 +175,22 @@ const MapComponent: React.FC = () => {
   const [assignedDelegations, setAssignedDelegations] = useState<{ delegationID: string; name: string; governorateID?: string }[]>([]);
   const [selectedGovernorate, setSelectedGovernorate] = useState('');
 
+  // Memoized state to prevent re-renders
+  const routeData = useRef<{
+    points: RoutePoint[];
+    response: CustomDirectionsResponse | null;
+    path: google.maps.LatLngLiteral[];
+    traffic: Array<{ path: google.maps.LatLngLiteral[]; color: string }>;
+  }>({
+    points: [],
+    response: null,
+    path: [],
+    traffic: [],
+  });
+
   // Detect platform theme and set map style
   useEffect(() => {
-    const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: light)');
     const handleThemeChange = (e: MediaQueryListEvent | MediaQueryList) => {
       setMapStyle(e.matches ? 'night' : 'standard');
     };
@@ -188,36 +206,6 @@ const MapComponent: React.FC = () => {
       calculateDistance(userLocation.lat, userLocation.lng, b.lat, b.lng)
     );
   }, [filteredMarkers, userLocation]);
-
-  const routePath = useMemo(() => {
-    if (!route || !route.polyline) return [];
-    try {
-      return polyline.decode(route.polyline).map(([lat, lng]) => ({ lat, lng }));
-    } catch (err) {
-      console.error('Polyline Decode Error:', err);
-      return [];
-    }
-  }, [route]);
-
-  const trafficPaths = useMemo(() => {
-    if (!route || !route.trafficSegments) return [];
-    return route.trafficSegments.flatMap((segment) =>
-      segment.steps.map((step) => ({
-        path: polyline.decode(step.polyline).map(([lat, lng]) => ({ lat, lng })),
-        color: step.color,
-      }))
-    );
-  }, [route]);
-
-  useEffect(() => {
-    console.log('MapComponent rendered', {
-      carMode,
-      userLocation,
-      mapCenter,
-      routePoints: routePoints.length,
-      timestamp: new Date().toISOString(),
-    });
-  }, [carMode, userLocation, mapCenter, routePoints]);
 
   useEffect(() => {
     const loadInitialData = async () => {
@@ -277,17 +265,16 @@ const MapComponent: React.FC = () => {
     loadInitialData();
   }, []);
 
-  const handleCalculateRoute = useCallback(async (optimize: boolean = false) => {
-    if (routePoints.length < 2) {
+  const handleCalculateRoute = useCallback(async (points: RoutePoint[], mode: 'DRIVING' | 'WALKING', optimize: boolean = false) => {
+    if (points.length < 2) {
       toast.error('At least two points required for a route');
       return;
     }
-    setLoading(true);
     try {
-      const origin = routePoints[0].location;
-      const destination = routePoints[routePoints.length - 1].location;
-      const waypointsForApi = routePoints
-        .slice(1, routePoints.length - 1)
+      const origin = points[0].location;
+      const destination = points[points.length - 1].location;
+      const waypointsForApi = points
+        .slice(1, points.length - 1)
         .map((point) => ({
           location: point.location,
           stopover: true,
@@ -295,18 +282,28 @@ const MapComponent: React.FC = () => {
       const directions = await getDirections(
         origin,
         destination,
-        routeMode.toLowerCase(),
+        mode.toLowerCase(),
         waypointsForApi,
         optimize
       );
       if (directions.polyline) {
-        setRoute(directions);
+        routeData.current = {
+          points,
+          response: directions,
+          path: polyline.decode(directions.polyline).map(([lat, lng]) => ({ lat, lng })),
+          traffic: directions.trafficSegments?.flatMap((segment) =>
+            segment.steps.map((step) => ({
+              path: polyline.decode(step.polyline).map(([lat, lng]) => ({ lat, lng })),
+              color: step.color,
+            }))
+          ) || [],
+        };
         if (optimize && directions.waypointOrder && directions.waypointOrder.length > 0) {
-          const newPoints = [...routePoints];
+          const newPoints = [...points];
           const waypoints = newPoints.slice(1, newPoints.length - 1);
           const reorderedWaypoints = directions.waypointOrder.map((index) => waypoints[index]);
           newPoints.splice(1, waypoints.length, ...reorderedWaypoints);
-          setRoutePoints(newPoints);
+          routeData.current.points = newPoints;
         }
         const [destLat, destLng] = destination.split(',').map(Number);
         setMapCenter({ lat: destLat, lng: destLng });
@@ -317,10 +314,8 @@ const MapComponent: React.FC = () => {
     } catch (err) {
       console.error('Calculate Route Error:', err);
       toast.error('Failed to calculate route');
-    } finally {
-      setLoading(false);
     }
-  }, [routePoints, routeMode]);
+  }, []);
 
   useEffect(() => {
     const maxRetries = 3;
@@ -330,7 +325,7 @@ const MapComponent: React.FC = () => {
     const handlePosition = async (position: GeolocationPosition) => {
       const { latitude, longitude } = position.coords;
       const newLocation = { lat: latitude, lng: longitude };
-      lastPosition.current = { lat: latitude, lng: longitude, timestamp: Date.now() };
+      lastPosition.current = { ...newLocation, timestamp: Date.now() };
 
       setUserLocation((prev) => {
         if (prev && prev.lat === latitude && prev.lng === longitude) return prev;
@@ -349,8 +344,8 @@ const MapComponent: React.FC = () => {
         toast.error('Failed to update location');
       }
 
-      if (routePoints.length >= 2) {
-        handleCalculateRoute();
+      if (routeData.current.points.length >= 2) {
+        handleCalculateRoute(routeData.current.points, routeMode);
       }
     };
 
@@ -397,7 +392,7 @@ const MapComponent: React.FC = () => {
         retryCount.current = 0;
       }
     };
-  }, [carMode, handleCalculateRoute]);
+  }, [carMode, routeMode]);
 
   const handleManualLocation = useCallback((e: google.maps.MapMouseEvent) => {
     if (carMode && e.latLng) {
@@ -444,7 +439,6 @@ const MapComponent: React.FC = () => {
       setFilteredMarkers(allMarkers);
       return;
     }
-    setLoading(true);
     try {
       const matchingAgents = allMarkers.filter(
         (m) =>
@@ -461,8 +455,6 @@ const MapComponent: React.FC = () => {
       console.error('Search Error:', err);
       toast.error('Search failed');
       setFilteredMarkers(allMarkers);
-    } finally {
-      setLoading(false);
     }
   }, [searchQuery, allMarkers]);
 
@@ -530,7 +522,7 @@ const MapComponent: React.FC = () => {
     } else if (carMode) {
       handleManualLocation(event);
     } else if (selectedMarker) {
-      setSelectedMarker(null); // Close InfoWindow on map click
+      setSelectedMarker(null);
     }
   }, [addingAgentMode, newAgent, carMode, handleManualLocation, selectedMarker]);
 
@@ -693,7 +685,6 @@ const MapComponent: React.FC = () => {
       toast.error('User location not available');
       return;
     }
-    setLoading(true);
     try {
       const originCoords = `${userLocation.lat},${userLocation.lng}`;
       const destCoords = `${marker.lat},${marker.lng}`;
@@ -715,31 +706,24 @@ const MapComponent: React.FC = () => {
           type: 'destination',
         },
       ];
-      const directions = await getDirections(originCoords, destCoords, routeMode.toLowerCase(), []);
-      if (directions.polyline) {
-        setRoute(directions);
-        setRoutePoints(newPoints);
-        setMapCenter({ lat: marker.lat, lng: marker.lng });
-        setZoom(15);
-        closeAllPanels();
-        setShowDirectionsPanel(true);
-      } else {
-        toast.error('No directions found');
-      }
+      await handleCalculateRoute(newPoints, routeMode);
+      routeData.current.points = newPoints;
+      setMapCenter({ lat: marker.lat, lng: marker.lng });
+      setZoom(15);
+      closeAllPanels();
+      setShowDirectionsPanel(true);
+      setIsDirectionsPanelCollapsed(false);
     } catch (err) {
       console.error('Directions Error:', err);
       toast.error('Failed to get directions');
-    } finally {
-      setLoading(false);
     }
-  }, [userLocation, routeMode]);
+  }, [userLocation, routeMode, handleCalculateRoute]);
 
   const handleAddStop = useCallback(async (marker: AgentMarker) => {
     if (!userLocation) {
       toast.error('User location not available');
       return;
     }
-    setLoading(true);
     try {
       const newStop = `${marker.lat},${marker.lng}`;
       const geocode = await getGeocode(newStop);
@@ -749,7 +733,7 @@ const MapComponent: React.FC = () => {
         address: geocode.formattedAddress || newStop,
         type: 'waypoint',
       };
-      let newPoints = [...routePoints];
+      let newPoints = [...routeData.current.points];
       if (newPoints.length === 0) {
         newPoints = [{
           id: 'origin',
@@ -765,46 +749,28 @@ const MapComponent: React.FC = () => {
           newPoints.push(newWaypoint);
         }
       }
-      const origin = newPoints[0].location;
-      const destination = newPoints[newPoints.length - 1].location;
-      const waypointsForApi = newPoints.slice(1, newPoints.length - 1).map((wp) => ({
-        location: wp.location,
-        stopover: true,
-      }));
-      const directions = await getDirections(
-        origin,
-        destination,
-        routeMode.toLowerCase(),
-        waypointsForApi
-      );
-      if (directions.polyline) {
-        setRoute(directions);
-        setRoutePoints(newPoints);
-        setMapCenter({ lat: marker.lat, lng: marker.lng });
-        setZoom(15);
-      } else {
-        toast.error('No directions found');
-      }
+      await handleCalculateRoute(newPoints, routeMode);
+      routeData.current.points = newPoints;
+      setMapCenter({ lat: marker.lat, lng: marker.lng });
+      setZoom(15);
     } catch (err) {
       console.error('Add Stop Error:', err);
       toast.error('Failed to add stop');
-    } finally {
-      setLoading(false);
     }
-  }, [userLocation, routePoints, routeMode]);
+  }, [userLocation, routeMode, handleCalculateRoute]);
 
   const handleOptimizeRoute = useCallback(() => {
-    if (routePoints.length < 3) {
+    if (routeData.current.points.length < 3) {
       toast.error('At least one waypoint required to optimize');
       return;
     }
-    handleCalculateRoute(true);
-  }, [handleCalculateRoute, routePoints]);
+    handleCalculateRoute(routeData.current.points, routeMode, true);
+  }, [handleCalculateRoute, routeMode]);
 
   const clearRoute = useCallback(() => {
-    setRoute(null);
-    setRoutePoints([]);
+    routeData.current = { points: [], response: null, path: [], traffic: [] };
     setShowDirectionsPanel(false);
+    setIsDirectionsPanelCollapsed(false);
   }, []);
 
   const handleReturnToCurrentLocation = useCallback(() => {
@@ -863,7 +829,7 @@ const MapComponent: React.FC = () => {
   const handleDragEnd = useCallback(
     (result: any) => {
       if (!result.destination) return;
-      const newPoints = [...routePoints];
+      const newPoints = [...routeData.current.points];
       const [moved] = newPoints.splice(result.source.index, 1);
       newPoints.splice(result.destination.index, 0, moved);
       newPoints[0].type = 'origin';
@@ -871,41 +837,44 @@ const MapComponent: React.FC = () => {
       for (let i = 1; i < newPoints.length - 1; i++) {
         newPoints[i].type = 'waypoint';
       }
-      setRoutePoints(newPoints);
+      routeData.current.points = newPoints;
       if (newPoints.length >= 2) {
-        handleCalculateRoute();
+        handleCalculateRoute(newPoints, routeMode);
       }
     },
-    [routePoints, handleCalculateRoute]
+    [routeMode, handleCalculateRoute]
   );
 
   const handleRemovePoint = useCallback(
     (index: number) => {
-      const newPoints = [...routePoints].filter((_, i) => i !== index);
+      const newPoints = [...routeData.current.points].filter((_, i) => i !== index);
       if (newPoints.length >= 2) {
         newPoints[0].type = 'origin';
         newPoints[newPoints.length - 1].type = 'destination';
         for (let i = 1; i < newPoints.length - 1; i++) {
           newPoints[i].type = 'waypoint';
         }
-        setRoutePoints(newPoints);
-        handleCalculateRoute();
+        routeData.current.points = newPoints;
+        handleCalculateRoute(newPoints, routeMode);
       } else {
-        setRoutePoints(newPoints);
-        setRoute(null);
+        routeData.current = { points: newPoints, response: null, path: [], traffic: [] };
         setShowDirectionsPanel(false);
+        setIsDirectionsPanelCollapsed(false);
       }
     },
-    [routePoints, handleCalculateRoute]
+    [routeMode, handleCalculateRoute]
   );
-
-
 
   const closeAllPanels = useCallback(() => {
     setShowAddPanel(false);
     setShowEditPanel(false);
     setShowFilterPanel(false);
     setShowDirectionsPanel(false);
+    setIsFilterPanelCollapsed(false);
+    setIsDirectionsPanelCollapsed(false);
+    setIsRoutesPanelCollapsed(false);
+    setIsAddAgentPanelCollapsed(false);
+    setIsEditAgentPanelCollapsed(false);
   }, []);
 
   const AgentCard = React.memo(
@@ -926,7 +895,7 @@ const MapComponent: React.FC = () => {
         <h4>{`${marker.name} ${marker.lastname}`}</h4>
         <p>{marker.address}</p>
         <div className="agent-actions">
-          {route ? (
+          {routeData.current.response ? (
             <button onClick={(e) => { e.stopPropagation(); onAddStop(marker); }}>
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
@@ -956,15 +925,25 @@ const MapComponent: React.FC = () => {
 
   const WaypointList = React.memo(() => (
     <div className="waypoint-list">
-      <h3>Route Stops</h3>
-      {routePoints.length === 0 ? (
+      <div className="waypoint-header">
+        <h3>Route Stops</h3>
+        {routeData.current.points.length > 2 && (
+          <button onClick={handleOptimizeRoute}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M4 12h8M12 4v16M20 12h-8m-4 4h8m-8-8h8" />
+            </svg>
+            Optimize
+          </button>
+        )}
+      </div>
+      {routeData.current.points.length === 0 ? (
         <p>No stops added</p>
       ) : (
         <DragDropContext onDragEnd={handleDragEnd}>
           <Droppable droppableId="routePoints">
             {(provided) => (
               <ul {...provided.droppableProps} ref={provided.innerRef}>
-                {routePoints.map((point, index) => (
+                {routeData.current.points.map((point, index) => (
                   <Draggable key={point.id} draggableId={point.id} index={index}>
                     {(provided, snapshot) => (
                       <li
@@ -989,14 +968,7 @@ const MapComponent: React.FC = () => {
           </Droppable>
         </DragDropContext>
       )}
-      {routePoints.length > 2 && (
-        <button onClick={handleOptimizeRoute}>
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M4 12h8M12 4v16M20 12h-8m-4 4h8m-8-8h8" />
-          </svg>
-          Optimize
-        </button>
-      )}
+
     </div>
   ));
 
@@ -1035,6 +1007,7 @@ const MapComponent: React.FC = () => {
                 onClick={() => {
                   closeAllPanels();
                   setShowFilterPanel(true);
+                  setIsFilterPanelCollapsed(false);
                 }}
                 title="Filter"
               >
@@ -1047,6 +1020,7 @@ const MapComponent: React.FC = () => {
                 onClick={() => {
                   closeAllPanels();
                   setShowDirectionsPanel(true);
+                  setIsDirectionsPanelCollapsed(false);
                 }}
                 title="Directions"
               >
@@ -1079,110 +1053,168 @@ const MapComponent: React.FC = () => {
           </div>
 
           {showFilterPanel && (
-            <div className="filter-panel">
-              <select value={filterRegion} onChange={(e) => setFilterRegion(e.target.value)}>
-                <option value="">All Regions</option>
-                {regions.map((r) => (
-                  <option key={r.regionID} value={r.regionID}>{r.name}</option>
-                ))}
-              </select>
-              <select value={filterGovernorate} onChange={(e) => setFilterGovernorate(e.target.value)}>
-                <option value="">All Governorates</option>
-                {filteredGovernorates.map((g) => (
-                  <option key={g.governorateID} value={g.governorateID}>{g.name}</option>
-                ))}
-              </select>
-              <select value={filterDelegation} onChange={(e) => setFilterDelegation(e.target.value)}>
-                <option value="">All Delegations</option>
-                {filteredDelegations.map((d) => (
-                  <option key={d.delegationID} value={d.delegationID}>{d.name}</option>
-                ))}
-              </select>
-              <select value={filterSupervisor} onChange={(e) => setFilterSupervisor(e.target.value)}>
-                <option value="">All Supervisors</option>
-                {supervisors.map((sup) => (
-                  <option key={sup.userID} value={sup.userID}>{`${sup.firstname} ${sup.lastname}`}</option>
-                ))}
-              </select>
+            <div className={`panel filter-panel ${isFilterPanelCollapsed ? 'collapsed' : ''}`}>
+              <div className="panel-header" onClick={() => setIsFilterPanelCollapsed(!isFilterPanelCollapsed)}>
+                <h2>Filters</h2>
+                <button className="toggle-btn">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d={isFilterPanelCollapsed ? 'M4 12h16M12 4v16' : 'M4 12h16'} />
+                  </svg>
+                </button>
+              </div>
+              <div className="panel-content">
+                <select value={filterRegion} onChange={(e) => setFilterRegion(e.target.value)}>
+                  <option value="">All Regions</option>
+                  {regions.map((r) => (
+                    <option key={r.regionID} value={r.regionID}>{r.name}</option>
+                  ))}
+                </select>
+                <select value={filterGovernorate} onChange={(e) => setFilterGovernorate(e.target.value)}>
+                  <option value="">All Governorates</option>
+                  {filteredGovernorates.map((g) => (
+                    <option key={g.governorateID} value={g.governorateID}>{g.name}</option>
+                  ))}
+                </select>
+                <select value={filterDelegation} onChange={(e) => setFilterDelegation(e.target.value)}>
+                  <option value="">All Delegations</option>
+                  {filteredDelegations.map((d) => (
+                    <option key={d.delegationID} value={d.delegationID}>{d.name}</option>
+                  ))}
+                </select>
+                <select value={filterSupervisor} onChange={(e) => setFilterSupervisor(e.target.value)}>
+                  <option value="">All Supervisors</option>
+                  {supervisors.map((sup) => (
+                    <option key={sup.userID} value={sup.userID}>{`${sup.firstname} ${sup.lastname}`}</option>
+                  ))}
+                </select>
+              </div>
             </div>
           )}
 
           {showDirectionsPanel && (
-            <div className="directions-panel">
-              <div className="origin-input">
-                <input
-                  type="text"
-                  placeholder="Origin"
-                  value={routePoints.length > 0 ? routePoints[0].address : ''}
-                  onChange={(e) => {
-                    if (routePoints.length > 0) {
-                      const newPoints = [...routePoints];
-                      newPoints[0].address = e.target.value;
-                      setRoutePoints(newPoints);
-                    }
-                  }}
-                />
-                <button
-                  onClick={() => {
-                    if (userLocation) {
-                      const newPoints = routePoints.length > 0 ? [...routePoints] : [];
-                      const originPoint: RoutePoint = {
-                        id: 'origin',
-                        location: `${userLocation.lat},${userLocation.lng}`,
-                        address: 'My Location',
-                        type: 'origin',
-                      };
-                      if (newPoints.length === 0) {
-                        newPoints.push(originPoint);
-                      } else {
-                        newPoints[0] = originPoint;
+            <div className="panel directions-panel">
+              <div className={`sub-panel directions-sub-panel ${isDirectionsPanelCollapsed ? 'collapsed' : ''}`}>
+                <div className="panel-header" onClick={() => setIsDirectionsPanelCollapsed(!isDirectionsPanelCollapsed)}>
+                  <h2>Directions</h2>
+                  <button className="toggle-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d={isDirectionsPanelCollapsed ? 'M4 12h16M12 4v16' : 'M4 12h16'} />
+                    </svg>
+                  </button>
+                </div>
+                <div className="panel-content">
+                  <div className="origin-input">
+                    <input
+                      type="text"
+                      placeholder="Origin"
+                      value={routeData.current.points.length > 0 ? routeData.current.points[0].address : ''}
+                      onChange={(e) => {
+                        if (routeData.current.points.length > 0) {
+                          const newPoints = [...routeData.current.points];
+                          newPoints[0].address = e.target.value;
+                          routeData.current.points = newPoints;
+                        }
+                      }}
+                    />
+                    <button
+                      onClick={() => {
+                        if (userLocation) {
+                          const newPoints = routeData.current.points.length > 0 ? [...routeData.current.points] : [];
+                          const originPoint: RoutePoint = {
+                            id: 'origin',
+                            location: `${userLocation.lat},${userLocation.lng}`,
+                            address: 'My Location',
+                            type: 'origin',
+                          };
+                          if (newPoints.length === 0) {
+                            newPoints.push(originPoint);
+                          } else {
+                            newPoints[0] = originPoint;
+                          }
+                          routeData.current.points = newPoints;
+                        }
+                      }}
+                      title="My Location"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
+                        <path d="M12 12m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+                      </svg>
+                    </button>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Destination"
+                    value={routeData.current.points.length > 1 ? routeData.current.points[routeData.current.points.length - 1].address : ''}
+                    onChange={(e) => {
+                      if (routeData.current.points.length > 1) {
+                        const newPoints = [...routeData.current.points];
+                        newPoints[newPoints.length - 1].address = e.target.value;
+                        routeData.current.points = newPoints;
                       }
-                      setRoutePoints(newPoints);
-                    }
-                  }}
-                  title="My Location"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
-                    <path d="M12 12m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
-                  </svg>
-                </button>
+                    }}
+                  />
+                  <select value={routeMode} onChange={(e) => setRouteMode(e.target.value as 'DRIVING' | 'WALKING')}>
+                    <option value="DRIVING">Driving</option>
+                    <option value="WALKING">Walking</option>
+                  </select>
+                  <div className="directions-buttons">
+                    <button onClick={() => handleCalculateRoute(routeData.current.points, routeMode)}>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M5 12h14M12 5l7 7-7 7" />
+                      </svg>
+                      Go
+                    </button>
+                    <button onClick={clearRoute}>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M18 6L6 18M6 6l12 12" />
+                      </svg>
+                      Clear
+                    </button>
+                  </div>
+                </div>
               </div>
-              <input
-                type="text"
-                placeholder="Destination"
-                value={routePoints.length > 1 ? routePoints[routePoints.length - 1].address : ''}
-                onChange={(e) => {
-                  if (routePoints.length > 1) {
-                    const newPoints = [...routePoints];
-                    newPoints[newPoints.length - 1].address = e.target.value;
-                    setRoutePoints(newPoints);
-                  }
-                }}
-              />
-              <select value={routeMode} onChange={(e) => setRouteMode(e.target.value as 'DRIVING' | 'WALKING')}>
-                <option value="DRIVING">Driving</option>
-                <option value="WALKING">Walking</option>
-              </select>
-              <div className="directions-buttons">
-                <button onClick={() => handleCalculateRoute()}>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M5 12h14M12 5l7 7-7 7" />
-                  </svg>
-                  Go
-                </button>
-                <button onClick={clearRoute}>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M18 6L6 18M6 6l12 12" />
-                  </svg>
-                  Clear
-                </button>
+              <div className={`sub-panel routes-sub-panel ${isRoutesPanelCollapsed ? 'collapsed' : ''}`}>
+                <div className="panel-header" onClick={() => setIsRoutesPanelCollapsed(!isRoutesPanelCollapsed)}>
+                  <h2>Routes</h2>
+                  <button className="toggle-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d={isRoutesPanelCollapsed ? 'M4 12h16M12 4v16' : 'M4 12h16'} />
+                    </svg>
+                  </button>
+                </div>
+                <div className="panel-content">
+                  <WaypointList />
+                </div>
               </div>
-              <WaypointList />
             </div>
           )}
 
-          {carMode && route && <TrafficLayer />}
+          {carMode && routeData.current.traffic.length > 0 ? (
+            routeData.current.traffic.map((segment, index) => (
+              <Polyline
+                key={`traffic-segment-${index}`}
+                path={segment.path}
+                options={{
+                  strokeColor: segment.color,
+                  strokeOpacity: 0.75,
+                  strokeWeight: 6,
+                }}
+              />
+            ))
+          ) : (
+            routeData.current.path.length > 0 && (
+              <Polyline
+                path={routeData.current.path}
+                options={{
+                  strokeColor: '#4285F4',
+                  strokeOpacity: 0.75,
+                  strokeWeight: 6,
+                }}
+              />
+            )
+          )}
+          {carMode && routeData.current.response && <TrafficLayer />}
           <MarkerClusterer>
             {() => (
               <>
@@ -1219,7 +1251,9 @@ const MapComponent: React.FC = () => {
                       }
                     }}
                     icon={{
-                      url: 'https://maps.gstatic.com/mapfiles/ms2/micons/lightblue.png'
+                      url: (marker.lat != null && marker.lng != null && marker.lat !== 0 && marker.lng !== 0)
+                        ? 'https://maps.gstatic.com/mapfiles/ms2/micons/lightblue.png'
+                        : 'https://maps.gstatic.com/mapfiles/ms2/micons/red.png'
                     }}
                   />
                 ))}
@@ -1238,21 +1272,21 @@ const MapComponent: React.FC = () => {
           {selectedMarker && (
             <InfoWindow
               position={{ lat: selectedMarker.lat, lng: selectedMarker.lng }}
-              onCloseClick={() => { }}
+              onCloseClick={() => setSelectedMarker(null)}
             >
               <div className="info-window">
                 <h3>{`${selectedMarker.name} ${selectedMarker.lastname}`}</h3>
                 <p>{selectedMarker.address}</p>
                 <p>Phone: {selectedMarker.phone}</p>
                 <div className="info-buttons">
-                  <button onClick={() => { closeAllPanels(); setShowEditPanel(true); }}>
+                  <button onClick={() => { closeAllPanels(); setShowEditPanel(true); setIsEditAgentPanelCollapsed(false); }}>
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                       <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                     </svg>
                     Edit
                   </button>
-                  {route ? (
+                  {routeData.current.response ? (
                     <button onClick={() => handleAddStop(selectedMarker)}>
                       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
@@ -1273,58 +1307,367 @@ const MapComponent: React.FC = () => {
               </div>
             </InfoWindow>
           )}
-          {carMode && trafficPaths.length > 0 ? (
-            trafficPaths.map((segment, index) => (
-              <Polyline
-                key={`traffic-segment-${index}`}
-                path={segment.path}
-                options={{
-                  strokeColor: segment.color,
-                  strokeOpacity: 0.75,
-                  strokeWeight: 5,
-                }}
-              />
-            ))
-          ) : (
-            routePath.length > 0 && (
-              <Polyline path={routePath} options={{ strokeColor: '#4cb1c7', strokeOpacity: 0.75, strokeWeight: 5 }} />
-            )
-          )}
         </GoogleMap>
 
-        {route && (
-          <div className="route-info">
-            <span>{route.distance} km</span>
-            <span>{route.duration} min</span>
-            <button onClick={clearRoute}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M18 6L6 18M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-        )}
+        <button
+          className="locate-btn"
+          onClick={handleReturnToCurrentLocation}
+          disabled={!userLocation}
+          title="Return to My Location"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
+            <path d="M12 12m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+          </svg>
+        </button>
 
         <button
           className="add-agent-btn"
           onClick={() => {
             setAddingAgentMode(true);
-            closeAllPanels();
+            toast.info('Click on the map to select a location for the new agent');
           }}
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-            <circle cx="8.5" cy="7" r="4" />
-            <path d="M20 8v6M23 11h-6" />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path d="M12 5v14M5 12h14" />
           </svg>
-          Add Agent
+          Add
         </button>
 
-        <button className="locate-btn" onClick={handleReturnToCurrentLocation} disabled={!userLocation}>
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
-            <path d="M12 12m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
-          </svg>
-        </button>
+        {showAddPanel && (
+          <div className={`panel add-agent-panel ${isAddAgentPanelCollapsed ? 'collapsed' : ''}`}>
+            <div
+              className="panel-header"
+              onClick={() => setIsAddAgentPanelCollapsed(!isAddAgentPanelCollapsed)}
+            >
+              <h2>Add New Agent</h2>
+              <button className="toggle-btn">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path
+                    d={isAddAgentPanelCollapsed ? 'M4 12h16M12 4v16' : 'M4 12h16'}
+                  />
+                </svg>
+              </button>
+            </div>
+            <div className="panel-content">
+              <input
+                type="text"
+                placeholder="Name"
+                value={newAgent.name}
+                onChange={(e) =>
+                  setNewAgent({ ...newAgent, name: e.target.value })
+                }
+              />
+              <input
+                type="text"
+                placeholder="Lastname"
+                value={newAgent.lastname}
+                onChange={(e) =>
+                  setNewAgent({ ...newAgent, lastname: e.target.value })
+                }
+              />
+              <input
+                type="email"
+                placeholder="Email"
+                value={newAgent.email}
+                onChange={(e) =>
+                  setNewAgent({ ...newAgent, email: e.target.value })
+                }
+              />
+              <input
+                type="tel"
+                placeholder="Phone"
+                value={newAgent.phone}
+                onChange={(e) =>
+                  setNewAgent({ ...newAgent, phone: e.target.value })
+                }
+              />
+              <select
+                value={newAgent.supervisorID}
+                onChange={(e) =>
+                  setNewAgent({ ...newAgent, supervisorID: e.target.value })
+                }
+              >
+                <option value="">Select Supervisor</option>
+                {supervisors.map((sup) => (
+                  <option key={sup.userID} value={sup.userID}>
+                    {`${sup.firstname} ${sup.lastname}`}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={selectedGovernorate}
+                onChange={(e) => {
+                  setSelectedGovernorate(e.target.value);
+                  setNewAgent({ ...newAgent, delegationID: '' });
+                }}
+              >
+                <option value="">Select Governorate</option>
+                {assignedGovernorates.map((gov) => (
+                  <option key={gov.governorateID} value={gov.governorateID}>
+                    {gov.name}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={newAgent.delegationID}
+                onChange={(e) =>
+                  setNewAgent({ ...newAgent, delegationID: e.target.value })
+                }
+                disabled={!selectedGovernorate}
+              >
+                <option value="">Select Delegation</option>
+                {assignedDelegations
+                  .filter((del) => del.governorateID === selectedGovernorate)
+                  .map((del) => (
+                    <option key={del.delegationID} value={del.delegationID}>
+                      {del.name}
+                    </option>
+                  ))}
+              </select>
+              <input
+                type="text"
+                placeholder="Address"
+                value={newAgent.address}
+                onChange={(e) =>
+                  setNewAgent({ ...newAgent, address: e.target.value })
+                }
+              />
+              <div className="panel-buttons">
+                <button onClick={handleCreateAgent}>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path d="M5 13l4 4L19 7" />
+                  </svg>
+                  Save
+                </button>
+                <button
+                  onClick={() => {
+                    setShowAddPanel(false);
+                    setIsAddAgentPanelCollapsed(false);
+                    setNewAgent({
+                      name: '',
+                      lastname: '',
+                      email: '',
+                      phone: '',
+                      supervisorID: '',
+                      delegationID: '',
+                      address: '',
+                    });
+                    setSelectedGovernorate('');
+                  }}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path d="M18 6L6 18M6 6l12 12" />
+                  </svg>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showEditPanel && editAgent && (
+          <div className={`panel edit-agent-panel ${isEditAgentPanelCollapsed ? 'collapsed' : ''}`}>
+            <div
+              className="panel-header"
+              onClick={() => setIsEditAgentPanelCollapsed(!isEditAgentPanelCollapsed)}
+            >
+              <h2>Edit Agent</h2>
+              <button className="toggle-btn">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path
+                    d={isEditAgentPanelCollapsed ? 'M4 12h16M12 4v16' : 'M4 12h16'}
+                  />
+                </svg>
+              </button>
+            </div>
+            <div className="panel-content">
+              <input
+                type="text"
+                placeholder="Name"
+                value={editAgent.name || ''}
+                onChange={(e) =>
+                  setEditAgent({ ...editAgent, name: e.target.value })
+                }
+              />
+              <input
+                type="text"
+                placeholder="Lastname"
+                value={editAgent.lastname || ''}
+                onChange={(e) =>
+                  setEditAgent({ ...editAgent, lastname: e.target.value })
+                }
+              />
+              <input
+                type="email"
+                placeholder="Email"
+                value={editAgent.email || ''}
+                onChange={(e) =>
+                  setEditAgent({ ...editAgent, email: e.target.value })
+                }
+              />
+              <input
+                type="tel"
+                placeholder="Phone"
+                value={editAgent.phone || ''}
+                onChange={(e) =>
+                  setEditAgent({ ...editAgent, phone: e.target.value })
+                }
+              />
+              <select
+                value={editAgent.supervisorID || ''}
+                onChange={(e) =>
+                  setEditAgent({ ...editAgent, supervisorID: e.target.value })
+                }
+              >
+                <option value="">Select Supervisor</option>
+                {supervisors.map((sup) => (
+                  <option key={sup.userID} value={sup.userID}>
+                    {`${sup.firstname} ${sup.lastname}`}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={selectedGovernorate}
+                onChange={(e) => {
+                  setSelectedGovernorate(e.target.value);
+                  setEditAgent({ ...editAgent, delegationID: '' });
+                }}
+              >
+                <option value="">Select Governorate</option>
+                {assignedGovernorates.map((gov) => (
+                  <option key={gov.governorateID} value={gov.governorateID}>
+                    {gov.name}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={editAgent.delegationID || ''}
+                onChange={(e) =>
+                  setEditAgent({ ...editAgent, delegationID: e.target.value })
+                }
+                disabled={!selectedGovernorate}
+              >
+                <option value="">Select Delegation</option>
+                {assignedDelegations
+                  .filter((del) => del.governorateID === selectedGovernorate)
+                  .map((del) => (
+                    <option key={del.delegationID} value={del.delegationID}>
+                      {del.name}
+                    </option>
+                  ))}
+              </select>
+              <div className="panel-buttons">
+                <button onClick={handleEditAgent}>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path d="M5 13l4 4L19 7" />
+                  </svg>
+                  Save
+                </button>
+                <button
+                  onClick={() => {
+                    setShowEditPanel(false);
+                    setIsEditAgentPanelCollapsed(false);
+                    setEditAgent(null);
+                    setSelectedGovernorate('');
+                  }}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path d="M18 6L6 18M6 6l12 12" />
+                  </svg>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {routeData.current.response && (
+          <div className="route-info">
+            <span>
+              {`${(routeData.current.response.distance / 1000).toFixed(1)} km | ${Math.round(
+                routeData.current.response.duration / 60
+              )} min`}
+            </span>
+            <button onClick={clearRoute}>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M18 6L6 18M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        )}
 
         <div className="agent-list">
           {sortedMarkers.length === 0 ? (
@@ -1335,9 +1678,9 @@ const MapComponent: React.FC = () => {
                 <AgentCard
                   key={marker.id}
                   marker={marker}
-                  onSelect={(marker) => {
-                    setSelectedMarker(marker);
-                    setMapCenter({ lat: marker.lat, lng: marker.lng });
+                  onSelect={(m) => {
+                    setSelectedMarker(m);
+                    setMapCenter({ lat: m.lat, lng: m.lng });
                     setZoom(15);
                   }}
                   onGetDirections={handleGetDirections}
@@ -1347,141 +1690,6 @@ const MapComponent: React.FC = () => {
             </div>
           )}
         </div>
-
-        {showAddPanel && (
-          <div className="panel add-agent-panel">
-            <h2>Add Agent</h2>
-            <input
-              type="text"
-              placeholder="Name"
-              value={newAgent.name}
-              onChange={(e) => setNewAgent({ ...newAgent, name: e.target.value })}
-            />
-            <input
-              type="text"
-              placeholder="Last Name"
-              value={newAgent.lastname}
-              onChange={(e) => setNewAgent({ ...newAgent, lastname: e.target.value })}
-            />
-            <input
-              type="email"
-              placeholder="Email"
-              value={newAgent.email}
-              onChange={(e) => setNewAgent({ ...newAgent, email: e.target.value })}
-            />
-            <input
-              type="tel"
-              placeholder="Phone"
-              value={newAgent.phone}
-              onChange={(e) => setNewAgent({ ...newAgent, phone: e.target.value })}
-            />
-            <select
-              value={newAgent.supervisorID}
-              onChange={(e) => setNewAgent({ ...newAgent, supervisorID: e.target.value })}
-            >
-              <option value="">Select Supervisor</option>
-              {supervisors.map((sup) => (
-                <option key={sup.userID} value={sup.userID}>{`${sup.firstname} ${sup.lastname}`}</option>
-              ))}
-            </select>
-            <select
-              value={selectedGovernorate}
-              onChange={(e) => setSelectedGovernorate(e.target.value)}
-            >
-              <option value="">Select Governorate</option>
-              {assignedGovernorates.map((g) => (
-                <option key={g.governorateID} value={g.governorateID}>{g.name}</option>
-              ))}
-            </select>
-            <select
-              value={newAgent.delegationID}
-              onChange={(e) => setNewAgent({ ...newAgent, delegationID: e.target.value })}
-            >
-              <option value="">Select Delegation</option>
-              {assignedDelegations.filter((d) => d.governorateID === selectedGovernorate).map((d) => (
-                <option key={d.delegationID} value={d.delegationID}>{d.name}</option>
-              ))}
-            </select>
-            <p>Address: {newAgent.address}</p>
-            <div className="panel-buttons">
-              <button onClick={handleCreateAgent}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M19 21V5a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v16m14 0h-2m-2 0h-2m-2 0H7" />
-                </svg>
-                Create
-              </button>
-              <button onClick={() => setShowAddPanel(false)}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M18 6L6 18M6 6l12 12" />
-                </svg>
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
-
-        {showEditPanel && editAgent && (
-          <div className="panel edit-agent-panel">
-            <h2>Edit Agent</h2>
-            <input
-              type="text"
-              placeholder="Name"
-              value={editAgent.name || ''}
-              onChange={(e) => setEditAgent({ ...editAgent, name: e.target.value })}
-            />
-            <input
-              type="text"
-              placeholder="Last Name"
-              value={editAgent.lastname || ''}
-              onChange={(e) => setEditAgent({ ...editAgent, lastname: e.target.value })}
-            />
-            <input
-              type="email"
-              placeholder="Email"
-              value={editAgent.email || ''}
-              onChange={(e) => setEditAgent({ ...editAgent, email: e.target.value })}
-            />
-            <input
-              type="tel"
-              placeholder="Phone"
-              value={editAgent.phone || ''}
-              onChange={(e) => setEditAgent({ ...editAgent, phone: e.target.value })}
-            />
-            <select
-              value={editAgent.supervisorID || ''}
-              onChange={(e) => setEditAgent({ ...editAgent, supervisorID: e.target.value })}
-            >
-              <option value="">Select Supervisor</option>
-              {supervisors.map((sup) => (
-                <option key={sup.userID} value={sup.userID}>{`${sup.firstname} ${sup.lastname}`}</option>
-              ))}
-            </select>
-            <select
-              value={editAgent.delegationID || ''}
-              onChange={(e) => setEditAgent({ ...editAgent, delegationID: e.target.value })}
-            >
-              <option value="">Select Delegation</option>
-              {delegations.map((d) => (
-                <option key={d.delegationID} value={d.delegationID}>{d.name}</option>
-              ))}
-            </select>
-            <p>Address: {editAgent.location}</p>
-            <div className="panel-buttons">
-              <button onClick={handleEditAgent}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M19 21V5a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v16m14 0h-2m-2 0h-2m-2 0H7" />
-                </svg>
-                Save
-              </button>
-              <button onClick={() => setShowEditPanel(false)}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M18 6L6 18M6 6l12 12" />
-                </svg>
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
       </LoadScript>
     </div>
   );

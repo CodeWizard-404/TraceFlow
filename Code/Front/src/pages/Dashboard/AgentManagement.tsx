@@ -1,5 +1,6 @@
 import React from 'react';
 import MapComponent from '../../components/Google/MapComponent';
+import "../../components/Google/Map.css"
 
 const AgentManagement: React.FC = () => {
     return (
@@ -13,4 +14,4 @@ const AgentManagement: React.FC = () => {
     );
 };
 
-export default AgentManagement;
+export default React.memo(AgentManagement);
