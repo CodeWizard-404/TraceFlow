@@ -4,8 +4,10 @@ require('dotenv').config();
 const allowedOrigins = [
     process.env.FRONTEND_URL,
     process.env.FRONTEND_URL1,
+    process.env.FRONTEND_URL2,
     process.env.GOOGLE_REDIRECT_URI,
     process.env.GOOGLE_CALENDAR_REDIRECT_URI,
+    '*'
 ];
 
 // Configure CORS

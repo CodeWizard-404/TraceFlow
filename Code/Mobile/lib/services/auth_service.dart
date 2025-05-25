@@ -1,61 +1,178 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
+import 'package:jwt_decoder/jwt_decoder.dart';
 import '../utils/constants.dart';
-import '../utils/device_utils.dart';
 import './cookie_manager.dart';
 import './http_client.dart';
 
-// Handles authentication-related API calls for the TraceFlow mobile app.
 class AuthService {
-  // Checks current authentication status.
-  static Future<Map<String, dynamic>> checkAuthStatus() async {
+  static Future<Map<String, dynamic>> initiateKeycloakLogin() async {
     try {
-      final response = await CustomHttpClient.get(
-        Uri.parse('$baseUrl/test'),
-        headers: {'Content-Type': 'application/json'},
+      final authUrl =
+          '$keycloakUrl/realms/$realm/protocol/openid-connect/auth?client_id=$clientId&redirect_uri=${Uri.encodeComponent(redirectUri)}&response_type=code&scope=openid%20email%20profile&kc_idp_hint=google&prompt=select_account';
+      final result = await FlutterWebAuth2.authenticate(
+        url: authUrl,
+        callbackUrlScheme: 'http',
       );
-      if (kDebugMode) print('CheckAuthStatus: ${response.statusCode}');
-      if (response.statusCode == 200) {
-        dynamic result = json.decode(response.body);
-        if (result is String) result = json.decode(result);
-        if (result is Map<String, dynamic>) return result;
-        throw Exception('Invalid checkAuthStatus response');
+      final code = Uri.parse(result).queryParameters['code'];
+      if (code == null) throw Exception('No authorization code received');
+
+      final tokenResponse = await http.post(
+        Uri.parse('$keycloakUrl/realms/$realm/protocol/openid-connect/token'),
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: {
+          'grant_type': 'authorization_code',
+          'code': code,
+          'redirect_uri': redirectUri,
+          'client_id': clientId,
+          'client_secret': clientSecret,
+        },
+      );
+      if (tokenResponse.statusCode != 200) {
+        throw Exception(
+          'Failed to exchange code: ${json.decode(tokenResponse.body)['error_description'] ?? tokenResponse.body}',
+        );
       }
-      throw Exception(_parseError(response));
+
+      final tokens = json.decode(tokenResponse.body);
+      final accessToken = tokens['access_token'] as String;
+      await CookieManager.saveCookies({
+        'accessToken': accessToken,
+        'refreshToken': tokens['refresh_token'],
+      });
+
+      final userResponse = await CustomHttpClient.get(Uri.parse('$baseUrl/test'));
+      if (userResponse.statusCode != 200) {
+        throw Exception('Failed to fetch user data: ${userResponse.body}');
+      }
+
+      final userData = json.decode(userResponse.body);
+      // Ensure roles are included
+      if (userData['user']?['roles'] == null || userData['user']['roles'].isEmpty) {
+        final decodedToken = JwtDecoder.decode(accessToken);
+        final realmRoles = (decodedToken['realm_access']?['roles'] as List<dynamic>?) ?? [];
+        userData['user']['roles'] = realmRoles
+            .asMap()
+            .entries
+            .map((e) => {
+          'roleID': (e.key + 1).toString(),
+          'name': e.value.toString(),
+          'description': null,
+        })
+            .toList();
+      }
+
+      final requires2FA = await _check2FARequired();
+      if (requires2FA) {
+        return {
+          'userID': userData['user']['userID'],
+          'requires2FA': true,
+          'tempToken': accessToken,
+          'refreshToken': tokens['refresh_token'],
+          'expiresIn': tokens['expires_in'] * 1000,
+          'otpMethod': 'phone',
+        };
+      }
+
+      return {
+        'accessToken': accessToken,
+        'refreshToken': tokens['refresh_token'],
+        'expiresIn': tokens['expires_in'] * 1000,
+        'user': userData['user'],
+      };
     } catch (e) {
-      if (kDebugMode) print('CheckAuthStatus error: $e');
-      rethrow;
+      throw Exception(_parseError(e));
     }
   }
 
-  // Initiates login with identifier and password.
-  static Future<Map<String, dynamic>> login(String identifier, String password, String otpMethod) async {
+  static Future<bool> _check2FARequired() async {
     try {
-      final deviceIdentifier = await DeviceUtils.getDeviceIdentifier();
+      final response = await CustomHttpClient.get(
+        Uri.parse('$baseUrl/auth/check-2fa'),
+      );
+      if (response.statusCode == 200) {
+        final result = json.decode(response.body);
+        return result['requires2FA'] as bool;
+      }
+      throw Exception('Failed to check 2FA requirement');
+    } catch (e) {
+      throw Exception(_parseError(e));
+    }
+  }
+
+  static Future<Map<String, dynamic>> checkAuthStatus() async {
+    try {
+      final response = await CustomHttpClient.get(Uri.parse('$baseUrl/test'));
+      if (response.statusCode == 200) {
+        final result = json.decode(response.body);
+        // Ensure roles are included
+        if (result['user']?['roles'] == null || result['user']['roles'].isEmpty) {
+          final accessToken = CookieManager.cookies['accessToken'];
+          if (accessToken != null) {
+            final decodedToken = JwtDecoder.decode(accessToken);
+            final realmRoles = (decodedToken['realm_access']?['roles'] as List<dynamic>?) ?? [];
+            result['user']['roles'] = realmRoles
+                .asMap()
+                .entries
+                .map((e) => {
+              'roleID': (e.key + 1).toString(),
+              'name': e.value.toString(),
+              'description': null,
+            })
+                .toList();
+          }
+        }
+        return result;
+      }
+      throw Exception(_parseError(response));
+    } catch (e) {
+      throw Exception(_parseError(e));
+    }
+  }
+
+  static Future<Map<String, dynamic>> login(
+      String identifier,
+      String password,
+      String deviceIdentifier,
+      ) async {
+    try {
       final response = await CustomHttpClient.post(
         Uri.parse('$baseUrl/auth/login'),
-        headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'identifier': identifier,
           'password': password,
-          'otpMethod': otpMethod,
           'deviceIdentifier': deviceIdentifier,
+          'otpMethod': 'phone',
         }),
       );
-      if (kDebugMode) print('Login: ${response.statusCode}');
       if (response.statusCode == 200) {
         final result = json.decode(response.body);
-        if (result is Map<String, dynamic>) return result;
-        throw Exception('Invalid login response');
+        // Ensure roles are included
+        if (result['user'] != null &&
+            (result['user']['roles'] == null || result['user']['roles'].isEmpty) &&
+            result['accessToken'] != null) {
+          final decodedToken = JwtDecoder.decode(result['accessToken']);
+          final realmRoles = (decodedToken['realm_access']?['roles'] as List<dynamic>?) ?? [];
+          result['user']['roles'] = realmRoles
+              .asMap()
+              .entries
+              .map((e) => {
+            'roleID': (e.key + 1).toString(),
+            'name': e.value.toString(),
+            'description': null,
+          })
+              .toList();
+        }
+        return result;
       }
       throw Exception(_parseError(response));
     } catch (e) {
-      throw Exception(_parseError(e.toString()));
+      throw Exception(_parseError(e));
     }
   }
 
-  // Verifies 2FA OTP code.
   static Future<Map<String, dynamic>> verify2FA(
       String userID,
       String otpCode,
@@ -66,138 +183,170 @@ class AuthService {
       ) async {
     try {
       final response = await CustomHttpClient.post(
-        Uri.parse('$baseUrl/auth/verify-2fa'),
-        headers: {'Content-Type': 'application/json'},
+        Uri.parse('$baseUrl/auth/2fa/verify'),
         body: json.encode({
           'userID': userID,
           'otpCode': otpCode,
-          'trustDevice': trustDevice,
+          'trustDevice': true,
           'tempToken': tempToken,
           'refreshToken': refreshToken,
           'deviceIdentifier': deviceIdentifier,
         }),
       );
-      if (kDebugMode) print('Verify2FA: ${response.statusCode}');
       if (response.statusCode == 200) {
         final result = json.decode(response.body);
-        if (result is Map<String, dynamic>) return result;
-        throw Exception('Invalid verify2FA response');
+        // Ensure roles are included
+        if (result['user'] != null &&
+            (result['user']['roles'] == null || result['user']['roles'].isEmpty) &&
+            result['accessToken'] != null) {
+          final decodedToken = JwtDecoder.decode(result['accessToken']);
+          final realmRoles = (decodedToken['realm_access']?['roles'] as List<dynamic>?) ?? [];
+          result['user']['roles'] = realmRoles
+              .asMap()
+              .entries
+              .map((e) => {
+            'roleID': (e.key + 1).toString(),
+            'name': e.value.toString(),
+            'description': null,
+          })
+              .toList();
+        }
+        return result;
       }
       throw Exception(_parseError(response));
     } catch (e) {
-      throw Exception(_parseError(e.toString()));
+      throw Exception(_parseError(e));
     }
   }
 
-  // Refreshes access token.
   static Future<Map<String, dynamic>> refreshToken() async {
     try {
       final response = await CustomHttpClient.post(
         Uri.parse('$baseUrl/auth/refresh'),
-        headers: {'Content-Type': 'application/json'},
       );
-      if (kDebugMode) print('RefreshToken: ${response.statusCode}');
-      if (response.statusCode == 200) {
-        final result = json.decode(response.body);
-        if (result is Map<String, dynamic>) return result;
-        throw Exception('Invalid refresh token response');
-      }
+      if (response.statusCode == 200) return json.decode(response.body);
       throw Exception(_parseError(response));
     } catch (e) {
-      throw Exception(_parseError(e.toString()));
+      throw Exception(_parseError(e));
     }
   }
 
-  // Resends 2FA OTP.
-  static Future<Map<String, dynamic>> resend2FA(String userID, String otpMethod) async {
+  static Future<Map<String, dynamic>> resend2FA(
+      String userID,
+      String otpMethod,
+      ) async {
     try {
       final response = await CustomHttpClient.post(
-        Uri.parse('$baseUrl/auth/resend-2fa'),
-        headers: {'Content-Type': 'application/json'},
+        Uri.parse('$baseUrl/auth/2fa/resend'),
         body: json.encode({'userID': userID, 'otpMethod': otpMethod}),
       );
-      if (kDebugMode) print('Resend2FA: ${response.statusCode}');
-      if (response.statusCode == 200) {
-        final result = json.decode(response.body);
-        if (result is Map<String, dynamic>) return result;
-        throw Exception('Invalid resend2FA response');
-      }
+      if (response.statusCode == 200) return json.decode(response.body);
       throw Exception(_parseError(response));
     } catch (e) {
-      throw Exception(_parseError(e.toString()));
+      throw Exception(_parseError(e));
     }
   }
 
-  // Initiates password reset.
-  static Future<Map<String, dynamic>> initiatePasswordReset(String identifier) async {
+  static Future<Map<String, dynamic>> initiatePasswordReset(
+      String identifier,
+      ) async {
     try {
       final response = await CustomHttpClient.post(
-        Uri.parse('$baseUrl/auth/reset-password/init'),
-        headers: {'Content-Type': 'application/json'},
+        Uri.parse('$baseUrl/auth/password/reset/initiate'),
         body: json.encode({'identifier': identifier}),
       );
-      if (kDebugMode) print('InitiatePasswordReset: ${response.statusCode}');
-      if (response.statusCode == 200) {
-        final result = json.decode(response.body);
-        if (result is Map<String, dynamic>) return result;
-        throw Exception('Invalid initiatePasswordReset response');
-      }
+      if (response.statusCode == 200) return json.decode(response.body);
       throw Exception(_parseError(response));
     } catch (e) {
-      throw Exception(_parseError(e.toString()));
+      throw Exception(_parseError(e));
     }
   }
 
-  // Verifies password reset OTP.
-  static Future<Map<String, dynamic>> verifyPasswordResetOTP(String userID, String otpCode) async {
+  static Future<Map<String, dynamic>> verifyPasswordResetOTP(
+      String userID,
+      String otpCode,
+      ) async {
     try {
       final response = await CustomHttpClient.post(
-        Uri.parse('$baseUrl/auth/reset-password/verify'),
-        headers: {'Content-Type': 'application/json'},
+        Uri.parse('$baseUrl/auth/password/reset/verify'),
         body: json.encode({'userID': userID, 'otpCode': otpCode}),
       );
-      if (kDebugMode) print('VerifyPasswordResetOTP: ${response.statusCode}');
-      if (response.statusCode == 200) {
-        final result = json.decode(response.body);
-        if (result is Map<String, dynamic>) return result;
-        throw Exception('Invalid verifyPasswordResetOTP response');
-      }
+      if (response.statusCode == 200) return json.decode(response.body);
       throw Exception(_parseError(response));
     } catch (e) {
-      throw Exception(_parseError(e.toString()));
+      throw Exception(_parseError(e));
     }
   }
 
-  // Resets password.
-  static Future<void> resetPassword(String userID, String newPassword, String tempToken) async {
+  static Future<void> resetPassword(
+      String userID,
+      String newPassword,
+      String tempToken,
+      ) async {
     try {
       final response = await CustomHttpClient.post(
-        Uri.parse('$baseUrl/auth/reset-password'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({'userID': userID, 'newPassword': newPassword, 'tempToken': tempToken}),
+        Uri.parse('$baseUrl/auth/password/reset'),
+        body: json.encode({
+          'userID': userID,
+          'newPassword': newPassword,
+          'tempToken': tempToken,
+        }),
       );
-      if (kDebugMode) print('ResetPassword: ${response.statusCode}');
-      if (response.statusCode == 200) return;
-      throw Exception(_parseError(response));
+      if (response.statusCode != 200) throw Exception(_parseError(response));
     } catch (e) {
-      throw Exception(_parseError(e.toString()));
+      throw Exception(_parseError(e));
     }
   }
 
-  // Logs out the user.
   static Future<void> logout() async {
     try {
       final response = await CustomHttpClient.post(
         Uri.parse('$baseUrl/auth/logout'),
-        headers: {'Content-Type': 'application/json'},
       );
-      if (kDebugMode) print('Logout: ${response.statusCode}');
-      await CookieManager.clearCookies(caller: 'AuthService.logout');
       if (response.statusCode != 200) throw Exception(_parseError(response));
     } catch (e) {
-      throw Exception(_parseError(e.toString()));
+      if (kDebugMode) {
+        print('Logout error: $e');
+      }
+    } finally {
+      await CookieManager.clearCookies();
     }
   }
+
+  static String _parseError(dynamic input) {
+    if (input is http.Response) {
+      try {
+        final body = json.decode(input.body);
+        return body['error'] ??
+            body['message'] ??
+            body['error_description'] ??
+            _getErrorMessage(input.statusCode);
+      } catch (_) {
+        return _getErrorMessage(input.statusCode);
+      }
+    }
+    return input.toString().replaceFirst('Exception: ', '');
+  }
+
+  static String _getErrorMessage(int statusCode) {
+    switch (statusCode) {
+      case 400:
+        return 'Invalid request. Please check your input.';
+      case 401:
+        return 'Authentication failed. Please check your credentials.';
+      case 403:
+        return 'Account locked or access denied.';
+      case 404:
+        return 'Account not found.';
+      case 429:
+        return 'Too many attempts. Please wait.';
+      case 500:
+        return 'Server error. Please try again later.';
+      default:
+        return 'An unexpected error occurred.';
+    }
+  }
+
 
   // Makes an authenticated request with automatic token refresh.
   static Future<dynamic> makeAuthenticatedRequest({
@@ -213,7 +362,7 @@ class AuthService {
           return json.decode(retryResponse.body);
         } catch (e) {
           if (e.toString().contains('Invalid refresh token')) {
-            await CookieManager.clearCookies(caller: 'makeAuthenticatedRequest');
+            await CookieManager.clearCookies();
           }
           throw Exception('Authentication failed');
         }
@@ -222,43 +371,6 @@ class AuthService {
     } catch (e) {
       if (kDebugMode) print('Authenticated request failed: $e');
       rethrow;
-    }
-  }
-
-  // Parses error messages from responses or exceptions.
-  static String _parseError(dynamic input) {
-    try {
-      if (input is http.Response) {
-        final body = input.body;
-        if (body.isNotEmpty) {
-          final jsonBody = json.decode(body);
-          if (jsonBody is Map && jsonBody.containsKey('error')) {
-            if (input.statusCode == 429 && jsonBody.containsKey('waitTime')) {
-              return '${jsonBody['error']} Wait ${jsonBody['waitTime']} seconds.';
-            }
-            return jsonBody['error'] as String;
-          }
-        }
-        switch (input.statusCode) {
-          case 401:
-            return 'Please log in to continue.';
-          case 403:
-            return 'You don’t have permission to perform this action.';
-          case 429:
-            return 'Too many attempts. Please wait.';
-          case 500:
-            return 'Something went wrong. Please try again later.';
-          default:
-            return 'An error occurred. Please try again.';
-        }
-      }
-      final errorStr = input.toString();
-      if (errorStr.contains('Network Error')) {
-        return 'Unable to connect to the server. Check your connection.';
-      }
-      return errorStr.isNotEmpty ? errorStr.replaceFirst('Exception: ', '') : 'An error occurred.';
-    } catch (e) {
-      return 'An error occurred. Please try again.';
     }
   }
 }

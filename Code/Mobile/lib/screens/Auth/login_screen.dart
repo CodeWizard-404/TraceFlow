@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../main.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/commen/button.dart';
 import '../../widgets/commen/snack_bar.dar.dart';
@@ -7,9 +8,7 @@ import '../../widgets/commen/spacer.dart';
 import '../../widgets/commen/text_button.dart';
 import '../../widgets/commen/text_field.dart';
 import '../../widgets/commen/title_text.dart';
-import 'package:flutter/foundation.dart';
 
-// Login screen for TraceFlow mobile app.
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -22,46 +21,30 @@ class LoginScreenState extends State<LoginScreen> {
   final _identifierController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _isGoogleButtonHovered = false;
 
-  @override
-  void initState() {
-    super.initState();
-    if (kDebugMode) print('LoginScreen initialized');
-  }
-
-  @override
-  void dispose() {
-    _identifierController.dispose();
-    _passwordController.dispose();
-    super.dispose();
-  }
-
-  // Initiates login process.
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
-
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    authProvider.clearError();
     await authProvider.login(_identifierController.text.trim(), _passwordController.text.trim());
   }
 
-  // Validates identifier (email or phone).
+  Future<void> _loginWithKeycloak() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    await authProvider.loginWithKeycloak();
+  }
+
   String? _validateIdentifier(String? value) {
-    if (value?.trim().isEmpty ?? true) return 'Please enter your email or phone';
-    if (!RegExp(r'^([^\s@]+@[^\s@]+\.[^\s@]+|\+?\d{10,15})$').hasMatch(value!)) {
+    if (value?.isEmpty ?? true) return 'Please enter your email or phone';
+    if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$|^(\+\d{11}|\d{8})$').hasMatch(value!)) {
       return 'Invalid email or phone format';
     }
     return null;
   }
 
-  // Validates password.
   String? _validatePassword(String? value) {
-    if (value?.trim().isEmpty ?? true) return 'Please enter a password';
+    if (value?.isEmpty ?? true) return 'Please enter a password';
     if (value!.length < 8) return 'Password must be at least 8 characters';
-    if (value.length > 128) return 'Password cannot exceed 128 characters';
-    if (!RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[^\s]+$').hasMatch(value)) {
-      return 'Must include uppercase, lowercase, number, and special character';
-    }
     return null;
   }
 
@@ -69,15 +52,14 @@ class LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
 
-    // Handle navigation and errors post-build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       if (authProvider.errorMessage != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           CustomSnackBar(
             message: authProvider.errorMessage!,
-            backgroundColor: Theme.of(context).colorScheme.error.withOpacity(0.9),
-          ) as SnackBar,
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
         );
         authProvider.clearError();
       } else if (authProvider.requires2FA) {
@@ -88,7 +70,6 @@ class LoginScreenState extends State<LoginScreen> {
     });
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -101,7 +82,7 @@ class LoginScreenState extends State<LoginScreen> {
                   const CustomTitleText(text: 'TraceFlow'),
                   const CustomSpacer(height: 8),
                   Text(
-                    'Securely Track. Optimize. Succeed.',
+                    'Supervisor Login',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey),
                   ),
                   const CustomSpacer(height: 48),
@@ -109,7 +90,6 @@ class LoginScreenState extends State<LoginScreen> {
                     controller: _identifierController,
                     label: 'Email or Phone',
                     prefixIcon: Icons.person,
-                    keyboardType: TextInputType.emailAddress,
                     validator: _validateIdentifier,
                     enabled: !authProvider.isLoading,
                   ),
@@ -118,7 +98,7 @@ class LoginScreenState extends State<LoginScreen> {
                     controller: _passwordController,
                     label: 'Password',
                     prefixIcon: Icons.lock,
-                    suffixIcon: _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                    suffixIcon: _obscurePassword ? Icons.visibility_off : Icons.visibility,
                     obscureText: _obscurePassword,
                     onSuffixPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                     validator: _validatePassword,
@@ -131,11 +111,77 @@ class LoginScreenState extends State<LoginScreen> {
                     isLoading: authProvider.isLoading,
                   ),
                   const CustomSpacer(height: 16),
+                  MouseRegion(
+                    onEnter: (_) => setState(() => _isGoogleButtonHovered = true),
+                    onExit: (_) => setState(() => _isGoogleButtonHovered = false),
+                    child: GestureDetector(
+                      onTapDown: (_) => setState(() => _isGoogleButtonHovered = false),
+                      onTapUp: (_) => setState(() => _isGoogleButtonHovered = true),
+                      onTapCancel: () => setState(() => _isGoogleButtonHovered = false),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        transform: Matrix4.identity()
+                          ..scale(_isGoogleButtonHovered ? 1.05 : 1.0),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: authProvider.isLoading ? null : _loginWithKeycloak,
+                            borderRadius: BorderRadius.circular(8),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: const BoxDecoration(
+                                      color: Colors.white,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Image.network(
+                                      'https://www.google.com/favicon.ico',
+                                      width: 20,
+                                      height: 20,
+                                      errorBuilder: (_, __, ___) => const Icon(Icons.error, size: 20),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  authProvider.isLoading
+                                      ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  )
+                                      : Text(
+                                    'Sign in with Google',
+                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const CustomSpacer(height: 16),
                   CustomTextButton(
                     label: 'Forgot Password?',
-                    onPressed: () {
-                      Navigator.pushNamed(context, '/forgot-password');
-                    },
+                    onPressed: () => Navigator.pushNamed(context, '/forgot-password'),
                   ),
                 ],
               ),

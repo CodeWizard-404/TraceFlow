@@ -152,6 +152,16 @@ class _AuthWrapperState extends State<AuthWrapper> {
       });
     }
 
+    if (!authProvider.isSupervisor) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        authProvider.logout();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Access denied: Only Supervisors can log in.')),
+        );
+      });
+      return const LoginScreen();
+    }
+
     return const NavigationShell();
   }
 }

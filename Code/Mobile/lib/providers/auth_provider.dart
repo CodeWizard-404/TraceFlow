@@ -1,11 +1,12 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import '../models/user.dart';
-import '../services/auth_service.dart';
-import '../services/cookie_manager.dart';
-import '../utils/device_utils.dart';
+import 'package:TraceFlow/models/user.dart';
+import 'package:TraceFlow/services/auth_service.dart';
+import 'package:TraceFlow/services/cookie_manager.dart';
+import 'package:TraceFlow/utils/device_utils.dart';
+import 'package:http/http.dart' as http;
 
-// Manages authentication state and operations for the TraceFlow mobile app.
 class AuthProvider with ChangeNotifier {
   User? _user;
   List<String>? _userRoles;
@@ -14,18 +15,17 @@ class AuthProvider with ChangeNotifier {
   String? _userID;
   bool _requires2FA = false;
   String? _errorMessage;
-  int _otpTimer = 600; // 10 minutes
-  int _resendCooldown = 0; // 60 seconds
+  int _otpTimer = 600;
+  int _resendCooldown = 0;
   String _otpMethod = 'phone';
   Timer? _otpTimerInstance;
-  String? _tempToken; // For password reset
-  String? _authTempToken; // For 2FA
-  String? _refreshToken; // For 2FA
+  String? _tempToken;
+  String? _authTempToken;
+  String? _refreshToken;
   int? _tokenExpiry;
   Timer? _refreshTimer;
-  String? _deviceIdentifier; // Store deviceIdentifier
+  String? _deviceIdentifier;
 
-  // Getters for state
   String? get deviceIdentifier => _deviceIdentifier;
   User? get user => _user;
   List<String>? get userRoles => _userRoles;
@@ -37,125 +37,134 @@ class AuthProvider with ChangeNotifier {
   String get otpMethod => _otpMethod;
   String? get userID => _userID;
   bool get requires2FA => _requires2FA;
-  bool get isSupervisor => _userRoles?.contains('Supervisor') ?? false;
+  bool get isSupervisor =>
+      _userRoles?.any((role) => role.toLowerCase() == 'supervisor') ?? false;
   bool get isAuthenticated => _user != null && !_requires2FA;
 
   AuthProvider() {
-    if (kDebugMode) print('AuthProvider initialized');
     _restoreSession();
     _startProactiveRefreshTimer();
   }
 
-  // Starts a timer to proactively refresh tokens every 14.5 minutes.
   void _startProactiveRefreshTimer() {
-    if (kDebugMode) print('Starting proactive refresh timer');
     _refreshTimer?.cancel();
-    _refreshTimer = Timer.periodic(const Duration(minutes: 14, seconds: 30), (timer) async {
-      if (_user != null) await _refreshAccessToken();
-    });
+    const refreshInterval = Duration(minutes: 14, seconds: 30);
+    _refreshTimer = Timer.periodic(refreshInterval, (_) => _refreshAccessToken());
   }
 
-  // Restores session from stored cookies.
   Future<void> _restoreSession() async {
-    if (kDebugMode) print('Restoring session');
     _isLoading = true;
     notifyListeners();
     try {
       _deviceIdentifier = await DeviceUtils.getDeviceIdentifier();
       await CookieManager.loadCookies();
-      if (CookieManager.cookies.containsKey('accessToken') && CookieManager.cookies.containsKey('refreshToken')) {
+      if (CookieManager.cookies.containsKey('accessToken') &&
+          CookieManager.cookies.containsKey('userData')) {
         await _checkAuthStatus();
-      } else {
-        if (kDebugMode) print('No valid tokens found');
-        _errorMessage = 'Please log in to continue.';
       }
     } catch (e) {
-      if (kDebugMode) print('Session restoration failed: $e');
-      await CookieManager.clearCookies(caller: 'AuthProvider.restoreSession');
       _errorMessage = 'Please log in to continue.';
+      await CookieManager.clearCookies();
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  // Checks authentication status with the backend.
   Future<void> _checkAuthStatus() async {
-    if (kDebugMode) print('Checking auth status');
     try {
       final result = await AuthService.checkAuthStatus();
-      if (result.containsKey('user')) {
-        _user = User.fromJson(result['user']);
-        _tokenExpiry = (result['expiresIn'] != null
-            ? DateTime.now().millisecondsSinceEpoch + result['expiresIn']
-            : null) as int?;
-        await _fetchPermissions();
-        if (!_userRoles!.contains('Supervisor')) {
-          if (kDebugMode) print('User is not a Supervisor, logging out');
-          await logout();
-          _errorMessage = 'Access denied: Only Supervisors can log in.';
-        }
-      } else {
-        if (kDebugMode) print('No valid user data');
-        await CookieManager.clearCookies(caller: 'AuthProvider.checkAuthStatus');
-        _errorMessage = 'Please log in to continue.';
+      _user = User.fromJson(result['user']);
+      _tokenExpiry = DateTime.now().millisecondsSinceEpoch + (result['expiresIn'] as int);
+      await _fetchPermissions();
+      if (!isSupervisor) {
+        await logout();
+        _errorMessage = 'Access denied: Only Supervisors can log in.';
       }
     } catch (e) {
-      if (kDebugMode) print('Auth status check failed: $e');
-      await CookieManager.clearCookies(caller: 'AuthProvider.checkAuthStatus');
-      _errorMessage = 'Please log in to continue.';
-      throw e;
+      _errorMessage = 'Session expired. Please log in again.';
+      await CookieManager.clearCookies();
+      throw Exception(_parseError(e));
     }
   }
 
-  // Fetches user roles and permissions.
   Future<void> _fetchPermissions() async {
-    if (_user == null || _permissionsLoaded) return;
-    if (kDebugMode) print('Fetching permissions');
     _permissionsLoaded = false;
     try {
       _userRoles = _user!.roles.map((r) => r.name).toList();
+      if (kDebugMode) {
+        print('Fetched roles: $_userRoles');
+      }
       _permissionsLoaded = true;
     } catch (e) {
-      if (kDebugMode) print('Failed to fetch permissions: $e');
-    } finally {
+      if (kDebugMode) {
+        print('Error fetching permissions: $e');
+      }
       _permissionsLoaded = true;
-      notifyListeners();
     }
+    notifyListeners();
   }
 
-  // Initiates login with identifier and password.
   Future<void> login(String identifier, String password) async {
-    if (kDebugMode) print('Logging in with identifier: $identifier');
     _isLoading = true;
-    _requires2FA = false;
     _errorMessage = null;
-    _deviceIdentifier = await DeviceUtils.getDeviceIdentifier();
+    _requires2FA = false;
     notifyListeners();
     try {
-      final result = await AuthService.login(identifier, password, _otpMethod);
+      _deviceIdentifier = await DeviceUtils.getDeviceIdentifier();
+      final result = await AuthService.login(identifier, password, _deviceIdentifier!);
       if (result['requires2FA'] == true) {
+        _requires2FA = true;
         _userID = result['userID'];
         _authTempToken = result['tempToken'];
         _refreshToken = result['refreshToken'];
-        _requires2FA = true;
         _otpTimer = 600;
+        _otpMethod = result['otpMethod'] ?? 'phone';
         _startOtpTimer();
       } else {
         await _handleSuccessfulLogin(result);
       }
     } catch (e) {
-      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      _errorMessage = _parseError(e);
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  // Verifies 2FA OTP code.
+  Future<void> loginWithKeycloak() async {
+    _isLoading = true;
+    _errorMessage = null;
+    _requires2FA = false;
+    notifyListeners();
+    try {
+      _deviceIdentifier = await DeviceUtils.getDeviceIdentifier();
+      final result = await AuthService.initiateKeycloakLogin();
+      if (result['requires2FA'] == true) {
+        _requires2FA = true;
+        _userID = result['userID'];
+        _authTempToken = result['tempToken'];
+        _refreshToken = result['refreshToken'];
+        _otpTimer = 600;
+        _otpMethod = result['otpMethod'] ?? 'phone';
+        _startOtpTimer();
+      } else {
+        await _handleSuccessfulLogin(result);
+      }
+    } catch (e) {
+      _errorMessage = _parseError(e);
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> verify2FA(String otpCode, bool trustDevice) async {
-    if (_userID == null || _authTempToken == null || _refreshToken == null || _deviceIdentifier == null) {
-      _errorMessage = 'Missing authentication data';
+    if (_userID == null ||
+        _authTempToken == null ||
+        _refreshToken == null ||
+        _deviceIdentifier == null) {
+      _errorMessage = 'Invalid session. Please try again.';
       _isLoading = false;
       notifyListeners();
       return;
@@ -174,20 +183,16 @@ class AuthProvider with ChangeNotifier {
       );
       await _handleSuccessfulLogin(result);
       _requires2FA = false;
-      _authTempToken = null;
-      _refreshToken = null;
-      _deviceIdentifier = null; // Optional: clear after successful login
     } catch (e) {
-      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      _errorMessage = _parseError(e);
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  // Resends 2FA OTP.
   Future<void> resend2FA(String method) async {
-    if (_userID == null || _resendCooldown > 0 || _deviceIdentifier == null) return;
+    if (_userID == null || _resendCooldown > 0) return;
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -199,14 +204,13 @@ class AuthProvider with ChangeNotifier {
       _errorMessage = result['message'];
       _startOtpTimer();
     } catch (e) {
-      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      _errorMessage = _parseError(e);
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  // Initiates password reset process.
   Future<void> initiatePasswordReset(String identifier) async {
     _isLoading = true;
     _errorMessage = null;
@@ -215,19 +219,19 @@ class AuthProvider with ChangeNotifier {
       final result = await AuthService.initiatePasswordReset(identifier);
       _userID = result['userID'];
       _otpTimer = 600;
+      _otpMethod = result['message']?.contains('email') ?? false ? 'email' : 'phone';
       _startOtpTimer();
     } catch (e) {
-      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      _errorMessage = _parseError(e);
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  // Verifies password reset OTP.
   Future<void> verifyPasswordResetOTP(String otpCode) async {
     if (_userID == null) {
-      _errorMessage = 'User ID missing';
+      _errorMessage = 'Invalid session';
       notifyListeners();
       return;
     }
@@ -238,17 +242,16 @@ class AuthProvider with ChangeNotifier {
       final result = await AuthService.verifyPasswordResetOTP(_userID!, otpCode);
       _tempToken = result['tempToken'];
     } catch (e) {
-      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      _errorMessage = _parseError(e);
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  // Resets password with new password.
   Future<void> resetPassword(String newPassword) async {
     if (_userID == null || _tempToken == null) {
-      _errorMessage = 'Missing reset data';
+      _errorMessage = 'Invalid reset data';
       notifyListeners();
       return;
     }
@@ -261,16 +264,14 @@ class AuthProvider with ChangeNotifier {
       _userID = null;
       _tempToken = null;
     } catch (e) {
-      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      _errorMessage = _parseError(e);
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  // Logs out the user and clears state.
   Future<void> logout() async {
-    if (kDebugMode) print('Logging out');
     _otpTimerInstance?.cancel();
     _refreshTimer?.cancel();
     _user = null;
@@ -286,20 +287,21 @@ class AuthProvider with ChangeNotifier {
     try {
       await AuthService.logout();
     } catch (e) {
-      if (kDebugMode) print('Logout error: $e');
+      if (kDebugMode) {
+        print('Logout error: $e');
+      }
+    } finally {
+      await CookieManager.clearCookies();
+      notifyListeners();
+      _startProactiveRefreshTimer();
     }
-    await CookieManager.clearCookies(caller: 'AuthProvider.logout');
-    notifyListeners();
-    _startProactiveRefreshTimer();
   }
 
-  // Clears error message.
   void clearError() {
     _errorMessage = null;
     notifyListeners();
   }
 
-  // Starts OTP countdown timer.
   void _startOtpTimer() {
     _otpTimerInstance?.cancel();
     _otpTimerInstance = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -310,60 +312,54 @@ class AuthProvider with ChangeNotifier {
     });
   }
 
-  // Handles successful login response.
   Future<void> _handleSuccessfulLogin(Map<String, dynamic> result) async {
-    if (result.containsKey('user')) {
-      _user = User.fromJson(result['user']);
-      _tokenExpiry = (result['expiresIn'] != null
-          ? DateTime.now().millisecondsSinceEpoch + result['expiresIn']
-          : null) as int?;
+    _user = User.fromJson(result['user']);
+    _tokenExpiry = DateTime.now().millisecondsSinceEpoch + (result['expiresIn'] as int);
+    await CookieManager.saveCookies({
+      'accessToken': result['accessToken'],
+      'refreshToken': result['refreshToken'],
+      'userData': jsonEncode(result['user']),
+    });
+    await _fetchPermissions();
+    if (!isSupervisor) {
+      await logout();
+      _errorMessage = 'Access denied: Only Supervisors can log in.';
+    }
+  }
+
+  Future<void> _refreshAccessToken() async {
+    if (!CookieManager.cookies.containsKey('refreshToken')) {
+      _errorMessage = 'Session expired. Please log in again.';
+      await logout();
+      return;
+    }
+    try {
+      final result = await AuthService.refreshToken();
+      _tokenExpiry = DateTime.now().millisecondsSinceEpoch + (result['expiresIn'] as int);
       await CookieManager.saveCookies({
         'accessToken': result['accessToken'],
         'refreshToken': result['refreshToken'],
       });
-      await _fetchPermissions();
-      if (!_userRoles!.contains('Supervisor')) {
-        await logout();
-        _errorMessage = 'Access denied: Only Supervisors can log in.';
-      }
-    } else {
-      _errorMessage = 'Invalid login response';
+    } catch (e) {
+      _errorMessage = 'Session expired. Please log in again.';
+      await logout();
     }
     notifyListeners();
   }
 
-  // Refreshes access token with retry logic.
-  Future<void> _refreshAccessToken() async {
-    if (!CookieManager.cookies.containsKey('refreshToken')) {
-      if (kDebugMode) print('No refresh token');
-      await CookieManager.clearCookies(caller: 'AuthProvider.refreshAccessToken');
-      _errorMessage = 'Session expired. Please log in again.';
-      await logout();
-      notifyListeners();
-      return;
-    }
-    const maxRetries = 3;
-    for (var attempt = 1; attempt <= maxRetries; attempt++) {
+  String _parseError(dynamic error) {
+    if (error is http.Response) {
       try {
-        final result = await AuthService.refreshToken();
-        _tokenExpiry = (result['expiresIn'] != null
-            ? DateTime.now().millisecondsSinceEpoch + result['expiresIn']
-            : null) as int?;
-        await CookieManager.saveCookies({
-          'accessToken': result['accessToken'],
-          'refreshToken': result['refreshToken'],
-        });
-        if (kDebugMode) print('Token refreshed');
-        return;
-      } catch (e) {
-        if (attempt == maxRetries) {
-          await CookieManager.clearCookies(caller: 'AuthProvider.refreshAccessToken');
-          _errorMessage = 'Session expired. Please log in again.';
-          await logout();
-          notifyListeners();
-        }
-        await Future.delayed(const Duration(seconds: 1));
+        final body = jsonDecode(error.body);
+        return body['error'] ??
+            body['message'] ??
+            'An error occurred: ${error.statusCode}';
+      } catch (_) {
+        return 'An error occurred: ${error.statusCode}';
       }
+    } else if (error is Exception) {
+      return error.toString().replaceFirst('Exception: ', '');
     }
+    return error.toString();
   }
 }

@@ -1,5 +1,3 @@
-import 'package:flutter/foundation.dart';
-
 // Represents a notification in the TraceFlow system.
 class Notification {
   final String notificationID;
