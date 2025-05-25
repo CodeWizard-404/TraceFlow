@@ -28,30 +28,6 @@ class GoogleMapsService {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     // Get directions
 
     static async getDirections(origin, destination, mode = 'driving', waypoints = [], trafficModel = 'best_guess', optimizeWaypoints = false) {
@@ -556,73 +532,100 @@ class GoogleMapsService {
                 agents.map(async agent => {
                     let lat, lng, address, source = 'agent';
 
-                    // Since all agent lat/lng are null or incorrect, skip directly to delegation
+                    // Check agent's database coordinates first
+                    if (
+                        agent.latitude != null &&
+                        agent.longitude != null &&
+                        !isNaN(agent.latitude) &&
+                        !isNaN(agent.longitude) &&
+                        agent.latitude >= -90 &&
+                        agent.latitude <= 90 &&
+                        agent.longitude >= -180 &&
+                        agent.longitude <= 180
+                    ) {
+                        lat = agent.latitude;
+                        lng = agent.longitude;
+                        source = 'agent';
+                        // Attempt to reverse geocode for address
+                        try {
+                            const reverseGeocode = await this.reverseGeocode(lat, lng);
+                            address = { formattedAddress: reverseGeocode.formattedAddress };
+                        } catch (error) {
+                            logger.warn(`Failed to reverse geocode for agent ${agent.agentID}: ${error.message}`);
+                            address = { formattedAddress: agent.location || 'Unknown Address' };
+                        }
+                    } else {
+                        // Fallback to delegation geocoding
+                        const delegation = agent.Delegation;
+                        const governorate = delegation?.Governorate;
+                        const region = governorate?.Region;
+
+                        if (delegation?.name) {
+                            const cacheKey = `geocode:${delegation.name}:tn`;
+                            let cachedResult = await this.redisClient?.get(cacheKey);
+                            if (cachedResult) {
+                                const data = JSON.parse(cachedResult);
+                                lat = data.latitude;
+                                lng = data.longitude;
+                                address = { formattedAddress: delegation.name };
+                                source = 'delegation';
+                            } else {
+                                try {
+                                    const geocode = await this.geocodeAddress(
+                                        `${delegation.name}, ${governorate?.name || ''}, Tunisia`,
+                                        'tn'
+                                    );
+                                    lat = geocode.latitude;
+                                    lng = geocode.longitude;
+                                    address = { formattedAddress: geocode.formattedAddress };
+                                    await this.redisClient?.set(cacheKey, JSON.stringify(geocode), 'EX', 3600);
+                                    source = 'delegation';
+                                } catch (error) {
+                                    logger.warn(`Failed to geocode delegation ${delegation.name}: ${error.message}`);
+                                }
+                            }
+                        }
+
+                        // Fallback to governorate if delegation geocoding fails
+                        if ((!lat || !lng) && governorate?.name) {
+                            const cacheKey = `geocode:${governorate.name}:tn`;
+                            let cachedResult = await this.redisClient?.get(cacheKey);
+                            if (cachedResult) {
+                                const data = JSON.parse(cachedResult);
+                                lat = data.latitude;
+                                lng = data.longitude;
+                                address = { formattedAddress: governorate.name };
+                                source = 'governorate';
+                            } else {
+                                try {
+                                    const geocode = await this.geocodeAddress(
+                                        `${governorate.name}, Tunisia`,
+                                        'tn'
+                                    );
+                                    lat = geocode.latitude;
+                                    lng = geocode.longitude;
+                                    address = { formattedAddress: geocode.formattedAddress };
+                                    await this.redisClient?.set(cacheKey, JSON.stringify(geocode), 'EX', 3600);
+                                    source = 'governorate';
+                                } catch (error) {
+                                    logger.warn(`Failed to geocode governorate ${governorate.name}: ${error.message}`);
+                                }
+                            }
+                        }
+
+                        // Final fallback: Center of Tunisia
+                        if (!lat || !lng) {
+                            lat = 36.8065; // Center of Tunisia
+                            lng = 10.1815;
+                            address = { formattedAddress: 'Center of Tunisia' };
+                            source = 'default';
+                        }
+                    }
+
+                    // Extract delegation, governorate, and region from agent object
                     const delegation = agent.Delegation;
                     const governorate = delegation?.Governorate;
                     const region = governorate?.Region;
-
-                    // Fallback logic: Delegation -> Governorate -> Tunisia center
-                    if (delegation?.name) {
-                        const cacheKey = `geocode:${delegation.name}:tn`;
-                        let cachedResult = await this.redisClient?.get(cacheKey);
-                        if (cachedResult) {
-                            const data = JSON.parse(cachedResult);
-                            lat = data.latitude;
-                            lng = data.longitude;
-                            address = { formattedAddress: delegation.name };
-                            source = 'delegation';
-                        } else {
-                            try {
-                                // Improved geocoding query with context
-                                const geocode = await this.geocodeAddress(
-                                    `${delegation.name}, ${governorate?.name || ''}, Tunisia`,
-                                    'tn'
-                                );
-                                lat = geocode.latitude;
-                                lng = geocode.longitude;
-                                address = { formattedAddress: geocode.formattedAddress };
-                                await this.redisClient?.set(cacheKey, JSON.stringify(geocode), 'EX', 3600);
-                                source = 'delegation';
-                            } catch (error) {
-                                logger.warn(`Failed to geocode delegation ${delegation.name}: ${error.message}`);
-                            }
-                        }
-                    }
-
-                    // Fallback to governorate if delegation geocoding fails
-                    if ((!lat || !lng) && governorate?.name) {
-                        const cacheKey = `geocode:${governorate.name}:tn`;
-                        let cachedResult = await this.redisClient?.get(cacheKey);
-                        if (cachedResult) {
-                            const data = JSON.parse(cachedResult);
-                            lat = data.latitude;
-                            lng = data.longitude;
-                            address = { formattedAddress: governorate.name };
-                            source = 'governorate';
-                        } else {
-                            try {
-                                const geocode = await this.geocodeAddress(
-                                    `${governorate.name}, Tunisia`,
-                                    'tn'
-                                );
-                                lat = geocode.latitude;
-                                lng = geocode.longitude;
-                                address = { formattedAddress: geocode.formattedAddress };
-                                await this.redisClient?.set(cacheKey, JSON.stringify(geocode), 'EX', 3600);
-                                source = 'governorate';
-                            } catch (error) {
-                                logger.warn(`Failed to geocode governorate ${governorate.name}: ${error.message}`);
-                            }
-                        }
-                    }
-
-                    // Final fallback: Center of Tunisia
-                    if (!lat || !lng) {
-                        lat = 36.8065; // Center of Tunisia
-                        lng = 10.1815;
-                        address = { formattedAddress: 'Center of Tunisia' };
-                        source = 'default';
-                    }
 
                     return {
                         agentId: agent.agentID,
@@ -663,7 +666,6 @@ class GoogleMapsService {
             throw new Error(`Failed to get agent locations: ${error.message}`);
         }
     }
-
     // Get map link for a location
     static async getMapLink(address) {
         try {

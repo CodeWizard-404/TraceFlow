@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import polyline from '@mapbox/polyline';
 import { getDirections } from '../../apis/locationApi';
 import './VisitDirectionsModal.css';
+import { mapStyles } from './mapStyles';
 
 interface DirectionsModalProps {
   isOpen: boolean;
@@ -25,33 +26,7 @@ const containerStyle = { width: '100%', height: '100%' };
 const defaultCenter = { lat: 36.8065, lng: 10.1815 };
 const libraries: ('places' | 'geometry')[] = ['places', 'geometry'];
 
-const mapStyles = {
-  light: [
-    { elementType: 'geometry', stylers: [{ color: '#f5f5f5' }] },
-    { elementType: 'labels.text.fill', stylers: [{ color: '#616161' }] },
-    { elementType: 'labels.text.stroke', stylers: [{ color: '#f5f5f5' }] },
-    { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#ffffff' }] },
-    { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#c9c9c9' }] },
-    { featureType: 'water', stylers: [{ color: '#b3e5fc' }] },
-  ],
-  dark: [
-    { elementType: 'geometry', stylers: [{ color: '#212121' }] },
-    { elementType: 'labels.text.fill', stylers: [{ color: '#757575' }] },
-    { elementType: 'labels.text.stroke', stylers: [{ color: '#212121' }] },
-    { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#424242' }] },
-    { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#616161' }] },
-    { featureType: 'water', stylers: [{ color: '#808080' }] },
-    { featureType: 'satellite', elementType: 'geometry', stylers: [{ visibility: 'simplified' }] },
-    { featureType: 'satellite', elementType: 'labels.text.fill', stylers: [{ color: '#ffffff' }] },
-  ],
-  satellite: [],
-  terrain: [],
-  retro: [
-    { elementType: 'geometry', stylers: [{ color: '#ebe3cd' }] },
-    { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#f5f5f5' }] },
-    { featureType: 'water', stylers: [{ color: '#c9dfaf' }] },
-  ],
-};
+
 
 const DirectionsModal: React.FC<DirectionsModalProps> = ({
   isOpen,
@@ -63,7 +38,7 @@ const DirectionsModal: React.FC<DirectionsModalProps> = ({
 }) => {
   const [directions, setDirections] = useState<CustomDirectionsResponse | null>(null);
   const [mapStyle, setMapStyle] = useState<keyof typeof mapStyles>(
-    document.body.classList.contains('dark') ? 'dark' : 'light'
+    document.body.classList.contains('dark') ? 'dark' : 'standard'
   );
   const [isSummaryCollapsed, setIsSummaryCollapsed] = useState(true);
   const mapRef = useRef<google.maps.Map | null>(null);
@@ -174,7 +149,7 @@ const DirectionsModal: React.FC<DirectionsModalProps> = ({
               <select
                 value={mapStyle}
                 onChange={(e) => handleMapStyleChange(e.target.value as keyof typeof mapStyles)}
-                className="map-style-select"
+                className="map-style-select action-button"
                 aria-label="Select map style"
               >
                 {Object.keys(mapStyles).map((style) => (

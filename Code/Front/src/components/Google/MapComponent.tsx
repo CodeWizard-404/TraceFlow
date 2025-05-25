@@ -32,6 +32,7 @@ import {
 } from '../../apis/locationApi';
 import { getUsersByRole } from '../../apis/userAPI';
 import './Map.css';
+import { mapStyles } from './mapStyles';
 
 interface RoutePoint {
   id: string;
@@ -90,28 +91,7 @@ const containerStyle = { width: '100%', height: '70vh' };
 const defaultCenter = { lat: 36.8065, lng: 10.1815 };
 const libraries: ('places' | 'geometry')[] = ['places', 'geometry'];
 
-const mapStyles = {
-  standard: [],
-  silver: [
-    { elementType: 'geometry', stylers: [{ color: '#f5f5f5' }] },
-    { elementType: 'labels.text.fill', stylers: [{ color: '#616161' }] },
-    { featureType: 'road', stylers: [{ color: '#ffffff' }] },
-    { featureType: 'water', stylers: [{ color: '#b3e5fc' }] },
-  ],
-  night: [
-    { elementType: 'geometry', stylers: [{ color: '#242f3e' }] },
-    { elementType: 'labels.text.fill', stylers: [{ color: '#746855' }] },
-    { featureType: 'road', stylers: [{ color: '#374151' }] },
-    { featureType: 'water', stylers: [{ color: '#1e3a8a' }] },
-  ],
-  satellite: [],
-  minimal: [
-    { featureType: 'all', elementType: 'all', stylers: [{ visibility: 'off' }] },
-    { featureType: 'road', elementType: 'geometry', stylers: [{ visibility: 'on', color: '#e0e0e0' }] },
-    { featureType: 'road', elementType: 'labels', stylers: [{ visibility: 'off' }] },
-    { featureType: 'water', elementType: 'geometry', stylers: [{ visibility: 'on', color: '#b3e5fc' }] },
-  ],
-};
+
 
 const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
   const R = 6371;
@@ -156,9 +136,7 @@ const MapComponent: React.FC = () => {
   const [isRoutesPanelCollapsed, setIsRoutesPanelCollapsed] = useState(false);
   const [isAddAgentPanelCollapsed, setIsAddAgentPanelCollapsed] = useState(false);
   const [isEditAgentPanelCollapsed, setIsEditAgentPanelCollapsed] = useState(false);
-  const [route, setRoute] = useState<CustomDirectionsResponse | null>(null);
   const [routeMode, setRouteMode] = useState<'DRIVING' | 'WALKING'>('DRIVING');
-  const [routePoints, setRoutePoints] = useState<RoutePoint[]>([]);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [addingAgentMode, setAddingAgentMode] = useState(false);
   const [draggingMarker, setDraggingMarker] = useState<{ id: string; original: AgentMarker } | null>(null);
@@ -190,9 +168,9 @@ const MapComponent: React.FC = () => {
 
   // Detect platform theme and set map style
   useEffect(() => {
-    const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: light)');
+    const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     const handleThemeChange = (e: MediaQueryListEvent | MediaQueryList) => {
-      setMapStyle(e.matches ? 'night' : 'standard');
+      setMapStyle(e.matches ? 'standard' : 'platformDark');
     };
     handleThemeChange(darkModeMediaQuery);
     darkModeMediaQuery.addEventListener('change', handleThemeChange);
@@ -222,20 +200,52 @@ const MapComponent: React.FC = () => {
         setDelegations(delegationData);
         setSupervisors(supervisorsData);
 
-        const initialMarkers = agentLocationsData.locations.map((loc) => ({
-          id: loc.agentId,
-          lat: loc.latitude,
-          lng: loc.longitude,
-          name: loc.name,
-          lastname: loc.lastname,
-          email: loc.email,
-          phone: loc.phone,
-          address: loc.address,
-          source: loc.source,
-          delegation: loc.delegation,
-          governorate: loc.governorate,
-          region: loc.region,
-        }));
+        const initialMarkers = await Promise.all(
+          agentLocationsData.locations.map(async (loc) => {
+            let lat = loc.latitude;
+            let lng = loc.longitude;
+            let address = loc.address;
+
+            // If latitude or longitude is invalid, fetch delegation center coordinates
+            if (lat == null || lng == null || lat === 0 || lng === 0) {
+              try {
+                const delegation = delegationData.find((d) => d.delegationID === loc.delegation?.id);
+                if (delegation) {
+                  const geocode = await getGeocode(`${delegation.name}, Tunisia`);
+                  lat = geocode.latitude;
+                  lng = geocode.longitude;
+                  address = geocode.formattedAddress || delegation.name;
+                } else {
+                  // Fallback to default center if delegation not found
+                  lat = defaultCenter.lat;
+                  lng = defaultCenter.lng;
+                  address = 'Unknown Delegation';
+                }
+              } catch (err) {
+                console.error(`Failed to geocode delegation for agent ${loc.agentId}:`, err);
+                lat = defaultCenter.lat;
+                lng = defaultCenter.lng;
+                address = 'Unknown Delegation';
+              }
+            }
+
+            return {
+              id: loc.agentId,
+              lat,
+              lng,
+              name: loc.name,
+              lastname: loc.lastname,
+              email: loc.email,
+              phone: loc.phone,
+              address,
+              source: loc.source || 'agent',
+              delegation: loc.delegation ? { id: loc.delegation.id, name: loc.delegation.name, governorateID: (loc.delegation as any).governorateID } : undefined,
+              governorate: loc.governorate ? { id: loc.governorate.id, name: loc.governorate.name } : undefined,
+              region: loc.region,
+            };
+          })
+        );
+
         setAllMarkers(initialMarkers);
         setFilteredMarkers(initialMarkers);
 
@@ -985,7 +995,7 @@ const MapComponent: React.FC = () => {
           onClick={handleMapClick}
           options={{
             styles: mapStyles[mapStyle],
-            mapTypeId: mapStyle === 'satellite' ? 'satellite' : 'roadmap',
+            mapTypeId: mapStyle === 'satellite' ? 'hybrid' : 'roadmap',
             mapTypeControl: false,
             streetViewControl: false,
             fullscreenControl: false,
@@ -1044,10 +1054,16 @@ const MapComponent: React.FC = () => {
                 className="map-style-select"
               >
                 <option value="standard">Standard</option>
-                <option value="silver">Silver</option>
-                <option value="night">Night</option>
                 <option value="satellite">Satellite</option>
                 <option value="minimal">Minimal</option>
+                <option value="platformLight">Light</option>
+                <option value="platformDark">Dark</option>
+                <option value="silver">Silver</option>
+                <option value="retro">Retro</option>
+                <option value="aubergine">Aubergine</option>
+                <option value="night">Night</option>
+                <option value="dark">Black</option>
+
               </select>
             </div>
           </div>
@@ -1251,7 +1267,7 @@ const MapComponent: React.FC = () => {
                       }
                     }}
                     icon={{
-                      url: (marker.lat != null && marker.lng != null && marker.lat !== 0 && marker.lng !== 0)
+                      url: (marker.lat != null && marker.lng != null && marker.lat !== 0 && marker.lng !== 0 && marker.source === 'agent')
                         ? 'https://maps.gstatic.com/mapfiles/ms2/micons/lightblue.png'
                         : 'https://maps.gstatic.com/mapfiles/ms2/micons/red.png'
                     }}
@@ -1262,6 +1278,8 @@ const MapComponent: React.FC = () => {
                     position={userLocation}
                     title="Your Location"
                     icon={{
+                      anchor: window.google ? new window.google.maps.Point(8, 8) : undefined,
+                      scaledSize: window.google ? new window.google.maps.Size(32, 32) : undefined,
                       url: 'https://maps.gstatic.com/mapfiles/ms2/micons/man.png'
                     }}
                   />

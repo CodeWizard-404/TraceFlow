@@ -386,7 +386,7 @@ body.dark .origin-input button svg {
 
 .locate-btn {
     position: absolute;
-    bottom: 8.5rem;
+    bottom: 9.5rem;
     left: 0.8rem;
     width: 40px;
     height: 40px;
@@ -673,21 +673,22 @@ body.dark .origin-input button svg {
         right: 1rem;
         top: 7rem;
         left: 1rem;
+        padding: 0;
     }
 
     .sub-panel.collapsed {
-        padding-top: 0.3rem;
+        padding-top: 0;
         padding-left: 1rem;
     }
 
     .directions-panel {
-        max-height: 19rem;
+        max-height: 18rem;
         overflow-y: auto;
     }
 
     .add-agent-btn {
         top: auto;
-        bottom: 8.7rem;
+        bottom: 9.7rem;
         right: 1rem;
     }
 
@@ -703,7 +704,7 @@ body.dark .origin-input button svg {
     .route-info {
         left: 3.5rem;
         right: 6.2rem;
-        top: 26.4rem;
+        top: 25.4rem;
         height: 2.4rem;
     }
 }
@@ -1106,4 +1107,40 @@ body.dark .search-input::placeholder {
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
     outline: none;
     transition: all 0.3s ease;
+}
+
+
+
+.agent-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+
+}
+
+/* Ensure the agent-actions div is pushed to the bottom */
+.agent-actions {
+    margin-top: auto;
+    display: flex;
+}
+
+
+.poi-info-window, .gm-style, .address, .address-line, .full-width, .view-link, .view-link a {
+    padding: 0.3rem !important;
+    color: #323232 !important;
+    background-color: #fff;
+}
+
+body.dark .poi-info-window, body.dark .gm-style, body.dark .address, body.dark .address-line, body.dark .full-width, body.dark .view-link, body.dark .view-link a {
+    color: #e8eaed !important;
+    background-color: #323232 !important;
+}
+
+.view-link a {
+    text-decoration: none;
+    color: #4cb1c7 !important;
+}
+
+body.dark .view-link a {
+    color: #63b3ed !important;
 }
