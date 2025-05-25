@@ -2127,8 +2127,6 @@ body.dark .close-error {
     justify-content: center;
     align-items: center;
     z-index: 1000;
-    opacity: 0;
-    transition: opacity 0.3s ease-in-out;
 }
 
 body.dark .confirmation-modal-overlay {
@@ -2221,6 +2219,10 @@ body.dark .confirm-button:hover {
     border-radius: 3.125rem;
     cursor: pointer;
     transition: all 0.3s ease;
+}
+
+body.dark .cancel-button {
+    background: #333;
 }
 
 

@@ -1825,5 +1825,126 @@
       "next": "Next",
       "pageInfo": "Page {{currentPage}} of {{totalPages}}"
     }
+  },
+  "map": {
+    "loading": "Loading...",
+    "geolocationError": "Unable to retrieve your location",
+    "initialDataError": "Failed to load initial data",
+    "searchPlaceholder": "Search agents...",
+    "filter": "Filter",
+    "directions": "Directions",
+    "carModeOn": "Car Mode On",
+    "carModeOff": "Car Mode Off",
+    "mapStyles": {
+      "standard": "Standard",
+      "platformDark": "Dark",
+      "platformLight": "Light",
+      "satellite": "Satellite",
+      "night": "Night",
+      "dark": "Black",
+      "light": "Light",
+      "minimal": "Minimal",
+      "silver": "Silver",
+      "retro": "Retro",
+      "aubergine": "Aubergine"
+    },
+    "filters": {
+      "title": "Filters",
+      "allRegions": "All Regions",
+      "allGovernorates": "All Governorates",
+      "allDelegations": "All Delegations",
+      "allSupervisors": "All Supervisors"
+    },
+    "directionsPanel": {
+      "title": "Directions",
+      "originPlaceholder": "Enter origin",
+      "destinationPlaceholder": "Enter destination",
+      "myLocation": "My Location",
+      "modes": {
+        "driving": "Driving",
+        "walking": "Walking"
+      },
+      "go": "Go",
+      "clear": "Clear"
+    },
+    "routes": {
+      "title": "Route Stops",
+      "noStops": "No stops added",
+      "optimize": "Optimize Route"
+    },
+    "agentsList": {
+      "title": "Agents",
+      "noAgents": "No agents found"
+    },
+    "agentCard": {
+      "directions": "Directions",
+      "addStop": "Add Stop",
+      "call": "Call",
+      "remove": "Remove"
+    },
+    "infoWindow": {
+      "edit": "Edit",
+      "addStop": "Add Stop",
+      "directions": "Directions",
+      "phone": "Phone"
+    },
+    "addAgent": "Add Agent",
+    "addAgentPrompt": "Click on the map to select a location for the new agent",
+    "refreshAgents": "Refresh Agents",
+    "refreshAgentsError": "Failed to refresh agents",
+    "addAgentPanel": {
+      "title": "Add New Agent",
+      "name": "Name",
+      "lastname": "Last Name",
+      "email": "Email",
+      "phone": "Phone",
+      "supervisor": "Select Supervisor",
+      "governorate": "Select Governorate",
+      "delegation": "Select Delegation",
+      "address": "Address",
+      "save": "Save",
+      "cancel": "Cancel"
+    },
+    "editAgentPanel": {
+      "title": "Edit",
+      "name": "Name",
+      "lastname": "Last Name",
+      "email": "Email",
+      "phone": "Phone",
+      "supervisor": "Select Supervisor",
+      "governorate": "Select Governorate",
+      "delegation": "Select Delegation",
+      "address": "Address",
+      "save": "Save",
+      "cancel": "Cancel"
+    },
+    "phone": "Phone",
+    "returnToMyLocation": "Return to My Location",
+    "userLocationError": "User location not available",
+    "routePointsError": "At least two points are required for a route",
+    "invalidRouteData": "Invalid route data received",
+    "calculateRouteError": "Failed to calculate route",
+    "locationUpdateError": "Failed to update location",
+    "trackLocationError": "Failed to track location: {{message}}",
+    "retryLocation": "Retrying location update ({{retry}}/{{maxRetries}})",
+    "searchError": "Failed to search agents",
+    "addressError": "Failed to retrieve address",
+    "allFieldsRequired": "All fields are required",
+    "agentCreated": "Agent created successfully",
+    "createAgentError": "Failed to create agent",
+    "noAgentSelected": "No agent selected",
+    "agentUpdated": "Agent updated successfully",
+    "editAgentError": "Failed to update agent",
+    "invalidMarkerPosition": "Invalid marker position",
+    "updateLocationConfirm": "Update location for {{name}} {{lastname}} to {{address}}?",
+    "locationUpdated": "Location updated successfully",
+    "directionsError": "Failed to get directions",
+    "addStopError": "Failed to add stop",
+    "optimizeRouteError": "At least three points are required to optimize",
+    "locationAccessDenied": "Location access denied",
+    "permissionCheckError": "Failed to check location permission",
+    "agentDetailsError": "Failed to retrieve agent details",
+    "confirm": "Confirm",
+    "cancel": "Cancel"
   }
 }
