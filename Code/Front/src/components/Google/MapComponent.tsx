@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   GoogleMap,
@@ -19,6 +20,8 @@ import {
   getAgentById,
   updateAgent,
   correctAgentLocation,
+  getAgentsByUser,
+  getAgentsByDelegation,
 } from '../../apis/agentAPI';
 import {
   getAllRegions,
@@ -30,8 +33,15 @@ import {
   getDelegationsByUser,
   updateUserLocation,
   getRegionsByUser,
+  getDelegationsByGovernorate,
+  getGovernoratesByRegion,
 } from '../../apis/locationApi';
-import { getUsersByRole } from '../../apis/userAPI';
+import {
+  getUsersByRole,
+  getUsersByGovernorate,
+  getUsersByDelegation,
+  getUsersByRegion,
+} from '../../apis/userAPI';
 import './Map.css';
 import { mapStyles } from './mapStyles';
 import Modal from 'react-modal';
@@ -39,9 +49,23 @@ import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import { debounce } from 'lodash';
-
+import Delegation from 'models/Delegation';
+import Governorate from 'models/Governorate';
 
 Modal.setAppElement('#root');
+
+const PERMISSIONS = {
+  ACCESS_AGENT_MAP_LOCATIONS: import.meta.env.VITE_PERMISSIONS_READ_AGENT_MAP_LOCATIONS,
+  CREATE_AGENTS: import.meta.env.VITE_PERMISSIONS_CREATE_AGENTS,
+  UPDATE_AGENTS: import.meta.env.VITE_PERMISSIONS_UPDATE_AGENTS,
+  ACCESS_REGIONS: import.meta.env.VITE_PERMISSIONS_READ_REGIONS,
+  ACCESS_GOVERNORATES: import.meta.env.VITE_PERMISSIONS_READ_GOVERNORATES,
+  ACCESS_DELEGATIONS: import.meta.env.VITE_PERMISSIONS_READ_DELEGATIONS,
+  ACCESS_REGIONS_BY_USER: import.meta.env.VITE_PERMISSIONS_ACCESS_REGIONS_BY_USER,
+  ACCESS_GOVERNORATES_BY_USER: import.meta.env.VITE_PERMISSIONS_ACCESS_GOVERNORATES_BY_USER,
+  ACCESS_DELEGATIONS_BY_USER: import.meta.env.VITE_PERMISSIONS_ACCESS_DELEGATIONS_BY_USER,
+  ACCESS_SUPERVISORS: import.meta.env.VITE_PERMISSIONS_READ_SUPERVISORS,
+} as const;
 
 interface ConfirmationModalProps {
   isOpen: boolean;
@@ -61,8 +85,6 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ isOpen, message, 
       onCancel();
     }, 300);
   };
-
-
 
   if (!isOpen) return null;
 
@@ -169,6 +191,7 @@ const MapComponent: React.FC = () => {
 
   const [allMarkers, setAllMarkers] = useState<AgentMarker[]>([]);
   const [filteredMarkers, setFilteredMarkers] = useState<AgentMarker[]>([]);
+  const [filteredAgents, setFilteredAgents] = useState<AgentMarker[]>([]);
   const [selectedMarker, setSelectedMarker] = useState<AgentMarker | null>(null);
   const [selectedAgents, setSelectedAgents] = useState<string[]>([]);
   const [mapCenter, setMapCenter] = useState(defaultCenter);
@@ -221,8 +244,21 @@ const MapComponent: React.FC = () => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmMessage, setConfirmMessage] = useState('');
   const [onConfirmAction, setOnConfirmAction] = useState<(() => void) | null>(null);
+  const [routePoints, setRoutePoints] = useState<RoutePoint[]>([]);
+  const [isRouteProcessing, setIsRouteProcessing] = useState(false);
+  const routePointsRef = useRef(routePoints);
+  const [isOptimizing, setIsOptimizing] = useState(false);
 
 
+  // Sync routePointsRef with routePoints
+  useEffect(() => {
+    routePointsRef.current = routePoints;
+  }, [routePoints]);
+
+  // Log re-renders
+  useEffect(() => {
+    console.log('MapComponent re-rendered');
+  });
 
   const showConfirmation = (message: string, action: () => void) => {
     setConfirmMessage(message);
@@ -247,11 +283,17 @@ const MapComponent: React.FC = () => {
     path: google.maps.LatLngLiteral[];
     traffic: Array<{ path: google.maps.LatLngLiteral[]; color: string }>;
   }>({
-    points: [],
+    points: [], // Will be synced with routePoints state
     response: null,
     path: [],
     traffic: [],
   });
+
+  // Sync routeData.current.points with routePoints state
+  useEffect(() => {
+    routeData.current.points = routePoints;
+    console.log('Synced routeData.current.points:', routePoints.map(p => ({ id: p.id, type: p.type, agentId: p.agentId })));
+  }, [routePoints]);
 
   useEffect(() => {
     const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
@@ -272,10 +314,9 @@ const MapComponent: React.FC = () => {
     );
   }, [filteredMarkers, userLocation]);
 
-
   const handleRefreshAgents = useCallback(
     debounce(async () => {
-      if (!hasPermission('access_agent_map_locations')) {
+      if (!hasPermission(PERMISSIONS.ACCESS_AGENT_MAP_LOCATIONS)) {
         toast.error(t('map.noPermission'));
         return;
       }
@@ -337,6 +378,7 @@ const MapComponent: React.FC = () => {
     }, 1000), // Debounce for 1 second
     [hasPermission, t, delegations]
   );
+
   useEffect(() => {
     const loadInitialData = async () => {
       if (!user?.userID) {
@@ -352,23 +394,23 @@ const MapComponent: React.FC = () => {
           agentLocationsData,
           supervisorsData,
         ] = await Promise.all([
-          hasPermission('access_regions')
+          hasPermission(PERMISSIONS.ACCESS_REGIONS)
             ? getAllRegions()
-            : hasPermission('access_regions_by_user')
+            : hasPermission(PERMISSIONS.ACCESS_REGIONS_BY_USER)
               ? getRegionsByUser(user.userID)
               : [],
-          hasPermission('access_governorates')
+          hasPermission(PERMISSIONS.ACCESS_GOVERNORATES)
             ? getAllGovernorates()
-            : hasPermission('access_governorates_by_user')
+            : hasPermission(PERMISSIONS.ACCESS_GOVERNORATES_BY_USER)
               ? getGovernoratesByUser(user.userID)
               : [],
-          hasPermission('access_delegations')
+          hasPermission(PERMISSIONS.ACCESS_DELEGATIONS)
             ? getAllDelegations()
-            : hasPermission('access_delegations_by_user')
+            : hasPermission(PERMISSIONS.ACCESS_DELEGATIONS_BY_USER)
               ? getDelegationsByUser(user.userID)
               : [],
-          hasPermission('access_agent_map_locations') ? getAgentLocations() : { locations: [] },
-          hasPermission('access_supervisors')
+          hasPermission(PERMISSIONS.ACCESS_AGENT_MAP_LOCATIONS) ? getAgentLocations() : { locations: [] },
+          hasPermission(PERMISSIONS.ACCESS_SUPERVISORS)
             ? getUsersByRole(import.meta.env.VITE_ROLES_SUPERVISOR)
             : [],
         ]);
@@ -376,9 +418,9 @@ const MapComponent: React.FC = () => {
         setRegions(regionData);
         setGovernorates(governorateData);
         setDelegations(delegationData);
-        setSupervisors(supervisorsData);
+        setSupervisors(supervisorsData || []); // Ensure supervisors are set even if empty
 
-        const initialMarkers = hasPermission('access_agent_map_locations')
+        const initialMarkers = hasPermission(PERMISSIONS.ACCESS_AGENT_MAP_LOCATIONS)
           ? await Promise.all(
             agentLocationsData.locations.map(async (loc) => {
               let lat = loc.latitude;
@@ -415,16 +457,17 @@ const MapComponent: React.FC = () => {
                 address,
                 source: loc.source || 'agent',
                 delegation: loc.delegation
-                  ? { id: loc.delegation.id, name: loc.delegation.name, governorateID: (loc.delegation as any).governorateID }
+                  ? { id: loc.delegation.id, name: loc.delegation.name, governorateID: loc.governorate?.id }
                   : undefined,
                 governorate: loc.governorate ? { id: loc.governorate.id, name: loc.governorate.name } : undefined,
-                region: loc.region,
+                region: loc.region ? { id: loc.region.id, name: loc.region.name } : undefined,
               };
             })
           )
           : [];
         setAllMarkers(initialMarkers);
         setFilteredMarkers(initialMarkers);
+        setFilteredAgents(initialMarkers);
 
         if (navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(
@@ -451,7 +494,7 @@ const MapComponent: React.FC = () => {
     };
 
     loadInitialData();
-  }, [user?.userID, hasPermission, t]); // Only depend on user.userID
+  }, [user?.userID, hasPermission, t]);
 
   useEffect(() => {
     if (newAgent.supervisorID) {
@@ -486,10 +529,17 @@ const MapComponent: React.FC = () => {
   const handleCalculateRoute = useCallback(
     async (points: RoutePoint[], mode: 'DRIVING' | 'WALKING', optimize: boolean = false) => {
       if (points.length < 2) {
+        console.warn('Cannot calculate route: fewer than 2 points', points);
         toast.error(t('map.routePointsError'));
         return;
       }
+      if (!points.every(p => p.location && typeof p.location === 'string' && p.location.includes(','))) {
+        console.error('Invalid routePoints structure:', points);
+        toast.error(t('map.invalidRoutePoints'));
+        return;
+      }
       try {
+        console.log('Calculating route with points:', points.map(p => ({ id: p.id, type: p.type, agentId: p.agentId, location: p.location })), 'Mode:', mode, 'Optimize:', optimize);
         const origin = points[0].location;
         const destination = points[points.length - 1].location;
         const waypointsForApi = points
@@ -499,32 +549,46 @@ const MapComponent: React.FC = () => {
             stopover: true,
           }));
         const directions = await getDirections(origin, destination, mode.toLowerCase(), waypointsForApi, optimize);
-        console.log('Directions Response:', directions);
-        if (directions.polyline && directions.distance > 0 && directions.duration > 0) {
-          routeData.current = {
-            points,
-            response: directions,
-            path: polyline.decode(directions.polyline).map(([lat, lng]) => ({ lat, lng })),
-            traffic:
-              directions.trafficSegments?.flatMap((segment) =>
-                segment.steps.map((step) => ({
-                  path: polyline.decode(step.polyline).map(([lat, lng]) => ({ lat, lng })),
-                  color: step.color,
-                }))
-              ) || [],
-          };
-          if (optimize && directions.waypointOrder && directions.waypointOrder.length > 0) {
-            const newPoints = [...points];
-            const waypoints = newPoints.slice(1, newPoints.length - 1);
-            const reorderedWaypoints = directions.waypointOrder.map((index) => waypoints[index]);
-            newPoints.splice(1, waypoints.length, ...reorderedWaypoints);
-            routeData.current.points = newPoints;
-          }
-          const [destLat, destLng] = destination.split(',').map(Number);
-          setMapCenter({ lat: destLat, lng: destLng });
-          setZoom(15);
-        } else {
-          toast.error(t('map.invalidRouteData'));
+        const newPath = polyline.decode(directions.polyline).map(([lat, lng]) => ({ lat, lng }));
+        const newTraffic = directions.trafficSegments?.flatMap((segment) =>
+          segment.steps.map((step) => ({
+            path: polyline.decode(step.polyline).map(([lat, lng]) => ({ lat, lng })),
+            color: step.color,
+          }))
+        ) || [];
+
+        let newPoints = [...points];
+        if (optimize && directions.optimizedPoints && directions.optimizedPoints.length > 0) {
+          // Reorder all points based on optimized order
+          const optimizedLocations = [origin, ...directions.optimizedPoints];
+          newPoints = optimizedLocations.map((location, index) => {
+            const originalPoint = points.find(p => p.location === location) || {
+              id: `point-${index}`,
+              location,
+              address: location,
+              type: 'waypoint',
+            };
+            return {
+              ...originalPoint,
+              type: index === 0 ? 'origin' : (index === optimizedLocations.length - 1 ? 'destination' : 'waypoint'),
+            };
+          });
+        }
+
+        routeData.current = {
+          points: newPoints,
+          response: directions,
+          path: newPath,
+          traffic: newTraffic,
+        };
+
+        setRoutePoints([...newPoints]);
+        routePointsRef.current = [...newPoints];
+
+        const bounds = new google.maps.LatLngBounds();
+        newPath.forEach((point) => bounds.extend(new google.maps.LatLng(point.lat, point.lng)));
+        if (mapRef.current) {
+          mapRef.current.fitBounds(bounds);
         }
       } catch (err) {
         console.error('Calculate Route Error:', err);
@@ -684,7 +748,6 @@ const MapComponent: React.FC = () => {
     };
   }, [searchQuery, handleSearch]);
 
-
   useEffect(() => {
     console.log('MapComponent rendered', {
       userId: user?.userID,
@@ -695,39 +758,144 @@ const MapComponent: React.FC = () => {
   }, [user, effectivePermissions, filterSupervisor, newAgent.supervisorID]);
 
 
+  useEffect(() => {
+    const fetchGovernorates = async () => {
+      try {
+        let govs: Governorate[] = [];
+        if (filterRegion) {
+          govs = await getGovernoratesByRegion(filterRegion);
+        } else {
+          govs = await (hasPermission(PERMISSIONS.ACCESS_GOVERNORATES)
+            ? getAllGovernorates()
+            : getGovernoratesByUser(user?.userID || ''));
+        }
+        setGovernorates(govs);
+      } catch (err) {
+        console.error('Fetch Governorates Error:', err);
+        toast.error(t('map.fetchGovernoratesFailed'));
+      }
+    };
 
-  const filteredGovernorates = useMemo(() => {
-    let result = governorates;
-    if (filterRegion) result = result.filter((g: any) => g.regionID === filterRegion);
-    if (filterSupervisor) {
-      const supervisorGovs = assignedGovernorates.map((g) => g.governorateID);
-      result = result.filter((g) => supervisorGovs.includes(g.governorateID));
-    }
-    return result;
-  }, [governorates, filterRegion, filterSupervisor, assignedGovernorates]);
+    fetchGovernorates();
+  }, [filterRegion, hasPermission, user?.userID, t]);
 
-  const filteredDelegations = useMemo(() => {
-    let result = delegations;
-    if (filterGovernorate) result = result.filter((d) => d.governorateID === filterGovernorate);
-    if (filterSupervisor) {
-      const supervisorDels = assignedDelegations.map((d) => d.delegationID);
-      result = result.filter((d) => supervisorDels.includes(d.delegationID));
-    }
-    return result;
-  }, [delegations, filterGovernorate, filterSupervisor, assignedDelegations]);
 
-  const handleFilter = useCallback(() => {
-    let filtered = allMarkers;
-    if (filterRegion) filtered = filtered.filter((m) => m.region?.id === filterRegion);
-    if (filterGovernorate) filtered = filtered.filter((m) => m.governorate?.id === filterGovernorate);
-    if (filterDelegation) filtered = filtered.filter((m) => m.delegation?.id === filterDelegation);
-    if (filterSupervisor) filtered = filtered.filter((m) => m.supervisor?.userID === filterSupervisor || !m.supervisor);
-    setFilteredMarkers(filtered);
-  }, [filterRegion, filterGovernorate, filterDelegation, filterSupervisor, allMarkers]);
 
   useEffect(() => {
-    handleFilter();
-  }, [filterRegion, filterGovernorate, filterSupervisor, handleFilter]);
+    const fetchDelegations = async () => {
+      try {
+        let dels: Delegation[] = [];
+        if (filterGovernorate) {
+          dels = await getDelegationsByGovernorate(filterGovernorate);
+        } else {
+          dels = await (hasPermission(PERMISSIONS.ACCESS_DELEGATIONS)
+            ? getAllDelegations()
+            : getDelegationsByUser(user?.userID || ''));
+        }
+        setDelegations(dels);
+        setAssignedDelegations(dels);
+      } catch (err) {
+        console.error('Fetch Delegations Error:', err);
+        toast.error(t('map.fetchDelegationsFailed'));
+      }
+    };
+
+    fetchDelegations();
+  }, [filterGovernorate, hasPermission, user?.userID, t]);
+
+
+  useEffect(() => {
+    const fetchSupervisors = async () => {
+      try {
+        let sups: User[] = [];
+        if (filterGovernorate || filterDelegation) {
+          const promises = [];
+          if (filterGovernorate) promises.push(getUsersByGovernorate(filterGovernorate));
+          if (filterDelegation) promises.push(getUsersByDelegation(filterDelegation));
+          if (promises.length) {
+            const results = await Promise.all(promises);
+            if (results.length > 1) {
+              sups = results[0].filter((user) =>
+                results.every((res, index) =>
+                  index === 0 || res.some((u) => u.userID === user.userID)
+                )
+              );
+            } else {
+              sups = results[0];
+            }
+          }
+        } else {
+          sups = await getUsersByRole(import.meta.env.VITE_ROLES_SUPERVISOR);
+        }
+        setSupervisors(sups || []);
+      } catch (err) {
+        console.error('Fetch Supervisors Error:', err);
+        toast.error(t('map.fetchSupervisorsFailed'));
+      }
+    };
+
+    fetchSupervisors();
+  }, [filterGovernorate, filterDelegation, t]);
+
+  const handleAgentFilter = useCallback(async () => {
+    try {
+      let filtered: AgentMarker[] = allMarkers;
+
+
+
+      // Apply supervisor filter
+      if (filterSupervisor) {
+        const agentData = await getAgentsByUser(filterSupervisor);
+        const supervisorAgents = agentData.agents.map((agent) => ({
+          id: agent.agentID,
+          lat: agent.latitude || defaultCenter.lat,
+          lng: agent.longitude || defaultCenter.lng,
+          name: agent.name,
+          lastname: agent.lastname,
+          email: agent.email,
+          phone: agent.phone,
+          address: agent.location || t('map.unknownLocation'),
+          source: 'agent',
+          delegation: agent.Delegation
+            ? {
+              id: agent.Delegation.delegationID,
+              name: agent.Delegation.name,
+              governorateID: agent.Delegation.Governorate?.governorateID,
+            }
+            : undefined,
+          governorate: agent.Delegation?.Governorate
+            ? { id: agent.Delegation.Governorate.governorateID, name: agent.Delegation.Governorate.name }
+            : undefined,
+          region: undefined,
+          supervisorID: agent.supervisorID,
+        }));
+        filtered = filtered.filter((m) =>
+          supervisorAgents.some((sa) => sa.id === m.id)
+        );
+      }
+
+      // Apply governorate filter
+      if (filterGovernorate) {
+        filtered = filtered.filter((m) => m.governorate?.id === filterGovernorate);
+      }
+
+      // Apply region filter
+      if (filterRegion) {
+        filtered = filtered.filter((m) => m.region?.id === filterRegion);
+      }
+
+      setFilteredAgents(filtered);
+      setFilteredMarkers(filtered);
+    } catch (err) {
+      console.error('Filter Agents Error:', err);
+      toast.error(t('map.filterAgentsFailed'));
+    }
+  }, [filterRegion, filterGovernorate, filterDelegation, filterSupervisor, allMarkers, t]);
+
+  useEffect(() => {
+    handleAgentFilter();
+  }, [filterRegion, filterGovernorate, filterDelegation, filterSupervisor, handleAgentFilter]);
+
 
   const closeAllPanels = useCallback(() => {
     setShowAddPanel(false);
@@ -754,6 +922,7 @@ const MapComponent: React.FC = () => {
               toast.error(t('map.addressError'));
               return;
             }
+            3851
             setNewAgent({ ...newAgent, address: geocode.formattedAddress });
             closeAllPanels();
             setShowAddPanel(true);
@@ -976,8 +1145,6 @@ const MapComponent: React.FC = () => {
     [t]
   );
 
-
-
   const handleGetDirections = useCallback(
     async (marker: AgentMarker) => {
       if (!userLocation) {
@@ -996,17 +1163,19 @@ const MapComponent: React.FC = () => {
             type: 'origin',
           },
           {
-            id: 'destination',
+            id: `destination-${marker.id}`,
             location: destCoords,
             address: destGeocode.formattedAddress || destCoords,
             type: 'destination',
             agentId: marker.id,
           },
         ];
+        console.log('Setting initial routePoints:', newPoints.map(p => ({ id: p.id, type: p.type, agentId: p.agentId })));
+        setRoutePoints([...newPoints]);
+        routePointsRef.current = [...newPoints]; // Sync ref
         await handleCalculateRoute(newPoints, routeMode);
-        routeData.current.points = newPoints;
         setMapCenter({ lat: marker.lat, lng: marker.lng });
-        setZoom(15);
+        setZoom(16);
         closeAllPanels();
         setShowDirectionsPanel(true);
         setIsDirectionsPanelCollapsed(false);
@@ -1027,15 +1196,11 @@ const MapComponent: React.FC = () => {
       try {
         const newStop = `${marker.lat},${marker.lng}`;
         const geocode = await getGeocode(newStop);
-        const newWaypoint: RoutePoint = {
-          id: `wp-${Date.now()}`,
-          location: newStop,
-          address: geocode.formattedAddress || newStop,
-          type: 'waypoint',
-          agentId: marker.id,
-        };
-        let newPoints = [...routeData.current.points];
+        console.log('Current routePoints before adding stop:', routePointsRef.current.map(p => ({ id: p.id, type: p.type, agentId: p.agentId })));
+        let newPoints = [...routePointsRef.current];
+
         if (newPoints.length === 0) {
+          // No points exist, create origin and destination
           newPoints = [
             {
               id: 'origin',
@@ -1043,20 +1208,43 @@ const MapComponent: React.FC = () => {
               address: t('map.myLocation'),
               type: 'origin',
             },
-            newWaypoint,
+            {
+              id: `destination-${marker.id}`,
+              location: newStop,
+              address: geocode.formattedAddress || newStop,
+              type: 'destination',
+              agentId: marker.id,
+            },
           ];
         } else {
-          const destIndex = newPoints.findIndex((p) => p.type === 'destination');
-          if (destIndex >= 0) {
-            newPoints.splice(destIndex, 0, newWaypoint);
-          } else {
-            newPoints.push(newWaypoint);
+          // Convert current destination to waypoint and add new stop as destination
+          const currentDestination = newPoints[newPoints.length - 1];
+          if (currentDestination.type === 'destination') {
+            currentDestination.type = 'waypoint';
           }
+          newPoints.push({
+            id: `destination-${marker.id}`,
+            location: newStop,
+            address: geocode.formattedAddress || newStop,
+            type: 'destination',
+            agentId: marker.id,
+          });
+          // Ensure types are correct
+          newPoints[0].type = 'origin';
+          for (let i = 1; i < newPoints.length - 1; i++) {
+            newPoints[i].type = 'waypoint';
+          }
+          newPoints[newPoints.length - 1].type = 'destination';
         }
+
+        console.log('New routePoints after adding stop:', newPoints.map(p => ({ id: p.id, type: p.type, agentId: p.agentId })));
+        setRoutePoints([...newPoints]);
+        routePointsRef.current = [...newPoints];
         await handleCalculateRoute(newPoints, routeMode);
-        routeData.current.points = newPoints;
         setMapCenter({ lat: marker.lat, lng: marker.lng });
-        setZoom(15);
+        setZoom(16);
+        setShowDirectionsPanel(true);
+        setIsDirectionsPanelCollapsed(false);
       } catch (err) {
         console.error('Add Stop Error:', err);
         toast.error(t('map.addStopFailed'));
@@ -1065,31 +1253,88 @@ const MapComponent: React.FC = () => {
     [userLocation, routeMode, handleCalculateRoute, t]
   );
 
-  const handleOptimizeRoute = useCallback(() => {
-    if (routeData.current.points.length < 3) {
-      toast.error(t('map.optimizeRouteError'));
+  // Update the handleOptimizeRoute function
+  const handleOptimizeRoute = useCallback(async () => {
+    if (isRouteProcessing || isOptimizing) {
+      console.warn('Route processing or optimization in progress, ignoring optimize request');
       return;
     }
-    handleCalculateRoute(routeData.current.points, routeMode, true);
-  }, [handleCalculateRoute, routeMode, t]);
+    const currentPoints = routePointsRef.current;
+    if (currentPoints.length < 3) {
+      console.warn('Optimize failed: fewer than 3 points', currentPoints);
+      toast.error('At least 3 points are required to optimize the route.');
+      return;
+    }
+    if (!currentPoints.every(p => p.location && typeof p.location === 'string' && p.location.includes(','))) {
+      console.error('Invalid routePoints structure:', currentPoints);
+      toast.error('Route points are invalid.');
+      return;
+    }
+    setIsOptimizing(true); // Set loading state
+    try {
+      console.log('Optimizing route with points:', currentPoints);
+      await handleCalculateRoute(currentPoints, routeMode, true); // `true` enables optimization
+      const optimizedPoints = routeData.current.points;
+      console.log('Optimized routePoints:', optimizedPoints);
+      if (optimizedPoints !== currentPoints && optimizedPoints.length === currentPoints.length) {
+        setRoutePoints([...optimizedPoints]);
+        routePointsRef.current = [...optimizedPoints];
+        toast.success('Route optimized successfully.');
+      } else {
+        console.warn('No changes in routePoints after optimization or length mismatch', { optimizedPoints, currentPoints });
+        toast.info('No changes were made to the route.');
+      }
+    } catch (err) {
+      console.error('Optimize Route Error:', err);
+      toast.error('Failed to optimize the route.');
+    } finally {
+      setIsOptimizing(false); // Reset loading state
+    }
+  }, [handleCalculateRoute, routeMode, isRouteProcessing, isOptimizing]);
+
+  // Update the WaypointList component to show loading indicator
+
+
+
 
   const clearRoute = useCallback(() => {
+    console.log('Clearing routePoints:', routePointsRef.current);
+    setRoutePoints([]);
+    routePointsRef.current = [];
     routeData.current = { points: [], response: null, path: [], traffic: [] };
     setShowDirectionsPanel(false);
     setIsDirectionsPanelCollapsed(false);
   }, []);
 
   const removeAgentFromRoute = useCallback(
-    (agentId: string) => {
-      const newPoints = routeData.current.points.filter((p) => p.agentId !== agentId);
-      routeData.current.points = newPoints;
-      if (newPoints.length >= 2) {
-        handleCalculateRoute(newPoints, routeMode);
-      } else {
-        clearRoute();
+    async (agentId: string) => {
+      try {
+        console.log('Removing agent from route, agentId:', agentId, 'Current routePoints:', routePointsRef.current.map(p => ({ id: p.id, type: p.type, agentId: p.agentId })));
+        const newPoints = routePointsRef.current.filter((point) => point.agentId !== agentId);
+
+        if (newPoints.length >= 2) {
+          // At least origin and another point remain
+          console.log('New routePoints after agent removal:', newPoints.map(p => ({ id: p.id, type: p.type, agentId: p.agentId })));
+          setRoutePoints([...newPoints]);
+          routePointsRef.current = [...newPoints];
+          // Ensure types are correct
+          newPoints[0].type = 'origin';
+          newPoints[newPoints.length - 1].type = 'destination';
+          for (let i = 1; i < newPoints.length - 1; i++) {
+            newPoints[i].type = 'waypoint';
+          }
+          await handleCalculateRoute(newPoints, routeMode);
+        } else {
+          // Fewer than 2 points, clear route
+          console.log('Fewer than 2 points after agent removal, clearing route');
+          clearRoute();
+        }
+      } catch (err) {
+        console.error('Remove Agent Error:', err);
+        toast.error(t('map.removeAgentFailed'));
       }
     },
-    [handleCalculateRoute, routeMode, clearRoute]
+    [routeMode, handleCalculateRoute, t, clearRoute]
   );
 
   const handleReturnToCurrentLocation = useCallback(() => {
@@ -1145,46 +1390,106 @@ const MapComponent: React.FC = () => {
     }
   };
 
+  // Import DropResult type at the top if not already imported:
   const handleDragEnd = useCallback(
-    (result: any) => {
-      if (!result.destination) return;
-      const newPoints = [...routeData.current.points];
-      const [moved] = newPoints.splice(result.source.index, 1);
-      newPoints.splice(result.destination.index, 0, moved);
-      newPoints[0].type = 'origin';
-      newPoints[newPoints.length - 1].type = 'destination';
-      for (let i = 1; i < newPoints.length - 1; i++) {
-        newPoints[i].type = 'waypoint';
+    async (result: import('@hello-pangea/dnd').DropResult) => {
+      if (isRouteProcessing) {
+        console.warn('Route processing in progress, ignoring drag request');
+        return;
       }
-      routeData.current.points = newPoints;
-      if (newPoints.length >= 2) {
-        handleCalculateRoute(newPoints, routeMode);
+      if (!result.destination) {
+        console.log('Drag cancelled, no destination');
+        return;
+      }
+      setIsRouteProcessing(true);
+      try {
+        const currentPoints = routePointsRef.current;
+        console.log(
+          'Dragging from index:',
+          result.source.index,
+          'to:',
+          result.destination.index,
+          'routePoints:',
+          currentPoints
+        );
+        if (currentPoints.length < 2) {
+          console.warn('Cannot reorder: fewer than 2 points', currentPoints);
+          toast.error('At least 2 points are required to reorder.');
+          return;
+        }
+        if (
+          result.source.index >= currentPoints.length ||
+          result.destination.index >= currentPoints.length
+        ) {
+          console.error('Invalid drag indices', {
+            source: result.source.index,
+            destination: result.destination.index,
+            length: currentPoints.length,
+          });
+          toast.error('Invalid reordering operation.');
+          return;
+        }
+        const newPoints = [...currentPoints];
+        const [moved] = newPoints.splice(result.source.index, 1);
+        newPoints.splice(result.destination.index, 0, moved);
+        // Update point types: first is origin, last is destination, others are waypoints
+        newPoints[0].type = 'origin';
+        newPoints[newPoints.length - 1].type = 'destination';
+        for (let i = 1; i < newPoints.length - 1; i++) {
+          newPoints[i].type = 'waypoint';
+        }
+        console.log('New routePoints after drag:', newPoints);
+        setRoutePoints([...newPoints]);
+        routePointsRef.current = [...newPoints];
+        if (newPoints.length >= 2) {
+          await handleCalculateRoute(newPoints, routeMode);
+          console.log('Route recalculated after drag');
+        }
+      } catch (err) {
+        console.error('Drag End Error:', err);
+        toast.error('Failed to reorder the route.');
+      } finally {
+        setIsRouteProcessing(false);
       }
     },
     [routeMode, handleCalculateRoute]
   );
 
   const handleRemovePoint = useCallback(
-    (index: number) => {
-      const newPoints = [...routeData.current.points].filter((_, i) => i !== index);
-      if (newPoints.length >= 2) {
-        newPoints[0].type = 'origin';
-        newPoints[newPoints.length - 1].type = 'destination';
-        for (let i = 1; i < newPoints.length - 1; i++) {
-          newPoints[i].type = 'waypoint';
+    async (index: number) => {
+      try {
+        console.log('Removing point at index:', index, 'Current routePoints:', routePointsRef.current.map(p => ({ id: p.id, type: p.type, agentId: p.agentId })));
+        const newPoints = [...routePointsRef.current];
+        if (index < 0 || index >= newPoints.length) {
+          console.warn('Invalid index for removal:', index);
+          return;
         }
-        routeData.current.points = newPoints;
-        handleCalculateRoute(newPoints, routeMode);
-      } else {
-        routeData.current = { points: newPoints, response: null, path: [], traffic: [] };
-        setShowDirectionsPanel(false);
-        setIsDirectionsPanelCollapsed(false);
+        newPoints.splice(index, 1);
+
+        if (newPoints.length >= 2) {
+          // At least origin and another point remain
+          console.log('New routePoints after removal:', newPoints.map(p => ({ id: p.id, type: p.type, agentId: p.agentId })));
+          setRoutePoints([...newPoints]);
+          routePointsRef.current = [...newPoints];
+          // Ensure types are correct
+          newPoints[0].type = 'origin';
+          newPoints[newPoints.length - 1].type = 'destination';
+          for (let i = 1; i < newPoints.length - 1; i++) {
+            newPoints[i].type = 'waypoint';
+          }
+          await handleCalculateRoute(newPoints, routeMode);
+        } else {
+          // Fewer than 2 points, clear route
+          console.log('Fewer than 2 points after removal, clearing route');
+          clearRoute();
+        }
+      } catch (err) {
+        console.error('Remove Point Error:', err);
+        toast.error(t('map.removePointFailed'));
       }
     },
-    [routeMode, handleCalculateRoute]
+    [routeMode, handleCalculateRoute, t, clearRoute]
   );
-
-
 
   const AgentCard = React.memo(
     ({
@@ -1277,23 +1582,53 @@ const MapComponent: React.FC = () => {
     <div className="waypoint-list">
       <div className="waypoint-header">
         <h3>{t('map.routes.title')}</h3>
-        {routeData.current.points.length > 2 && (
-          <button onClick={handleOptimizeRoute}>
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M4 12h8M12 4v16M20 12h-8m-4 4h8m-8-8h8" />
-            </svg>
+        {routePoints.length > 2 && (
+          <button onClick={() => {
+            console.log('Optimize button clicked');
+            handleOptimizeRoute();
+          }} disabled={isOptimizing}>
+            {isOptimizing ? (
+              <span className="loading-spinner"></span> // Add a spinner or loading text
+            ) : (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M4 12h8M12 4v16M20 12h-8m-4 4h8m-8-8h8" />
+              </svg>
+            )}
             {t('map.routes.optimize')}
           </button>
         )}
       </div>
-      {routeData.current.points.length === 0 ? (
+      {(() => {
+        console.log('WaypointList routePoints:', routePoints.map(p => ({ id: p.id, type: p.type, agentId: p.agentId, address: p.address })));
+        return null;
+      })()}
+      {routeData.current.response && (
+        <div className="route-info">
+          <p>
+            {t('map.routes.distance')}: {routeData.current.response.distance.toFixed(2)} km
+          </p>
+          <p>
+            {t('map.routes.duration')}: {Math.floor(routeData.current.response.duration)}m{' '}
+            {Math.round((routeData.current.response.duration % 1) * 60)}s
+          </p>
+        </div>
+      )}
+      {routePoints.length === 0 ? (
         <p>{t('map.routes.noStops')}</p>
       ) : (
         <DragDropContext onDragEnd={handleDragEnd}>
           <Droppable droppableId="routePoints">
             {(provided) => (
               <ul {...provided.droppableProps} ref={provided.innerRef}>
-                {routeData.current.points.map((point, index) => (
+                {routePoints.map((point, index) => (
                   <Draggable key={point.id} draggableId={point.id} index={index}>
                     {(provided, snapshot) => (
                       <li
@@ -1433,7 +1768,14 @@ const MapComponent: React.FC = () => {
                 </button>
               </div>
               <div className="panel-content">
-                <select value={filterRegion} onChange={(e) => setFilterRegion(e.target.value)}>
+                <select
+                  value={filterRegion}
+                  onChange={(e) => {
+                    setFilterRegion(e.target.value);
+                    setFilterGovernorate(''); // Reset governorate when region changes
+                    setFilterDelegation(''); // Reset delegation
+                  }}
+                >
                   <option value="">{t('map.filters.allRegions')}</option>
                   {regions.map((r) => (
                     <option key={r.regionID} value={r.regionID}>
@@ -1441,23 +1783,35 @@ const MapComponent: React.FC = () => {
                     </option>
                   ))}
                 </select>
-                <select value={filterGovernorate} onChange={(e) => setFilterGovernorate(e.target.value)}>
+                <select
+                  value={filterGovernorate}
+                  onChange={(e) => {
+                    setFilterGovernorate(e.target.value);
+                    setFilterDelegation(''); // Reset delegation
+                  }}
+                >
                   <option value="">{t('map.filters.allGovernorates')}</option>
-                  {filteredGovernorates.map((g) => (
+                  {governorates.map((g) => (
                     <option key={g.governorateID} value={g.governorateID}>
                       {g.name}
                     </option>
                   ))}
                 </select>
-                <select value={filterDelegation} onChange={(e) => setFilterDelegation(e.target.value)}>
+                <select
+                  value={filterDelegation}
+                  onChange={(e) => setFilterDelegation(e.target.value)}
+                >
                   <option value="">{t('map.filters.allDelegations')}</option>
-                  {filteredDelegations.map((d) => (
+                  {delegations.map((d) => (
                     <option key={d.delegationID} value={d.delegationID}>
                       {d.name}
                     </option>
                   ))}
                 </select>
-                <select value={filterSupervisor} onChange={(e) => setFilterSupervisor(e.target.value)}>
+                <select
+                  value={filterSupervisor}
+                  onChange={(e) => setFilterSupervisor(e.target.value)}
+                >
                   <option value="">{t('map.filters.allSupervisors')}</option>
                   {supervisors.map((sup) => (
                     <option key={sup.userID} value={sup.userID}>{`${sup.firstname} ${sup.lastname}`}</option>
@@ -1491,19 +1845,26 @@ const MapComponent: React.FC = () => {
                     <input
                       type="text"
                       placeholder={t('map.directionsPanel.originPlaceholder')}
-                      value={routeData.current.points.length > 0 ? routeData.current.points[0].address : ''}
-                      onChange={(e) => {
-                        if (routeData.current.points.length > 0) {
-                          const newPoints = [...routeData.current.points];
+                      value={routePoints.length > 0 ? routePoints[0].address : ''}
+                      onChange={async (e) => {
+                        if (routePoints.length > 0) {
+                          const newPoints = [...routePoints];
                           newPoints[0].address = e.target.value;
-                          routeData.current.points = newPoints;
+                          try {
+                            const geocode = await getGeocode(e.target.value);
+                            newPoints[0].location = `${geocode.latitude},${geocode.longitude}`;
+                            setRoutePoints(newPoints);
+                          } catch (err) {
+                            console.error('Geocode Error:', err);
+                            toast.error(t('map.getAddressFailed'));
+                          }
                         }
                       }}
                     />
                     <button
                       onClick={() => {
                         if (userLocation) {
-                          const newPoints = routeData.current.points.length > 0 ? [...routeData.current.points] : [];
+                          const newPoints = routePoints.length > 0 ? [...routePoints] : [];
                           const originPoint: RoutePoint = {
                             id: 'origin',
                             location: `${userLocation.lat},${userLocation.lng}`,
@@ -1515,7 +1876,7 @@ const MapComponent: React.FC = () => {
                           } else {
                             newPoints[0] = originPoint;
                           }
-                          routeData.current.points = newPoints;
+                          setRoutePoints(newPoints);
                         }
                       }}
                       title={t('map.directionsPanel.myLocation')}
@@ -1537,12 +1898,19 @@ const MapComponent: React.FC = () => {
                   <input
                     type="text"
                     placeholder={t('map.directionsPanel.destinationPlaceholder')}
-                    value={routeData.current.points.length > 1 ? routeData.current.points[routeData.current.points.length - 1].address : ''}
-                    onChange={(e) => {
-                      if (routeData.current.points.length > 1) {
-                        const newPoints = [...routeData.current.points];
+                    value={routePoints.length > 1 ? routePoints[routePoints.length - 1].address : ''}
+                    onChange={async (e) => {
+                      if (routePoints.length > 1) {
+                        const newPoints = [...routePoints];
                         newPoints[newPoints.length - 1].address = e.target.value;
-                        routeData.current.points = newPoints;
+                        try {
+                          const geocode = await getGeocode(e.target.value);
+                          newPoints[newPoints.length - 1].location = `${geocode.latitude},${geocode.longitude}`;
+                          setRoutePoints(newPoints);
+                        } catch (err) {
+                          console.error('Geocode Error:', err);
+                          toast.error(t('map.getAddressFailed'));
+                        }
                       }
                     }}
                   />
@@ -1551,7 +1919,7 @@ const MapComponent: React.FC = () => {
                     <option value="WALKING">{t('map.directionsPanel.modes.walking')}</option>
                   </select>
                   <div className="directions-buttons">
-                    <button onClick={() => handleCalculateRoute(routeData.current.points, routeMode)}>
+                    <button onClick={() => handleCalculateRoute(routePoints, routeMode)}>
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         width="16"
@@ -1639,7 +2007,7 @@ const MapComponent: React.FC = () => {
                     key={marker.id}
                     position={{ lat: marker.lat, lng: marker.lng }}
                     title={`${marker.name} ${marker.lastname}`}
-                    draggable={hasPermission('update_agents')}
+                    draggable={hasPermission(PERMISSIONS.UPDATE_AGENTS)}
                     onDragStart={() => handleMarkerDragStart(marker.id)}
                     onDragEnd={(e: google.maps.MapMouseEvent) => handleMarkerDragEnd(e, marker.id)}
                     onClick={() => handleMarkerClick(marker)}
@@ -1674,7 +2042,7 @@ const MapComponent: React.FC = () => {
                   {t('map.infoWindow.phone')}: {selectedMarker.phone}
                 </p>
                 <div className="info-buttons">
-                  {hasPermission('update_agents') && (
+                  {hasPermission(PERMISSIONS.UPDATE_AGENTS) && (
                     <button
                       onClick={() => {
                         closeAllPanels();
@@ -1748,7 +2116,7 @@ const MapComponent: React.FC = () => {
           </svg>
         </button>
 
-        {hasPermission('create_agents') && (
+        {hasPermission(PERMISSIONS.CREATE_AGENTS) && (
           <button
             className="add-agent-btn"
             onClick={() => {
@@ -1763,7 +2131,7 @@ const MapComponent: React.FC = () => {
           </button>
         )}
 
-        {hasPermission('access_agent_map_locations') && (
+        {hasPermission(PERMISSIONS.ACCESS_AGENT_MAP_LOCATIONS) && (
           <button className="refresh-agents-btn" onClick={handleRefreshAgents} title={t('map.refreshAgents')}>
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M23 4v6h-6M1 20v-6h6" />
@@ -1860,31 +2228,40 @@ const MapComponent: React.FC = () => {
                 value={newAgent.address}
                 onChange={(e) => setNewAgent({ ...newAgent, address: e.target.value })}
               />
-              <div className="panel-buttons">
+              <div className="panel-actions">
                 <button onClick={handleCreateAgent}>
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    width="14"
-                    height="14"
+                    width="16"
+                    height="16"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
                     strokeWidth="2"
                   >
-                    <path d="M5 13l4 4L19 7" />
+                    <path d="M12 5v14M5 12h14" />
                   </svg>
                   {t('map.addAgentPanel.save')}
                 </button>
                 <button
                   onClick={() => {
                     setShowAddPanel(false);
-                    setNewAgent({ name: '', lastname: '', email: '', phone: '', supervisorID: '', delegationID: '', address: '' });
+                    setNewAgent({
+                      name: '',
+                      lastname: '',
+                      email: '',
+                      phone: '',
+                      supervisorID: '',
+                      delegationID: '',
+                      address: '',
+                    });
+                    setSelectedGovernorate('');
                   }}
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    width="14"
-                    height="14"
+                    width="16"
+                    height="16"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
@@ -1952,45 +2329,29 @@ const MapComponent: React.FC = () => {
                 ))}
               </select>
               <select
-                value={selectedGovernorate}
-                onChange={(e) => {
-                  setSelectedGovernorate(e.target.value);
-                  setEditAgent({ ...editAgent, delegationID: '' });
-                }}
+                value={editAgent.delegationID || ''}
+                onChange={(e) => setEditAgent({ ...editAgent, delegationID: e.target.value })}
               >
-                <option value="">{t('map.editAgentPanel.governorate')}</option>
-                {assignedGovernorates.map((gov) => (
-                  <option key={gov.governorateID} value={gov.governorateID}>
-                    {gov.name}
+                <option value="">{t('map.editAgentPanel.delegation')}</option>
+                {delegations.map((del) => (
+                  <option key={del.delegationID} value={del.delegationID}>
+                    {del.name}
                   </option>
                 ))}
               </select>
-              <select
-                value={editAgent.delegationID || ''}
-                onChange={(e) => setEditAgent({ ...editAgent, delegationID: e.target.value })}
-                disabled={!selectedGovernorate}
-              >
-                <option value="">{t('map.editAgentPanel.delegation')}</option>
-                {assignedDelegations
-                  .filter((del) => del.governorateID === selectedGovernorate)
-                  .map((del) => (
-                    <option key={del.delegationID} value={del.delegationID}>
-                      {del.name}
-                    </option>
-                  ))}
-              </select>
-              <div className="panel-buttons">
+              <div className="panel-actions">
                 <button onClick={handleEditAgent}>
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    width="14"
-                    height="14"
+                    width="16"
+                    height="16"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
                     strokeWidth="2"
                   >
-                    <path d="M5 13l4 4L19 7" />
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                   </svg>
                   {t('map.editAgentPanel.save')}
                 </button>
@@ -2002,8 +2363,8 @@ const MapComponent: React.FC = () => {
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    width="14"
-                    height="14"
+                    width="16"
+                    height="16"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
@@ -2027,11 +2388,7 @@ const MapComponent: React.FC = () => {
                 <AgentCard
                   key={marker.id}
                   marker={marker}
-                  onSelect={(m) => {
-                    setMapCenter({ lat: m.lat, lng: m.lng });
-                    setZoom(15);
-                    setSelectedMarker(m);
-                  }}
+                  onSelect={handleMarkerClick}
                   onGetDirections={handleGetDirections}
                   onAddStop={handleAddStop}
                 />

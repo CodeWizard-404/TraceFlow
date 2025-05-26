@@ -40,7 +40,7 @@ const DirectionsModal: React.FC<DirectionsModalProps> = ({
   const [mapStyle, setMapStyle] = useState<keyof typeof mapStyles>(
     document.body.classList.contains('dark') ? 'dark' : 'standard'
   );
-  const [isSummaryCollapsed, setIsSummaryCollapsed] = useState(true);
+  const [isSummaryCollapsed, setIsSummaryCollapsed] = useState(false);
   const mapRef = useRef<google.maps.Map | null>(null);
 
   const displayName = agent

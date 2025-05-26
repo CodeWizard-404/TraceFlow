@@ -3,6 +3,7 @@ import { GoogleMap, LoadScript, Marker } from '@react-google-maps/api';
 import { toast } from 'react-toastify';
 import { getGeocode } from '../../apis/locationApi';
 import './LocationCorrectionModal.css';
+import { mapStyles } from './mapStyles';
 
 interface LocationCorrectionModalProps {
     isOpen: boolean;
@@ -27,6 +28,9 @@ const LocationCorrectionModal: React.FC<LocationCorrectionModalProps> = ({
     const [mapCenter, setMapCenter] = useState(userLocation || defaultCenter);
     const [liveLocation, setLiveLocation] = useState(userLocation);
     const mapRef = useRef<google.maps.Map | null>(null);
+    const [mapStyle, setMapStyle] = useState<keyof typeof mapStyles>(
+        document.body.classList.contains('dark') ? 'dark' : 'standard'
+    );
 
     useEffect(() => {
         if (isOpen && userLocation) {
@@ -138,6 +142,7 @@ const LocationCorrectionModal: React.FC<LocationCorrectionModalProps> = ({
     return (
         <div className="location-correction-container active">
             <div className="map-frame">
+
                 <LoadScript
                     googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}
                     libraries={libraries}
@@ -156,6 +161,26 @@ const LocationCorrectionModal: React.FC<LocationCorrectionModalProps> = ({
                             gestureHandling: 'greedy',
                         }}
                     >
+                        {liveLocation && (
+                            <Marker
+                                position={liveLocation}
+                                title="Your Live Location"
+                                icon={{
+                                    url: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+                                }}
+                            />
+                        )}
+                        {selectedLocation && (
+                            <Marker
+                                position={selectedLocation}
+                                title="Selected Location"
+                                draggable
+                                onDragEnd={handleMarkerDragEnd}
+                                icon={{
+                                    url: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png',
+                                }}
+                            />
+                        )}
                         {liveLocation && (
                             <Marker
                                 position={liveLocation}

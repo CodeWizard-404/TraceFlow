@@ -230,6 +230,7 @@ export interface DirectionsResponse {
         distance: number;
         duration: number;
     }>;
+    optimizedPoints?: string[]; // Added to reflect optimized order of waypoints + destination
     mock?: boolean;
 }
 export type PlacesResponse = Array<{ place_id: string; name: string; formatted_address: string; geometry: { location: { lat: number; lng: number } }; }>;

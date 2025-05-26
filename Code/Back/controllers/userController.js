@@ -351,6 +351,7 @@ class UserController {
      * @returns {Promise<void>} JSON response with updated profile or error.
      */
     static async updateProfile(req, res) {
+        logger.debug('Updating profile', { request: req.body });
         const userID = req.user?.userID;
         const actorID = userID || 'unknown';
         if (!userID) {

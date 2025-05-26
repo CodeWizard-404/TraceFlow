@@ -41,6 +41,7 @@ const PERMISSIONS = {
   TRANSFER_RECEIPT_BOOKS: import.meta.env.VITE_PERMISSIONS_TRANSFER_RECEIPT_BOOKS,
   ACCESS_RECEIPT_BOOKS_BY_HOLDER: import.meta.env.VITE_PERMISSIONS_ACCESS_RECEIPT_BOOKS_BY_HOLDER,
   EDIT_VISIT_DETAILS: import.meta.env.VITE_PERMISSIONS_EDIT_VISIT,
+  ACCESS_AGENTS_MAP: import.meta.env.VITE_PERMISSIONS_READ_AGENTS_LOCATIONS
 };
 
 const ROLES = {
@@ -170,7 +171,12 @@ const AppContent: React.FC = React.memo(() => {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/access-denied" element={<AccessDenied />} />
             <Route path="/" element={<Navigate to="/login" replace />} />
-            <Route path="/agents" element={<AgentManagement />} />
+            <Route path="/agents" element={
+              <ProtectedRoute requiredPermissions={[PERMISSIONS.ACCESS_AGENTS_MAP]}>
+                <AgentManagement />
+              </ProtectedRoute>
+            }
+            />
             <Route
               path="/dashboard"
               element={

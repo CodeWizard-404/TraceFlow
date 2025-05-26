@@ -3,8 +3,6 @@ export interface Delegation {
     name: string;
     nameAr?: string;
     nameFr?: string;
-    latitude?: number;
-    longitude?: number;
     governorateID: string;
 }
 

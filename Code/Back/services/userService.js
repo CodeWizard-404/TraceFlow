@@ -408,7 +408,7 @@ class UserService {
                 firstname: userData.firstname || user.firstname,
                 lastname: userData.lastname || user.lastname,
                 phone: userData.phone || user.phone,
-                PFP: userData.PFP === null ? null : (userData.PFP !== undefined ? userData.PFP : user.PFP),
+                PFP: userData.PFP || user.PFP,
             });
         } catch (error) {
             throw new Error(ERROR_MESSAGES.DB_UPDATE_FAILED);

@@ -306,9 +306,15 @@ body.dark .origin-input button svg {
     border-radius: 0.8rem;
     margin-bottom: 0.3rem;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-    border: 1px solid rgb(65, 65, 65);
     font-size: 13px;
     color: #323232;
+    border: 1px solid #dadce0;
+}
+
+body.dark .waypoint-item {
+    background: #202124;
+    color: #e8eaed;
+    border: 1px solid #3c4043;
 }
 
 .waypoint-item.origin {
@@ -532,19 +538,16 @@ body.dark .origin-input button svg {
 }
 
 .route-info {
-    position: absolute;
-    top: 1rem;
-    left: 34rem;
-    right: 34rem;
     background: #ffffff;
+    border: 1px solid #dadce0;
     border-radius: 0.8rem;
-    padding: 8px 12px;
+    padding: 0.4rem 0.8rem;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
     display: flex;
     align-items: center;
     gap: 12px;
     font-size: 13px;
-    color: #323232;
+    margin-bottom: 0.5rem;
     z-index: 10;
     transition: all 0.3s ease;
 }
@@ -556,6 +559,10 @@ body.dark .origin-input button svg {
     cursor: pointer;
     display: flex;
     align-items: center;
+}
+
+.route-info p {
+    margin: 0;
 }
 
 .route-info button:hover {
@@ -953,6 +960,7 @@ body.dark .route-info {
     background: #323232;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
     color: #e8eaed;
+    border: 1px solid #5f6368;
 }
 
 body.dark .route-info button {
@@ -1311,5 +1319,28 @@ body.dark .refresh-agents-btn:disabled {
         right: 1rem;
         top: 0.78rem;
         padding: 0.82rem;
+    }
+}
+
+
+
+.loading-spinner {
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #3498db;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    animation: spin 1s linear infinite;
+    display: inline-block;
+    margin-right: 5px;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
     }
 }
