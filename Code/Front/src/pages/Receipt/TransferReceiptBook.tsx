@@ -84,18 +84,41 @@ const ROLES = {
 
 const ROLE_TRANSFER_RULES = {
   [ROLES.PURCHASE_TEAM]: {
-    transferable: (book: ReceiptBook, userID: string) =>
-      (book.status === t("common.receiptBookStatuses.inStock") && book.currentHolderID === userID) ||
-      book.status === t("common.receiptBookStatuses.sentToSupplier") ||
-      (book.status === t("common.receiptBookStatuses.collectFromSupplier") && book.currentHolderID === userID),
+    transferable: (book: ReceiptBook, userID: string, recipientType: string) =>
+      (book.status === t("common.receiptBookStatuses.inStock") &&
+        book.currentHolderID === userID &&
+        recipientType === "ToSupplier") ||
+      (book.status === t("common.receiptBookStatuses.collectFromSupplier") &&
+        book.currentHolderID === userID &&
+        recipientType === "ToRegionalManager"),
     recipientOptions: ["ToSupplier", "FromSupplier", "ToRegionalManager"],
   },
   [ROLES.REGIONAL_MANAGER]: {
-    transferable: (book: ReceiptBook, userID: string) =>
-      [
+    transferable: (book: ReceiptBook, userID: string, recipientType: string) => {
+      const isValidStatus = [
         t("common.receiptBookStatuses.withRegionalManager"),
         t("common.receiptBookStatuses.stubCollected"),
-      ].includes(book.status) && book.currentHolderID === userID,
+      ].includes(book.status);
+      const isHolderMatch = book.currentHolderID === userID;
+      // Fallback to "pending" if translation fails
+      const pendingStubStatus = t("common.receiptStubStatuses.pending").toLowerCase() === "common.receiptstubstatuses.pending"
+        ? "pending"
+        : t("common.receiptStubStatuses.pending").toLowerCase();
+      const bookStubStatus = book.ReceiptStub?.status?.toLowerCase();
+      const isPendingStub = bookStubStatus === pendingStubStatus;
+      console.log(
+        `REGIONAL_MANAGER transferable check for book ${book.number}: ` +
+        `isValidStatus=${isValidStatus}, isHolderMatch=${isHolderMatch}, ` +
+        `recipientType=${recipientType}, isPendingStub=${isPendingStub}, ` +
+        `bookStubStatus=${bookStubStatus}, pendingStubStatus=${pendingStubStatus}, ` +
+        `rawTranslatedPending=${t("common.receiptStubStatuses.pending")}`
+      );
+      return (
+        isValidStatus &&
+        isHolderMatch &&
+        (recipientType !== "ToStockManager" || !isPendingStub)
+      );
+    },
     recipientOptions: ["ToRegionalManager", "ToSupervisor", "ToStockManager"],
   },
   [ROLES.SUPERVISOR]: {
@@ -116,8 +139,28 @@ const ROLE_TRANSFER_RULES = {
     ],
   },
   [ROLES.STOCK_MANAGER]: {
-    transferable: (book: ReceiptBook, userID: string) =>
-      book.status === t("common.receiptBookStatuses.withStockManager") && book.currentHolderID === userID,
+    transferable: (book: ReceiptBook, userID: string, recipientType: string) => {
+      // Fallback to "pending" if translation fails
+      const pendingStubStatus = t("common.receiptStubStatuses.pending").toLowerCase() === "common.receiptstubstatuses.pending"
+        ? "pending"
+        : t("common.receiptStubStatuses.pending").toLowerCase();
+      const bookStubStatus = book.ReceiptStub?.status?.toLowerCase();
+      const isPendingStub = bookStubStatus === pendingStubStatus;
+      const isValid = (
+        book.status === t("common.receiptBookStatuses.withStockManager") &&
+        book.currentHolderID === userID &&
+        (recipientType === "Archived" ||
+          (recipientType === "ToStockManager" && !isPendingStub))
+      );
+      console.log(
+        `STOCK_MANAGER transferable check for book ${book.number}: ` +
+        `isValid=${isValid}, recipientType=${recipientType}, ` +
+        `isPendingStub=${isPendingStub}, bookStubStatus=${bookStubStatus}, ` +
+        `pendingStubStatus=${pendingStubStatus}, ` +
+        `rawTranslatedPending=${t("common.receiptStubStatuses.pending")}`
+      );
+      return isValid;
+    },
     recipientOptions: ["ToStockManager", "Archived"],
   },
   [ROLES.SUPER_ADMIN]: {
@@ -134,7 +177,7 @@ const ROLE_TRANSFER_RULES = {
       "Archived",
     ],
   },
-} as const;
+};
 
 const ITEMS_PER_PAGE = 6;
 const OTP_EXPIRY_SECONDS = 600;
@@ -275,17 +318,36 @@ const TransferReceiptBook: React.FC = () => {
       if (recipientType === "ToSupplier") {
         const isInStock = book.status.toLowerCase() === t("common.receiptBookStatuses.inStock").toLowerCase();
         const isHolderMatch = book.currentHolderID === currentUserID;
-        console.log(`ToSupplier check for book ${book.number}: isInStock=${isInStock}, isHolderMatch=${isHolderMatch}, isSuperAdmin=${isSuperAdmin}, bookStatus=${book.status}, expectedStatus=${t("common.receiptBookStatuses.inStock")}`);
+        console.log(`ToSupplier check for book ${book.number}: isInStock=${isInStock}, isHolderMatch=${isHolderMatch}, isSuperAdmin=${isSuperAdmin}`);
         return isInStock && (isSuperAdmin || isHolderMatch);
       }
       if (recipientType === "FromSupplier") {
         const isSentToSupplier = book.status.toLowerCase() === t("common.receiptBookStatuses.sentToSupplier").toLowerCase();
-        console.log(`FromSupplier check for book ${book.number}: isSentToSupplier=${isSentToSupplier}, bookStatus=${book.status}, expectedStatus=${t("common.receiptBookStatuses.sentToSupplier")}`);
-        return isSentToSupplier;
+        console.log(`FromSupplier check for book ${book.number}: isSentToSupplier=${isSentToSupplier}`);
+        return isSentToSupplier && (isSuperAdmin || userRoleSet.has(ROLES.PURCHASE_TEAM));
+      }
+      if (recipientType === "ToStockManager") {
+        // Fallback to "pending" if translation fails
+        const pendingStubStatus = t("common.receiptStubStatuses.pending").toLowerCase() === "common.receiptstubstatuses.pending"
+          ? "pending"
+          : t("common.receiptStubStatuses.pending").toLowerCase();
+        const bookStubStatus = book.ReceiptStub?.status?.toLowerCase();
+        const isPendingStub = bookStubStatus === pendingStubStatus;
+        console.log(
+          `ToStockManager check for book ${book.number}: ` +
+          `isPendingStub=${isPendingStub}, bookStubStatus=${bookStubStatus}, ` +
+          `pendingStubStatus=${pendingStubStatus}, ` +
+          `rawTranslatedPending=${t("common.receiptStubStatuses.pending")}`
+        );
+        if (isPendingStub) {
+          return false;
+        }
       }
       return Array.from(userRoleSet).some((role) => {
         const rule = ROLE_TRANSFER_RULES[role as unknown as keyof typeof ROLE_TRANSFER_RULES];
-        return rule && rule.transferable(book, currentUserID);
+        const isTransferable = rule && rule.transferable(book, currentUserID, recipientType);
+        console.log(`Checking role ${role} for book ${book.number}: transferable=${isTransferable}, recipientType=${recipientType}, stubStatus=${book.ReceiptStub?.status}`);
+        return isTransferable;
       });
     },
     [userRoleSet, currentUserID, recipientType, t, isSuperAdmin]
@@ -588,23 +650,23 @@ const TransferReceiptBook: React.FC = () => {
   }, [userRoleSet, userPermissions, isSupervisor, isSuperAdmin, isRegionalManager]);
 
   useEffect(() => {
-    const roleMap = {
-      ToRegionalManager: ROLES.REGIONAL_MANAGER,
-      ToSupervisor: ROLES.SUPERVISOR,
-      ToStockManager: ROLES.STOCK_MANAGER,
-      ToRegionalManagerFromSupervisor: ROLES.REGIONAL_MANAGER,
-    };
-    const role = roleMap[recipientType as keyof typeof roleMap];
-    if (role) {
-      setUsersLoading(true);
-      const fetchUsers = async () => {
+    const fetchUsers = async () => {
+      const roleMap = {
+        ToRegionalManager: ROLES.REGIONAL_MANAGER,
+        ToSupervisor: ROLES.SUPERVISOR,
+        ToStockManager: ROLES.STOCK_MANAGER,
+        ToRegionalManagerFromSupervisor: ROLES.REGIONAL_MANAGER,
+      };
+      const role = roleMap[recipientType as keyof typeof roleMap];
+      if (role) {
+        setUsersLoading(true);
         try {
           let userList: User[] = [];
           if (isSupervisor) {
             if (recipientType === "ToRegionalManager" || recipientType === "ToRegionalManagerFromSupervisor") {
               userList = await getRegionalManagerBySupervisor(currentUserID);
             } else if (recipientType === "ToSupervisor") {
-              userList = await getUsersByRole(ROLES.SUPERVISOR);
+              userList = (await getUsersByRole(ROLES.SUPERVISOR)).filter(u => u.userID !== currentUserID);
             } else if (recipientType === "ToStockManager") {
               userList = await getUsersByRole(ROLES.STOCK_MANAGER);
             }
@@ -612,15 +674,16 @@ const TransferReceiptBook: React.FC = () => {
             if (recipientType === "ToSupervisor") {
               userList = await getSupervisorsByRegionalManager(currentUserID);
             } else if (recipientType === "ToRegionalManager") {
-              userList = await getUsersByRole(ROLES.REGIONAL_MANAGER);
+              userList = (await getUsersByRole(ROLES.REGIONAL_MANAGER)).filter(u => u.userID !== currentUserID);
             } else if (recipientType === "ToStockManager") {
               userList = await getUsersByRole(ROLES.STOCK_MANAGER);
             }
-          } else if (isSuperAdmin || userRoleSet.has(ROLES.PURCHASE_TEAM)) { // Add PURCHASE_TEAM here
+          } else if (isSuperAdmin || userRoleSet.has(ROLES.PURCHASE_TEAM)) {
             userList = await getUsersByRole(role);
           }
           if (regionalManagerSearch) {
             userList = userList.filter(u =>
+              u.userID !== currentUserID &&
               `${u.firstname} ${u.lastname} ${u.phone}`.toLowerCase().includes(regionalManagerSearch.toLowerCase())
             );
           }
@@ -633,9 +696,9 @@ const TransferReceiptBook: React.FC = () => {
         } finally {
           setUsersLoading(false);
         }
-      };
-      fetchUsers();
-    }
+      }
+    };
+    fetchUsers();
   }, [recipientType, isSupervisor, isRegionalManager, isSuperAdmin, currentUserID, regionalManagerSearch, t]);
 
   useEffect(() => {
@@ -656,6 +719,7 @@ const TransferReceiptBook: React.FC = () => {
           rmList = await getUsersByRegion(selectedRegion).then(users => users.filter(u => u.Roles?.some(r => r.name === ROLES.REGIONAL_MANAGER)));
         } else {
           rmList = await getUsersByRole(ROLES.REGIONAL_MANAGER);
+          rmList = rmList.filter(u => u.userID !== currentUserID);
         }
         if (regionalManagerSearch) {
           rmList = rmList.filter(rm => `${rm.firstname} ${rm.lastname} ${rm.phone}`.toLowerCase().includes(regionalManagerSearch.toLowerCase()));
@@ -671,7 +735,7 @@ const TransferReceiptBook: React.FC = () => {
       }
     };
     fetchRegionalManagers();
-  }, [recipientType, isSuperAdmin, selectedSupervisor, selectedRegion, regionalManagerSearch, t]);
+  }, [recipientType, isSuperAdmin, selectedSupervisor, selectedRegion, regionalManagerSearch, t, currentUserID]);
 
   useEffect(() => {
     const fetchSupervisors = async () => {
@@ -687,8 +751,10 @@ const TransferReceiptBook: React.FC = () => {
           if (selectedAgent) promises.push(getAgentById(selectedAgent).then(agent => getUsersByRole(ROLES.SUPERVISOR).then(users => users.filter(u => u.userID === agent?.supervisorID))));
           const results = await Promise.all(promises);
           supList = results.reduce((acc, curr) => acc.filter(a => curr.some(c => c.userID === a.userID)), results[0] || []);
+          supList = supList.filter(u => u.userID !== currentUserID);
         } else {
           supList = await getUsersByRole(ROLES.SUPERVISOR);
+          supList = supList.filter(u => u.userID !== currentUserID);
         }
         if (supervisorSearch) {
           supList = supList.filter(s => `${s.firstname} ${s.lastname}`.toLowerCase().includes(supervisorSearch.toLowerCase()));
@@ -707,7 +773,7 @@ const TransferReceiptBook: React.FC = () => {
       }
     };
     fetchSupervisors();
-  }, [recipientType, isSuperAdmin, selectedRegionalManager, selectedGovernorate, selectedDelegation, selectedAgent, supervisorSearch, supervisorPhone, t]);
+  }, [recipientType, isSuperAdmin, selectedRegionalManager, selectedGovernorate, selectedDelegation, selectedAgent, supervisorSearch, supervisorPhone, t, currentUserID]);
 
   useEffect(() => {
     const fetchRegions = async () => {
@@ -1307,14 +1373,7 @@ const TransferReceiptBook: React.FC = () => {
                         )}
                       </>
                     )}
-                    {recipientID && (
-                      <p>
-                        {t("transferReceiptBook.form.selectedAgent")}:{" "}
-                        {agents.find((a) => a.agentID === recipientID)?.name +
-                          " " +
-                          agents.find((a) => a.agentID === recipientID)?.lastname || t("transferReceiptBook.form.loading")}
-                      </p>
-                    )}
+
                   </div>
                 )}
                 {recipientType === "ToSupplier" && (
@@ -1474,13 +1533,6 @@ const TransferReceiptBook: React.FC = () => {
                           </option>
                         ))}
                       </select>
-                    )}
-                    {recipientID && (
-                      <p>
-                        {t("transferReceiptBook.form.selectedUser")}:{" "}
-                        {users.find((u) => u.userID === recipientID)?.firstname}{" "}
-                        {users.find((u) => u.userID === recipientID)?.lastname}
-                      </p>
                     )}
                   </div>
                 )}

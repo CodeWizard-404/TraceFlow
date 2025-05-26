@@ -92,50 +92,52 @@ class ReceiptStubService {
                 )
             );
 
-
             return { message: `${bookIDs.length} stubs collected` };
         } catch (error) {
             throw error;
         }
     }
 
-    static async archiveStub(bookID, stockManagerID) {
+    static async archiveStub(bookIDs, stockManagerID) {
         try {
-            const book = await ReceiptBook.findByPk(bookID, { include: [ReceiptStub] });
-            if (!book) {
-                const error = new Error('Receipt book not found');
+            const books = await ReceiptBook.findAll({
+                where: { bookID: bookIDs },
+                include: [ReceiptStub]
+            });
+            if (books.length !== bookIDs.length) {
+                const error = new Error('Some receipt books not found');
                 error.status = 404;
                 throw error;
             }
-            if (book.currentHolderID !== stockManagerID) {
-                const error = new Error('Only the stock manager can archive');
-                error.status = 403;
-                throw error;
-            }
-            if (book.status !== 'With Stock Manager') {
-                const error = new Error('Book must be with stock manager');
-                error.status = 400;
-                throw error;
-            }
-            if (book.ReceiptStub.status === 'archived') {
-                const error = new Error('Stub already archived');
+
+            const invalidBooks = books.filter(book =>
+                book.currentHolderID !== stockManagerID ||
+                book.status !== 'With Stock Manager' ||
+                book.ReceiptStub.status === 'archived'
+            );
+            if (invalidBooks.length > 0) {
+                const error = new Error('Some books are not with stock manager or stubs already archived');
                 error.status = 400;
                 throw error;
             }
 
-            await Promise.all([
-                book.update({ status: 'Archived' }),
-                book.ReceiptStub.update({ status: 'archived' }),
-                ReceiptBookTransfer.create({
-                    bookID,
-                    fromUserID: stockManagerID,
-                    toUserID: stockManagerID,
-                    status: 'Validated',
-                    transferType: 'Archived',
-                }),
-            ]);
+            await Promise.all(
+                books.map(book =>
+                    Promise.all([
+                        book.update({ status: 'Archived' }),
+                        book.ReceiptStub.update({ status: 'archived' }),
+                        ReceiptBookTransfer.create({
+                            bookID: book.bookID,
+                            fromUserID: stockManagerID,
+                            toUserID: stockManagerID,
+                            status: 'Validated',
+                            transferType: 'Archived',
+                        }),
+                    ])
+                )
+            );
 
-            return { message: 'Stub archived' };
+            return { message: `${bookIDs.length} stubs archived` };
         } catch (error) {
             throw error;
         }
