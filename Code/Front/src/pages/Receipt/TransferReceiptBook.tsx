@@ -270,7 +270,6 @@ const TransferReceiptBook: React.FC = () => {
     [receiptBookTypes, t]
   );
 
-
   useEffect(() => {
     if (!transferInitiated) {
       setOtpTimer(OTP_EXPIRY_SECONDS);
@@ -633,7 +632,7 @@ const TransferReceiptBook: React.FC = () => {
               userPermissions.canCollectReceiptStubs &&
               userPermissions.canValidateReceiptStubs) ||
             (["ToRegionalManager", "ToSupervisor", "ToStockManager"].includes(opt) &&
-              (isRegionalManager || isSupervisor || isSuperAdmin || userRoleSet.has(ROLES.PURCHASE_TEAM)) && // Add PURCHASE_TEAM here
+              (isRegionalManager || isSupervisor || isSuperAdmin || userRoleSet.has(ROLES.PURCHASE_TEAM)) &&
               userPermissions.canTransferReceiptBooks &&
               userPermissions.canValidateReceiptBooksTransfer) ||
             (opt === "ToRegionalManagerFromSupervisor" &&
@@ -999,12 +998,6 @@ const TransferReceiptBook: React.FC = () => {
     return Math.max(1, Math.ceil(transferableBooks.length / ITEMS_PER_PAGE));
   }, [receiptBooks, bookSearchQuery, isTransferable, getTypeName]);
 
-
-
-
-
-
-
   const handleBookSelection = (bookID: string) => {
     setSelectedBookIDs((prev) => {
       const newSelected = prev.includes(bookID) ? prev.filter((id) => id !== bookID) : [...prev, bookID];
@@ -1067,7 +1060,7 @@ const TransferReceiptBook: React.FC = () => {
         setTransferInitiated(true);
         setError(null);
       } else if (recipientType === "Archived") {
-        await Promise.all(selectedBookIDs.map((bookID) => archiveStub(bookID)));
+        await archiveStub(selectedBookIDs);
         navigate(-1);
       } else if (recipientType === "FromSupplier") {
         await collectFromSupplier(selectedBookIDs, currentUserID);
@@ -1373,7 +1366,6 @@ const TransferReceiptBook: React.FC = () => {
                         )}
                       </>
                     )}
-
                   </div>
                 )}
                 {recipientType === "ToSupplier" && (

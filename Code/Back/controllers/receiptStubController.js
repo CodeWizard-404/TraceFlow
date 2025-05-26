@@ -139,30 +139,9 @@ class ReceiptStubController {
                 });
                 return res.status(400).json({ error: 'bookIDs must be a non-empty array' });
             }
-            const results = await Promise.all(
-                bookIDs.map(async (bookID) => {
-                    try {
-                        const result = await ReceiptStubService.archiveStub(bookID, actorID);
-                        return { bookID, status: 'success', result };
-                    } catch (error) {
-                        return { bookID, status: 'error', error: error.message };
-                    }
-                })
-            );
-            const failed = results.filter(r => r.status === 'error');
-            if (failed.length > 0) {
-                logger.warn('Some stub archiving operations failed', {
-                    route: 'receipt-stubs/archive',
-                    method: req.method,
-                    url: req.originalUrl,
-                    status: 207,
-                    ip: req.ip,
-                    traceId: req.traceId,
-                    userId: actorID,
-                    metadata: { failed: failed.map(f => ({ bookID: f.bookID, error: f.error })) }
-                });
-                return res.status(207).json({ results });
-            }
+
+            // Call archiveStub with the full array
+            const result = await ReceiptStubService.archiveStub(bookIDs, actorID);
             await NotificationService.triggerNotification({
                 event: 'receipt_stub:archived',
                 data: { bookIDs },
@@ -178,7 +157,7 @@ class ReceiptStubController {
                 userId: actorID,
                 metadata: { bookIDs }
             });
-            return res.status(200).json({ message: `${bookIDs.length} stubs archived`, results });
+            return res.status(200).json(result);
         } catch (error) {
             logger.error('Failed to archive stubs', {
                 route: 'receipt-stubs/archive',
@@ -188,7 +167,7 @@ class ReceiptStubController {
                 ip: req.ip,
                 traceId: req.traceId,
                 userId: actorID,
-                metadata: { error: error.message }
+                metadata: { error: error.message, bookIDs: req.body.bookIDs }
             });
             return res.status(error.status || 400).json({ error: error.message || 'Failed to archive stubs' });
         }

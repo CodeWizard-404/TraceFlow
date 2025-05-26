@@ -100,23 +100,47 @@ class ReceiptStubService {
 
     static async archiveStub(bookIDs, stockManagerID) {
         try {
+            // Normalize bookIDs to an array
+            const normalizedBookIDs = Array.isArray(bookIDs) ? bookIDs : [bookIDs];
+
             const books = await ReceiptBook.findAll({
-                where: { bookID: bookIDs },
-                include: [ReceiptStub]
+                where: { bookID: normalizedBookIDs },
+                include: [{ model: ReceiptStub, required: true }],
             });
-            if (books.length !== bookIDs.length) {
-                const error = new Error('Some receipt books not found');
+
+            // Check for missing books
+            const foundBookIDs = books.map(book => book.bookID);
+            const missingBookIDs = normalizedBookIDs.filter(id => !foundBookIDs.includes(id));
+            if (missingBookIDs.length > 0) {
+                const error = new Error(`Receipt books not found: ${missingBookIDs.join(', ')}`);
                 error.status = 404;
                 throw error;
             }
 
+            // Validate books and stubs
             const invalidBooks = books.filter(book =>
                 book.currentHolderID !== stockManagerID ||
                 book.status !== 'With Stock Manager' ||
-                book.ReceiptStub.status === 'archived'
+                !book.ReceiptStub ||
+                book.ReceiptStub.status !== 'collected'
             );
+
             if (invalidBooks.length > 0) {
-                const error = new Error('Some books are not with stock manager or stubs already archived');
+                const errorMessages = invalidBooks.map(book => {
+                    if (!book.ReceiptStub) {
+                        return `Book ${book.bookID}: No associated stub found`;
+                    }
+                    if (book.currentHolderID !== stockManagerID) {
+                        return `Book ${book.bookID}: Not held by stock manager`;
+                    }
+                    if (book.status !== 'With Stock Manager') {
+                        return `Book ${book.bookID}: Not in 'With Stock Manager' status`;
+                    }
+                    if (book.ReceiptStub.status !== 'collected') {
+                        return `Book ${book.bookID}: Stub is ${book.ReceiptStub.status}, must be collected`;
+                    }
+                });
+                const error = new Error(`Invalid books: ${errorMessages.join('; ')}`);
                 error.status = 400;
                 throw error;
             }
@@ -137,7 +161,7 @@ class ReceiptStubService {
                 )
             );
 
-            return { message: `${bookIDs.length} stubs archived` };
+            return { message: `${normalizedBookIDs.length} stubs archived` };
         } catch (error) {
             throw error;
         }
