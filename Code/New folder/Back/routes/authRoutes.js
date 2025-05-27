@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const AuthController = require('../controllers/authController');
 const { body } = require('express-validator');
+const { authenticateCookie } = require('../config/security');
+
 
 // Routes for authentication
 router.post(
@@ -57,6 +59,10 @@ router.post(
 
 // Google OAuth routes
 router.get('/callback', AuthController.googleCallback);
+
+router.get('/google-calendar-auth', authenticateCookie, AuthController.googleCalendarAuth);
+router.get('/google-calendar-auth/callback', authenticateCookie, AuthController.googleCalendarCallback);
+router.get('/get-google-calendar-auth-url', authenticateCookie, AuthController.getGoogleCalendarAuthUrl);
 
 
 module.exports = router;

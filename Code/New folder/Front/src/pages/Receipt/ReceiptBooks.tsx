@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import React, { useState, useEffect, useMemo, useCallback, memo } from "react";
+import React, { useState, useEffect, useCallback, memo, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   FaSearch,
@@ -10,6 +10,8 @@ import {
   FaHistory,
   FaExchangeAlt,
   FaList,
+  FaUpload,
+  FaSyncAlt,
 } from "react-icons/fa";
 import { useAuth } from "../../context/AuthContext";
 import {
@@ -24,15 +26,21 @@ import {
 } from "../../apis/receiptBookAPI";
 import ReceiptBook from "../../models/ReceiptBook";
 import ReceiptBookType from "../../models/ReceiptBookType";
-import { getUserById } from "../../apis/userAPI";
-import { getAgentById } from "../../apis/agentAPI";
 import { useTranslation } from "react-i18next";
 import { debounce } from "lodash";
 import { t } from "i18next";
+import ReceiptBookBulkUploadModal from "./ReceiptBookBulkUploadModal";
+import { onNotification, offNotification } from "../../lib/socket";
 import "./ReceiptBooks.css";
 import "../Admin/AdminDashboard.css";
 
-// Constants for permissions and roles
+// Constants
+const ITEMS_PER_PAGE = 10;
+const CACHE_DURATION = 30 * 60 * 1000;
+const SKELETON_ROWS = 10;
+const SEARCH_DEBOUNCE_MS = 500;
+
+// Permissions and Roles
 const PERMISSIONS = {
   ACCESS_RECEIPT_BOOKS: import.meta.env.VITE_PERMISSIONS_ACCESS_RECEIPT_BOOKS,
   ACCESS_RECEIPT_BOOK_DETAILS: import.meta.env.VITE_PERMISSIONS_ACCESS_RECEIPT_BOOK_DETAILS,
@@ -45,7 +53,6 @@ const PERMISSIONS = {
   MANAGE_RECEIPT_BOOK_TYPES: import.meta.env.VITE_PERMISSIONS_MANAGE_RECEIPT_BOOK_TYPES,
 };
 
-// Roles for user capabilities
 const ROLES = {
   SUPERVISOR: import.meta.env.VITE_ROLES_SUPERVISOR,
   STOCK_MANAGER: import.meta.env.VITE_ROLES_STOCK_MANAGER,
@@ -54,19 +61,11 @@ const ROLES = {
   SUPER_ADMIN: import.meta.env.VITE_ROLES_SUPER_ADMIN,
 };
 
-// Pagination and caching constants
-const ITEMS_PER_PAGE = 10;
-const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes cache duration
-const SKELETON_ROWS = 10;
-
-// Interfaces for TypeScript
-interface HolderCache {
-  data: Map<string, string>;
-  timestamp: number;
-}
-
+// Interfaces
 interface ReceiptBooksCache {
   data: ReceiptBook[];
+  totalCount: number;
+  totalPages: number;
   timestamp: number;
 }
 
@@ -75,34 +74,24 @@ interface ReceiptBookTypesCache {
   timestamp: number;
 }
 
-// Utility function to pad numbers to 6 digits
+// Utility function to pad numbers
 const padNumber = (value: string): string => {
   const numericValue = value.replace(/\D/g, "");
   if (numericValue.length > 6) return numericValue.slice(0, 6);
   return numericValue.padStart(6, "0");
 };
 
-// Memoized Receipt Books List Component
+// Memoized ReceiptBooksList Component
 const ReceiptBooksList: React.FC<{
-  paginatedReceiptBooks: ReceiptBook[];
+  receiptBooks: ReceiptBook[];
   receiptBookTypes: ReceiptBookType[];
   userPermissions: Record<string, boolean>;
-  holdersMap: Map<string, string>;
   t: (key: string, options?: Record<string, unknown>) => string;
   handleEdit: (receipt: ReceiptBook) => void;
   handleDelete: (bookID: string) => void;
   navigate: (path: string) => void;
 }> = memo(
-  ({
-    paginatedReceiptBooks,
-    receiptBookTypes,
-    userPermissions,
-    holdersMap,
-    t,
-    handleEdit,
-    handleDelete,
-    navigate,
-  }) => (
+  ({ receiptBooks, receiptBookTypes, userPermissions, t, handleEdit, handleDelete, navigate }) => (
     <div className="table-card">
       <h2>{t("receiptBooks.title.list")}</h2>
       <div className="table-container">
@@ -118,9 +107,12 @@ const ReceiptBooksList: React.FC<{
           </div>
         </div>
         <div className="table-body">
-          {paginatedReceiptBooks.length > 0 ? (
-            paginatedReceiptBooks.map((receipt) => {
+          {receiptBooks.length > 0 ? (
+            receiptBooks.map((receipt) => {
               const type = receiptBookTypes.find((t) => t.typeID === receipt.typeID);
+              const holderName = receipt.holder && 'firstname' in receipt.holder && 'lastname' in receipt.holder
+                ? `${receipt.holder.firstname} ${receipt.holder.lastname}`
+                : t("receiptBooks.table.na");
               return (
                 <div key={receipt.bookID} className="table-row-0 table-row-1">
                   <div className="table-cell">{receipt.number}</div>
@@ -137,23 +129,7 @@ const ReceiptBooksList: React.FC<{
                       })
                       : t("receiptBooks.table.na")}
                   </div>
-                  <div className="table-cell">
-                    {receipt.agentID ? (
-                      holdersMap.has(receipt.agentID) ? (
-                        holdersMap.get(receipt.agentID)
-                      ) : (
-                        <div className="custom-skeleton" style={{ width: "100px" }} />
-                      )
-                    ) : receipt.currentHolderID ? (
-                      holdersMap.has(receipt.currentHolderID) ? (
-                        holdersMap.get(receipt.currentHolderID)
-                      ) : (
-                        <div className="custom-skeleton" style={{ width: "100px" }} />
-                      )
-                    ) : (
-                      t("receiptBooks.table.na")
-                    )}
-                  </div>
+                  <div className="table-cell">{holderName}</div>
                   <div className="table-cell">
                     <img
                       src={receipt.qrCode}
@@ -201,16 +177,15 @@ const ReceiptBooksList: React.FC<{
     </div>
   ),
   (prevProps, nextProps) =>
-    prevProps.paginatedReceiptBooks === nextProps.paginatedReceiptBooks &&
+    prevProps.receiptBooks === nextProps.receiptBooks &&
     prevProps.receiptBookTypes === nextProps.receiptBookTypes &&
     prevProps.userPermissions === nextProps.userPermissions &&
-    prevProps.holdersMap === nextProps.holdersMap &&
     prevProps.handleEdit === nextProps.handleEdit &&
     prevProps.handleDelete === nextProps.handleDelete &&
     prevProps.navigate === nextProps.navigate
 );
 
-// Memoized Receipt Book Form Component
+// Memoized ReceiptBookForm Component
 const ReceiptBookForm: React.FC<{
   isEdit: boolean;
   receiptBook: Partial<ReceiptBook>;
@@ -260,9 +235,7 @@ const ReceiptBookForm: React.FC<{
         />
       </div>
       <div className="form-group">
-        <label htmlFor={isEdit ? "editType" : "newType"}>
-          {t("receiptBooks.form.labels.type")}
-        </label>
+        <label htmlFor={isEdit ? "editType" : "newType"}>{t("receiptBooks.form.labels.type")}</label>
         <select
           id={isEdit ? "editType" : "newType"}
           value={receiptBook.typeID || ""}
@@ -310,7 +283,7 @@ const ReceiptBookForm: React.FC<{
     prevProps.handleNumberBlur === nextProps.handleNumberBlur
 );
 
-// Memoized Receipt Book Types List Component
+// Memoized ReceiptBookTypesList Component
 const ReceiptBookTypesList: React.FC<{
   receiptBookTypes: ReceiptBookType[];
   userPermissions: Record<string, boolean>;
@@ -354,7 +327,7 @@ const ReceiptBookTypesList: React.FC<{
               </div>
             ))
           ) : (
-            <div >
+            <div>
               <div className="table-cell">{t("receiptBooks.types.table.noData")}</div>
             </div>
           )}
@@ -369,7 +342,7 @@ const ReceiptBookTypesList: React.FC<{
     prevProps.handleDeleteType === nextProps.handleDeleteType
 );
 
-// Memoized Receipt Book Type Form Component
+// Memoized ReceiptBookTypeForm Component
 const ReceiptBookTypeForm: React.FC<{
   isEdit: boolean;
   receiptBookType: Partial<ReceiptBookType>;
@@ -506,18 +479,23 @@ const ReceiptBooks: React.FC = memo(() => {
   const { effectivePermissions, userRoles, permissionsLoaded, user } = useAuth();
   const { t } = useTranslation();
 
-  // State declarations
+  // State
   const [receiptBooksCache, setReceiptBooksCache] = useState<ReceiptBooksCache>({
     data: [],
+    totalCount: 0,
+    totalPages: 0,
     timestamp: 0,
   });
   const [receiptBookTypesCache, setReceiptBookTypesCache] = useState<ReceiptBookTypesCache>({
     data: [],
     timestamp: 0,
   });
-  const [view, setView] = useState<"list" | "create" | "edit" | "types" | "createType" | "editType">("list");
+  const [view, setView] = useState<"list" | "create" | "edit" | "types" | "createType" | "editType" | "bulkUpload">(
+    "list"
+  );
+  const [searchInput, setSearchInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortField, setSortField] = useState<"number" | "typeID" | "status">("number");
+  const [sortField, setSortField] = useState<"number" | "holder" | "bookStatus" | "stubStatus" | "type">("number");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [filterType, setFilterType] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
@@ -529,15 +507,12 @@ const ReceiptBooks: React.FC = memo(() => {
   const [typesLoading, setTypesLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [holdersCache, setHoldersCache] = useState<HolderCache>({
-    data: new Map(),
-    timestamp: 0,
-  });
   const [formError, setFormError] = useState<string | null>(null);
+  const [isBulkUploadModalOpen, setIsBulkUploadModalOpen] = useState(false);
 
   const currentUserID = user?.userID;
 
-  // Memoized permissions
+  // Permissions and Capabilities
   const userPermissions = useMemo(
     () => ({
       canView: effectivePermissions?.some((p) => p.name === PERMISSIONS.ACCESS_RECEIPT_BOOKS) || false,
@@ -553,7 +528,6 @@ const ReceiptBooks: React.FC = memo(() => {
     [effectivePermissions]
   );
 
-  // Memoized user roles
   const userCapabilities = useMemo(
     () => ({
       isSupervisorLike: userRoles?.some((role) => role.name === ROLES.SUPERVISOR) || false,
@@ -564,373 +538,198 @@ const ReceiptBooks: React.FC = memo(() => {
     [userRoles]
   );
 
-  // Debounced search query
-  const debouncedSetSearchQuery = useCallback(debounce((value: string) => setSearchQuery(value), 300), []);
-
-  // Effect to fetch receipt books
-  useEffect(() => {
-    let isMounted = true;
-    const fetchData = async () => {
-      // Skip fetching if conditions aren't met
-      if (
-        !userPermissions.canView ||
-        !permissionsLoaded ||
-        !user ||
-        (receiptBooksCache.data.length >= 0 && Date.now() - receiptBooksCache.timestamp < CACHE_DURATION) // Allow empty cache to be valid
-      ) {
-        setLoading(false);
-        setError(null);
-        return;
-      }
-
-      setLoading(true);
-      setError(null);
-      try {
-        const receiptsData = (await getAllReceiptBooks()) || []; // Fallback to empty array
-        let filteredBooks = receiptsData.map((receipt) => ({
-          ...receipt,
-          qrCode: `data:image/png;base64,${receipt.qrCode}`,
-        }));
-
-        // Apply role-based filtering
-        if (userCapabilities.isSupervisorLike) {
-          filteredBooks = filteredBooks.filter((r) => r.currentHolderID === currentUserID);
-        }
-        if (userCapabilities.isRegionalManagerLike) {
-          filteredBooks = filteredBooks.filter((r) => r.currentHolderID === currentUserID);
-        }
-        if (userCapabilities.isStockManagerLike) {
-          filteredBooks = filteredBooks.filter((r) =>
-            [
-              t("common.receiptBookStatuses.inStock"),
-              t("common.receiptBookStatuses.withStockManager"),
-              t("common.receiptBookStatuses.archived"),
-            ].includes(r.status)
-          );
-        }
-        if (userCapabilities.isPurchaseTeamLike) {
-          filteredBooks = filteredBooks.filter((r) => r.status !== t("common.receiptBookStatuses.archived"));
-        }
-
-        if (isMounted) {
-          setReceiptBooksCache({
-            data: filteredBooks,
-            timestamp: filteredBooks.length > 0 ? Date.now() : receiptBooksCache.timestamp, // Only update timestamp if data is non-empty
-          });
-          setFormError(null);
-        }
-      } catch (error) {
-        console.error("Failed to fetch receipt books:", error);
-        if (isMounted) {
-          setError(t("receiptBooks.errors.fetchFailed"));
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
-    };
-    fetchData();
-    return () => {
-      isMounted = false;
-    };
-  }, [
-    userPermissions.canView,
-    userCapabilities.isSupervisorLike,
-    userCapabilities.isStockManagerLike,
-    userCapabilities.isRegionalManagerLike,
-    userCapabilities.isPurchaseTeamLike,
-    currentUserID,
-    permissionsLoaded,
-    t,
-    user,
-    receiptBooksCache.timestamp,
-  ]);
-
-  // Effect to fetch receipt book types
-  useEffect(() => {
-    let isMounted = true;
-    const fetchTypes = async () => {
-      // Skip fetching if conditions aren't met
-      if (
-        !userPermissions.canViewTypes ||
-        !permissionsLoaded ||
-        !user ||
-        (receiptBookTypesCache.data.length >= 0 && Date.now() - receiptBookTypesCache.timestamp < CACHE_DURATION) // Allow empty cache to be valid
-      ) {
-        setTypesLoading(false);
-        setError(null);
-        return;
-      }
-
-      setTypesLoading(true);
-      setError(null);
-      try {
-        const typesData = (await getAllReceiptBookTypes()) || []; // Fallback to empty array
-        if (isMounted) {
-          setReceiptBookTypesCache({
-            data: typesData,
-            timestamp: typesData.length > 0 ? Date.now() : receiptBookTypesCache.timestamp, // Only update timestamp if data is non-empty
-          });
-          setFormError(null);
-        }
-      } catch (error) {
-        console.error("Failed to fetch receipt book types:", error);
-        if (isMounted) {
-          setError(t("receiptBooks.types.errors.fetchFailed"));
-        }
-      } finally {
-        if (isMounted) {
-          setTypesLoading(false);
-        }
-      }
-    };
-    fetchTypes();
-    return () => {
-      isMounted = false;
-    };
-  }, [
-    userPermissions.canViewTypes,
-    permissionsLoaded,
-    user,
-    receiptBookTypesCache.timestamp,
-    t,
-  ]);
-
-  // Effect to fetch holders
-  useEffect(() => {
-    let isMounted = true;
-    const fetchHolders = async () => {
-      if (Date.now() - holdersCache.timestamp < CACHE_DURATION || receiptBooksCache.data.length === 0) {
-        return; // Skip if cache is fresh or no receipt books
-      }
-
-      const start = (currentPage - 1) * ITEMS_PER_PAGE;
-      const end = start + ITEMS_PER_PAGE;
-      const currentReceipts = receiptBooksCache.data.slice(start, end);
-
-      const uniqueUserIDs = Array.from(new Set(currentReceipts.map((r) => r.currentHolderID).filter((id) => id)));
-      const uniqueAgentIDs = Array.from(new Set(currentReceipts.map((r) => r.agentID).filter((id) => id)));
-
-      const newHoldersMap = new Map<string, string>(holdersCache.data);
-      let hasChanges = false;
-
-      for (const userID of uniqueUserIDs) {
-        if (userID && !newHoldersMap.has(userID)) {
-          try {
-            const userData = await getUserById(userID);
-            newHoldersMap.set(userID, `${userData.firstname} ${userData.lastname}`);
-            hasChanges = true;
-          } catch (error) {
-            console.error(`Failed to fetch user ${userID}:`, error);
-            newHoldersMap.set(userID, "");
-            hasChanges = true;
-          }
-        }
-      }
-
-      for (const agentID of uniqueAgentIDs) {
-        if (agentID && !newHoldersMap.has(agentID)) {
-          try {
-            const agentData = await getAgentById(agentID);
-            newHoldersMap.set(agentID, `${agentData!.name} ${agentData!.lastname}`);
-            hasChanges = true;
-          } catch (error) {
-            console.error(`Failed to fetch agent ${agentID}:`, error);
-            newHoldersMap.set(agentID, "");
-            hasChanges = true;
-          }
-        }
-      }
-
-      if (hasChanges && isMounted) {
-        setHoldersCache({
-          data: newHoldersMap,
-          timestamp: Date.now(),
-        });
-      }
-    };
-
-    fetchHolders();
-    return () => {
-      isMounted = false;
-    };
-  }, [receiptBooksCache.data, currentPage, holdersCache.timestamp, t]);
-
-  // Memoized unique types for filters
-  useMemo(() => Array.from(new Set(receiptBooksCache.data.map((r) => r.typeID))), [receiptBooksCache.data]);
-
-  // Memoized unique statuses for filters
-  const uniqueStatuses = useMemo(
-    () => Array.from(new Set(receiptBooksCache.data.map((r) => r.status))),
-    [receiptBooksCache.data]
+  // Debounced search handler
+  const debouncedSearch = useMemo(
+    () =>
+      debounce((query: string) => {
+        setSearchQuery(query);
+        setCurrentPage(1);
+      }, SEARCH_DEBOUNCE_MS),
+    []
   );
 
-  // Memoized filtered receipt books
-  const filteredReceiptBooks = useMemo(() => {
-    let result = receiptBooksCache.data.filter(
-      (r) =>
-        r.number.toString().includes(searchQuery) ||
-        receiptBookTypesCache.data.some(
-          (t) => t.typeID === r.typeID && t.name.toLowerCase().includes(searchQuery.toLowerCase())
-        ) ||
-        r.status.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-    if (filterType !== "all") result = result.filter((r) => r.typeID === filterType);
-    if (filterStatus !== "all") result = result.filter((r) => r.status === filterStatus);
-    result.sort((a, b) => {
-      const fieldA =
-        sortField === "number"
-          ? a.number
-          : sortField === "typeID"
-            ? receiptBookTypesCache.data.find((t) => t.typeID === a.typeID)?.name || ""
-            : a.status;
-      const fieldB =
-        sortField === "number"
-          ? b.number
-          : sortField === "typeID"
-            ? receiptBookTypesCache.data.find((t) => t.typeID === b.typeID)?.name || ""
-            : b.status;
-      return sortOrder === "asc" ? (fieldA > fieldB ? 1 : -1) : fieldA < fieldB ? 1 : -1;
-    });
-    return result;
+  // Handle input change
+  const handleSearchInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value;
+      setSearchInput(value);
+      debouncedSearch(value);
+    },
+    [debouncedSearch]
+  );
+
+  // Cleanup debounce on unmount
+  useEffect(() => {
+    return () => {
+      debouncedSearch.cancel();
+    };
+  }, [debouncedSearch]);
+
+  // Fetch Receipt Books
+  const fetchReceiptBooks = useCallback(async () => {
+    if (!userPermissions.canView || !permissionsLoaded || !user) {
+      return;
+    }
+    setLoading(true);
+    try {
+      const response = await getAllReceiptBooks(
+        currentPage,
+        ITEMS_PER_PAGE,
+        sortField,
+        sortOrder.toUpperCase() as 'ASC' | 'DESC',
+        searchQuery,
+        filterType,
+        filterStatus
+      );
+      let filteredBooks = response.books.map((receipt: ReceiptBook) => ({
+        ...receipt,
+        qrCode: `data:image/png;base64,${receipt.qrCode}`,
+      }));
+
+      // Apply role-based filtering
+      if (userCapabilities.isSupervisorLike) {
+        filteredBooks = filteredBooks.filter((r: { currentHolderID: string | undefined; }) => r.currentHolderID === currentUserID);
+      }
+      if (userCapabilities.isRegionalManagerLike) {
+        filteredBooks = filteredBooks.filter((r: { currentHolderID: string | undefined; }) => r.currentHolderID === currentUserID);
+      }
+      if (userCapabilities.isStockManagerLike) {
+        filteredBooks = filteredBooks.filter((r: { status: string; }) =>
+          ["In Stock", "With Stock Manager", "Archived"].includes(r.status)
+        );
+      }
+      if (userCapabilities.isPurchaseTeamLike) {
+        filteredBooks = filteredBooks.filter((r: { status: string; }) => r.status !== "Archived");
+      }
+
+      setReceiptBooksCache({
+        data: filteredBooks,
+        totalCount: response.totalCount,
+        totalPages: response.totalPages,
+        timestamp: Date.now(),
+      });
+      setError(null);
+    } catch {
+      setError(t("receiptBooks.errors.fetchFailed"));
+    } finally {
+      setLoading(false);
+    }
   }, [
-    receiptBooksCache.data,
-    receiptBookTypesCache.data,
-    searchQuery,
+    currentPage,
     sortField,
     sortOrder,
+    searchQuery,
     filterType,
     filterStatus,
+    userPermissions.canView,
+    permissionsLoaded,
+    user,
+    userCapabilities,
+    t,
   ]);
 
-  // Memoized total pages for pagination
-  const totalPages = useMemo(
-    () => Math.max(1, Math.ceil(filteredReceiptBooks.length / ITEMS_PER_PAGE)),
-    [filteredReceiptBooks.length]
-  );
+  // Fetch Receipt Book Types
+  const fetchReceiptBookTypes = useCallback(async (force = false) => {
+    if (!userPermissions.canViewTypes || !permissionsLoaded || !user) {
+      return;
+    }
+    if (!force && receiptBookTypesCache.timestamp > 0 && Date.now() - receiptBookTypesCache.timestamp < CACHE_DURATION) {
+      setTypesLoading(false);
+      return;
+    }
+    setTypesLoading(true);
+    try {
+      const typesData = await getAllReceiptBookTypes();
+      setReceiptBookTypesCache({ data: typesData, timestamp: Date.now() });
+      setError(null);
+    } catch {
+      setReceiptBookTypesCache((prev) => ({ ...prev, timestamp: Date.now() }));
+      setError(t("receiptBooks.types.errors.fetchFailed"));
+    } finally {
+      setTypesLoading(false);
+    }
+  }, [userPermissions.canViewTypes, permissionsLoaded, user, receiptBookTypesCache.timestamp, t]);
 
-  // Memoized paginated receipt books
-  const paginatedReceiptBooks = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    const end = start + ITEMS_PER_PAGE;
-    return filteredReceiptBooks.slice(start, end);
-  }, [filteredReceiptBooks, currentPage]);
+  // Initial fetches
+  useEffect(() => {
+    fetchReceiptBooks();
+  }, [fetchReceiptBooks]);
 
-  // Handlers for receipt books
-  const handleNumberChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>, isEdit: boolean) => {
-      const numericValue = e.target.value.replace(/\D/g, "").slice(0, 6);
-      if (isEdit && editReceiptBook) {
-        setEditReceiptBook({ ...editReceiptBook, number: numericValue });
-      } else {
-        setNewReceiptBook((prev) => ({ ...prev, number: numericValue }));
+  useEffect(() => {
+    fetchReceiptBookTypes(false);
+  }, [fetchReceiptBookTypes]);
+
+  // Real-Time Updates
+  useEffect(() => {
+    const handleReceiptBookEvent = async (event: string) => {
+      if (event.startsWith("receipt_book:")) {
+        await fetchReceiptBooks();
       }
-    },
-    [editReceiptBook]
-  );
+    };
 
-  const handleNumberBlur = useCallback(
-    (e: React.FocusEvent<HTMLInputElement>, isEdit: boolean) => {
-      const paddedValue = padNumber(e.target.value);
-      if (isEdit && editReceiptBook) {
-        setEditReceiptBook({ ...editReceiptBook, number: paddedValue });
-      } else {
-        setNewReceiptBook((prev) => ({ ...prev, number: paddedValue }));
-      }
-    },
-    [editReceiptBook]
-  );
+    onNotification(handleReceiptBookEvent);
+    return () => offNotification();
+  }, [fetchReceiptBooks]);
 
+  // Handlers
   const handleCreate = useCallback(async () => {
     if (!userPermissions.canCreate) return;
-    setFormError(null);
     const paddedNumber = padNumber(newReceiptBook.number || "");
     try {
-      if (!paddedNumber || !newReceiptBook.typeID) {
+      if (!paddedNumber || !newReceiptBook.typeID || paddedNumber.length !== 6) {
         setFormError(t("receiptBooks.errors.requiredFields"));
         return;
       }
-      if (paddedNumber.length !== 6) {
-        setFormError(t("receiptBooks.errors.invalidNumber"));
-        return;
-      }
-      const createdReceipt = await createReceiptBook({
-        number: paddedNumber,
-        typeID: newReceiptBook.typeID,
-      });
-      const transformedReceipt = {
-        ...createdReceipt,
-        qrCode: `data:image/png;base64,${createdReceipt.qrCode}`,
-      };
+      const createdReceipt = await createReceiptBook({ number: paddedNumber, typeID: newReceiptBook.typeID });
       setReceiptBooksCache((prev) => ({
-        data: [...prev.data, transformedReceipt],
-        timestamp: prev.timestamp,
+        ...prev,
+        data: [...prev.data, { ...createdReceipt, qrCode: `data:image/png;base64,${createdReceipt.qrCode}` }],
       }));
       setNewReceiptBook({});
       setView("list");
     } catch (error) {
-      setFormError(
-        t("receiptBooks.errors.createFailed", {
-          message: error instanceof Error ? error.message : t("receiptBooks.errors.unknown"),
-        })
-      );
+      setFormError(t("receiptBooks.errors.createFailed", { message: error }));
     }
   }, [newReceiptBook, userPermissions.canCreate, t]);
 
   const handleUpdate = useCallback(async () => {
     if (!userPermissions.canUpdate || !editReceiptBook) return;
-    setFormError(null);
     const paddedNumber = padNumber(editReceiptBook.number);
     try {
-      if (!paddedNumber || !editReceiptBook.typeID) {
+      if (!paddedNumber || !editReceiptBook.typeID || paddedNumber.length !== 6) {
         setFormError(t("receiptBooks.errors.requiredFields"));
-        return;
-      }
-      if (paddedNumber.length !== 6) {
-        setFormError(t("receiptBooks.errors.invalidNumber"));
         return;
       }
       const updatedReceipt = await updateReceiptBook(editReceiptBook.bookID, {
         ...editReceiptBook,
         number: paddedNumber,
       });
-      const transformedReceipt = {
-        ...updatedReceipt,
-        qrCode: `data:image/png;base64,${updatedReceipt.qrCode}`,
-      };
       setReceiptBooksCache((prev) => ({
-        data: prev.data.map((r) => (r.bookID === updatedReceipt.bookID ? transformedReceipt : r)),
-        timestamp: prev.timestamp,
+        ...prev,
+        data: prev.data.map((r) =>
+          r.bookID === updatedReceipt.bookID
+            ? { ...updatedReceipt, qrCode: `data:image/png;base64,${updatedReceipt.qrCode}` }
+            : r
+        ),
       }));
       setEditReceiptBook(null);
       setView("list");
     } catch (error) {
-      setFormError(
-        t("receiptBooks.errors.updateFailed", {
-          message: error instanceof Error ? error.message : t("receiptBooks.errors.unknown"),
-        })
-      );
+      setFormError(t("receiptBooks.errors.updateFailed", { message: error }));
     }
   }, [editReceiptBook, userPermissions.canUpdate, t]);
 
   const handleDelete = useCallback(
     async (bookID: string) => {
-      if (!userPermissions.canDelete) return;
-      if (!window.confirm(t("receiptBooks.actions.deleteConfirm"))) return;
+      if (!userPermissions.canDelete || !window.confirm(t("receiptBooks.actions.deleteConfirm"))) return;
       try {
         await deleteReceiptBook(bookID);
         setReceiptBooksCache((prev) => ({
+          ...prev,
           data: prev.data.filter((r) => r.bookID !== bookID),
-          timestamp: prev.timestamp,
         }));
-        setFormError(null);
       } catch (error) {
-        setFormError(
-          t("receiptBooks.errors.deleteFailed", {
-            message: error instanceof Error ? error.message : t("receiptBooks.errors.unknown"),
-          })
-        );
+        setFormError(t("receiptBooks.errors.deleteFailed", { message: error }));
       }
     },
     [userPermissions.canDelete, t]
@@ -947,10 +746,8 @@ const ReceiptBooks: React.FC = memo(() => {
     setView("edit");
   }, []);
 
-  // Handlers for receipt book types
   const handleCreateType = useCallback(async () => {
     if (!userPermissions.canManageTypes) return;
-    setFormError(null);
     try {
       if (!newReceiptBookType.name) {
         setFormError(t("receiptBooks.types.errors.requiredFields"));
@@ -964,17 +761,12 @@ const ReceiptBooks: React.FC = memo(() => {
       setNewReceiptBookType({});
       setView("types");
     } catch (error) {
-      setFormError(
-        t("receiptBooks.types.errors.createFailed", {
-          message: error instanceof Error ? error.message : t("receiptBooks.types.errors.unknown"),
-        })
-      );
+      setFormError(t("receiptBooks.types.errors.createFailed", { message: error }));
     }
   }, [newReceiptBookType, userPermissions.canManageTypes, t]);
 
   const handleUpdateType = useCallback(async () => {
     if (!userPermissions.canManageTypes || !editReceiptBookType) return;
-    setFormError(null);
     try {
       if (!editReceiptBookType.name) {
         setFormError(t("receiptBooks.types.errors.requiredFields"));
@@ -990,31 +782,21 @@ const ReceiptBooks: React.FC = memo(() => {
       setEditReceiptBookType(null);
       setView("types");
     } catch (error) {
-      setFormError(
-        t("receiptBooks.types.errors.updateFailed", {
-          message: error instanceof Error ? error.message : t("receiptBooks.types.errors.unknown"),
-        })
-      );
+      setFormError(t("receiptBooks.types.errors.updateFailed", { message: error }));
     }
   }, [editReceiptBookType, userPermissions.canManageTypes, t]);
 
   const handleDeleteType = useCallback(
     async (typeID: string) => {
-      if (!userPermissions.canManageTypes) return;
-      if (!window.confirm(t("receiptBooks.types.actions.deleteConfirm"))) return;
+      if (!userPermissions.canManageTypes || !window.confirm(t("receiptBooks.types.actions.deleteConfirm"))) return;
       try {
         await deleteReceiptBookType(typeID);
         setReceiptBookTypesCache((prev) => ({
           data: prev.data.filter((t) => t.typeID !== typeID),
           timestamp: prev.timestamp,
         }));
-        setFormError(null);
       } catch (error) {
-        setFormError(
-          t("receiptBooks.types.errors.deleteFailed", {
-            message: error instanceof Error ? error.message : t("receiptBooks.types.errors.unknown"),
-          })
-        );
+        setFormError(t("receiptBooks.types.errors.deleteFailed", { message: error }));
       }
     },
     [userPermissions.canManageTypes, t]
@@ -1025,27 +807,27 @@ const ReceiptBooks: React.FC = memo(() => {
     setView("editType");
   }, []);
 
-  // Early returns
-  if (!user) {
-    return <div>{t("receiptBooks.errors.unknown")}</div>;
-  }
-
-  if (!permissionsLoaded) {
-    return view === "types" || view === "createType" || view === "editType" ? (
-      <ReceiptBookTypesSkeleton />
-    ) : (
-      <ReceiptBooksSkeleton />
-    );
-  }
-
+  // Early Returns
+  if (!user || !permissionsLoaded) return <ReceiptBooksSkeleton />;
   if (!userPermissions.canView && !userPermissions.canViewTypes) {
     navigate("/access-denied");
     return null;
   }
 
-  // Main render
+  // Render
   return (
     <div className="receipt-books" role="main">
+      {isBulkUploadModalOpen && (
+        <ReceiptBookBulkUploadModal
+          isOpen={isBulkUploadModalOpen}
+          onClose={() => setIsBulkUploadModalOpen(false)}
+          onUploadSuccess={() => {
+            fetchReceiptBooks();
+            fetchReceiptBookTypes(true);
+          }}
+          setError={setError}
+        />
+      )}
       <header className="dashboard-header">
         <h1>
           {view === "list"
@@ -1058,7 +840,9 @@ const ReceiptBooks: React.FC = memo(() => {
                   ? t("receiptBooks.types.title.list")
                   : view === "createType"
                     ? t("receiptBooks.types.title.create")
-                    : t("receiptBooks.types.title.edit")}
+                    : view === "editType"
+                      ? t("receiptBooks.types.title.edit")
+                      : t("receiptBooks.bulkUpload.title")}
         </h1>
         {(view === "list" || view === "types") && (
           <div className="search-container">
@@ -1067,31 +851,73 @@ const ReceiptBooks: React.FC = memo(() => {
               id="searchInput"
               type="text"
               placeholder={t("receiptBooks.search.placeholder")}
-              value={searchQuery}
-              onChange={(e) => debouncedSetSearchQuery(e.target.value)}
+              value={searchInput}
+              onChange={handleSearchInputChange}
               className="search-input input-0"
               aria-label={t("receiptBooks.search.ariaLabel")}
             />
           </div>
         )}
       </header>
-
       <section className="dashboard-content">
         <aside className="sidebar">
+          <div className="filter-card">
+            <h3>{t("receiptBooks.sidebar.manager")}</h3>
+            {userPermissions.canCreate && (
+              <>
+                <button
+                  className="action-button-0"
+                  onClick={() => setView("create")}
+                  aria-label={t("receiptBooks.actions.aria.newReceipt")}
+                >
+                  <FaPlus aria-hidden="true" /> {t("receiptBooks.actions.newReceipt")}
+                </button>
+                <button
+                  className="action-button-0"
+                  onClick={() => setIsBulkUploadModalOpen(true)}
+                  aria-label={t("receiptBooks.actions.aria.importBooks")}
+                >
+                  <FaUpload aria-hidden="true" /> {t("receiptBooks.actions.importBooks")}
+                </button>
+              </>
+            )}
+            {userPermissions.canTransfer && (
+              <button
+                className="action-button-0"
+                onClick={handleTransfer}
+                aria-label={t("receiptBooks.actions.aria.transferBooks")}
+              >
+                <FaExchangeAlt aria-hidden="true" /> {t("receiptBooks.actions.transferBooks")}
+              </button>
+            )}
+            {userPermissions.canManageTypes && view === "types" && (
+              <button
+                className="action-button-0"
+                onClick={() => setView("createType")}
+                aria-label={t("receiptBooks.types.actions.aria.newType")}
+              >
+                <FaPlus aria-hidden="true" /> {t("receiptBooks.types.actions.newType")}
+              </button>
+            )}
+          </div>
           {(view === "list" || view === "create" || view === "edit") && (
             <>
               <div className="sort-card">
                 <h3>{t("receiptBooks.sort.title")}</h3>
-                <select
-                  id="sortField"
-                  value={sortField}
-                  onChange={(e) => setSortField(e.target.value as "number" | "typeID" | "status")}
-                  aria-label={t("receiptBooks.sort.ariaLabel")}
-                >
-                  <option value="number">{t("receiptBooks.sort.fields.number")}</option>
-                  <option value="typeID">{t("receiptBooks.sort.fields.type")}</option>
-                  <option value="status">{t("receiptBooks.sort.fields.status")}</option>
-                </select>
+                <div className="form-group">
+                  <select
+                    id="sortField"
+                    value={sortField}
+                    onChange={(e) => setSortField(e.target.value as "number" | "holder" | "bookStatus" | "stubStatus" | "type")}
+                    aria-label={t("receiptBooks.sort.ariaLabel")}
+                  >
+                    <option value="number">{t("receiptBooks.sort.field.number")}</option>
+                    <option value="holder">{t("receiptBooks.sort.field.holder")}</option>
+                    <option value="bookStatus">{t("receiptBooks.sort.field.bookStatus")}</option>
+                    <option value="stubStatus">{t("receiptBooks.sort.field.stubStatus")}</option>
+                    <option value="type">{t("receiptBooks.sort.field.type")}</option>
+                  </select>
+                </div>
                 <button
                   onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
                   aria-label={t("receiptBooks.sort.ariaLabel")}
@@ -1127,7 +953,17 @@ const ReceiptBooks: React.FC = memo(() => {
                     aria-label={t("receiptBooks.filter.ariaLabel")}
                   >
                     <option value="all">{t("receiptBooks.filter.status.all")}</option>
-                    {uniqueStatuses.map((status) => (
+                    {[
+                      "In Stock",
+                      "Sent to Supplier",
+                      "Collect from Supplier",
+                      "With Regional Manager",
+                      "With Supervisor",
+                      "Stub Collected",
+                      "With Stock Manager",
+                      "Assigned to Agent",
+                      "Archived",
+                    ].map((status) => (
                       <option key={status} value={status}>
                         {t(`common.receiptBookStatuses.${status.toLowerCase()}`, { defaultValue: status })}
                       </option>
@@ -1137,62 +973,42 @@ const ReceiptBooks: React.FC = memo(() => {
               </div>
             </>
           )}
-          {userPermissions.canCreate && (
+          <div>
             <button
               className="action-button-0"
-              onClick={() => setView("create")}
-              aria-label={t("receiptBooks.actions.aria.newReceipt")}
+              onClick={() => {
+                fetchReceiptBooks();
+                fetchReceiptBookTypes(true);
+              }}
+              aria-label={t("receiptBooks.actions.aria.refresh")}
             >
-              <FaPlus aria-hidden="true" /> {t("receiptBooks.actions.newReceipt")}
+              <FaSyncAlt aria-hidden="true" /> {t("receiptBooks.actions.refresh")}
             </button>
-          )}
-          {userPermissions.canTransfer && (
-            <button
-              className="action-button-0"
-              onClick={handleTransfer}
-              aria-label={t("receiptBooks.actions.aria.transferBooks")}
-            >
-              <FaExchangeAlt aria-hidden="true" /> {t("receiptBooks.actions.transferBooks")}
-            </button>
-          )}
-          {userPermissions.canViewTypes && (
-            <button
-              className="action-button-0"
-              onClick={() => setView(view === "types" ? "list" : "types")}
-              aria-label={t(
-                view === "types" ? "receiptBooks.actions.aria.viewBooks" : "receiptBooks.actions.aria.viewTypes"
-              )}
-            >
-              <FaList aria-hidden="true" />{" "}
-              {t(view === "types" ? "receiptBooks.actions.viewBooks" : "receiptBooks.actions.viewTypes")}
-            </button>
-          )}
-          {userPermissions.canManageTypes && view === "types" && (
-            <button
-              className="action-button-0"
-              onClick={() => setView("createType")}
-              aria-label={t("receiptBooks.types.actions.aria.newType")}
-            >
-              <FaPlus aria-hidden="true" /> {t("receiptBooks.types.actions.newType")}
-            </button>
-          )}
+            {userPermissions.canViewTypes && (
+              <button
+                className="action-button-0"
+                onClick={() => setView(view === "types" ? "list" : "types")}
+                aria-label={t(
+                  view === "types" ? "receiptBooks.actions.aria.viewBooks" : "receiptBooks.actions.aria.viewTypes"
+                )}
+              >
+                <FaList aria-hidden="true" />{" "}
+                {t(view === "types" ? "receiptBooks.actions.viewBooks" : "receiptBooks.actions.viewTypes")}
+              </button>
+            )}
+          </div>
         </aside>
-
         <main className="main-content">
           {view === "list" && (
             <>
-              {loading && receiptBooksCache.timestamp === 0 ? ( // Only show skeleton on initial load
+              {loading && receiptBooksCache.timestamp === 0 ? (
                 <ReceiptBooksSkeleton />
               ) : error ? (
                 <div className="error-message" role="alert">
                   {error}
                   <button
-                    onClick={() => {
-                      setError(null);
-                      setLoading(true);
-                      setReceiptBooksCache({ data: [], timestamp: 0 }); // Reset cache to force refetch
-                    }}
-                    className="action-button-0"
+                    onClick={fetchReceiptBooks}
+                    className="action-button-2"
                     aria-label={t("receiptBooks.actions.aria.retry")}
                   >
                     {t("receiptBooks.actions.retry")}
@@ -1201,16 +1017,15 @@ const ReceiptBooks: React.FC = memo(() => {
               ) : (
                 <>
                   <ReceiptBooksList
-                    paginatedReceiptBooks={paginatedReceiptBooks}
+                    receiptBooks={receiptBooksCache.data}
                     receiptBookTypes={receiptBookTypesCache.data}
                     userPermissions={userPermissions}
-                    holdersMap={holdersCache.data}
                     t={t}
                     handleEdit={handleEdit}
                     handleDelete={handleDelete}
                     navigate={navigate}
                   />
-                  {totalPages > 1 && (
+                  {receiptBooksCache.totalPages > 1 && (
                     <div className="pagination">
                       <button
                         onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
@@ -1219,10 +1034,15 @@ const ReceiptBooks: React.FC = memo(() => {
                       >
                         {t("receiptBooks.pagination.previous")}
                       </button>
-                      <span>{t("receiptBooks.pagination.pageInfo", { currentPage, totalPages })}</span>
+                      <span>
+                        {t("receiptBooks.pagination.pageInfo", {
+                          currentPage,
+                          totalPages: receiptBooksCache.totalPages,
+                        })}
+                      </span>
                       <button
                         onClick={() => setCurrentPage((p) => p + 1)}
-                        disabled={currentPage >= totalPages}
+                        disabled={currentPage >= receiptBooksCache.totalPages}
                         aria-label={t("receiptBooks.pagination.aria.next")}
                       >
                         {t("receiptBooks.pagination.next")}
@@ -1233,7 +1053,6 @@ const ReceiptBooks: React.FC = memo(() => {
               )}
             </>
           )}
-
           {view === "create" && userPermissions.canCreate && (
             <ReceiptBookForm
               isEdit={false}
@@ -1244,11 +1063,12 @@ const ReceiptBooks: React.FC = memo(() => {
               t={t}
               handleSubmit={handleCreate}
               handleCancel={() => setView("list")}
-              handleNumberChange={(e) => handleNumberChange(e, false)}
-              handleNumberBlur={(e) => handleNumberBlur(e, false)}
+              handleNumberChange={(e) =>
+                setNewReceiptBook({ ...newReceiptBook, number: e.target.value.replace(/\D/g, "").slice(0, 6) })
+              }
+              handleNumberBlur={(e) => setNewReceiptBook({ ...newReceiptBook, number: padNumber(e.target.value) })}
             />
           )}
-
           {view === "edit" && editReceiptBook && userPermissions.canUpdate && (
             <ReceiptBookForm
               isEdit={true}
@@ -1259,25 +1079,22 @@ const ReceiptBooks: React.FC = memo(() => {
               t={t}
               handleSubmit={handleUpdate}
               handleCancel={() => setView("list")}
-              handleNumberChange={(e) => handleNumberChange(e, true)}
-              handleNumberBlur={(e) => handleNumberBlur(e, true)}
+              handleNumberChange={(e) =>
+                setEditReceiptBook({ ...editReceiptBook, number: e.target.value.replace(/\D/g, "").slice(0, 6) })
+              }
+              handleNumberBlur={(e) => setEditReceiptBook({ ...editReceiptBook, number: padNumber(e.target.value) })}
             />
           )}
-
           {view === "types" && userPermissions.canViewTypes && (
             <>
-              {typesLoading && receiptBookTypesCache.timestamp === 0 ? ( // Only show skeleton on initial load
+              {typesLoading && receiptBookTypesCache.timestamp === 0 ? (
                 <ReceiptBookTypesSkeleton />
               ) : error ? (
                 <div className="error-message" role="alert">
                   {error}
                   <button
-                    onClick={() => {
-                      setError(null);
-                      setTypesLoading(true);
-                      setReceiptBookTypesCache({ data: [], timestamp: 0 }); // Reset cache to force refetch
-                    }}
-                    className="action-button-0"
+                    onClick={() => fetchReceiptBookTypes(true)}
+                    className="action-button-2"
                     aria-label={t("receiptBooks.types.actions.aria.retry")}
                   >
                     {t("receiptBooks.types.actions.retry")}
@@ -1294,7 +1111,6 @@ const ReceiptBooks: React.FC = memo(() => {
               )}
             </>
           )}
-
           {view === "createType" && userPermissions.canManageTypes && (
             <ReceiptBookTypeForm
               isEdit={false}
@@ -1306,7 +1122,6 @@ const ReceiptBooks: React.FC = memo(() => {
               handleCancel={() => setView("types")}
             />
           )}
-
           {view === "editType" && editReceiptBookType && userPermissions.canManageTypes && (
             <ReceiptBookTypeForm
               isEdit={true}
@@ -1325,5 +1140,4 @@ const ReceiptBooks: React.FC = memo(() => {
 });
 
 ReceiptBooks.displayName = "ReceiptBooks";
-
 export default ReceiptBooks;

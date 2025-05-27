@@ -1,4 +1,3 @@
-// timesheetAPI.ts
 import { AxiosError } from "axios";
 import api from "./axiosConfig";
 import {
@@ -8,7 +7,8 @@ import {
   ValidateTimesheetResponse,
   TimesheetsBySupervisorResponse,
   DeleteTimesheetResponse,
-  AxiosErrorResponse
+  AxiosErrorResponse,
+  TimesheetByWeekNumberAndYearResponse,
 } from ".";
 
 // Type for timesheet calendar sync response
@@ -20,23 +20,38 @@ export type SyncTimesheetCalendarResponse = Array<{
 
 // Type for timesheet suggestions response
 export type SuggestTimesheetResponse = Array<{
-  agentID: string;
+  agentID: string | null;
+  supervisorID: string;
   schedule: Array<{
-    date: string;
+    date: string; // DD/MM/YYYY
     visits: Array<{
-      startTime: string;
+      startTime: string; // HH:MM
       location: string;
-      latitude: number;
-      longitude: number;
+      latitude: number | null;
+      longitude: number | null;
       reasons: Array<{ id: string; item: string }>;
       checklists: Array<{ id: string; item: string }>;
     }>;
   }>;
 }>;
 
-// Type for the full suggest timesheet API response
+// Type for the raw API response
 type SuggestTimesheetApiResponse = {
-  suggestions: SuggestTimesheetResponse;
+  suggestions: Array<{
+    agentID: string | null;
+    supervisorID: string;
+    schedule: Array<{
+      date: string; // YYYY-MM-DD
+      visits: Array<{
+        time: string; // HH:MM
+        location: string;
+        latitude: number | null;
+        longitude: number | null;
+        reasons: Array<{ id: string; item: string }>;
+        checklists: Array<{ id: string; item: string }>;
+      }>;
+    }>;
+  }>;
   requestId: string;
 };
 
@@ -58,11 +73,13 @@ const handleApiError = (error: unknown, defaultMessage: string): string => {
     case 403:
       return "You don’t have permission to perform this action.";
     case 404:
-      return "Timesheet or request not found.";
+      return "Timesheet or resource not found.";
     case 499:
       return "Request was canceled.";
     case 500:
       return "Something went wrong on our end. Please try again later.";
+    case 503:
+      return "AI service is unavailable. Try again later.";
     default:
       return defaultMessage;
   }
@@ -77,8 +94,9 @@ export const createTimesheet = async (data: {
     time: string;
     agentID?: string | null;
     location?: string | null;
-    reasons: Array<{ text?: string; id?: string }>;
-    checklists: Array<{ text?: string; id?: string }>;
+    reasons?: Array<{ id: string }>;
+    checklists?: Array<{ id: string }>;
+    status?: string;
   }>;
   status?: string;
 }): Promise<CreateTimesheetResponse> => {
@@ -92,12 +110,7 @@ export const createTimesheet = async (data: {
     const response = await api.post<CreateTimesheetResponse>("/timesheets/supervisor", data);
     return response.data;
   } catch (error) {
-    const axiosError = error as AxiosErrorResponse;
-    let errorMessage = handleApiError(error, "Unable to create timesheet.");
-    if (axiosError.response?.data?.error?.includes("Failed to sync")) {
-      console.warn("Timesheet created but Google Calendar sync failed:", axiosError.response);
-      errorMessage = "Timesheet created, but Google Calendar sync failed. Please try syncing again later.";
-    }
+    const errorMessage = handleApiError(error, "Unable to create timesheet.");
     throw new Error(errorMessage);
   }
 };
@@ -118,6 +131,8 @@ export const updateTimesheet = async (
       comment?: string;
       photos?: File[];
       agentID?: string | null;
+      checklists?: Array<{ id: string }>;
+      reasons?: Array<{ id: string }>;
     }>;
   }
 ): Promise<TimesheetByIdResponse> => {
@@ -142,6 +157,8 @@ export const updateTimesheet = async (
           comment: string;
           photos: File[];
           agentID: string | null;
+          checklists: Array<{ id: string }>;
+          reasons: Array<{ id: string }>;
         }> = { ...visit };
         delete visitObj.photos;
         return visitObj;
@@ -201,15 +218,39 @@ export const getTimesheetById = async (id: string): Promise<TimesheetByIdRespons
   }
 };
 
+export const getTimesheetByWeekNumberAndYear = async (
+  weekNumber: number,
+  year: number,
+  supervisorID: string
+): Promise<TimesheetByWeekNumberAndYearResponse | null> => {
+  try {
+    if (!weekNumber || !year || !supervisorID) {
+      throw new Error("Week number, year, and supervisor ID are required.");
+    }
+    const response = await api.get<TimesheetByWeekNumberAndYearResponse>(
+      `/timesheets/week/${weekNumber}/year/${year}/supervisor/${supervisorID}`
+    );
+    return response.data;
+  } catch (error) {
+    if ((error as AxiosError).response?.status === 404) {
+      return null;
+    }
+    throw new Error(handleApiError(error, "Unable to fetch timesheet by week number and year."));
+  }
+};
+
 export const validateTimesheet = async (
   id: string,
   data: { visitIDs: string[]; status: string }
 ): Promise<ValidateTimesheetResponse> => {
   try {
-    if (!id || !data.status) {
-      throw new Error("Timesheet ID and status are required.");
+    if (!id || !data.status || !Array.isArray(data.visitIDs)) {
+      throw new Error("Timesheet ID, status, and visitIDs array are required.");
     }
-    const response = await api.put<ValidateTimesheetResponse>(`/timesheets/${id}/validate`, data);
+    if (!["pending", "validated"].includes(data.status)) {
+      throw new Error("Status must be 'pending' or 'validated'.");
+    }
+    const response = await api.put<ValidateTimesheetResponse>(`/timesheets/${id}/validate`, { visitIDs: data.visitIDs, status: data.status });
     return response.data;
   } catch (error) {
     throw new Error(handleApiError(error, "Unable to validate timesheet."));
@@ -247,16 +288,22 @@ export const suggestTimesheet = async (data: {
   criteria: {
     delegationIds?: string[];
     agentIds?: string[];
-    supervisorLocation?: { latitude: number; longitude: number };
     preferredDays?: string[];
     timeInterval?: { startHour: number; endHour: number };
     maxVisitsPerAgentPerWeek?: number;
+    includeRecruitmentVisits?: boolean;
+    recruitmentAreas?: string[];
+    description?: string;
     filters?: Record<string, any>;
   };
+  coordinates: { lat: number; lng: number };
 }): Promise<{ suggestions: SuggestTimesheetResponse; requestId: string }> => {
   try {
     if (!data.supervisorId || !data.weekNumber || !data.year) {
       throw new Error("Supervisor ID, week number, and year are required.");
+    }
+    if (!data.coordinates || typeof data.coordinates.lat !== "number" || typeof data.coordinates.lng !== "number") {
+      throw new Error("Valid coordinates (lat, lng) are required.");
     }
     if (data.criteria?.timeInterval) {
       const { startHour, endHour } = data.criteria.timeInterval;
@@ -270,19 +317,36 @@ export const suggestTimesheet = async (data: {
         throw new Error("Invalid time interval: startHour must be less than endHour and both must be integers between 0 and 24.");
       }
     }
+    if (data.criteria?.includeRecruitmentVisits && (!data.criteria.recruitmentAreas || data.criteria.recruitmentAreas.length === 0)) {
+      throw new Error("Recruitment areas are required when includeRecruitmentVisits is true.");
+    }
     const response = await api.post<SuggestTimesheetApiResponse>("/timesheets/suggest", data);
-    console.log("Raw API response:", JSON.stringify(response.data, null, 2)); // Debug log
     if (!response.data.suggestions || !Array.isArray(response.data.suggestions)) {
-      console.error("Invalid suggestions response: Expected an array", response.data);
       throw new Error("Invalid suggestions response: Expected an array");
     }
-    console.log("Processed suggestions:", JSON.stringify(response.data.suggestions, null, 2)); // Debug log
+
+    // Transform the response to match parent component expectations
+    const transformedSuggestions: SuggestTimesheetResponse = response.data.suggestions.map((suggestion) => ({
+      ...suggestion,
+      schedule: suggestion.schedule.map((day) => {
+        // Convert date from YYYY-MM-DD to DD/MM/YYYY
+        const [y, m, d] = day.date.split("-").map(Number);
+        const formattedDate = `${d.toString().padStart(2, "0")}/${m.toString().padStart(2, "0")}/${y}`;
+        return {
+          date: formattedDate,
+          visits: day.visits.map((visit) => ({
+            ...visit,
+            startTime: visit.time,
+          })),
+        };
+      }),
+    }));
+
     return {
-      suggestions: response.data.suggestions,
+      suggestions: transformedSuggestions,
       requestId: response.data.requestId,
     };
   } catch (error) {
-    console.error("Error in suggestTimesheet:", error);
     throw new Error(handleApiError(error, "Unable to generate timesheet suggestions."));
   }
 };

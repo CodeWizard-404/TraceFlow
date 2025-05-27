@@ -3,8 +3,8 @@ const TimesheetService = require('../services/timesheetService');
 const GoogleCalendarService = require('../services/googleCalendarService');
 const NotificationService = require('../services/notificationService');
 const logger = require('../utils/logger');
-const { getKeycloakAdminToken, getGoogleAccessTokenForUser } = require('../utils/tokenExchange');
 const { Timesheet, User } = require('../models');
+const { Visit, Agent, Reason, Checklist } = require('../models');
 
 const ERROR_MESSAGES = {
     MISSING_FIELDS: 'Please fill in all required fields.',
@@ -13,7 +13,7 @@ const ERROR_MESSAGES = {
     INVALID_WEEK_START: 'Invalid week start date.',
     REQUEST_CANCELED: 'AI request was canceled.',
     INVALID_COORDINATES: 'Valid coordinates (lat, lng) are required.',
-    INVALID_TIME_INTERVAL: 'Valid time interval (startHour, endHour) is required.'
+    INVALID_TIME_INTERVAL: 'Valid time interval (startHour, endHour) is required.',
 };
 
 class TimesheetController {
@@ -173,6 +173,9 @@ class TimesheetController {
                 throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
             }
             const { weekNumber, year, supervisorID, visits, status = 'pending' } = req.body;
+            if (!['pending', 'visited', 'rejected', 'validated'].includes(status)) {
+                throw new Error('Invalid status');
+            }
             const result = await TimesheetService.createTimesheet({ weekNumber, year, supervisorID, visits, status }, actorID);
 
             const response = {
@@ -184,7 +187,7 @@ class TimesheetController {
 
             await NotificationService.triggerNotification({
                 event: 'timesheet:created',
-                data: { timesheetId: result.timesheet.timesheetID, supervisorID, weekNumber, year },
+                data: { timesheetId: result.timesheet.timesheetID, supervisorID, weekNumber, year, status },
                 metadata: { createdBy: req.user.email },
             });
 
@@ -196,13 +199,13 @@ class TimesheetController {
                 ip: req.ip,
                 traceId: req.traceId,
                 userId: actorID,
-                metadata: { timesheetID: result.timesheet.timesheetID, supervisorID, visitCount: visits.length },
+                metadata: { timesheetID: result.timesheet.timesheetID, supervisorID, visitCount: visits ? visits.length : 0 },
             });
 
             return res.status(201).json(response);
         } catch (error) {
             const response = TimesheetController.formatError(error);
-            const status = error.message === ERROR_MESSAGES.MISSING_FIELDS ? 400 : error.status || 500;
+            const status = error.message === ERROR_MESSAGES.MISSING_FIELDS || error.message === 'Invalid status' ? 400 : error.status || 500;
             logger.error('Failed to create timesheet', {
                 route: 'timesheets',
                 method: req.method,
@@ -226,23 +229,31 @@ class TimesheetController {
             }
             const { id } = req.params;
             const { visitIDs = [], status } = req.body;
+            if (!['pending', 'visited', 'rejected', 'validated'].includes(status)) {
+                throw new Error('Invalid status');
+            }
             const timesheet = await TimesheetService.validateTimesheet(id, { visitIDs, status }, actorID);
 
             try {
                 const supervisor = await User.findByPk(timesheet.supervisorID);
-                if (!supervisor || !supervisor.keycloakId) {
-                    throw new Error('Supervisor not found or not linked to Keycloak');
+                if (!supervisor) {
+                    throw new Error('Supervisor not found');
                 }
-                const adminToken = await getKeycloakAdminToken();
-                const googleToken = await getGoogleAccessTokenForUser(supervisor.keycloakId, adminToken);
-                const syncResults = await GoogleCalendarService.syncTimesheetToCalendar(googleToken, id);
-                await GoogleCalendarService.notifyCalendarUpdate(supervisor.keycloakId, {
+                const userId = supervisor.userID;
+                if (typeof userId !== 'string') {
+                    throw new Error(`Invalid userId: ${userId}`);
+                }
+                const syncResults = await GoogleCalendarService.syncTimesheetToCalendar(userId, id);
+                await GoogleCalendarService.notifyCalendarUpdate(userId, {
                     timesheetId: id,
                     syncedVisits: syncResults,
                     action: 'synced',
                 });
             } catch (error) {
-                logger.warn(`Failed to sync timesheet ${id} to calendar after validation: ${error.message}`);
+                logger.warn(`Failed to sync timesheet ${id} to calendar after validation: ${error.message}`, {
+                    userId: timesheet.supervisorID,
+                    timesheetId: id
+                });
             }
 
             await NotificationService.triggerNotification({
@@ -265,62 +276,9 @@ class TimesheetController {
             return res.status(200).json(timesheet);
         } catch (error) {
             const response = TimesheetController.formatError(error);
-            const status = error.message === ERROR_MESSAGES.MISSING_FIELDS ? 400 : error.status || 500;
+            const status = error.message === ERROR_MESSAGES.MISSING_FIELDS || error.message === 'Invalid status' ? 400 : error.status || 500;
             logger.error('Failed to validate timesheet', {
                 route: 'timesheets/validate',
-                method: req.method,
-                url: req.originalUrl,
-                status,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { error: response.error },
-            });
-            return res.status(status).json(response);
-        }
-    }
-
-    static async syncTimesheetToCalendar(req, res) {
-        const actorID = req.user?.userID || 'unknown';
-        try {
-            const errors = validationResult(req);
-            if (!errors.isEmpty()) {
-                throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
-            }
-            const { id } = req.params;
-            const timesheet = await Timesheet.findByPk(id, { include: [{ model: User }] });
-            if (!timesheet || !timesheet.User || !timesheet.User.keycloakId) {
-                throw new Error('Timesheet or supervisor not found or not linked to Keycloak');
-            }
-            const adminToken = await getKeycloakAdminToken();
-            const googleToken = await getGoogleAccessTokenForUser(timesheet.User.keycloakId, adminToken);
-            const syncResults = await GoogleCalendarService.syncTimesheetToCalendar(googleToken, id);
-            await GoogleCalendarService.notifyCalendarUpdate(timesheet.User.keycloakId, {
-                timesheetId: id,
-                syncedVisits: syncResults,
-                action: 'synced',
-            });
-            await NotificationService.triggerNotification({
-                event: 'timesheet:calendar_synced',
-                data: { timesheetId: id, syncedVisits: syncResults.map((r) => r.visitId) },
-                metadata: { syncedBy: req.user.email },
-            });
-            logger.info('Successfully synced timesheet to Google Calendar', {
-                route: 'timesheets/sync',
-                method: req.method,
-                url: req.originalUrl,
-                status: 200,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { timesheetID: id, syncedVisitCount: syncResults.length },
-            });
-            return res.status(200).json(syncResults);
-        } catch (error) {
-            const response = TimesheetController.formatError(error);
-            const status = error.message === ERROR_MESSAGES.MISSING_FIELDS ? 400 : error.status || 500;
-            logger.error('Failed to sync timesheet to calendar', {
-                route: 'timesheets/sync',
                 method: req.method,
                 url: req.originalUrl,
                 status,
@@ -340,40 +298,22 @@ class TimesheetController {
             if (!errors.isEmpty()) {
                 throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
             }
-            const { supervisorId, weekNumber, year, criteria, coordinates } = req.body;
-
-            logger.info('Received suggestTimesheet request in controller', {
-                supervisorId,
-                weekNumber,
-                year,
-                criteria,
-                coordinates,
-                actorID
-            });
+            const { supervisorID, weekNumber, year, coordinates } = req.body;
+            const criteria = req.body.criteria || {};
 
             if (!coordinates || typeof coordinates.lat !== 'number' || typeof coordinates.lng !== 'number') {
-                throw Object.assign(new Error(ERROR_MESSAGES.INVALID_COORDINATES), { status: 400 });
+                throw new Error(ERROR_MESSAGES.INVALID_COORDINATES);
             }
 
-            if (!criteria?.timeInterval || !Number.isInteger(criteria.timeInterval.startHour) ||
-                !Number.isInteger(criteria.timeInterval.endHour) || criteria.timeInterval.startHour < 0 ||
-                criteria.timeInterval.endHour > 24 || criteria.timeInterval.startHour >= criteria.timeInterval.endHour) {
-                throw Object.assign(new Error(ERROR_MESSAGES.INVALID_TIME_INTERVAL), { status: 400 });
-            }
+            const result = await TimesheetService.suggestTimesheet(supervisorID, weekNumber, year, criteria, coordinates);
 
-            const { suggestions, requestId } = await TimesheetService.suggestTimesheet(
-                supervisorId,
-                weekNumber,
-                year,
-                criteria,
-                coordinates
-            );
             await NotificationService.triggerNotification({
                 event: 'timesheet:suggested',
-                data: { supervisorId, weekNumber, year, suggestionCount: suggestions.length },
-                metadata: { requestedBy: req.user.email },
+                data: { supervisorID, weekNumber, year, suggestionCount: result.suggestions.length },
+                metadata: { suggestedBy: req.user.email },
             });
-            logger.info('Successfully generated timesheet suggestions', {
+
+            logger.info('Successfully suggested timesheet', {
                 route: 'timesheets/suggest',
                 method: req.method,
                 url: req.originalUrl,
@@ -381,13 +321,16 @@ class TimesheetController {
                 ip: req.ip,
                 traceId: req.traceId,
                 userId: actorID,
-                metadata: { supervisorId, weekNumber, year, suggestionCount: suggestions.length, requestId },
+                metadata: { supervisorID, weekNumber, year, suggestionCount: result.suggestions.length },
             });
-            return res.status(200).json({ suggestions, requestId });
+
+            return res.status(200).json(result);
         } catch (error) {
             const response = TimesheetController.formatError(error);
-            const status = error.message === ERROR_MESSAGES.MISSING_FIELDS ? 400 : error.status || 500;
-            logger.error('Failed to generate timesheet suggestions', {
+            const status = error.message === ERROR_MESSAGES.MISSING_FIELDS ||
+                error.message === ERROR_MESSAGES.INVALID_COORDINATES ||
+                error.message === ERROR_MESSAGES.REQUEST_CANCELED ? 400 : error.status || 500;
+            logger.error('Failed to suggest timesheet', {
                 route: 'timesheets/suggest',
                 method: req.method,
                 url: req.originalUrl,
@@ -409,19 +352,20 @@ class TimesheetController {
                 throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
             }
             const { requestId } = req.params;
-            const canceled = await TimesheetService.cancelTimesheetSuggestion(requestId);
-            if (!canceled) {
-                const error = new Error('No active request found to cancel');
-                error.status = 404;
-                throw error;
+            const success = await TimesheetService.cancelTimesheetSuggestion(requestId);
+
+            if (!success) {
+                throw new Error('No active suggestion request found for the provided ID');
             }
+
             await NotificationService.triggerNotification({
                 event: 'timesheet:suggestion_canceled',
                 data: { requestId },
                 metadata: { canceledBy: req.user.email },
             });
-            logger.info('Successfully canceled timesheet suggestion request', {
-                route: 'timesheets/suggest/cancel',
+
+            logger.info('Successfully canceled timesheet suggestion', {
+                route: 'timesheets/cancel-suggestion',
                 method: req.method,
                 url: req.originalUrl,
                 status: 200,
@@ -430,12 +374,13 @@ class TimesheetController {
                 userId: actorID,
                 metadata: { requestId },
             });
-            return res.status(200).json({ message: 'Request canceled successfully' });
+
+            return res.status(200).json({ message: 'Timesheet suggestion request canceled successfully' });
         } catch (error) {
             const response = TimesheetController.formatError(error);
             const status = error.message === ERROR_MESSAGES.MISSING_FIELDS ? 400 : error.status || 500;
             logger.error('Failed to cancel timesheet suggestion', {
-                route: 'timesheets/suggest/cancel',
+                route: 'timesheets/cancel-suggestion',
                 method: req.method,
                 url: req.originalUrl,
                 status,
@@ -445,6 +390,75 @@ class TimesheetController {
                 metadata: { error: response.error },
             });
             return res.status(status).json(response);
+        }
+    }
+
+    static async syncTimesheetToCalendar(req, res) {
+        const actorID = req.user?.userID || 'unknown';
+        try {
+            const { id } = req.params;
+            const timesheet = await Timesheet.findByPk(id, {
+                include: [
+                    {
+                        model: Visit,
+                        include: [
+                            { model: Agent },
+                            { model: Reason, attributes: ['reasonID', 'item'], through: { attributes: [] } },
+                            { model: Checklist, attributes: ['checklistID', 'item'], through: { attributes: [] } },
+                        ],
+                    },
+                    { model: User },
+                ],
+            });
+
+            if (!timesheet) {
+                logger.error(`Timesheet not found`, { timesheetId: id, userID: actorID });
+                return res.status(404).json({ error: 'Timesheet not found' });
+            }
+            if (!timesheet.User) {
+                logger.error(`User not found for timesheet`, { timesheetId: id, userID: actorID });
+                return res.status(404).json({ error: 'User not found for this timesheet' });
+            }
+
+            const userId = timesheet.User.userID;
+            if (typeof userId !== 'string') {
+                logger.error(`Invalid userId type: expected string, got ${typeof userId}`, { userId, timesheetId: id });
+                return res.status(500).json({ error: 'Invalid user ID type' });
+            }
+
+            const syncResults = await GoogleCalendarService.syncTimesheetToCalendar(userId, id);
+            await GoogleCalendarService.notifyCalendarUpdate(userId, {
+                timesheetId: id,
+                syncedVisits: syncResults,
+                action: 'synced',
+            });
+
+            await NotificationService.triggerNotification({
+                event: 'timesheet:synced',
+                data: { timesheetId: id, supervisorID: timesheet.supervisorID, syncedVisitCount: syncResults.length },
+                metadata: { syncedBy: req.user.email },
+            });
+
+            logger.info('Successfully synced timesheet to calendar', {
+                route: 'timesheets/sync',
+                method: req.method,
+                url: req.originalUrl,
+                status: 200,
+                ip: req.ip,
+                traceId: req.traceId,
+                userId: actorID,
+                metadata: { timesheetID: id, syncedVisitCount: syncResults.length },
+            });
+
+            return res.status(200).json({ timesheetId: id, syncedVisits: syncResults });
+        } catch (error) {
+            logger.error(`Sync timesheet to calendar error: ${error.message}`, {
+                method: req.method,
+                url: req.originalUrl,
+                userId: actorID,
+                timesheetId: req.params.id,
+            });
+            return res.status(500).json({ error: 'Failed to sync timesheet to calendar' });
         }
     }
 }

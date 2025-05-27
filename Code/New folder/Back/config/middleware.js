@@ -17,6 +17,45 @@ function setupMiddleware(app) {
     app.use(helmet());
     app.use(compression());
 
+    app.get('/api/uploads/photos/:folder/:filename', async (req, res, next) => {
+        const { folder, filename } = req.params;
+        const filePath = path.join(__dirname, '../uploads/photos', folder, filename);
+
+        try {
+            // Check if the file exists
+            await fs.access(filePath);
+
+            // Serve the file
+            res.sendFile(filePath, (err) => {
+                if (err) {
+                    logger.error('Error sending photo file', {
+                        folder,
+                        filename,
+                        error: err.message,
+                        ip: req.ip,
+                        service: 'photo-access',
+                    });
+                    next(err);
+                } else {
+                    logger.info('Photo file served', {
+                        folder,
+                        filename,
+                        ip: req.ip,
+                        service: 'photo-access',
+                    });
+                }
+            });
+        } catch (error) {
+            logger.warn('Photo file not found or inaccessible', {
+                folder,
+                filename,
+                error: error.message,
+                ip: req.ip,
+                service: 'photo-access',
+            });
+            res.status(404).json({ error: 'File not found' });
+        }
+    });
 
     // Serve supplier files with token validation and download limit
     app.get('/api/uploads/supplier_files/:filename', async (req, res, next) => {

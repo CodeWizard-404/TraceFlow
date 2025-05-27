@@ -4,6 +4,7 @@ const { AIConfig, User, Agent, Reason, Checklist, Delegation } = require('../mod
 const GoogleMapsService = require('./googleMapsService');
 const { Op } = require('sequelize');
 const NodeCache = require('node-cache');
+const logger = require('../utils/logger');
 
 const cache = new NodeCache({ stdTTL: 3600 });
 
@@ -317,6 +318,244 @@ Return a JSON array of visit objects: [{"date":"YYYY-MM-DD","time":"HH:MM","agen
         }
     }
 
+    static async optimizeRoute(origin, allPoints = [], mode = 'driving', trafficModel = 'best_guess', distanceMatrix, controller = new AbortController()) {
+        try {
+            if (!origin) {
+                throw Object.assign(new Error('Origin is required'), { status: 400 });
+            }
+
+            // Validate all points
+            allPoints.forEach((location, index) => {
+                if (!/^-?\d+\.\d{1,15},-?\d+\.\d{1,15}$/.test(location)) {
+                    throw Object.assign(new Error(`Invalid point location format at index ${index}: ${location}`), { status: 400 });
+                }
+            });
+
+            if (!distanceMatrix || !Array.isArray(distanceMatrix)) {
+                throw Object.assign(new Error('Invalid or missing distance matrix'), { status: 400 });
+            }
+
+            const validIndices = Array.from({ length: allPoints.length }, (_, i) => i);
+            const maxRetries = 3;
+            let attempt = 0;
+
+
+            while (attempt < maxRetries) {
+                const aiConfig = await initializeAI();
+                const prompt = `
+Optimize the route starting from origin "${origin}" visiting points: ${allPoints.join(',') || 'none'}.
+- Mode: ${mode}
+- Traffic Model: ${trafficModel}
+- Distance Matrix: ${JSON.stringify(distanceMatrix)}
+- Current Date: 2025-05-25
+- Current Time: 21:10 CET
+Objective: Find the shortest and fastest route with minimal traffic, starting at origin.
+Constraints:
+- Exactly ${allPoints.length} points must be visited once.
+- Start at origin.
+- Do NOT require any specific point to be the final stop.
+- Use traffic conditions from the distance matrix (duration in minutes).
+- Prioritize lowest total duration, then lowest total distance.
+Return a JSON object: {"waypointOrder": [number], "estimatedDuration": number, "estimatedDistance": number}
+- waypointOrder: Exactly ${allPoints.length} unique indices from ${JSON.stringify(validIndices)}.
+- estimatedDuration: Total duration in minutes.
+- estimatedDistance: Total distance in kilometers.
+Example for 2 points:
+Input points: ["point1", "point2"]
+Valid waypointOrder: [1, 0]
+Output: {"waypointOrder": [1, 0], "estimatedDuration": 15.5, "estimatedDistance": 10.2}
+Return only the JSON object without additional text or formatting.
+            `;
+
+                const payload = {
+                    model: 'mistral',
+                    prompt,
+                    stream: false
+                };
+
+                let response;
+                try {
+                    response = await makeOllamaApiCall('post', '/generate', payload, { signal: controller.signal });
+                } catch (error) {
+                    console.error('AI API Error:', error);
+                    throw Object.assign(new Error(ERROR_MESSAGES.AI_API_UNAVAILABLE), { status: 503, details: error.message });
+                }
+
+                if (!response || !response.response) {
+                    throw Object.assign(new Error(ERROR_MESSAGES.INVALID_AI_RESPONSE), { status: 503, details: 'No response data from AI service.' });
+                }
+
+                let optimizationResult;
+                try {
+                    // Normalize response by removing newlines and extra spaces
+                    const normalizedResponse = response.response.replace(/\s+/g, ' ').trim();
+                    const jsonString = this.extractJsonFromResponse(normalizedResponse);
+                    optimizationResult = JSON.parse(jsonString);
+                } catch (parseError) {
+                    attempt++;
+                    if (attempt >= maxRetries) {
+                        return this.fallbackOptimization(allPoints, distanceMatrix);
+                    }
+                    continue;
+                }
+
+                if (!optimizationResult || !Array.isArray(optimizationResult.waypointOrder)) {
+                    attempt++;
+                    if (attempt >= maxRetries) {
+                        return this.fallbackOptimization(allPoints, distanceMatrix);
+                    }
+                    continue;
+                }
+
+                const isValidOrder = optimizationResult.waypointOrder.length === allPoints.length &&
+                    optimizationResult.waypointOrder.every(index => validIndices.includes(index)) &&
+                    new Set(optimizationResult.waypointOrder).size === allPoints.length;
+
+                if (!isValidOrder) {
+                    attempt++;
+                    if (attempt >= maxRetries) {
+                        return this.fallbackOptimization(allPoints, distanceMatrix);
+                    }
+                    continue;
+                }
+
+                return {
+                    waypointOrder: optimizationResult.waypointOrder,
+                    estimatedDuration: optimizationResult.estimatedDuration || 0,
+                    estimatedDistance: optimizationResult.estimatedDistance || 0
+                };
+            }
+
+            return this.fallbackOptimization(allPoints, distanceMatrix);
+        } catch (error) {
+            if (error.name === 'AbortError') {
+                const abortError = new Error(ERROR_MESSAGES.REQUEST_CANCELED);
+                abortError.status = 499;
+                throw abortError;
+            }
+            throw error.message in ERROR_MESSAGES
+                ? error
+                : Object.assign(new Error('Failed to optimize route'), { status: 500, details: error.message });
+        }
+    }
+
+    static fallbackOptimization(allPoints, distanceMatrix) {
+        if (!allPoints.length) {
+            return { waypointOrder: [], estimatedDuration: 0, estimatedDistance: 0 };
+        }
+
+        const n = allPoints.length;
+        const visited = new Set();
+        const waypointOrder = [];
+        let currentIndex = null;
+        let totalDuration = 0;
+        let totalDistance = 0;
+
+        while (visited.size < n) {
+            let minDuration = Infinity;
+            let nextIndex = null;
+
+            for (let i = 0; i < n; i++) {
+                if (!visited.has(i)) {
+                    const duration = distanceMatrix[currentIndex !== null ? currentIndex + 1 : 0][i + 1]?.duration;
+                    if (duration && duration < minDuration) {
+                        minDuration = duration;
+                        nextIndex = i;
+                    }
+                }
+            }
+
+            if (nextIndex === null) {
+                break;
+            }
+
+            waypointOrder.push(nextIndex);
+            visited.add(nextIndex);
+            if (currentIndex !== null) {
+                totalDuration += distanceMatrix[currentIndex + 1][nextIndex + 1]?.duration || 0;
+                totalDistance += distanceMatrix[currentIndex + 1][nextIndex + 1]?.distance || 0;
+            }
+            currentIndex = nextIndex;
+        }
+
+        if (waypointOrder.length > 0) {
+            totalDuration += distanceMatrix[0][waypointOrder[0] + 1]?.duration || 0;
+            totalDistance += distanceMatrix[0][waypointOrder[0] + 1]?.distance || 0;
+        }
+
+        return {
+            waypointOrder,
+            estimatedDuration: totalDuration,
+            estimatedDistance: totalDistance
+        };
+    }
+
+    static extractJsonFromResponse(response) {
+        // Extract JSON between first { and last }
+        const start = response.indexOf('{');
+        const end = response.lastIndexOf('}');
+        if (start === -1 || end === -1 || start > end) {
+            throw new Error('No valid JSON object found in response');
+        }
+        return response.slice(start, end + 1);
+    }
+
+    static fallbackOptimization(allPoints, distanceMatrix) {
+        if (!allPoints.length) {
+            return { waypointOrder: [], estimatedDuration: 0, estimatedDistance: 0 };
+        }
+
+        // Nearest neighbor heuristic
+        const n = allPoints.length;
+        const visited = new Set();
+        const waypointOrder = [];
+        let currentIndex = null; // Start after origin
+        let totalDuration = 0;
+        let totalDistance = 0;
+
+        // Add points one by one
+        while (visited.size < n) {
+            let minDuration = Infinity;
+            let nextIndex = null;
+
+            for (let i = 0; i < n; i++) {
+                if (!visited.has(i)) {
+                    const duration = distanceMatrix[currentIndex !== null ? currentIndex + 1 : 0][i + 1]?.duration;
+                    if (duration && duration < minDuration) {
+                        minDuration = duration;
+                        nextIndex = i;
+                    }
+                }
+            }
+
+            if (nextIndex === null) {
+                // No valid next point, break to avoid infinite loop
+                break;
+            }
+
+            waypointOrder.push(nextIndex);
+            visited.add(nextIndex);
+            if (currentIndex !== null) {
+                totalDuration += distanceMatrix[currentIndex + 1][nextIndex + 1]?.duration || 0;
+                totalDistance += distanceMatrix[currentIndex + 1][nextIndex + 1]?.distance || 0;
+            }
+            currentIndex = nextIndex;
+        }
+
+        // Add duration/distance from origin to first point
+        if (waypointOrder.length > 0) {
+            totalDuration += distanceMatrix[0][waypointOrder[0] + 1]?.duration || 0;
+            totalDistance += distanceMatrix[0][waypointOrder[0] + 1]?.distance || 0;
+        }
+
+        return {
+            waypointOrder,
+            estimatedDuration: totalDuration,
+            estimatedDistance: totalDistance
+        };
+    }
+
+
     static async detectAnomalies(dataType, data, controller = new AbortController()) {
         try {
             const validDataTypes = ['timesheet', 'visit', 'receipt'];
@@ -423,6 +662,305 @@ Return a JSON array of visit objects: [{"date":"YYYY-MM-DD","time":"HH:MM","agen
                 : Object.assign(new Error(ERROR_MESSAGES.AI_API_UNAVAILABLE), { status: 503 });
         }
     }
+
+
+
+
+
+    /**
+     * Create a new AI configuration for a supervisor or globally
+     * @param {Object} configData - Configuration data (modelName, anomalyThreshold, timesheetMaxSuggestions, supervisorId)
+     * @param {string} requesterId - ID of the user making the request (for authorization)
+     * @returns {Object} Created AI configuration
+     */
+    static async createAIConfig(configData, requesterId) {
+        try {
+            // Validate requester (must be admin or super admin)
+            const requester = await User.findByPk(requesterId, { attributes: ['userID', 'role'] });
+            if (!requester || !['Admin', 'Super Admin'].includes(requester.role)) {
+                throw Object.assign(new Error(ERROR_MESSAGES.UNAUTHORIZED), { status: 403 });
+            }
+
+            const { modelName, anomalyThreshold, timesheetMaxSuggestions, supervisorId } = configData;
+
+            // Validate inputs
+            if (supervisorId) {
+                const supervisor = await User.findByPk(supervisorId, { attributes: ['userID'] });
+                if (!supervisor) {
+                    throw Object.assign(new Error(ERROR_MESSAGES.INVALID_SUPERVISOR), { status: 400 });
+                }
+            }
+
+            if (!modelName || typeof modelName !== 'string') {
+                throw Object.assign(new Error(ERROR_MESSAGES.INVALID_MODEL_NAME), { status: 400 });
+            }
+
+            if (typeof anomalyThreshold !== 'number' || anomalyThreshold < 0 || anomalyThreshold > 1) {
+                throw Object.assign(new Error(ERROR_MESSAGES.INVALID_THRESHOLD), { status: 400 });
+            }
+
+            if (!Number.isInteger(timesheetMaxSuggestions) || timesheetMaxSuggestions <= 0) {
+                throw Object.assign(new Error(ERROR_MESSAGES.INVALID_MAX_SUGGESTIONS), { status: 400 });
+            }
+
+            // Check for existing configuration
+            if (supervisorId) {
+                const existingConfig = await AIConfig.findOne({ where: { supervisorId } });
+                if (existingConfig) {
+                    throw Object.assign(new Error('AI configuration already exists for this supervisor'), { status: 400 });
+                }
+            }
+
+            // Create new configuration
+            const newConfig = await AIConfig.create({
+                modelName,
+                anomalyThreshold,
+                timesheetMaxSuggestions,
+                supervisorId: supervisorId || null
+            });
+
+            logger.info('AI configuration created', { configID: newConfig.configID, supervisorId, requesterId });
+            return {
+                configID: newConfig.configID,
+                modelName: newConfig.modelName,
+                anomalyThreshold: newConfig.anomalyThreshold,
+                timesheetMaxSuggestions: newConfig.timesheetMaxSuggestions,
+                supervisorId: newConfig.supervisorId,
+                createdAt: newConfig.createdAt,
+                updatedAt: newConfig.updatedAt
+            };
+        } catch (error) {
+            logger.error('Failed to create AI configuration', { error: error.message, requesterId });
+            throw error.message in ERROR_MESSAGES
+                ? error
+                : Object.assign(new Error(ERROR_MESSAGES.INVALID_AI_CONFIG), { status: 400, details: error.message });
+        }
+    }
+
+    /**
+     * Update an existing AI configuration
+     * @param {string} configID - ID of the configuration to update
+     * @param {Object} updateData - Fields to update (modelName, anomalyThreshold, timesheetMaxSuggestions)
+     * @param {string} requesterId - ID of the user making the request
+     * @returns {Object} Updated AI configuration
+     */
+    static async updateAIConfig(configID, updateData, requesterId) {
+        try {
+            // Validate requester
+            const requester = await User.findByPk(requesterId, { attributes: ['userID', 'role'] });
+            if (!requester || !['Admin', 'Super Admin'].includes(requester.role)) {
+                throw Object.assign(new Error(ERROR_MESSAGES.UNAUTHORIZED), { status: 403 });
+            }
+
+            const config = await AIConfig.findByPk(configID);
+            if (!config) {
+                throw Object.assign(new Error(ERROR_MESSAGES.AI_CONFIG_NOT_FOUND), { status: 404 });
+            }
+
+            const { modelName, anomalyThreshold, timesheetMaxSuggestions } = updateData;
+
+            // Validate inputs
+            if (modelName && typeof modelName !== 'string') {
+                throw Object.assign(new Error(ERROR_MESSAGES.INVALID_MODEL_NAME), { status: 400 });
+            }
+
+            if (anomalyThreshold !== undefined && (typeof anomalyThreshold !== 'number' || anomalyThreshold < 0 || anomalyThreshold > 1)) {
+                throw Object.assign(new Error(ERROR_MESSAGES.INVALID_THRESHOLD), { status: 400 });
+            }
+
+            if (timesheetMaxSuggestions !== undefined && (!Number.isInteger(timesheetMaxSuggestions) || timesheetMaxSuggestions <= 0)) {
+                throw Object.assign(new Error(ERROR_MESSAGES.INVALID_MAX_SUGGESTIONS), { status: 400 });
+            }
+
+            // Update configuration
+            await config.update({
+                modelName: modelName || config.modelName,
+                anomalyThreshold: anomalyThreshold !== undefined ? anomalyThreshold : config.anomalyThreshold,
+                timesheetMaxSuggestions: timesheetMaxSuggestions !== undefined ? timesheetMaxSuggestions : config.timesheetMaxSuggestions
+            });
+
+            logger.info('AI configuration updated', { configID, requesterId });
+            return {
+                configID: config.configID,
+                modelName: config.modelName,
+                anomalyThreshold: config.anomalyThreshold,
+                timesheetMaxSuggestions: config.timesheetMaxSuggestions,
+                supervisorId: config.supervisorId,
+                createdAt: config.createdAt,
+                updatedAt: config.updatedAt
+            };
+        } catch (error) {
+            logger.error('Failed to update AI configuration', { error: error.message, configID, requesterId });
+            throw error.message in ERROR_MESSAGES
+                ? error
+                : Object.assign(new Error(ERROR_MESSAGES.INVALID_AI_CONFIG), { status: 400, details: error.message });
+        }
+    }
+
+    /**
+     * Retrieve an AI configuration by ID or supervisor ID
+     * @param {Object} params - Parameters to query configuration (configID or supervisorId)
+     * @param {string} requesterId - ID of the user making the request
+     * @returns {Object} AI configuration
+     */
+    static async getAIConfig(params, requesterId) {
+        try {
+            // Validate requester
+            const requester = await User.findByPk(requesterId, { attributes: ['userID', 'role'] });
+            if (!requester || !['Admin', 'Super Admin'].includes(requester.role)) {
+                throw Object.assign(new Error(ERROR_MESSAGES.UNAUTHORIZED), { status: 403 });
+            }
+
+            const { configID, supervisorId } = params;
+
+            let config;
+            if (configID) {
+                config = await AIConfig.findByPk(configID);
+            } else if (supervisorId) {
+                config = await AIConfig.findOne({ where: { supervisorId } });
+            } else {
+                config = await AIConfig.findOne({ where: { supervisorId: null } }); // Global config
+            }
+
+            if (!config) {
+                throw Object.assign(new Error(ERROR_MESSAGES.AI_CONFIG_NOT_FOUND), { status: 404 });
+            }
+
+            return {
+                configID: config.configID,
+                modelName: config.modelName,
+                anomalyThreshold: config.anomalyThreshold,
+                timesheetMaxSuggestions: config.timesheetMaxSuggestions,
+                supervisorId: config.supervisorId,
+                createdAt: config.createdAt,
+                updatedAt: config.updatedAt
+            };
+        } catch (error) {
+            logger.error('Failed to retrieve AI configuration', { error: error.message, params, requesterId });
+            throw error.message in ERROR_MESSAGES
+                ? error
+                : Object.assign(new Error(ERROR_MESSAGES.AI_CONFIG_NOT_FOUND), { status: 404, details: error.message });
+        }
+    }
+
+    /**
+     * Delete an AI configuration
+     * @param {string} configID - ID of the configuration to delete
+     * @param {string} requesterId - ID of the user making the request
+     * @returns {Object} Deletion confirmation
+     */
+    static async deleteAIConfig(configID, requesterId) {
+        try {
+            // Validate requester
+            const requester = await User.findByPk(requesterId, { attributes: ['userID', 'role'] });
+            if (!requester || !['Admin', 'Super Admin'].includes(requester.role)) {
+                throw Object.assign(new Error(ERROR_MESSAGES.UNAUTHORIZED), { status: 403 });
+            }
+
+            const config = await AIConfig.findByPk(configID);
+            if (!config) {
+                throw Object.assign(new Error(ERROR_MESSAGES.AI_CONFIG_NOT_FOUND), { status: 404 });
+            }
+
+            await config.destroy();
+            logger.info('AI configuration deleted', { configID, requesterId });
+            return { message: 'AI configuration deleted successfully', configID };
+        } catch (error) {
+            logger.error('Failed to delete AI configuration', { error: error.message, configID, requesterId });
+            throw error.message in ERROR_MESSAGES
+                ? error
+                : Object.assign(new Error(ERROR_MESSAGES.AI_CONFIG_NOT_FOUND), { status: 404, details: error.message });
+        }
+    }
+
+    /**
+     * List all AI configurations (optionally filtered by supervisorId)
+     * @param {Object} params - Optional filter (supervisorId)
+     * @param {string} requesterId - ID of the user making the request
+     * @returns {Array} List of AI configurations
+     */
+    static async listAIConfigs(params, requesterId) {
+        try {
+            // Validate requester
+            const requester = await User.findByPk(requesterId, { attributes: ['userID', 'role'] });
+            if (!requester || !['Admin', 'Super Admin'].includes(requester.role)) {
+                throw Object.assign(new Error(ERROR_MESSAGES.UNAUTHORIZED), { status: 403 });
+            }
+
+            const { supervisorId } = params;
+            const where = supervisorId ? { supervisorId } : {};
+
+            const configs = await AIConfig.findAll({ where });
+            return configs.map(config => ({
+                configID: config.configID,
+                modelName: config.modelName,
+                anomalyThreshold: config.anomalyThreshold,
+                timesheetMaxSuggestions: config.timesheetMaxSuggestions,
+                supervisorId: config.supervisorId,
+                createdAt: config.createdAt,
+                updatedAt: config.updatedAt
+            }));
+        } catch (error) {
+            logger.error('Failed to list AI configurations', { error: error.message, params, requesterId });
+            throw error.message in ERROR_MESSAGES
+                ? error
+                : Object.assign(new Error('Failed to list AI configurations'), { status: 500, details: error.message });
+        }
+    }
+
+    /**
+     * Test AI configuration by running a sample prompt
+     * @param {string} configID - ID of the configuration to test
+     * @param {string} requesterId - ID of the user making the request
+     * @returns {Object} Test result
+     */
+    static async testAIConfig(configID, requesterId) {
+        try {
+            // Validate requester
+            const requester = await User.findByPk(requesterId, { attributes: ['userID', 'role'] });
+            if (!requester || !['Admin', 'Super Admin'].includes(requester.role)) {
+                throw Object.assign(new Error(ERROR_MESSAGES.UNAUTHORIZED), { status: 403 });
+            }
+
+            const config = await AIConfig.findByPk(configID);
+            if (!config) {
+                throw Object.assign(new Error(ERROR_MESSAGES.AI_CONFIG_NOT_FOUND), { status: 404 });
+            }
+
+            const testPrompt = `Test prompt for AI configuration ${configID}. Return a simple JSON object: {"status": "success"}`;
+            const payload = {
+                model: config.modelName,
+                prompt: testPrompt,
+                stream: false
+            };
+
+            const response = await makeOllamaApiCall('post', '/generate', payload);
+            if (!response || !response.response) {
+                throw Object.assign(new Error(ERROR_MESSAGES.INVALID_AI_RESPONSE), { status: 503 });
+            }
+
+            let result;
+            try {
+                const jsonString = this.extractJsonFromResponse(response.response);
+                result = JSON.parse(jsonString);
+            } catch (parseError) {
+                throw Object.assign(new Error(ERROR_MESSAGES.INVALID_AI_JSON), { status: 503, details: parseError.message });
+            }
+
+            logger.info('AI configuration tested successfully', { configID, requesterId });
+            return { configID, status: 'success', response: result };
+        } catch (error) {
+            logger.error('Failed to test AI configuration', { error: error.message, configID, requesterId });
+            throw error.message in ERROR_MESSAGES
+                ? error
+                : Object.assign(new Error(ERROR_MESSAGES.AI_API_UNAVAILABLE), { status: 503, details: error.message });
+        }
+    }
+
+
+
+
+
 }
 
 module.exports = AIService;

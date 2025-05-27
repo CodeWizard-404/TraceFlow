@@ -19,6 +19,7 @@ router.get('/governorates/user/:userID', requirePermission('access_governorates_
 router.get('/delegations/user/:userID', requirePermission('access_delegations_by_user'), LocationController.getDelegationsByUser);
 
 // Google Maps API routes
+router.post('/update-location', requirePermission('update_user_location'), LocationController.updateUserLocation);
 router.post('/geocode', requirePermission('access_google_maps'), LocationController.geocodeAddress);
 router.post('/directions', requirePermission('access_google_maps'), LocationController.getDirections);
 router.post('/places', requirePermission('access_google_maps'), LocationController.searchPlaces);

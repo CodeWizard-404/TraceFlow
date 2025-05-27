@@ -2,6 +2,7 @@ import { getNotificationRules } from '../apis/notificationAPI';
 import NotificationRule from '../models/NotificationRule';
 
 // Default notification events for all entities and actions
+// Note: WebSocket notifications are always enabled for these events and are not controlled by user preferences or notification rules.
 const DEFAULT_EVENTS: string[] = [
     // User events
     'user:created',
@@ -63,6 +64,9 @@ const DEFAULT_EVENTS: string[] = [
     'notification:created',
     'notification:read',
     'notification:updated',
+    // AI events
+    'ai:anomaly_detected',
+    'ai:report_generated',
 ];
 
 // Default notification types corresponding to entities and general
@@ -82,6 +86,7 @@ const DEFAULT_TYPES: string[] = [
     'receipt_stub',
     'agent',
     'notification',
+    'ai',
 ];
 
 // Cache for notification events and types to reduce API calls

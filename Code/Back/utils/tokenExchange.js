@@ -21,10 +21,8 @@ async function getKeycloakAdminToken() {
         );
 
         const { access_token } = response.data;
-        logger.info('Retrieved Keycloak admin token', { clientId: CLIENT_ID });
         return access_token;
     } catch (error) {
-        logger.error('Failed to retrieve Keycloak admin token', { error: error.message });
         throw new Error(`Failed to retrieve Keycloak admin token: ${error.message}`);
     }
 }
@@ -45,10 +43,8 @@ async function getGoogleAccessTokenForUser(keycloakUserId, adminToken) {
         );
 
         const { access_token } = response.data;
-        logger.info('Exchanged Keycloak token for Google access token', { keycloakUserId });
         return access_token;
     } catch (error) {
-        logger.error('Failed to exchange token for Google access', { keycloakUserId, error: error.message });
         throw new Error(`Failed to exchange token for Google access: ${error.message}`);
     }
 }

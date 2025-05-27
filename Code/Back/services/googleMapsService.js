@@ -1,4 +1,5 @@
 const { Client } = require('@googlemaps/google-maps-services-js');
+const AIService = require('./aiService');
 const { Agent, User, Region, Delegation, Governorate } = require('../models');
 const { initializeRedis } = require('../config/redis');
 const logger = require('../utils/logger');
@@ -17,80 +18,84 @@ class GoogleMapsService {
             this.client = new Client({});
             this.redisClient = (await initializeRedis()).redisClient;
         } catch (error) {
-            logger.error(`Redis initialization failed: ${error.message}`);
             this.redisClient = null;
             this.client = new Client({});
         }
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     // Get directions
-
     static async getDirections(origin, destination, mode = 'driving', waypoints = [], trafficModel = 'best_guess', optimizeWaypoints = false) {
-        let params;
         try {
-            if (!origin || !destination) {
-                throw new Error('Origin and destination are required');
+            if (!origin) {
+                throw new Error('Origin is required');
             }
 
-            let formattedWaypoints = waypoints.map((wp, index) => {
-                let location = typeof wp === 'string' ? wp : wp.location;
+            // Validate mode for traffic data
+            if (mode !== 'driving' && trafficModel) {
+                throw new Error('Traffic data is only available for driving mode');
+            }
+
+            // Extract waypoint locations
+            const waypointLocations = waypoints.map((wp, index) => {
+                const location = typeof wp === 'string' ? wp : wp.location;
                 if (!/^-?\d+\.\d{1,15},-?\d+\.\d{1,15}$/.test(location)) {
                     throw new Error(`Invalid waypoint location format at index ${index}: ${location}`);
                 }
+                return location;
+            });
+
+            // Combine waypoints and destination (if provided) for optimization
+            const allPoints = destination ? [...waypointLocations, destination] : waypointLocations;
+
+            const formattedWaypoints = waypoints.map(wp => {
+                const location = typeof wp === 'string' ? wp : wp.location;
                 return wp.stopover === true ? `via:${location}` : location;
             });
 
-            const cacheKey = `directions:${origin}:${destination}:${mode}:${waypoints
-                .map((wp) => (typeof wp === 'string' ? wp : wp.location))
-                .join('|')}:${trafficModel}:${optimizeWaypoints}`;
+            const cacheKey = `directions:${origin}:${destination || 'none'}:${mode}:${waypointLocations.join('|')}:${trafficModel}:${optimizeWaypoints}`;
             let cachedResult = await this.redisClient?.get(cacheKey);
             if (cachedResult) {
                 return JSON.parse(cachedResult);
             }
 
+            let waypointOrder = [];
+            let optimizedPoints = [];
+            let params;
+
+            if (optimizeWaypoints && allPoints.length > 0) {
+                const allLocations = [origin, ...allPoints];
+                const distanceMatrix = await this.getDistanceMatrix(allLocations, allLocations, mode);
+
+                const aiOptimization = await AIService.optimizeRoute(origin, allPoints, mode, trafficModel, distanceMatrix);
+                waypointOrder = aiOptimization.waypointOrder;
+
+                optimizedPoints = waypointOrder.map(index => allPoints[index]);
+                const optimizedWaypoints = optimizedPoints.slice(0, -1); // All but last point as waypoints
+                const finalDestination = optimizedPoints[optimizedPoints.length - 1]; // Last point as destination
+
+                params = {
+                    origin,
+                    destination: finalDestination,
+                    mode,
+                    key: process.env.GOOGLE_MAPS_API_KEY,
+                    departure_time: 'now',
+                    traffic_model: trafficModel,
+                    waypoints: optimizedWaypoints.length > 0 ? `optimize:false|${optimizedWaypoints.join('|')}` : undefined,
+                };
+            } else {
+                params = {
+                    origin,
+                    destination: destination || waypointLocations[waypointLocations.length - 1] || origin,
+                    mode,
+                    key: process.env.GOOGLE_MAPS_API_KEY,
+                    departure_time: 'now',
+                    traffic_model: trafficModel,
+                    waypoints: formattedWaypoints.length ? formattedWaypoints.join('|') : undefined,
+                };
+            }
+
+
             const url = 'https://maps.googleapis.com/maps/api/directions/json';
-            params = {
-                origin,
-                destination,
-                mode,
-                key: process.env.GOOGLE_MAPS_API_KEY,
-                departure_time: 'now',
-                traffic_model: trafficModel,
-                optimizeWaypoints,
-                ...(formattedWaypoints.length && { waypoints: formattedWaypoints.join('|') }),
-            };
-
-            logger.debug('Directions API params', { params });
-
             const response = await axios.get(url, { params });
             if (response.data.status !== 'OK') {
                 throw new Error(`Directions API error: ${response.data.status}`);
@@ -101,22 +106,40 @@ class GoogleMapsService {
                 throw new Error('No directions found');
             }
 
-            // Process traffic data for each leg
             const trafficSegments = route.legs.map((leg, legIndex) => {
-                const steps = leg.steps.map((step, stepIndex) => {
-                    // Estimate traffic condition based on duration_in_traffic vs duration
+                // Check leg-level traffic data
+                const legTrafficRatio = leg.duration_in_traffic && leg.duration
+                    ? leg.duration_in_traffic.value / leg.duration.value
+                    : null;
+
+
+                const steps = leg.steps.map((step) => {
                     let trafficCondition = 'clear';
-                    let color = '#00FF00'; // Green for clear
+                    let color = '#008000'; // Green
+                    let trafficRatio = null;
+
+                    // Try step-level traffic data first
                     if (step.duration_in_traffic && step.duration) {
-                        const trafficRatio = step.duration_in_traffic.value / step.duration.value;
+                        trafficRatio = step.duration_in_traffic.value / step.duration.value;
+                    } else if (legTrafficRatio !== null) {
+                        // Fallback to leg-level traffic data
+                        trafficRatio = legTrafficRatio;
+                    } else {
+                        trafficCondition = 'unknown';
+                        color = '#808080'; // Gray for unavailable data
+                    }
+
+                    // Apply traffic condition based on trafficRatio
+                    if (trafficRatio !== null) {
                         if (trafficRatio > 1.5) {
                             trafficCondition = 'heavy';
-                            color = '#FF0000'; // Red for heavy
+                            color = '#9B1313'; // Red
                         } else if (trafficRatio > 1.2) {
                             trafficCondition = 'moderate';
-                            color = '#FFA500'; // Orange for moderate
+                            color = '#FFA500'; // Orange
                         }
                     }
+
                     return {
                         polyline: step.polyline.points,
                         trafficCondition,
@@ -126,49 +149,42 @@ class GoogleMapsService {
                         instruction: step.html_instructions,
                     };
                 });
+
                 return {
                     legIndex,
                     steps,
-                    distance: leg.distance.value / 1000, // km
-                    duration: leg.duration.value / 60, // minutes
+                    distance: leg.distance.value / 1000,
+                    duration: leg.duration.value / 60,
                 };
             });
 
             const data = {
-                distance: route.legs.reduce((sum, leg) => sum + leg.distance.value, 0) / 1000, // km
-                duration: route.legs.reduce((sum, leg) => sum + leg.duration.value, 0) / 60, // minutes
+                distance: route.legs.reduce((sum, leg) => sum + leg.distance.value, 0) / 1000,
+                duration: route.legs.reduce((sum, leg) => sum + leg.duration.value, 0) / 60,
                 steps: route.legs.flatMap((leg) =>
                     leg.steps.map((step) => ({
                         instruction: step.html_instructions,
                         distance: step.distance.text,
                         duration: step.duration.text,
+                        start_location: {
+                            lat: step.start_location.lat,
+                            lng: step.start_location.lng,
+                        },
+                        polyline: step.polyline.points,
                     }))
                 ),
                 polyline: route.overview_polyline.points,
-                waypointOrder: route.waypoint_order || [],
-                trafficSegments, // New field for traffic-colored segments
+                waypointOrder: optimizeWaypoints ? waypointOrder : undefined,
+                trafficSegments,
+                optimizedPoints: optimizeWaypoints ? optimizedPoints : undefined,
             };
 
             await this.redisClient?.set(cacheKey, JSON.stringify(data), 'EX', 3600);
             return data;
         } catch (error) {
-            logger.error(`Failed to get directions: ${error.message}`, {
-                origin,
-                destination,
-                mode,
-                waypoints,
-                trafficModel,
-                optimizeWaypoints,
-                params: params || 'undefined',
-            });
             throw new Error(`Failed to get directions: ${error.message}`);
         }
     }
-
-
-
-
-
 
     static async updateUserLocation(userId, coordinates) {
         try {
@@ -189,35 +205,9 @@ class GoogleMapsService {
             await RedisUtils.publishEvent('userLocationUpdate', locationData);
             return locationData;
         } catch (error) {
-            logger.error(`Failed to update user location: ${error.message}`);
             throw new Error(`Failed to update user location: ${error.message}`);
         }
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -255,7 +245,6 @@ class GoogleMapsService {
             await this.redisClient?.set(cacheKey, JSON.stringify(data), 'EX', 3600);
             return data;
         } catch (error) {
-            logger.error(`Failed to geocode address: ${error.message}`);
             throw new Error(`Failed to geocode address: ${error.message}`);
         }
     }
@@ -293,12 +282,9 @@ class GoogleMapsService {
             await this.redisClient?.set(cacheKey, JSON.stringify(data), 'EX', 3600);
             return data;
         } catch (error) {
-            logger.error(`Failed to reverse geocode: ${error.message}`);
             throw new Error(`Failed to reverse geocode: ${error.message}`);
         }
     }
-
-
 
 
     // Get distance matrix
@@ -340,7 +326,6 @@ class GoogleMapsService {
             await this.redisClient?.set(cacheKey, JSON.stringify(data), 'EX', 3600);
             return data;
         } catch (error) {
-            logger.error(`Failed to get distance matrix: ${error.message}`);
             throw new Error(`Failed to get distance matrix: ${error.message}`);
         }
     }
@@ -376,7 +361,6 @@ class GoogleMapsService {
             await this.redisClient?.set(cacheKey, JSON.stringify(results), 'EX', 3600);
             return results;
         } catch (error) {
-            logger.error(`Failed to search places: ${error.message}`);
             throw new Error(`Failed to search places: ${error.message}`);
         }
     }
@@ -412,7 +396,6 @@ class GoogleMapsService {
             await this.redisClient?.set(cacheKey, JSON.stringify(data), 'EX', 3600);
             return data;
         } catch (error) {
-            logger.error(`Failed to get place details: ${error.message}`);
             throw new Error(`Failed to get place details: ${error.message}`);
         }
     }
@@ -435,7 +418,6 @@ class GoogleMapsService {
 
             return nearbyAgents.filter(agent => agent).sort((a, b) => a.distance - b.distance);
         } catch (error) {
-            logger.error(`Failed to get nearby agents: ${error.message}`);
             throw new Error(`Failed to get nearby agents: ${error.message}`);
         }
     }
@@ -458,7 +440,6 @@ class GoogleMapsService {
 
             return notifications;
         } catch (error) {
-            logger.error(`Failed to notify nearby agents: ${error.message}`);
             throw new Error(`Failed to notify nearby agents: ${error.message}`);
         }
     }
@@ -488,7 +469,6 @@ class GoogleMapsService {
             await agent.save();
             return { agentId, location: agent.location, address: geocode.formattedAddress };
         } catch (error) {
-            logger.error(`Failed to add agent location: ${error.message}`);
             throw new Error(`Failed to add agent location: ${error.message}`);
         }
     }
@@ -514,10 +494,10 @@ class GoogleMapsService {
                 delegation: agent.Delegation ? { id: agent.Delegation.delegationID, name: agent.Delegation.name } : null,
             };
         } catch (error) {
-            logger.error(`Failed to update agent location: ${error.message}`);
             throw new Error(`Failed to update agent location: ${error.message}`);
         }
     }
+
     static async deleteAgentLocation(agentId) {
         try {
             const agent = await Agent.findByPk(agentId);
@@ -529,7 +509,6 @@ class GoogleMapsService {
             await agent.save();
             return { agentId, message: 'Agent location deleted' };
         } catch (error) {
-            logger.error(`Failed to delete agent location: ${error.message}`);
             throw new Error(`Failed to delete agent location: ${error.message}`);
         }
     }
@@ -556,73 +535,99 @@ class GoogleMapsService {
                 agents.map(async agent => {
                     let lat, lng, address, source = 'agent';
 
-                    // Since all agent lat/lng are null or incorrect, skip directly to delegation
+                    // Check agent's database coordinates first
+                    if (
+                        agent.latitude != null &&
+                        agent.longitude != null &&
+                        !isNaN(agent.latitude) &&
+                        !isNaN(agent.longitude) &&
+                        agent.latitude >= -90 &&
+                        agent.latitude <= 90 &&
+                        agent.longitude >= -180 &&
+                        agent.longitude <= 180
+                    ) {
+                        lat = agent.latitude;
+                        lng = agent.longitude;
+                        source = 'agent';
+                        // Attempt to reverse geocode for address
+                        try {
+                            const reverseGeocode = await this.reverseGeocode(lat, lng);
+                            address = { formattedAddress: reverseGeocode.formattedAddress };
+                        } catch (error) {
+                            address = { formattedAddress: agent.location || 'Unknown Address' };
+                        }
+                    } else {
+                        // Fallback to delegation geocoding
+                        const delegation = agent.Delegation;
+                        const governorate = delegation?.Governorate;
+                        const region = governorate?.Region;
+
+                        if (delegation?.name) {
+                            const cacheKey = `geocode:${delegation.name}:tn`;
+                            let cachedResult = await this.redisClient?.get(cacheKey);
+                            if (cachedResult) {
+                                const data = JSON.parse(cachedResult);
+                                lat = data.latitude;
+                                lng = data.longitude;
+                                address = { formattedAddress: delegation.name };
+                                source = 'delegation';
+                            } else {
+                                try {
+                                    const geocode = await this.geocodeAddress(
+                                        `${delegation.name}, ${governorate?.name || ''}, Tunisia`,
+                                        'tn'
+                                    );
+                                    lat = geocode.latitude;
+                                    lng = geocode.longitude;
+                                    address = { formattedAddress: geocode.formattedAddress };
+                                    await this.redisClient?.set(cacheKey, JSON.stringify(geocode), 'EX', 3600);
+                                    source = 'delegation';
+                                } catch (error) {
+                                    throw new Error(`Failed to geocode delegation ${delegation.name}: ${error.message}`);
+                                }
+                            }
+                        }
+
+                        // Fallback to governorate if delegation geocoding fails
+                        if ((!lat || !lng) && governorate?.name) {
+                            const cacheKey = `geocode:${governorate.name}:tn`;
+                            let cachedResult = await this.redisClient?.get(cacheKey);
+                            if (cachedResult) {
+                                const data = JSON.parse(cachedResult);
+                                lat = data.latitude;
+                                lng = data.longitude;
+                                address = { formattedAddress: governorate.name };
+                                source = 'governorate';
+                            } else {
+                                try {
+                                    const geocode = await this.geocodeAddress(
+                                        `${governorate.name}, Tunisia`,
+                                        'tn'
+                                    );
+                                    lat = geocode.latitude;
+                                    lng = geocode.longitude;
+                                    address = { formattedAddress: geocode.formattedAddress };
+                                    await this.redisClient?.set(cacheKey, JSON.stringify(geocode), 'EX', 3600);
+                                    source = 'governorate';
+                                } catch (error) {
+                                    throw new Error(`Failed to geocode governorate ${governorate.name}: ${error.message}`);
+                                }
+                            }
+                        }
+
+                        // Final fallback: Center of Tunisia
+                        if (!lat || !lng) {
+                            lat = 36.8065; // Center of Tunisia
+                            lng = 10.1815;
+                            address = { formattedAddress: 'Center of Tunisia' };
+                            source = 'default';
+                        }
+                    }
+
+                    // Extract delegation, governorate, and region from agent object
                     const delegation = agent.Delegation;
                     const governorate = delegation?.Governorate;
                     const region = governorate?.Region;
-
-                    // Fallback logic: Delegation -> Governorate -> Tunisia center
-                    if (delegation?.name) {
-                        const cacheKey = `geocode:${delegation.name}:tn`;
-                        let cachedResult = await this.redisClient?.get(cacheKey);
-                        if (cachedResult) {
-                            const data = JSON.parse(cachedResult);
-                            lat = data.latitude;
-                            lng = data.longitude;
-                            address = { formattedAddress: delegation.name };
-                            source = 'delegation';
-                        } else {
-                            try {
-                                // Improved geocoding query with context
-                                const geocode = await this.geocodeAddress(
-                                    `${delegation.name}, ${governorate?.name || ''}, Tunisia`,
-                                    'tn'
-                                );
-                                lat = geocode.latitude;
-                                lng = geocode.longitude;
-                                address = { formattedAddress: geocode.formattedAddress };
-                                await this.redisClient?.set(cacheKey, JSON.stringify(geocode), 'EX', 3600);
-                                source = 'delegation';
-                            } catch (error) {
-                                logger.warn(`Failed to geocode delegation ${delegation.name}: ${error.message}`);
-                            }
-                        }
-                    }
-
-                    // Fallback to governorate if delegation geocoding fails
-                    if ((!lat || !lng) && governorate?.name) {
-                        const cacheKey = `geocode:${governorate.name}:tn`;
-                        let cachedResult = await this.redisClient?.get(cacheKey);
-                        if (cachedResult) {
-                            const data = JSON.parse(cachedResult);
-                            lat = data.latitude;
-                            lng = data.longitude;
-                            address = { formattedAddress: governorate.name };
-                            source = 'governorate';
-                        } else {
-                            try {
-                                const geocode = await this.geocodeAddress(
-                                    `${governorate.name}, Tunisia`,
-                                    'tn'
-                                );
-                                lat = geocode.latitude;
-                                lng = geocode.longitude;
-                                address = { formattedAddress: geocode.formattedAddress };
-                                await this.redisClient?.set(cacheKey, JSON.stringify(geocode), 'EX', 3600);
-                                source = 'governorate';
-                            } catch (error) {
-                                logger.warn(`Failed to geocode governorate ${governorate.name}: ${error.message}`);
-                            }
-                        }
-                    }
-
-                    // Final fallback: Center of Tunisia
-                    if (!lat || !lng) {
-                        lat = 36.8065; // Center of Tunisia
-                        lng = 10.1815;
-                        address = { formattedAddress: 'Center of Tunisia' };
-                        source = 'default';
-                    }
 
                     return {
                         agentId: agent.agentID,
@@ -659,18 +664,15 @@ class GoogleMapsService {
 
             return { locations, center };
         } catch (error) {
-            logger.error(`Failed to get agent locations: ${error.message}`);
             throw new Error(`Failed to get agent locations: ${error.message}`);
         }
     }
-
     // Get map link for a location
     static async getMapLink(address) {
         try {
             const geocode = await this.geocodeAddress(address);
             return `https://www.google.com/maps?q=${geocode.latitude},${geocode.longitude}`;
         } catch (error) {
-            logger.error(`Failed to generate map link: ${error.message}`);
             return address;
         }
     }
@@ -687,7 +689,6 @@ class GoogleMapsService {
             const address = await this.reverseGeocode(lat, lng);
             return { userId, latitude: lat, longitude: lng, address: address.formattedAddress };
         } catch (error) {
-            logger.error(`Failed to get current user location: ${error.message}`);
             throw new Error(`Failed to get current user location: ${error.message}`);
         }
     }
@@ -711,7 +712,6 @@ class GoogleMapsService {
 
             throw new Error('No location found for user');
         } catch (error) {
-            logger.error(`Failed to get specific user location: ${error.message}`);
             throw new Error(`Failed to get specific user location: ${error.message}`);
         }
     }
@@ -744,7 +744,6 @@ class GoogleMapsService {
             await this.redisClient?.set(cacheKey, JSON.stringify(results), 'EX', 3600);
             return results;
         } catch (error) {
-            logger.error(`Failed to get nearby places: ${error.message}`);
             throw new Error(`Failed to get nearby places: ${error.message}`);
         }
     }

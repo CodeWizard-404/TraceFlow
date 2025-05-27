@@ -64,9 +64,9 @@
       "dashboard": "Dashboard",
       "admin": "Admin",
       "timesheets": "Timesheets",
-      "receiptBooks": "Receipt Books",
-      "profile": "Profile"
-    }
+      "receiptBooks": "Receipt Books"
+    },
+    "profile": "Profile"
   },
   "footer": {
     "aria": {
@@ -462,6 +462,7 @@
       "reasons": "Reasons",
       "checklists": "Checklists",
       "recruitmentVisit": "Recruitment Visit",
+      "agentLocation": "- Location",
       "placeholders": {
         "location": "Enter visit location (optional)",
         "supervisorSearch": "Search supervisors by name...",
@@ -509,25 +510,24 @@
     }
   },
   "transferReceiptBook": {
-    "title": "Transfer Receipt Books",
+    "title": "Transfer Receipt Books ({{roles}})",
     "loading": "Loading...",
     "form": {
       "agentSelection": "Agent Selection",
       "recipientType": "Recipient Type",
       "supplierEmail": "Supplier Email",
-      "selectBooks": "Select In Stock Books to Transfer",
+      "selectBooks": "Select Books to Transfer",
       "selectedAgent": "Selected Agent",
+      "selectedUser": "Selected User",
+      "selectedBooks": "Selected Books ({{count}})",
       "scanCollect": "Scan Books to Collect from Supplier",
       "scanQR": "Scan QR Codes",
+      "scanStub": "Scan Stub",
       "otp": "Enter OTP (Sent to {{type}} {{details}})",
-      "location": "Select Location",
       "searchAgents": "Search Agents",
       "selectAgent": "Select Agent",
-      "recipientSelection": "Recipient Selection",
+      "recipientSelection": "Recipient Selection ({{type}})",
       "selectRecipient": "Select {{type}}",
-      "selectedUser": "Selected User",
-      "selectedBooks": "Selected Books",
-      "scanStub": "Scan Stub",
       "noBooksAvailable": "No Books Available",
       "or": "or",
       "regionalManager": "Regional Manager",
@@ -535,16 +535,15 @@
       "region": "Region",
       "governorate": "Governorate",
       "delegation": "Delegation",
-      "multipleAgents": "Multiple Agents",
+      "multipleAgents": "Multiple Agents Selected",
       "placeholders": {
         "selectRecipientType": "Select Recipient Type",
         "enterAgentPhone": "Enter agent phone number",
-        "selectLocation": "Select Location",
         "searchAgents": "Search agents by name or phone",
         "selectAgent": "Select Agent",
         "enterSupplierEmail": "Enter supplier email",
         "searchBooks": "Search books by number or type",
-        "searchRecipient": "Enter phone number or search by name",
+        "searchRecipient": "Search by name or phone",
         "selectRecipient": "Select {{type}}",
         "enterOTP": "Enter OTP",
         "regionalManagerSearch": "Search regional managers by name or phone",
@@ -558,9 +557,6 @@
       }
     },
     "actions": {
-      "initiateTransfer": "Initiate Transfer",
-      "initiateStubCollection": "Initiate Stub Collection",
-      "collectFromSupplier": "Collect from Supplier",
       "back": "Back",
       "initiate": "Initiate Transfer",
       "initiateStub": "Initiate Stub Collection",
@@ -569,6 +565,7 @@
       "validateStubCollection": "Validate Stub Collection",
       "selectAll": "Select All",
       "deselectAll": "Deselect All",
+      "dismissError": "Dismiss Error",
       "aria": {
         "back": "Back to previous step",
         "initiate": "Initiate transfer of receipt books",
@@ -578,16 +575,15 @@
         "validateStubCollection": "Validate stub collection",
         "removeBook": "Remove book {{number}}",
         "selectAll": "Select all books",
-        "deselectAll": "Deselect all books"
+        "deselectAll": "Deselect all books",
+        "dismissError": "Dismiss error message"
       }
     },
     "types": {
-      "standard": "Standard",
       "unknown": "Unknown Type"
     },
     "pagination": {
       "pageInfo": "Page {{currentPage}} of {{totalPages}}",
-      "selectedBooks": "Selected Books",
       "aria": {
         "previous": "Go to previous page",
         "next": "Go to next page"
@@ -595,9 +591,7 @@
     },
     "otpTimer": "OTP expires in",
     "list": {
-      "noBooks": "No In Stock books available or matching search.",
-      "selectedBooks": "Selected Books",
-      "scannedQRs": "{{count}} QR codes scanned."
+      "scannedQRs": "{{count}} QR codes scanned"
     },
     "recipientTypes": {
       "agent": "Agent",
@@ -607,44 +601,47 @@
       "collectFromSupplier": "Collect from Supplier",
       "regionalManager": "Regional Manager",
       "supervisor": "Supervisor",
-      "stockManager": "Stock Manager"
+      "stockManager": "Stock Manager",
+      "tosupplier": "To Supplier",
+      "fromsupplier": "From Supplier",
+      "toregionalmanager": "Regional Manager",
+      "tosupervisor": "Supervisor",
+      "toagent": "Agent",
+      "stubtosupervisor": "Stub Collection",
+      "toregionalmanagerfromsupervisor": "Stub Collection",
+      "tostockmanager": "Stock Manager",
+      "archived": " To Archive"
     },
     "errors": {
-      "accessDenied": "Access Denied - Missing transfer_receipt_books permission",
-      "loadData": "Failed to load data. Check console for details.",
-      "fetchAgent": "Failed to fetch agent details.",
-      "cameraAccess": "Camera access denied or unavailable.",
-      "qrNotFound": "QR code \"{{number}}\" not found in receipt books.",
-      "qrAlreadyScanned": "QR code \"{{number}}\" has already been scanned or selected.",
-      "bookNotTransferable": "Book \"{{number}}\" (status: {{status}}) cannot be transferred/collected by your role(s).",
-      "stubNotAssigned": "Book \"{{number}}\" must be \"Assigned to Agent\" for stub collection.",
-      "stubNotCollected": "Stub \"{{number}}\" must be \"collected\" for stock management.",
-      "supervisorLimit": "Supervisors can only assign one receipt book to an Agent.",
-      "invalidQR": "Invalid QR code format. Please try again.",
-      "otpExpired": "OTP has expired. Please initiate the transfer again.",
-      "noBooksSelected": "Please select at least one book.",
-      "noRecipientType": "Please select a recipient type.",
-      "noSupplierEmail": "Please enter a supplier email.",
-      "noAgent": "Please enter an agent phone number or select an agent.",
-      "noRecipient": "Please select a recipient or enter a phone number.",
-      "stubCollectionLimit": "Stub collection can only process one book at a time.",
-      "initiateFailed": "Failed to initiate transfer/collection: {{message}}",
-      "noOTP": "Please enter the OTP.",
-      "stubCollectionSingle": "Stub collection requires exactly one book.",
-      "validationFailed": "Invalid OTP or transfer validation failed: {{message}}",
-      "agentNotFound": "No agent found with phone {{phone}}.",
-      "userRoleMismatch": "User with phone {{phone}} does not have role {{recipientType}}.",
-      "userNotFound": "No user found with phone {{phone}}.",
-      "fetchAgents": "Failed to fetch agents by location.",
-      "fetchDataFailed": "Failed to fetch initial data.",
-      "fetchUsersFailed": "Failed to fetch users.",
-      "loadRegionalManagers": "Failed to load regional managers.",
-      "loadSupervisors": "Failed to load supervisors.",
-      "loadAgents": "Failed to load agents.",
-      "loadGovernorates": "Failed to load governorates.",
-      "loadDelegations": "Failed to load delegations.",
-      "noAgentSelected": "Please select an agent.",
-      "unknown": "An unknown error occurred."
+      "accessDenied": "Access Denied - Missing required permissions",
+      "fetchDataFailed": "Failed to fetch initial data",
+      "fetchUsersFailed": "Failed to fetch users",
+      "fetchAgentFailed": "Failed to fetch agent details",
+      "cameraAccessDenied": "Camera access denied or unavailable",
+      "qrNotFound": "QR code \"{{number}}\" not found in receipt books",
+      "bookNotTransferable": "Book \"{{number}}\" cannot be transferred to the selected recipient",
+      "supervisorLimit": "Supervisors can only assign one receipt book to an agent",
+      "invalidQR": "Invalid QR code format",
+      "otpExpired": "OTP has expired. Please initiate the transfer again",
+      "noBooksSelected": "Please select at least one book",
+      "noRecipientType": "Please select a recipient type",
+      "noSupplierEmail": "Please enter a supplier email",
+      "noAgentSelected": "Please select an agent",
+      "noRecipientSelected": "Please select a recipient",
+      "initiateFailed": "Failed to initiate transfer: {{message}}",
+      "noOTP": "Please enter the OTP",
+      "validateFailed": "Invalid OTP or transfer validation failed: {{message}}",
+      "noAgentFound": "No agent found with phone {{phone}}",
+      "loadRegionalManagers": "Failed to load regional managers",
+      "loadSupervisors": "Failed to load supervisors",
+      "loadAgents": "Failed to load agents",
+      "loadRegions": "Failed to load regions",
+      "loadGovernorates": "Failed to load governorates",
+      "loadDelegations": "Failed to load delegations",
+      "noTypesAvailable": "No receipt book types available",
+      "typeNotFound": "Receipt book type \"{{typeName}}\" not found",
+      "invalidStubStatusForArchive": "Cannot archive book \"{{number}}\" due to invalid stub status",
+      "unknown": "An unknown error occurred"
     }
   },
   "receiptBooks": {
@@ -1825,5 +1822,136 @@
       "next": "Next",
       "pageInfo": "Page {{currentPage}} of {{totalPages}}"
     }
+  },
+  "map": {
+    "loading": "Loading...",
+    "geolocationError": "Unable to retrieve your location",
+    "initialDataError": "Failed to load initial data",
+    "searchPlaceholder": "Search agents...",
+    "filter": "Filter",
+    "directions": "Directions",
+    "carModeOn": "Car Mode On",
+    "carModeOff": "Car Mode Off",
+    "showControls": "Show Controls",
+    "hideControls": "Hide Controls",
+    "mapStyles": {
+      "standard": "Standard",
+      "platformDark": "Dark",
+      "platformLight": "Light",
+      "satellite": "Satellite",
+      "night": "Night",
+      "dark": "Black",
+      "light": "Light",
+      "minimal": "Minimal",
+      "silver": "Silver",
+      "retro": "Retro",
+      "aubergine": "Aubergine"
+    },
+    "filters": {
+      "title": "Filters",
+      "allRegions": "All Regions",
+      "allGovernorates": "All Governorates",
+      "allDelegations": "All Delegations",
+      "allSupervisors": "All Supervisors"
+    },
+    "directionsPanel": {
+      "title": "Directions",
+      "originPlaceholder": "Enter origin",
+      "destinationPlaceholder": "Enter destination",
+      "myLocation": "My Location",
+      "centerRoute": "Center",
+      "startNavigation": "Start in Maps",
+      "modes": {
+        "driving": "Driving",
+        "walking": "Walking"
+      },
+      "go": "Go",
+      "clear": "Clear"
+    },
+    "routes": {
+      "title": "Route Stops",
+      "noStops": "No stops added",
+      "optimize": "Optimize Route",
+      "distance": "Distance",
+      "duration": "Duration",
+      "steps": "Steps",
+      "stops": "Stops",
+      "step": "Step {{number}}"
+    },
+    "agentsList": {
+      "title": "Agents",
+      "noAgents": "No agents found"
+    },
+    "agentCard": {
+      "directions": "Directions",
+      "addStop": "Add_Stop",
+      "call": "Call",
+      "remove": "Remove"
+    },
+    "infoWindow": {
+      "edit": "Edit",
+      "addStop": "Add_Stop",
+      "directions": "Directions",
+      "phone": "Phone",
+      "addVisit": "Visit"
+    },
+    "addAgent": "Add Agent",
+    "addAgentPrompt": "Click on the map to select a location for the new agent",
+    "refreshAgents": "Refresh Agents",
+    "refreshAgentsError": "Failed to refresh agents",
+    "addAgentPanel": {
+      "title": "Add New Agent",
+      "name": "Name",
+      "lastname": "Last Name",
+      "email": "Email",
+      "phone": "Phone",
+      "supervisor": "Select Supervisor",
+      "governorate": "Select Governorate",
+      "delegation": "Select Delegation",
+      "address": "Address",
+      "save": "Save",
+      "cancel": "Cancel"
+    },
+    "editAgentPanel": {
+      "title": "Edit",
+      "name": "Name",
+      "lastname": "Last Name",
+      "email": "Email",
+      "phone": "Phone",
+      "supervisor": "Select Supervisor",
+      "governorate": "Select Governorate",
+      "delegation": "Select Delegation",
+      "address": "Address",
+      "save": "Save",
+      "cancel": "Cancel"
+    },
+    "phone": "Phone",
+    "returnToMyLocation": "Return to My Location",
+    "userLocationError": "User location not available",
+    "routePointsError": "At least two points are required for a route",
+    "invalidRouteData": "Invalid route data received",
+    "calculateRouteError": "Failed to calculate route",
+    "locationUpdateError": "Failed to update location",
+    "trackLocationError": "Failed to track location: {{message}}",
+    "retryLocation": "Retrying location update ({{retry}}/{{maxRetries}})",
+    "searchError": "Failed to search agents",
+    "addressError": "Failed to retrieve address",
+    "allFieldsRequired": "All fields are required",
+    "agentCreated": "Agent created successfully",
+    "createAgentError": "Failed to create agent",
+    "noAgentSelected": "No agent selected",
+    "agentUpdated": "Agent updated successfully",
+    "editAgentError": "Failed to update agent",
+    "invalidMarkerPosition": "Invalid marker position",
+    "updateLocationConfirm": "Update location for {{name}} {{lastname}} to {{address}}?",
+    "locationUpdated": "Location updated successfully",
+    "directionsError": "Failed to get directions",
+    "addStopError": "Failed to add stop",
+    "optimizeRouteError": "At least three points are required to optimize",
+    "locationAccessDenied": "Location access denied",
+    "permissionCheckError": "Failed to check location permission",
+    "agentDetailsError": "Failed to retrieve agent details",
+    "confirm": "Confirm",
+    "cancel": "Cancel"
   }
 }

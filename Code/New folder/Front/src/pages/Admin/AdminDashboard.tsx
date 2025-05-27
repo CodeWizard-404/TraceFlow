@@ -105,10 +105,10 @@ interface ConfirmationState {
     onConfirm: () => void;
     onCancel: () => void;
 }
-
 const cache = new Map<string, CacheData>();
 
 const AdminDashboard: React.FC = React.memo(() => {
+    const [isResetting, setIsResetting] = useState(false);
     const { t } = useTranslation();
     const { effectivePermissions, userRoles } = useAuth();
     const { clearError, setError: setGlobalError } = useError();
@@ -394,6 +394,8 @@ const AdminDashboard: React.FC = React.memo(() => {
     }, [userPermissions.canViewNotificationRules, setCachedData, t, setGlobalError, clearError]);
 
     const handleResetConfirm = async () => {
+        if (isResetting) return; // Prevent multiple resets
+        setIsResetting(true);
         try {
             setResetLoading(true);
             const response = await resetMainRoles();
@@ -402,52 +404,52 @@ const AdminDashboard: React.FC = React.memo(() => {
             setRoles(updatedRoles);
             setLocalError(null);
             clearError();
-            const resetDetails = (
-                response.details as Array<{
-                    roleName: string;
-                    permissionsAssigned: number;
-                    permissionsRevoked: number;
-                    totalPermissions: number;
-                }>
-            )
-                .map((detail) =>
-                    t("adminDashboard.success.resetRolesDetail", {
-                        roleName: detail.roleName,
-                        permissionsAssigned: detail.permissionsAssigned,
-                        permissionsRevoked: detail.permissionsRevoked,
-                        totalPermissions: detail.totalPermissions,
-                    })
-                )
-                .join(", ");
-            setTimeout(() => {
-                const successMessage = t("adminDashboard.success.resetRoles", {
-                    details: resetDetails,
-                });
-                setLocalError(successMessage);
-                setConfirmation(null);
-            }, 500);
         } catch (err: unknown) {
             console.error("Failed to reset main roles:", err);
             const errorMessage = t("adminDashboard.error.resetRolesFailed");
             setLocalError(errorMessage);
             setGlobalError(errorMessage);
-            setConfirmation(null);
         } finally {
             setResetLoading(false);
+            setIsResetting(false);
+            setConfirmation(null);
         }
     };
 
     const debouncedShowResetConfirmation = useCallback(
         debounce(() => {
+            if (isResetting || resetLoading) return; // Prevent modal if resetting
             setConfirmation({
                 isOpen: true,
                 message: t("adminDashboard.actions.resetRolesConfirm"),
-                onConfirm: handleResetConfirm,
-                onCancel: () => setConfirmation(null),
+                onConfirm: () => {
+                    debouncedShowResetConfirmation.cancel();
+                    handleResetConfirm();
+                },
+                onCancel: () => {
+                    debouncedShowResetConfirmation.cancel();
+                    setConfirmation(null);
+                },
             });
         }, 300),
-        [handleResetConfirm, t]
+        [handleResetConfirm, t, isResetting, resetLoading]
     );
+
+    // Cleanup debounce on unmount
+    useEffect(() => {
+        return () => {
+            debouncedShowResetConfirmation.cancel();
+        };
+    }, [debouncedShowResetConfirmation]);
+
+
+
+    // Cleanup debounce on component unmount
+    useEffect(() => {
+        return () => {
+            debouncedShowResetConfirmation.cancel();
+        };
+    }, [debouncedShowResetConfirmation]);
 
     // WebSocket setup for real-time updates
     const setupWebSocket = useCallback(() => {
@@ -787,21 +789,22 @@ const AdminDashboard: React.FC = React.memo(() => {
         onConfirm: () => void;
         onCancel: () => void;
     }> = ({ message, onConfirm, onCancel }) => {
+        const { t } = useTranslation();
         const [isFadingOut, setIsFadingOut] = useState(false);
 
         const handleConfirm = () => {
             setIsFadingOut(true);
             setTimeout(() => {
-                onConfirm();
                 setIsFadingOut(false);
-            }, 300);
+                onConfirm();
+            }, 300); // Match animation duration
         };
 
         const handleCancel = () => {
             setIsFadingOut(true);
             setTimeout(() => {
-                onCancel();
                 setIsFadingOut(false);
+                onCancel();
             }, 300);
         };
 
@@ -809,8 +812,8 @@ const AdminDashboard: React.FC = React.memo(() => {
             <motion.div
                 className={`confirmation-modal-overlay ${isFadingOut ? "fade-out" : "fade-in"}`}
                 initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
+                animate={{ opacity: isFadingOut ? 0 : 1 }}
+                transition={{ duration: 0.3 }}
             >
                 <div className="confirmation-modal">
                     <p>{message}</p>

@@ -1033,7 +1033,35 @@ class AgentService {
                     },
                 ],
             });
-            return agents || [];
+
+            // Map agents to include formatted address
+            const agentsWithAddress = await Promise.all(agents.map(async (agent) => {
+                let address = 'Unknown Address';
+                if (agent.latitude && agent.longitude) {
+                    try {
+                        const geocodeResult = await GoogleMapsService.reverseGeocode(agent.latitude, agent.longitude);
+                        address = geocodeResult.formattedAddress || 'Unknown Address';
+                    } catch (error) {
+                        throw error;
+                    }
+                }
+
+                return {
+                    agentID: agent.agentID,
+                    name: agent.name,
+                    lastname: agent.lastname,
+                    email: agent.email,
+                    phone: agent.phone,
+                    location: address, // Replace coordinates with formatted address
+                    latitude: agent.latitude,
+                    longitude: agent.longitude,
+                    delegationID: agent.delegationID,
+                    createdAt: agent.createdAt,
+                    updatedAt: agent.updatedAt
+                };
+            }));
+
+            return agentsWithAddress || [];
         } catch (error) {
             return [];
         }

@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import 'package:TraceFlow/models/user.dart';
 import 'package:TraceFlow/services/auth_service.dart';
 import 'package:TraceFlow/services/cookie_manager.dart';
 import 'package:TraceFlow/utils/device_utils.dart';
-import 'package:http/http.dart' as http;
 
 class AuthProvider with ChangeNotifier {
   User? _user;
@@ -37,8 +37,7 @@ class AuthProvider with ChangeNotifier {
   String get otpMethod => _otpMethod;
   String? get userID => _userID;
   bool get requires2FA => _requires2FA;
-  bool get isSupervisor =>
-      _userRoles?.any((role) => role.toLowerCase() == 'supervisor') ?? false;
+  bool get isSupervisor => _userRoles?.any((role) => role.toLowerCase() == 'supervisor') ?? false;
   bool get isAuthenticated => _user != null && !_requires2FA;
 
   AuthProvider() {
@@ -77,9 +76,8 @@ class AuthProvider with ChangeNotifier {
       _user = User.fromJson(result['user']);
       _tokenExpiry = DateTime.now().millisecondsSinceEpoch + (result['expiresIn'] as int);
       await _fetchPermissions();
-      if (!isSupervisor) {
-        await logout();
-        _errorMessage = 'Access denied: Only Supervisors can log in.';
+      if (kDebugMode) {
+        print('After fetchPermissions in checkAuthStatus: isSupervisor=$isSupervisor, userRoles=$_userRoles');
       }
     } catch (e) {
       _errorMessage = 'Session expired. Please log in again.';
@@ -91,18 +89,26 @@ class AuthProvider with ChangeNotifier {
   Future<void> _fetchPermissions() async {
     _permissionsLoaded = false;
     try {
-      _userRoles = _user!.roles.map((r) => r.name).toList();
-      if (kDebugMode) {
-        print('Fetched roles: $_userRoles');
+      if (_user != null) {
+        _userRoles = _user!.roles.map((r) => r.name).toList();
+        if (kDebugMode) {
+          print('Fetched roles: $_userRoles');
+        }
+      } else {
+        if (kDebugMode) {
+          print('No user object available for role fetching');
+        }
+        _userRoles = [];
       }
-      _permissionsLoaded = true;
     } catch (e) {
       if (kDebugMode) {
         print('Error fetching permissions: $e');
       }
+      _userRoles = [];
+    } finally {
       _permissionsLoaded = true;
+      notifyListeners();
     }
-    notifyListeners();
   }
 
   Future<void> login(String identifier, String password) async {
@@ -313,19 +319,29 @@ class AuthProvider with ChangeNotifier {
   }
 
   Future<void> _handleSuccessfulLogin(Map<String, dynamic> result) async {
-    _user = User.fromJson(result['user']);
-    _tokenExpiry = DateTime.now().millisecondsSinceEpoch + (result['expiresIn'] as int);
-    await CookieManager.saveCookies({
-      'accessToken': result['accessToken'],
-      'refreshToken': result['refreshToken'],
-      'userData': jsonEncode(result['user']),
-    });
-    await _fetchPermissions();
-    if (!isSupervisor) {
-      await logout();
-      _errorMessage = 'Access denied: Only Supervisors can log in.';
+    try {
+      print('Handling login with user data: ${jsonEncode(result['user'])}');
+      _user = User.fromJson(result['user'] ?? {});
+      _tokenExpiry = DateTime.now().millisecondsSinceEpoch + (result['expiresIn'] as int);
+      await CookieManager.saveCookies({
+        'accessToken': result['accessToken'],
+        'refreshToken': result['refreshToken'],
+        'userData': jsonEncode(result['user']),
+      });
+    } catch (e, stack) {
+      print('Error in handleSuccessfulLogin: $e\n$stack'); // Detailed error
+      _user = User(
+        userID: result['user']?['userID']?.toString() ?? 'unknown',
+        email: result['user']?['email']?.toString() ?? '',
+        phone: result['user']?['phone']?.toString() ?? '',
+        roles: [],
+      );
     }
+    await _fetchPermissions();
+    print('After fetchPermissions: isSupervisor=$isSupervisor, userRoles=${_user?.roles.map((r) => r.name).toList()}');
+    notifyListeners();
   }
+
 
   Future<void> _refreshAccessToken() async {
     if (!CookieManager.cookies.containsKey('refreshToken')) {

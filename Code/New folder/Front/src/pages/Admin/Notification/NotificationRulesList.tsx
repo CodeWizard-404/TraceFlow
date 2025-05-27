@@ -123,12 +123,10 @@ const NotificationRulesList: React.FC<NotificationRulesListProps> = React.memo(
                         'notification_rules'
                     );
                     setRules(rulesData);
-                    // Initialize expandedTypes as an empty array to keep all types collapsed by default
                     setExpandedTypes([]);
                 } catch (err) {
                     console.error('Failed to fetch notification rules:', err);
                     setError('Failed to load notification rules');
-                    // In case of error, also initialize as empty
                     setExpandedTypes([]);
                 } finally {
                     setLoading(false);
@@ -277,6 +275,12 @@ const NotificationRulesList: React.FC<NotificationRulesListProps> = React.memo(
                         return sortOrder === 'asc'
                             ? Number(a.enabled) - Number(b.enabled)
                             : Number(b.enabled) - Number(a.enabled);
+                    } else if (sortField === 'priority') {
+                        const priorityA = a.priority.toLowerCase();
+                        const priorityB = b.priority.toLowerCase();
+                        return sortOrder === 'asc'
+                            ? priorityA.localeCompare(priorityB)
+                            : priorityB.localeCompare(priorityA);
                     }
                     return 0;
                 });
@@ -336,7 +340,6 @@ const NotificationRulesList: React.FC<NotificationRulesListProps> = React.memo(
                     setRules((prev) =>
                         prev.map((r) => (r.ruleID === updatedRule.ruleID ? updatedRule : r))
                     );
-                    setError(`Rule ${updatedRule.enabled ? 'enabled' : 'disabled'} successfully`);
                 } catch (err: unknown) {
                     console.error('Failed to update rule:', err);
                     setError('Failed to update rule');
@@ -352,7 +355,6 @@ const NotificationRulesList: React.FC<NotificationRulesListProps> = React.memo(
                     await deleteNotificationRule(ruleID);
                     setRules((prev) => prev.filter((r) => r.ruleID !== ruleID));
                     setExpandedRows((prev) => prev.filter((id) => id !== ruleID));
-                    setError('Notification rule deleted successfully');
                 } catch (err: unknown) {
                     console.error('Failed to delete notification rule:', err);
                     setError('Failed to delete notification rule');
@@ -477,9 +479,9 @@ const NotificationRulesList: React.FC<NotificationRulesListProps> = React.memo(
                                                                     >
                                                                         <div className="rule-details-content">
                                                                             <div className="pill-group">
-                                                                                <strong>From Type:</strong>
-                                                                                <span className="pill pill-type">
-                                                                                    {rule.type.toUpperCase()}
+                                                                                <strong>Priority:</strong>
+                                                                                <span className="pill pill-priority">
+                                                                                    {rule.priority.toUpperCase()}
                                                                                 </span>
                                                                             </div>
                                                                             <hr />
@@ -526,6 +528,13 @@ const NotificationRulesList: React.FC<NotificationRulesListProps> = React.memo(
                                                                                             </span>
                                                                                         )}
                                                                                 </div>
+                                                                            </div>
+                                                                            <hr />
+                                                                            <div className="pill-group">
+                                                                                <strong>Type:</strong>
+                                                                                <span className="pill pill-type">
+                                                                                    {rule.type.toUpperCase()}
+                                                                                </span>
                                                                             </div>
                                                                             <hr />
                                                                             <div className="pill-group">

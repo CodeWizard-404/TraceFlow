@@ -4,6 +4,7 @@ const { AIConfig, User, Agent, Reason, Checklist, Delegation } = require('../mod
 const GoogleMapsService = require('./googleMapsService');
 const { Op } = require('sequelize');
 const NodeCache = require('node-cache');
+const logger = require('../utils/logger');
 
 const cache = new NodeCache({ stdTTL: 3600 });
 
@@ -316,6 +317,254 @@ Return a JSON array of visit objects: [{"date":"YYYY-MM-DD","time":"HH:MM","agen
                 : Object.assign(new Error(ERROR_MESSAGES.AI_API_UNAVAILABLE), { status: 503, details: error.message });
         }
     }
+
+    static async optimizeRoute(origin, allPoints = [], mode = 'driving', trafficModel = 'best_guess', distanceMatrix, controller = new AbortController()) {
+        try {
+            if (!origin) {
+                throw Object.assign(new Error('Origin is required'), { status: 400 });
+            }
+
+            // Validate all points
+            allPoints.forEach((location, index) => {
+                if (!/^-?\d+\.\d{1,15},-?\d+\.\d{1,15}$/.test(location)) {
+                    throw Object.assign(new Error(`Invalid point location format at index ${index}: ${location}`), { status: 400 });
+                }
+            });
+
+            if (!distanceMatrix || !Array.isArray(distanceMatrix)) {
+                throw Object.assign(new Error('Invalid or missing distance matrix'), { status: 400 });
+            }
+
+            const validIndices = Array.from({ length: allPoints.length }, (_, i) => i);
+            const maxRetries = 3;
+            let attempt = 0;
+
+            logger.debug('Optimizing route', { origin, allPoints, validIndices });
+
+            while (attempt < maxRetries) {
+                const aiConfig = await initializeAI();
+                const prompt = `
+Optimize the route starting from origin "${origin}" visiting points: ${allPoints.join(',') || 'none'}.
+- Mode: ${mode}
+- Traffic Model: ${trafficModel}
+- Distance Matrix: ${JSON.stringify(distanceMatrix)}
+- Current Date: 2025-05-25
+- Current Time: 21:10 CET
+Objective: Find the shortest and fastest route with minimal traffic, starting at origin.
+Constraints:
+- Exactly ${allPoints.length} points must be visited once.
+- Start at origin.
+- Do NOT require any specific point to be the final stop.
+- Use traffic conditions from the distance matrix (duration in minutes).
+- Prioritize lowest total duration, then lowest total distance.
+Return a JSON object: {"waypointOrder": [number], "estimatedDuration": number, "estimatedDistance": number}
+- waypointOrder: Exactly ${allPoints.length} unique indices from ${JSON.stringify(validIndices)}.
+- estimatedDuration: Total duration in minutes.
+- estimatedDistance: Total distance in kilometers.
+Example for 2 points:
+Input points: ["point1", "point2"]
+Valid waypointOrder: [1, 0]
+Output: {"waypointOrder": [1, 0], "estimatedDuration": 15.5, "estimatedDistance": 10.2}
+Return only the JSON object without additional text or formatting.
+            `;
+
+                const payload = {
+                    model: 'mistral',
+                    prompt,
+                    stream: false
+                };
+
+                let response;
+                try {
+                    response = await makeOllamaApiCall('post', '/generate', payload, { signal: controller.signal });
+                } catch (error) {
+                    console.error('AI API Error:', error);
+                    throw Object.assign(new Error(ERROR_MESSAGES.AI_API_UNAVAILABLE), { status: 503, details: error.message });
+                }
+
+                if (!response || !response.response) {
+                    throw Object.assign(new Error(ERROR_MESSAGES.INVALID_AI_RESPONSE), { status: 503, details: 'No response data from AI service.' });
+                }
+
+                let optimizationResult;
+                try {
+                    // Normalize response by removing newlines and extra spaces
+                    const normalizedResponse = response.response.replace(/\s+/g, ' ').trim();
+                    const jsonString = this.extractJsonFromResponse(normalizedResponse);
+                    optimizationResult = JSON.parse(jsonString);
+                } catch (parseError) {
+                    logger.warn('Failed to parse AI response', { attempt, rawResponse: response.response, error: parseError.message });
+                    attempt++;
+                    if (attempt >= maxRetries) {
+                        logger.warn('Max retries reached for AI response parsing, using fallback optimization', { allPoints });
+                        return this.fallbackOptimization(allPoints, distanceMatrix);
+                    }
+                    continue;
+                }
+
+                if (!optimizationResult || !Array.isArray(optimizationResult.waypointOrder)) {
+                    logger.warn('Invalid AI response format', { attempt, rawResponse: response.response });
+                    attempt++;
+                    if (attempt >= maxRetries) {
+                        logger.warn('Max retries reached for invalid response format, using fallback optimization', { allPoints });
+                        return this.fallbackOptimization(allPoints, distanceMatrix);
+                    }
+                    continue;
+                }
+
+                const isValidOrder = optimizationResult.waypointOrder.length === allPoints.length &&
+                    optimizationResult.waypointOrder.every(index => validIndices.includes(index)) &&
+                    new Set(optimizationResult.waypointOrder).size === allPoints.length;
+
+                if (!isValidOrder) {
+                    logger.warn('Invalid waypoint order in AI response', { attempt, waypointOrder: optimizationResult.waypointOrder, validIndices, rawResponse: response.response });
+                    attempt++;
+                    if (attempt >= maxRetries) {
+                        logger.warn('Max retries reached for invalid waypoint order, using fallback optimization', { allPoints });
+                        return this.fallbackOptimization(allPoints, distanceMatrix);
+                    }
+                    continue;
+                }
+
+                return {
+                    waypointOrder: optimizationResult.waypointOrder,
+                    estimatedDuration: optimizationResult.estimatedDuration || 0,
+                    estimatedDistance: optimizationResult.estimatedDistance || 0
+                };
+            }
+
+            logger.warn('Unexpected retry loop exit, using fallback optimization', { allPoints });
+            return this.fallbackOptimization(allPoints, distanceMatrix);
+        } catch (error) {
+            if (error.name === 'AbortError') {
+                const abortError = new Error(ERROR_MESSAGES.REQUEST_CANCELED);
+                abortError.status = 499;
+                throw abortError;
+            }
+            throw error.message in ERROR_MESSAGES
+                ? error
+                : Object.assign(new Error('Failed to optimize route'), { status: 500, details: error.message });
+        }
+    }
+
+    static fallbackOptimization(allPoints, distanceMatrix) {
+        if (!allPoints.length) {
+            return { waypointOrder: [], estimatedDuration: 0, estimatedDistance: 0 };
+        }
+
+        const n = allPoints.length;
+        const visited = new Set();
+        const waypointOrder = [];
+        let currentIndex = null;
+        let totalDuration = 0;
+        let totalDistance = 0;
+
+        while (visited.size < n) {
+            let minDuration = Infinity;
+            let nextIndex = null;
+
+            for (let i = 0; i < n; i++) {
+                if (!visited.has(i)) {
+                    const duration = distanceMatrix[currentIndex !== null ? currentIndex + 1 : 0][i + 1]?.duration;
+                    if (duration && duration < minDuration) {
+                        minDuration = duration;
+                        nextIndex = i;
+                    }
+                }
+            }
+
+            if (nextIndex === null) {
+                break;
+            }
+
+            waypointOrder.push(nextIndex);
+            visited.add(nextIndex);
+            if (currentIndex !== null) {
+                totalDuration += distanceMatrix[currentIndex + 1][nextIndex + 1]?.duration || 0;
+                totalDistance += distanceMatrix[currentIndex + 1][nextIndex + 1]?.distance || 0;
+            }
+            currentIndex = nextIndex;
+        }
+
+        if (waypointOrder.length > 0) {
+            totalDuration += distanceMatrix[0][waypointOrder[0] + 1]?.duration || 0;
+            totalDistance += distanceMatrix[0][waypointOrder[0] + 1]?.distance || 0;
+        }
+
+        logger.info('Fallback optimization used', { waypointOrder, totalDuration, totalDistance });
+        return {
+            waypointOrder,
+            estimatedDuration: totalDuration,
+            estimatedDistance: totalDistance
+        };
+    }
+
+    static extractJsonFromResponse(response) {
+        // Extract JSON between first { and last }
+        const start = response.indexOf('{');
+        const end = response.lastIndexOf('}');
+        if (start === -1 || end === -1 || start > end) {
+            throw new Error('No valid JSON object found in response');
+        }
+        return response.slice(start, end + 1);
+    }
+
+    static fallbackOptimization(allPoints, distanceMatrix) {
+        if (!allPoints.length) {
+            return { waypointOrder: [], estimatedDuration: 0, estimatedDistance: 0 };
+        }
+
+        // Nearest neighbor heuristic
+        const n = allPoints.length;
+        const visited = new Set();
+        const waypointOrder = [];
+        let currentIndex = null; // Start after origin
+        let totalDuration = 0;
+        let totalDistance = 0;
+
+        // Add points one by one
+        while (visited.size < n) {
+            let minDuration = Infinity;
+            let nextIndex = null;
+
+            for (let i = 0; i < n; i++) {
+                if (!visited.has(i)) {
+                    const duration = distanceMatrix[currentIndex !== null ? currentIndex + 1 : 0][i + 1]?.duration;
+                    if (duration && duration < minDuration) {
+                        minDuration = duration;
+                        nextIndex = i;
+                    }
+                }
+            }
+
+            if (nextIndex === null) {
+                // No valid next point, break to avoid infinite loop
+                break;
+            }
+
+            waypointOrder.push(nextIndex);
+            visited.add(nextIndex);
+            if (currentIndex !== null) {
+                totalDuration += distanceMatrix[currentIndex + 1][nextIndex + 1]?.duration || 0;
+                totalDistance += distanceMatrix[currentIndex + 1][nextIndex + 1]?.distance || 0;
+            }
+            currentIndex = nextIndex;
+        }
+
+        // Add duration/distance from origin to first point
+        if (waypointOrder.length > 0) {
+            totalDuration += distanceMatrix[0][waypointOrder[0] + 1]?.duration || 0;
+            totalDistance += distanceMatrix[0][waypointOrder[0] + 1]?.distance || 0;
+        }
+
+        logger.info('Fallback optimization used', { waypointOrder, totalDuration, totalDistance });
+        return {
+            waypointOrder,
+            estimatedDuration: totalDuration,
+            estimatedDistance: totalDistance
+        };
+    }
+
 
     static async detectAnomalies(dataType, data, controller = new AbortController()) {
         try {

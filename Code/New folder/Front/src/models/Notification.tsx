@@ -4,7 +4,7 @@ interface Notification {
     type: string;
     message: string;
     status: 'pending' | 'sent' | 'read' | 'failed';
-    channel: 'websocket' | 'email' | 'sms' | 'in-app';
+    channel: 'email' | 'sms' | 'in-app';
     createdAt: Date;
     updatedAt: Date;
 }

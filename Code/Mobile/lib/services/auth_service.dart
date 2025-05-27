@@ -149,26 +149,49 @@ class AuthService {
       );
       if (response.statusCode == 200) {
         final result = json.decode(response.body);
-        // Ensure roles are included
-        if (result['user'] != null &&
-            (result['user']['roles'] == null || result['user']['roles'].isEmpty) &&
-            result['accessToken'] != null) {
+        if (kDebugMode) {
+          print('Login response: ${jsonEncode(result)}');
+        }
+        // Always attempt to inject roles from JWT if accessToken is present
+        if (result['accessToken'] != null) {
           final decodedToken = JwtDecoder.decode(result['accessToken']);
           final realmRoles = (decodedToken['realm_access']?['roles'] as List<dynamic>?) ?? [];
-          result['user']['roles'] = realmRoles
-              .asMap()
-              .entries
-              .map((e) => {
-            'roleID': (e.key + 1).toString(),
-            'name': e.value.toString(),
-            'description': null,
-          })
-              .toList();
+          final userId = decodedToken['sub']?.toString() ?? 'unknown';
+          if (realmRoles.isNotEmpty || result['user'] == null) {
+            // Initialize user object if missing or roles are empty
+            result['user'] ??= {
+              'userID': userId,
+              'roles': [],
+            };
+            result['user']['roles'] = realmRoles
+                .asMap()
+                .entries
+                .map((e) => {
+              'roleID': (e.key + 1).toString(),
+              'name': e.value.toString(),
+              'description': null,
+            })
+                .toList();
+          }
+        }
+        if (result['user']?['roles'] == null || result['user']['roles'].isEmpty) {
+          if (kDebugMode) {
+            print('Warning: No roles found in user object after JWT injection');
+          }
+        }
+        if (result['user']?['userID'] == null) {
+          if (kDebugMode) {
+            print('Warning: userID missing in user object');
+          }
+          result['user']['userID'] = JwtDecoder.decode(result['accessToken'])['sub']?.toString() ?? 'unknown';
         }
         return result;
       }
       throw Exception(_parseError(response));
     } catch (e) {
+      if (kDebugMode) {
+        print('Login error: $e');
+      }
       throw Exception(_parseError(e));
     }
   }
@@ -346,6 +369,7 @@ class AuthService {
         return 'An unexpected error occurred.';
     }
   }
+
 
 
   // Makes an authenticated request with automatic token refresh.

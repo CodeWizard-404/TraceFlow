@@ -396,7 +396,7 @@ body.dark .table-body .table-row:hover {
 
 .roles-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 1rem;
     margin-bottom: 1rem;
 }
@@ -1664,14 +1664,12 @@ body.dark .dropdown-unit:hover {
 @keyframes expand {
     from {
         opacity: 0;
-        transform: scale(0.98);
         /* Slight zoom-in effect */
         max-height: 0;
     }
 
     to {
         opacity: 1;
-        transform: scale(1);
         max-height: 700px;
         /* Adjusted for content */
     }
@@ -2092,7 +2090,7 @@ body.dark .supervisor-toggle-button:hover:not(.active) {
     margin-bottom: 15px;
     max-width: 500px;
     position: fixed;
-    top: -5rem;
+    top: 0rem;
     left: 50%;
     transform: translateX(-50%);
     z-index: 1000;
@@ -2129,8 +2127,6 @@ body.dark .close-error {
     justify-content: center;
     align-items: center;
     z-index: 1000;
-    opacity: 0;
-    transition: opacity 0.3s ease-in-out;
 }
 
 body.dark .confirmation-modal-overlay {
@@ -2138,11 +2134,11 @@ body.dark .confirmation-modal-overlay {
 }
 
 .confirmation-modal-overlay.fade-in {
-    opacity: 1;
+    animation: fadeIn 0.3s ease-in;
 }
 
 .confirmation-modal-overlay.fade-out {
-    opacity: 0;
+    animation: fadeOut 0.3s ease-out;
 }
 
 /* Confirmation Modal */
@@ -2162,6 +2158,8 @@ body.dark .confirmation-modal {
     background: #222222;
     box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.3);
 }
+
+
 
 
 
@@ -2221,6 +2219,10 @@ body.dark .confirm-button:hover {
     border-radius: 3.125rem;
     cursor: pointer;
     transition: all 0.3s ease;
+}
+
+body.dark .cancel-button {
+    background: #333;
 }
 
 
@@ -3134,6 +3136,7 @@ body.dark .pagination button:disabled {
     /* Consistent with other buttons */
 
 }
+
 
 
 
@@ -4373,14 +4376,16 @@ body.dark .pill:hover {
 /* Specific pill variants */
 .pill-type,
 .pill-channel,
-.pill-role {
+.pill-role,
+.pill-priority {
     background: #fff;
     border: 1px solid #4cb1c7;
 }
 
 body.dark .pill-type,
 body.dark .pill-channel,
-body.dark .pill-role {
+body.dark .pill-role,
+body.dark .pill-priority {
     background: #222222;
     border: 1px solid #63b3ed;
 }
@@ -5033,7 +5038,7 @@ body.dark .reset-confirm-actions .cancel-button:hover {
     }
 
     to {
-        opacity: 1oppel;
+        opacity: 1;
     }
 }
 
@@ -6011,7 +6016,7 @@ body.dark label {
 /* Error text styling */
 .error-text,
 .error-message {
-    color: #e81f76;
+    color: #fff;
     font-size: 0.75rem;
     margin-top: 0.25rem;
     display: block;
@@ -6019,7 +6024,7 @@ body.dark label {
 
 body.dark .error-text,
 body.dark .error-message {
-    color: #e81f76;
+    color: #fff;
 }
 
 /* Responsive Design */
@@ -6030,7 +6035,6 @@ body.dark .error-message {
     input[type="tel"],
     select {
         font-size: 0.875rem;
-        padding: 0.75rem;
     }
 
     label {

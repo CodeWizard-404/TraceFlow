@@ -346,7 +346,7 @@ class PermissionService {
                 }
 
                 // Fetch all roles associated with this permission in the local DB, excluding the current role
-                const [dbRoles] = await sequelize.query(`
+                const dbRoles = await sequelize.query(`
                     SELECT r.name
                     FROM "Roles" r
                     JOIN "RolePermissions" rp ON r."roleID" = rp."roleID"

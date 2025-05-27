@@ -776,3 +776,9 @@ body.dark .progress-bar {
 body.dark .progress-bar-fill {
     background-color: #63b3ed;
 }
+
+
+
+.search-input {
+    padding: 0rem;
+}

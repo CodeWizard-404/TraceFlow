@@ -369,20 +369,19 @@ class ReceiptBookController {
                 return res.status(400).json({ error: 'Book ID is required' });
             }
             const receiptBook = await ReceiptBookService.getReceiptBookById(bookID);
-            const plainBook = receiptBook.toJSON();
             const responseBook = {
-                bookID: plainBook.bookID,
-                number: plainBook.number,
-                type: plainBook.ReceiptBookType ? plainBook.ReceiptBookType.name : null,
-                status: plainBook.status,
-                qrCode: plainBook.qrCode ? Buffer.from(plainBook.qrCode).toString('base64') : null,
-                agentID: plainBook.agentID,
-                currentHolderID: plainBook.currentHolderID,
-                typeID: plainBook.typeID,
-                CurrentHolder: plainBook.CurrentHolder || null,
-                ReceiptBookTransfers: plainBook.ReceiptBookTransfers || [],
-                Agent: plainBook.Agent || null,
-                ReceiptStub: plainBook.ReceiptStub || null,
+                bookID: receiptBook.bookID,
+                number: receiptBook.number,
+                type: receiptBook.type, // Already set by ReceiptBookService
+                status: receiptBook.status,
+                qrCode: receiptBook.qrCode ? Buffer.from(receiptBook.qrCode).toString('base64') : null,
+                agentID: receiptBook.agentID,
+                currentHolderID: receiptBook.currentHolderID,
+                typeID: receiptBook.typeID,
+                CurrentHolder: receiptBook.holder || null, // Use the transformed holder
+                ReceiptBookTransfers: receiptBook.ReceiptBookTransfers || [],
+                Agent: receiptBook.Agent || null,
+                ReceiptStub: receiptBook.ReceiptStub || null,
             };
             logger.info('Successfully fetched receipt book', {
                 route: 'receipt-books',

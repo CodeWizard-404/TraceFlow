@@ -1,12 +1,12 @@
 class Role {
   final String? roleID;
   final String name;
-  final String? description;
+  final String description; // Non-nullable, with default
 
   Role({
     this.roleID,
     required this.name,
-    this.description,
+    this.description = '', // Default to empty string
   });
 
   factory Role.fromJson(dynamic json) {
@@ -15,16 +15,18 @@ class Role {
     } else if (json is Map<String, dynamic>) {
       return Role(
         roleID: json['roleID']?.toString(),
-        name: json['name']?.toString() ?? '',
-        description: json['description']?.toString(),
+        name: json['name']?.toString() ?? '', // Default to empty string
+        description: json['description']?.toString() ?? '', // Handle null explicitly
       );
     }
-    return Role(name: '');
+    return Role(name: ''); // Fallback
   }
 
-  Map<String, dynamic> toJson() => {
-    'roleID': roleID,
-    'name': name,
-    'description': description,
-  };
+  Map<String, dynamic> toJson() {
+    return {
+      'roleID': roleID,
+      'name': name,
+      'description': description,
+    };
+  }
 }

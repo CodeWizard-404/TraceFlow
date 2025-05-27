@@ -5,7 +5,7 @@ import { CollectStubResponse, ValidateStubCollectionResponse, ArchiveStubRespons
 // Error response type for Axios errors
 interface AxiosErrorResponse {
     response?: {
-        data?: { error?: string };
+        data?: { error?: string; results?: { bookID: string; status: string; result?: any; error?: string }[] };
         status?: number;
     };
 }
@@ -61,15 +61,15 @@ export const validateStubCollection = async (
     }
 };
 
-// Archive a receipt stub
-export const archiveStub = async (bookID: string): Promise<ArchiveStubResponse> => {
+// Archive receipt stubs
+export const archiveStub = async (bookIDs: string[]): Promise<ArchiveStubResponse> => {
     try {
-        if (!bookID) {
-            throw new Error("Book ID is required.");
+        if (!bookIDs || !Array.isArray(bookIDs) || bookIDs.length === 0) {
+            throw new Error("Array of book IDs is required.");
         }
-        const response = await api.post<ArchiveStubResponse>(`/receipt-stubs/${bookID}/archive`, {});
+        const response = await api.post<ArchiveStubResponse>("/receipt-stubs/archive", { bookIDs });
         return response.data;
     } catch (error) {
-        throw new Error(handleApiError(error, "Unable to archive stub."));
+        throw new Error(handleApiError(error, "Unable to archive stubs."));
     }
 };

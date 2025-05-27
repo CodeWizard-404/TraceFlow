@@ -26,32 +26,17 @@ import { useAuth } from "../../context/AuthContext";
 import VisitStatus from "../../models/Enum/VisitStatus";
 import Visit from "../../models/Visit";
 import Agent from "../../models/Agent";
-import User from "../../models/User";
-import { Checklist } from "../../models/Checklist";
-import { Reason } from "../../models/Reason";
-import Region from "../../models/Region";
-import Governorate from "../../models/Governorate";
-import Delegation from "../../models/Delegation";
-import { getAgentById } from "../../apis/agentAPI";
-import {
-    getSupervisorsByRegionalManager,
-    getRegionalManagerBySupervisor,
-    getAllUsers,
-} from "../../apis/userAPI";
-import { getAllChecklists } from "../../apis/checklistAPI";
-import { getAllReasons } from "../../apis/reasonAPI";
+import { getAgentById, getAgentSupervisor } from "../../apis/agentAPI";
 import { validateTimesheet } from "../../apis/timesheetAPI";
 import { getVisitById, deleteVisit } from "../../apis/visitAPI";
-import {
-    getAllRegions,
-    getAllGovernorates,
-    getAllDelegations,
-    getRegionsByUser,
-    getLocationDetailsById,
-} from "../../apis/locationApi";
+import { getAllRegions, getGovernoratesByRegion, getDelegationsByGovernorate, getGeocode } from "../../apis/locationApi";
 import { useTranslation } from "react-i18next";
 import CalendarSyncButton from "../../components/Google/CalendarSyncButton";
+import DirectionsModal from "../../components/Google/VisitDirectionsModal";
 import { io } from 'socket.io-client';
+import User from "../../models/User";
+import { FaRoute } from "react-icons/fa";
+import { fetchUserProfile } from "../../apis/userAPI";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
@@ -62,10 +47,7 @@ const PERMISSIONS = {
     VALIDATE_TIMESHEETS: import.meta.env.VITE_PERMISSIONS_VALIDATE_TIMESHEETS,
     EDIT_TIMESHEETS_FOR_SUPERVISOR: import.meta.env.VITE_PERMISSIONS_EDIT_VISIT,
     DELETE_TIMESHEETS_FOR_SUPERVISOR: import.meta.env.VITE_PERMISSIONS_DELETE_VISIT,
-    READ_SUPERVISORS: import.meta.env.VITE_PERMISSIONS_READ_SUPERVISORS,
-    READ_AGENTS_BY_LOCATION: import.meta.env.VITE_PERMISSIONS_READ_AGENTS_BY_DELEGATION,
-    READ_REASON_ITEMS: import.meta.env.VITE_PERMISSIONS_READ_REASON_ITEMS,
-    READ_CHECKLISTS_ITEMS: import.meta.env.VITE_PERMISSIONS_READ_CHECKLISTS_ITEMS,
+    READ_AGENTS_BY_LOCATION: import.meta.env.VITE_PERMISSIONS_READ_AGENTS_BY_LOCATION,
 } as const;
 
 const ROLES = {
@@ -83,17 +65,20 @@ const VisitDetailsView: React.FC = () => {
 
     const [visit, setVisit] = useState<Visit | null>(null);
     const [agent, setAgent] = useState<Agent | null>(null);
+    const [supervisor, setSupervisor] = useState<User | null>(null);
     const [displayLocation, setDisplayLocation] = useState<string | null>(null);
-    const [, setRegions] = useState<Region[]>([]);
-    const [, setGovernorates] = useState<Governorate[]>([]);
-    const [, setDelegations] = useState<Delegation[]>([]);
-    const [, setReasons] = useState<Reason[]>([]);
-    const [, setChecklists] = useState<Checklist[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
-    const [, setRegionalManagers] = useState<User[]>([]);
-    const [, setSupervisors] = useState<User[]>([]);
+    const [locationData, setLocationData] = useState<{
+        regionID: string;
+        governorateID: string;
+        delegationID: string;
+    }>({ regionID: "", governorateID: "", delegationID: "" });
+    const [showDirectionsModal, setShowDirectionsModal] = useState<boolean>(false);
+    const [destination, setDestination] = useState<{ lat: number; lng: number; address: string } | null>(null);
+    const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+    const [hasCalendarAccess, setHasCalendarAccess] = useState<boolean>(false);
 
     const userPermissions = useMemo(
         () => ({
@@ -112,40 +97,49 @@ const VisitDetailsView: React.FC = () => {
             canDeleteTimesheets: effectivePermissions?.some(
                 (p) => p.name === PERMISSIONS.DELETE_TIMESHEETS_FOR_SUPERVISOR
             ),
-            canReadSupervisors: effectivePermissions?.some(
-                (p) => p.name === PERMISSIONS.READ_SUPERVISORS
-            ),
             canReadAgentsByLocation: effectivePermissions?.some(
                 (p) => p.name === PERMISSIONS.READ_AGENTS_BY_LOCATION
-            ),
-            canReadReasons: effectivePermissions?.some(
-                (p) => p.name === PERMISSIONS.READ_REASON_ITEMS
-            ),
-            canReadChecklists: effectivePermissions?.some(
-                (p) => p.name === PERMISSIONS.READ_CHECKLISTS_ITEMS
             ),
         }),
         [effectivePermissions]
     );
 
-    const isSuperAdmin = useMemo(
-        () => user?.Roles?.some((role) => role.name === ROLES.SUPER_ADMIN),
-        [user]
-    );
-    const isRegionalManager = useMemo(
-        () => user?.Roles?.some((role) => role.name === ROLES.REGIONAL_MANAGER),
-        [user]
-    );
     const isSupervisor = useMemo(
         () => user?.Roles?.some((role) => role.name === ROLES.SUPERVISOR),
         [user]
     );
-    const isDirector = useMemo(
-        () => user?.Roles?.some((role) => role.name === ROLES.DIRECTOR),
-        [user]
+
+    const isVisitSupervisor = useMemo(
+        () => supervisor?.userID === user?.userID,
+        [supervisor, user]
     );
 
-    const isCoordinates = (str: string): boolean => /^\s*-?\d+\.\d+\s*,\s*-?\d+\.\d+\s*$/.test(str);
+    useEffect(() => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const { latitude, longitude } = position.coords;
+                    setUserLocation({ lat: latitude, lng: longitude });
+                },
+                (error) => {
+                    console.error('Geolocation error:', error);
+                    setError(t("visitDetails.error.locationAccess"));
+                }
+            );
+        }
+    }, [t]);
+
+    useEffect(() => {
+        const fetchUserCalendarAccess = async () => {
+            try {
+                const response = await fetchUserProfile();
+                setHasCalendarAccess(response.hasCalendarAccess || false);
+            } catch (err) {
+                console.error('Failed to fetch calendar access:', err);
+            }
+        };
+        if (user?.userID) fetchUserCalendarAccess();
+    }, [user]);
 
     const fetchVisitData = useCallback(async () => {
         if (!idVisit || !userPermissions.canAccessVisitDetails) {
@@ -164,105 +158,55 @@ const VisitDetailsView: React.FC = () => {
                 : null;
             setAgent(agentData);
 
-            if (visitData.agentID && agentData) {
-                if (agentData.location && isCoordinates(agentData.location)) {
-                    try {
-                        const locationID = agentData.delegationID;
-                        const response = await getLocationDetailsById(locationID as string);
-                        setDisplayLocation(response.success && response.address ? response.address : t("visitDetails.whenWhere.na"));
-                    } catch {
-                        setDisplayLocation(t("visitDetails.whenWhere.na"));
-                    }
-                } else {
-                    try {
-                        const locationID = agentData.delegationID;
-                        const response = await getLocationDetailsById(locationID as string);
-                        setDisplayLocation(response.success && response.address ? response.address : t("visitDetails.whenWhere.na"));
-                    } catch {
-                        setDisplayLocation(t("visitDetails.whenWhere.na"));
-                    }
-                }
-            } else if (visitData.location) {
-                if (isCoordinates(visitData.location)) {
-                    try {
-                        const response = await getLocationDetailsById(visitData.location);
-                        setDisplayLocation(response.success && response.address ? response.address : t("visitDetails.whenWhere.na"));
-                    } catch {
-                        setDisplayLocation(t("visitDetails.whenWhere.na"));
-                    }
-                } else {
-                    setDisplayLocation(visitData.location);
-                }
-            } else {
-                setDisplayLocation(t("visitDetails.whenWhere.na"));
+            // Fetch supervisor if agent exists
+            let supervisorData = null;
+            if (agentData?.agentID) {
+                supervisorData = await getAgentSupervisor(agentData.agentID);
+                setSupervisor(supervisorData);
             }
 
-            const promises: [
-                Promise<Region[]>,
-                Promise<Governorate[]>,
-                Promise<Delegation[]>,
-                Promise<Reason[]>,
-                Promise<Checklist[]>,
-                Promise<User[]>,
-                Promise<User[]>
-            ] = [
-                    userPermissions.canReadAgentsByLocation
-                        ? isSupervisor
-                            ? getRegionalManagerBySupervisor(user!.userID).then((rms) =>
-                                rms.length > 0 ? getRegionsByUser(rms[0].userID) : []
-                            )
-                            : isRegionalManager
-                                ? getRegionsByUser(user!.userID)
-                                : getAllRegions()
-                        : Promise.resolve([]),
-                    getAllGovernorates(),
-                    getAllDelegations(),
-                    userPermissions.canReadReasons
-                        ? getAllReasons()
-                        : Promise.resolve([]),
-                    userPermissions.canReadChecklists
-                        ? getAllChecklists()
-                        : Promise.resolve([]),
-                    userPermissions.canReadSupervisors &&
-                        (isSuperAdmin || isDirector || isRegionalManager)
-                        ? isRegionalManager
-                            ? getSupervisorsByRegionalManager(user!.userID)
-                            : getAllUsers().then((users) =>
-                                users.filter((u) =>
-                                    u.Roles?.some(
-                                        (role) => role.name.toLowerCase() === ROLES.SUPERVISOR.toLowerCase()
-                                    )
-                                )
-                            )
-                        : Promise.resolve([]),
-                    (isSuperAdmin || isDirector)
-                        ? getAllUsers().then((users) =>
-                            users.filter((u) =>
-                                u.Roles?.some(
-                                    (role) => role.name.toLowerCase() === ROLES.REGIONAL_MANAGER.toLowerCase()
-                                )
-                            )
-                        )
-                        : Promise.resolve([]),
-                ];
+            // Parse location string and fetch IDs
+            let regionID = "", governorateID = "", delegationID = "";
+            if (visitData.location) {
+                const [regionName, governorateName, delegationName] = visitData.location.split(", ").map(s => s.trim());
+                const regions = await getAllRegions();
+                const region = regions.find(r => r.name === regionName);
+                if (region) {
+                    regionID = region.regionID;
+                    const governorates = await getGovernoratesByRegion(regionID);
+                    const governorate = governorates.find(g => g.name === governorateName);
+                    if (governorate) {
+                        governorateID = governorate.governorateID;
+                        const delegations = await getDelegationsByGovernorate(governorateID);
+                        const delegation = delegations.find(d => d.name === delegationName);
+                        if (delegation) {
+                            delegationID = delegation.delegationID;
+                        }
+                    }
+                }
+            }
+            setLocationData({ regionID, governorateID, delegationID });
+            setDisplayLocation(visitData.location || t("visitDetails.whenWhere.na"));
 
-            const [
-                regionsData,
-                governoratesData,
-                delegationsData,
-                reasonsData,
-                checklistsData,
-                supervisorsData,
-                regionalManagersData,
-            ] = await Promise.all(promises);
-
-            setRegions(regionsData);
-            setGovernorates(governoratesData);
-            setDelegations(delegationsData);
-            setReasons(reasonsData);
-            setChecklists(checklistsData);
-            setSupervisors(supervisorsData);
-            setRegionalManagers(regionalManagersData);
+            // Set destination for directions
+            if (agentData?.latitude && agentData?.longitude && agentData?.location) {
+                setDestination({
+                    lat: agentData.latitude,
+                    lng: agentData.longitude,
+                    address: agentData.location,
+                });
+            } else if (visitData.location || visitData.address) {
+                try {
+                    const geocode = await getGeocode(visitData.location ? visitData.location! : visitData.address!);
+                    setDestination({
+                        lat: geocode.latitude,
+                        lng: geocode.longitude,
+                        address: geocode.formattedAddress,
+                    });
+                } catch (err) {
+                    console.error('Geocode error:', err);
+                }
+            }
         } catch (err: unknown) {
             const errorMessage =
                 err instanceof Error ? err.message : t("visitDetails.error.fetchFailed");
@@ -277,20 +221,33 @@ const VisitDetailsView: React.FC = () => {
         if (permissionsLoaded) fetchVisitData();
     }, [fetchVisitData, permissionsLoaded]);
 
+    // VisitDetailsView.tsx
     useEffect(() => {
         if (!user?.userID || !idVisit) return;
+        const token = localStorage.getItem('accessToken');
+        if (!token) {
+            console.error('No access token found for socket connection');
+            return;
+        }
+
         const socket = io(SOCKET_URL, {
-            auth: { token: localStorage.getItem('accessToken') }
+            auth: { token },
         });
 
         socket.on('connect', () => {
+            console.log('Socket connected');
             socket.emit('join', user.userID);
         });
 
         socket.on('calendar:update', (data: { visitId: string; calendarEventId?: string; action: 'created' | 'updated' | 'deleted' }) => {
+            console.log('Received calendar update:', data);
             if (data.visitId === idVisit) {
                 setVisit((prev) => prev ? { ...prev, calendarEventId: data.action === 'deleted' ? undefined : data.calendarEventId } : prev);
             }
+        });
+
+        socket.on('connect_error', (err) => {
+            console.error('Socket connection error:', err.message);
         });
 
         return () => {
@@ -341,7 +298,13 @@ const VisitDetailsView: React.FC = () => {
     };
 
     const handleEditToggle = () => {
-        navigate(`/visit/edit/${idVisit}`);
+        navigate(`/visit/edit/${idVisit}`, {
+            state: {
+                visit,
+                agent,
+                locationData,
+            },
+        });
     };
 
     const handleDelete = async () => {
@@ -364,6 +327,12 @@ const VisitDetailsView: React.FC = () => {
     const handleImageClick = (photo: string) =>
         setSelectedImage(`${BASE_URL}${photo}`);
     const handleCloseFullscreen = () => setSelectedImage(null);
+
+    const handleLocationClick = () => {
+        if (destination) {
+            setShowDirectionsModal(true);
+        }
+    };
 
     const photosCount =
         t("visitDetails.photos.count", { count: visit?.photos?.length || 0 }) ||
@@ -462,7 +431,19 @@ const VisitDetailsView: React.FC = () => {
                                 <FaClock /> {visit.time.split(":").slice(0, 2).join(":")}
                             </p>
                             <p>
-                                <FaMapMarkerAlt /> {displayLocation}
+                                <FaMapMarkerAlt />
+                                <span
+                                    onClick={handleLocationClick}
+                                    style={{ cursor: destination ? 'pointer' : 'default' }}
+                                    aria-label={t("visitDetails.aria.viewDirections")}
+                                >
+                                    {" "}{displayLocation}
+                                    {destination && (
+                                        <span className="directions-icon">
+                                            <FaRoute />
+                                        </span>
+                                    )}
+                                </span>
                             </p>
                             {visit.calendarEventId ? (
                                 <p>
@@ -473,6 +454,7 @@ const VisitDetailsView: React.FC = () => {
                                     visitId={visit.visitID}
                                     isSupervisor={!!isSupervisor}
                                     hasCalendarEvent={!!visit.calendarEventId}
+                                    hasCalendarAccess={hasCalendarAccess}
                                 />
                             )}
                         </div>
@@ -500,6 +482,22 @@ const VisitDetailsView: React.FC = () => {
                             )}
                         </div>
                     </div>
+
+                    {!isVisitSupervisor && supervisor && (
+                        <div className="visit-details-card">
+                            <h2>
+                                <FaUser /> {t("visitDetails.supervisor.title")}
+                            </h2>
+                            <div className="card-content">
+                                <p>
+                                    <BsPersonLinesFill /> {supervisor.firstname} {supervisor.lastname}
+                                </p>
+                                <p>
+                                    <FaPhone /> {supervisor.phone || t("visitDetails.agent.na")}
+                                </p>
+                            </div>
+                        </div>
+                    )}
 
                     <div className="visit-details-card">
                         <h2>
@@ -640,6 +638,17 @@ const VisitDetailsView: React.FC = () => {
                             <FaTimes />
                         </button>
                     </div>
+                )}
+
+                {showDirectionsModal && destination && (
+                    <DirectionsModal
+                        isOpen={showDirectionsModal}
+                        onClose={() => setShowDirectionsModal(false)}
+                        destination={destination}
+                        userLocation={userLocation}
+                        agent={agent ? { name: agent.name, lastname: agent.lastname } : null}
+                        delegation={locationData.delegationID ? { name: displayLocation?.split(', ')[2] || 'Unknown' } : null}
+                    />
                 )}
             </section>
         </div>

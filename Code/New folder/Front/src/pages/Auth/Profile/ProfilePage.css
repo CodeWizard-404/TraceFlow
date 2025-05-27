@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-
 .profile-page {
     padding: 1.5rem;
     max-width: 1440px;
@@ -655,9 +653,6 @@ body.dark .search-input {
     color: #e5e7eb;
 }
 
-.search-input::placeholder {
-    color: #9ca3af;
-}
 
 .toggle-read-btn {
     padding: 0.5rem 1.25rem;
@@ -1273,4 +1268,112 @@ body.dark .popup-close-btn:hover {
     .popup-profile-pic {
         max-height: 250px;
     }
+}
+
+.notification-toggle {
+    display: flex;
+    flex-direction: row;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+    margin-top: -0.5rem;
+}
+
+
+.reset-btn, .cancel-btn, .save-btn {
+    padding: 0.75rem 1.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 3.125rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: background 0.3s ease, transform 0.3s ease;
+}
+
+.reset-btn {
+    background: #6b7280;
+    color: #fff;
+}
+
+body.dark .reset-btn {
+    background: #9ca3af;
+}
+
+.reset-btn:hover {
+    background: #4b5563;
+    transform: translateY(-2px);
+}
+
+body.dark .reset-btn:hover {
+    background: #6b7280;
+}
+
+.reset-btn:disabled {
+    background: #d1d5db;
+    cursor: not-allowed;
+    transform: none;
+}
+
+body.dark .reset-btn:disabled {
+    background: #6b7280;
+}
+
+.cancel-btn {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+body.dark .cancel-btn {
+    background: #7f1d1d;
+    color: #f3e8e8;
+}
+
+.cancel-btn:hover {
+    background: #f4c4c8;
+    transform: translateY(-2px);
+}
+
+body.dark .cancel-btn:hover {
+    background: #991b1b;
+}
+
+.cancel-btn:disabled {
+    background: #d1d5db;
+    cursor: not-allowed;
+    transform: none;
+}
+
+body.dark .cancel-btn:disabled {
+    background: #6b7280;
+}
+
+.save-btn {
+    background: #4cb1c7;
+    color: #fff;
+}
+
+body.dark .save-btn {
+    background: #63b3ed;
+}
+
+.save-btn:hover {
+    background: #3a8fa2;
+    transform: translateY(-2px);
+}
+
+body.dark .save-btn:hover {
+    background: #4a83ce;
+}
+
+.save-btn:disabled {
+    background: #d1d5db;
+    cursor: not-allowed;
+    transform: none;
+}
+
+body.dark .save-btn:disabled {
+    background: #6b7280;
 }

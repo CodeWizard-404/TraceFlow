@@ -12,8 +12,8 @@ import AccessDenied from './pages/Error/AccessDenied';
 import './App.css';
 import LoginPage from './pages/Auth/Login';
 import ProfilePage from './pages/Auth/Profile/ProfilePage';
-import Entry from './pages/Dashboard/Entry';
 import AgentManagement from './pages/Dashboard/AgentManagement';
+
 
 // Lazy load route components
 const Timesheets = React.lazy(() => import('./pages/Timesheet/Timesheets'));
@@ -27,6 +27,7 @@ const AdminDashboard = React.lazy(() => import('./pages/Admin/AdminDashboard'));
 const ReceiptBooks = React.lazy(() => import('./pages/Receipt/ReceiptBooks'));
 const TransferReceiptBook = React.lazy(() => import('./pages/Receipt/TransferReceiptBook'));
 const ReceiptBookHistory = React.lazy(() => import('./pages/Receipt/ReceiptBookHistory'));
+const Dashboard = React.lazy(() => import('./pages/Dashboard/Dashboard'));
 
 // Static permissions and roles from .env
 const PERMISSIONS = {
@@ -41,6 +42,7 @@ const PERMISSIONS = {
   TRANSFER_RECEIPT_BOOKS: import.meta.env.VITE_PERMISSIONS_TRANSFER_RECEIPT_BOOKS,
   ACCESS_RECEIPT_BOOKS_BY_HOLDER: import.meta.env.VITE_PERMISSIONS_ACCESS_RECEIPT_BOOKS_BY_HOLDER,
   EDIT_VISIT_DETAILS: import.meta.env.VITE_PERMISSIONS_EDIT_VISIT,
+  ACCESS_AGENTS_MAP: import.meta.env.VITE_PERMISSIONS_READ_AGENTS_LOCATIONS
 };
 
 const ROLES = {
@@ -170,12 +172,18 @@ const AppContent: React.FC = React.memo(() => {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/access-denied" element={<AccessDenied />} />
             <Route path="/" element={<Navigate to="/login" replace />} />
-            <Route path="/agents" element={<AgentManagement />} />
+            <Route path="/agents" element={
+              <ProtectedRoute requiredPermissions={[PERMISSIONS.ACCESS_AGENTS_MAP]}>
+                <AgentManagement />
+              </ProtectedRoute>
+            }
+            />
+
             <Route
               path="/dashboard"
               element={
                 <ProtectedRoute>
-                  <Entry />
+                  <Dashboard />
                 </ProtectedRoute>
               }
             />

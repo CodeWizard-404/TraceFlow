@@ -58,7 +58,6 @@
 .form-group .search-input,
 .form-group select {
     width: 100%;
-    padding: 0.625rem;
     font-size: 0.875rem;
     border: 1px solid #ddd;
     border-radius: 0.75rem;
@@ -178,7 +177,6 @@
     .form-group .search-input,
     .form-group select {
         font-size: 0.875rem;
-        padding: 0.75rem;
     }
 
     .submit-btn {

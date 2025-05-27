@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'role.dart';
 
 class User {
@@ -28,51 +29,32 @@ class User {
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
-    List<Role> rolesList = [];
+    print('Parsing user JSON: $json'); // Debug
 
-    // Handle different role formats
-    if (json['roles'] != null && json['roles'] is List) {
-      final rolesData = json['roles'] as List<dynamic>;
-      if (rolesData.isNotEmpty && rolesData.first is String) {
-        // Case: roles is a list of strings ["Supervisor", ...]
-        rolesList = rolesData
-            .asMap()
-            .entries
-            .map((e) => Role(
-          roleID: (e.key + 1).toString(),
-          name: e.value.toString(),
-          description: null,
-        ))
-            .toList();
-      } else {
-        // Case: roles is a list of objects [{"roleID": "", "name": ""}, ...]
-        rolesList = rolesData.map((r) => Role.fromJson(r)).toList();
-      }
-    } else if (json['realm_access'] != null &&
-        json['realm_access']['roles'] is List) {
-      // Case: roles are nested under realm_access (from JWT)
-      final realmRoles = json['realm_access']['roles'] as List<dynamic>;
-      rolesList = realmRoles
-          .asMap()
-          .entries
-          .map((e) => Role(
-        roleID: (e.key + 1).toString(),
-        name: e.value.toString(),
-        description: null,
-      ))
+    List<Role> rolesList = [];
+    if (json['roles'] is List) {
+      rolesList = (json['roles'] as List<dynamic>)
+          .map((r) {
+        try {
+          return Role.fromJson(r);
+        } catch (e) {
+          print('Error parsing role $r: $e'); // Debug
+          return Role(name: ''); // Fallback role
+        }
+      })
           .toList();
     }
 
     return User(
       userID: json['userID']?.toString(),
-      keycloakId: json['keycloakId']?.toString(),
-      firstName: json['firstname']?.toString(),
-      lastName: json['lastname']?.toString(),
-      phone: json['phone']?.toString(),
-      email: json['email']?.toString(),
-      isOnline: json['isOnline'] as bool?,
-      hasGoogleAuth: json['hasGoogleAuth'] as bool?,
-      hasCalendarAccess: json['hasCalendarAccess'] as bool?,
+      keycloakId: json['keycloakId']?.toString() ?? '',
+      firstName: json['firstname']?.toString() ?? '',
+      lastName: json['lastname']?.toString() ?? '',
+      phone: json['phone']?.toString() ?? '',
+      email: json['email']?.toString() ?? '',
+      isOnline: json['isOnline'] as bool? ?? false,
+      hasGoogleAuth: json['hasGoogleAuth'] as bool? ?? false,
+      hasCalendarAccess: json['hasCalendarAccess'] as bool? ?? false,
       pfp: json['PFP']?.toString(),
       roles: rolesList,
     );

@@ -116,7 +116,8 @@ class _AuthWrapperState extends State<AuthWrapper> {
       print('AuthWrapper build: user=${authProvider.user?.userID}, '
           'isLoading=${authProvider.isLoading}, '
           'isSupervisor=${authProvider.isSupervisor}, '
-          'requires2FA=${authProvider.requires2FA}');
+          'requires2FA=${authProvider.requires2FA}, '
+          'permissionsLoaded=${authProvider.permissionsLoaded}');
     }
 
     if (authProvider.isLoading) {
@@ -141,26 +142,28 @@ class _AuthWrapperState extends State<AuthWrapper> {
       return const LoginScreen();
     }
 
-    // Initialize notifications for authenticated Supervisor
-    if (authProvider.isSupervisor && authProvider.permissionsLoaded) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        notificationProvider.initialize(
-          authProvider.user!.userID!,
-          authProvider.userRoles ?? [],
-        );
-      });
+    if (!authProvider.permissionsLoaded) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    if (!authProvider.isSupervisor) {
+    /*if (!authProvider.isSupervisor) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        authProvider.logout();
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Access denied: Only Supervisors can log in.')),
         );
       });
       return const LoginScreen();
-    }
+    }*/
+
+    // Initialize notifications for authenticated Supervisor
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      notificationProvider.initialize(
+        authProvider.user!.userID!,
+        authProvider.userRoles ?? [],
+      );
+    });
 
     return const NavigationShell();
   }

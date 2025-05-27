@@ -17,6 +17,7 @@ import RoleView from "./roles_view";
 // Styles
 import "../AdminDashboard.css";
 import PermissionsClass from "models/Enum/PermissionsClass";
+import { useTranslation } from "react-i18next";
 
 // Props interface
 interface RolesListProps {
@@ -45,6 +46,7 @@ const ROLES = {
   DIRECTOR: import.meta.env.VITE_ROLES_DIRECTOR,
   PURCHASE_TEAM: import.meta.env.VITE_ROLES_PURCHASE_TEAM,
   STOCK_MANAGER: import.meta.env.VITE_ROLES_STOCK_MANAGER,
+  HR: import.meta.env.VITE_ROLES_HR,
   ADMIN: import.meta.env.VITE_ROLES_ADMIN,
   SUPER_ADMIN: import.meta.env.VITE_ROLES_SUPER_ADMIN,
 }
@@ -59,19 +61,18 @@ const viewVariants = {
 };
 
 // RolesList component, memoized
+// ... (other imports remain unchanged)
+
 const RolesList: React.FC<RolesListProps> = React.memo(
   ({ roles, setRoles, userRoles, view, setSelectedRole, setError, searchQuery, setConfirmation }) => {
-    // Auth context
     const { effectivePermissions } = useAuth();
-
-    // State declarations
+    const { t } = useTranslation(); // Add translation hook
     const [activeRolePopup, setActiveRolePopup] = useState<string | null>(null);
     const [expandedClasses, setExpandedClasses] = useState<Set<string>>(new Set());
     const [internalSearchQuery, setInternalSearchQuery] = useState(searchQuery);
-    const [loading, setLoading] = useState(true); // Initialize as true
-    const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null); // Track toggled role
+    const [loading, setLoading] = useState(true);
+    const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null);
 
-    // Memoized permissions object
     const userPermissions = useMemo(
       () => ({
         canUpdateRoles: effectivePermissions?.some(
@@ -84,32 +85,27 @@ const RolesList: React.FC<RolesListProps> = React.memo(
       [effectivePermissions]
     );
 
-    // Memoized super admin check
     const isSuperAdmin = useMemo(
       () => userRoles?.some((r) => r.name === import.meta.env.VITE_ROLES_SUPER_ADMIN),
       [userRoles]
     );
 
-    // Debounced search query setter
     const debouncedSetSearchQuery = useCallback(
       debounce((value: string) => setInternalSearchQuery(value), 300),
       []
     );
 
-    // Sync search query
     useEffect(() => {
       debouncedSetSearchQuery(searchQuery);
       return () => debouncedSetSearchQuery.cancel();
     }, [searchQuery, debouncedSetSearchQuery]);
 
-    // Dynamic loading state based on roles prop
     useEffect(() => {
       if (roles.length > 0) {
-        setLoading(false); // Set loading to false when roles are available
+        setLoading(false);
       }
     }, [roles]);
 
-    // Memoized filtered roles
     const filteredRoles = useMemo(() => {
       return roles.filter(
         (role) =>
@@ -118,37 +114,33 @@ const RolesList: React.FC<RolesListProps> = React.memo(
       );
     }, [roles, internalSearchQuery]);
 
-    // Handle role toggle
     const handleRoleToggle = useCallback(
       (role: Role) => {
         if (!userPermissions.canUpdateRoles) {
           return;
         }
         if (!isSuperAdmin && role.name === ROLES.ADMIN) {
-          setError("Only Super Admins can modify the Admin role.");
+          setError(t("adminDashboard.error.adminModifyRestricted"));
           return;
         }
         if (role.name === import.meta.env.VITE_ROLES_SUPER_ADMIN) {
-          setError("The Super Admin role cannot be modified.");
+          setError(t("adminDashboard.error.superAdminModifyRestricted"));
           return;
         }
         const fixedRoles = [
           ROLES.DIRECTOR,
           ROLES.REGIONAL_MANAGER,
           ROLES.SUPERVISOR,
+          ROLES.HR,
           ROLES.PURCHASE_TEAM,
-          ROLES.STOCK_MANAGER
+          ROLES.STOCK_MANAGER,
         ];
         if (fixedRoles.includes(role.name)) {
           setConfirmation({
             isOpen: true,
-            message:
-              "Warning: Modifying pre-made roles may affect system functionality. Are you sure you want to proceed?",
+            message: t("adminDashboard.actions.modifyPreMadeRolesWarning"),
             onConfirm: () => {
-              setSelectedRoleId((prev) => {
-                const newId = prev === role.roleID ? null : role.roleID;
-                return newId;
-              });
+              setSelectedRoleId((prev) => (prev === role.roleID ? null : role.roleID));
               setSelectedRole(role);
               setConfirmation(null);
             },
@@ -156,16 +148,12 @@ const RolesList: React.FC<RolesListProps> = React.memo(
           });
           return;
         }
-        setSelectedRoleId((prev) => {
-          const newId = prev === role.roleID ? null : role.roleID;
-          return newId;
-        });
+        setSelectedRoleId((prev) => (prev === role.roleID ? null : role.roleID));
         setSelectedRole(role);
       },
-      [isSuperAdmin, userPermissions.canUpdateRoles, setError, setSelectedRole, setConfirmation]
+      [isSuperAdmin, userPermissions.canUpdateRoles, setError, setSelectedRole, setConfirmation, t]
     );
 
-    // Toggle permission class expansion
     const toggleClassExpansion = useCallback((className: string) => {
       setExpandedClasses((prev) => {
         const newSet = new Set(prev);
@@ -175,7 +163,6 @@ const RolesList: React.FC<RolesListProps> = React.memo(
       });
     }, []);
 
-    // Categorize permissions by class
     const getCategorizedPermissionsForRole = useCallback(
       (permissions: Permission[] | undefined) => {
         const byClass: { [key: string]: Permission[] } = {};
@@ -198,7 +185,6 @@ const RolesList: React.FC<RolesListProps> = React.memo(
       [isSuperAdmin]
     );
 
-    // Render skeleton loader
     const renderSkeleton = () => (
       <div className="roles-management" aria-busy="true">
         {["Fixed Roles", "Pre-made Roles", "Custom Roles"].map((category, index) => (
@@ -221,10 +207,10 @@ const RolesList: React.FC<RolesListProps> = React.memo(
       </div>
     );
 
-    // Return null if not in roles view or no permission
     if (view !== "roles" || !userPermissions.canViewRoles) {
       return null;
     }
+
 
     // Render UI
     return (
@@ -244,12 +230,12 @@ const RolesList: React.FC<RolesListProps> = React.memo(
               }}
               contentRenderer={() => {
                 const role = roles.find((role) => role.roleID === activeRolePopup);
-                if (!role) return <p>Role not found</p>;
+                if (!role) return <p>{t("adminDashboard.error.roleNotFound")}</p>;
                 return (
                   <>
                     <h4>{role.name}</h4>
-                    <p>{role.description || "No description available"}</p>
-                    <h5>Permissions by Class:</h5>
+                    <p>{role.description || t("adminDashboard.noDescription")}</p>
+                    <h5>{t("adminDashboard.permissionsByClass")}</h5>
                     {Object.entries(getCategorizedPermissionsForRole(role.Permissions)).length > 0 ? (
                       Object.entries(getCategorizedPermissionsForRole(role.Permissions)).map(
                         ([className, perms]) => (
@@ -274,7 +260,7 @@ const RolesList: React.FC<RolesListProps> = React.memo(
                         )
                       )
                     ) : (
-                      <p>No permissions assigned</p>
+                      <p>{t("adminDashboard.noPermissionsAssigned")}</p>
                     )}
                   </>
                 );
@@ -347,7 +333,7 @@ const RolesList: React.FC<RolesListProps> = React.memo(
             })()}
             {(() => {
               const premadeRoles = filteredRoles.filter((role) =>
-                [ROLES.DIRECTOR, ROLES.SUPERVISOR, ROLES.REGIONAL_MANAGER, ROLES.STOCK_MANAGER, ROLES.PURCHASE_TEAM].includes(
+                [ROLES.DIRECTOR, ROLES.SUPERVISOR, ROLES.REGIONAL_MANAGER, ROLES.STOCK_MANAGER, ROLES.PURCHASE_TEAM, ROLES.HR].includes(
                   role.name
                 )
               );
@@ -420,6 +406,7 @@ const RolesList: React.FC<RolesListProps> = React.memo(
                     ROLES.DIRECTOR,
                     ROLES.SUPER_ADMIN,
                     ROLES.SUPERVISOR,
+                    ROLES.HR,
                     ROLES.REGIONAL_MANAGER,
                     ROLES.STOCK_MANAGER,
                     ROLES.PURCHASE_TEAM

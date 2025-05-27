@@ -16,7 +16,6 @@ const vaultClient = vault(options);
 class VaultService {
     static async storeTokens(userId, accessToken, refreshToken, expiresIn) {
         if (typeof userId !== 'string') {
-            logger.error('Invalid userId type', { userId: String(userId) });
             throw new Error(`Invalid userId type: expected string, got ${typeof userId}`);
         }
         try {
@@ -27,49 +26,35 @@ class VaultService {
                     expires_at: Date.now() + expiresIn * 1000,
                 },
             });
-            logger.info('Stored tokens in Vault', { userId, vaultResponse: response.status });
         } catch (error) {
-            logger.error('Failed to store tokens in Vault', {
-                userId,
-                error: error.message,
-                vaultError: error.response?.data || error
-            });
+
             throw new Error(`Failed to store tokens in Vault: ${error.message}`);
         }
     }
 
     static async getAccessToken(userId) {
         if (typeof userId !== 'string') {
-            logger.error('Invalid userId type', { userId: String(userId) });
             throw new Error(`Invalid userId type: expected string, got ${typeof userId}`);
         }
         try {
             const result = await vaultClient.read(`secret/data/google-calendar/${userId}`);
             const { access_token, expires_at, refresh_token } = result.data.data;
             if (!access_token || !refresh_token) {
-                logger.error('Missing access_token or refresh_token in Vault', { userId });
                 await this.clearTokens(userId);
                 throw new Error('Missing access_token or refresh_token in Vault');
             }
             // Check if access token is expired
             if (Date.now() >= expires_at) {
-                logger.info('Access token expired, refreshing', { userId });
                 return await this.refreshAccessToken(userId, refresh_token);
             }
             // Validate access token
             const isValid = await this.validateAccessToken(userId, access_token);
             if (!isValid) {
-                logger.info('Access token invalid, refreshing', { userId });
                 return await this.refreshAccessToken(userId, refresh_token);
             }
-            logger.info('Retrieved valid access token from Vault', { userId });
             return access_token;
         } catch (error) {
-            logger.error('Failed to get access token from Vault', {
-                userId,
-                error: error.message,
-                vaultError: error.response?.data || error
-            });
+
             await this.clearTokens(userId);
             throw new Error(`Failed to get access token from Vault: ${error.message}`);
         }
@@ -84,36 +69,24 @@ class VaultService {
             await calendar.calendarList.list();
             return true;
         } catch (error) {
-            logger.error('Access token validation failed', {
-                userId,
-                error: error.message,
-                errorDetails: error.response?.data || error
-            });
             return false;
         }
     }
 
     static async getRefreshToken(userId) {
         if (typeof userId !== 'string') {
-            logger.error('Invalid userId type', { userId: String(userId) });
             throw new Error(`Invalid userId type: expected string, got ${typeof userId}`);
         }
         try {
             const result = await vaultClient.read(`secret/data/google-calendar/${userId}`);
             const refresh_token = result.data.data.refresh_token;
             if (!refresh_token) {
-                logger.error('No refresh token found in Vault', { userId });
                 await this.clearTokens(userId);
                 throw new Error('No refresh token found in Vault');
             }
-            logger.info('Retrieved refresh token from Vault', { userId });
             return refresh_token;
         } catch (error) {
-            logger.error('Failed to get refresh token from Vault', {
-                userId,
-                error: error.message,
-                vaultError: error.response?.data || error
-            });
+
             await this.clearTokens(userId);
             throw new Error(`Failed to get refresh token from Vault: ${error.message}`);
         }
@@ -121,11 +94,9 @@ class VaultService {
 
     static async refreshAccessToken(userId, refreshToken) {
         if (typeof userId !== 'string') {
-            logger.error('Invalid userId type', { userId: String(userId) });
             throw new Error(`Invalid userId type: expected string, got ${typeof userId}`);
         }
         if (typeof refreshToken !== 'string') {
-            logger.error('Invalid refreshToken type', { userId, refreshToken: String(refreshToken) });
             throw new Error(`Invalid refreshToken type: expected string, got ${typeof refreshToken}`);
         }
         try {
@@ -138,13 +109,8 @@ class VaultService {
             const { access_token, expires_in } = response.data;
             const expires_at = Date.now() + expires_in * 1000;
             await this.storeTokens(userId, access_token, refreshToken, expires_at);
-            logger.info(`Refreshed Google access token`, { userId });
             return access_token;
         } catch (error) {
-            logger.error(`Failed to refresh Google access token: ${error.response?.data?.error || error.message}`, {
-                userId,
-                errorDetails: error.response?.data || error
-            });
             await this.clearTokens(userId);
             throw new Error(`Failed to refresh Google access token: ${error.response?.data?.error || error.message}`);
         }
@@ -157,13 +123,9 @@ class VaultService {
                 { hasCalendarAccess: false },
                 { where: { userID: userId } }
             );
-            logger.info('Cleared tokens from Vault and updated hasCalendarAccess', { userId });
         } catch (error) {
-            logger.error('Failed to clear tokens from Vault', {
-                userId,
-                error: error.message,
-                vaultError: error.response?.data || error
-            });
+            throw new Error(`Failed to clear tokens from Vault: ${error.message}`);
+
         }
     }
 }
