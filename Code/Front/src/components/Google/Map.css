@@ -18,13 +18,16 @@
 
 .search-input {
     width: 100%;
-    padding: 0.625rem;
     font-size: 0.875rem;
     border: 1px solid #ddd;
     border-radius: 0.75rem;
     background: #f8fafc;
     color: #1f2937;
     transition: border-color 0.3s ease;
+}
+
+.search-input-99 {
+    padding: 0.375rem;
 }
 
 .search-input:focus {
@@ -89,7 +92,8 @@ body.dark .search-input::placeholder {
     position: absolute;
     top: 60px;
     right: 12px;
-    width: 300px;
+    width: 20vw;
+    max-height: 50vh !important;
     background: #ffffff;
     border-radius: 0.8rem;
     padding: 12px;
@@ -97,6 +101,7 @@ body.dark .search-input::placeholder {
     z-index: 20;
     transition: all 0.3s ease;
     overflow: hidden;
+    max-height: calc(100vh - 29.5rem);
 }
 
 .sub-panel {
@@ -110,7 +115,7 @@ body.dark .search-input::placeholder {
 
 .sub-panel .panel-header {
     background: #ffffff;
-    padding: 8px 12px;
+    padding: 0;
     border-bottom: 1px solid #dadce0;
 }
 
@@ -119,7 +124,11 @@ body.dark .search-input::placeholder {
 }
 
 .sub-panel .panel-content {
-    padding: 12px;
+    padding: 0.5rem;
+    overflow-y: auto;
+    max-height: 30vh;
+    scrollbar-width: thin;
+    scrollbar-color: #6b7280 #f8fafc;
 }
 
 .panel-header {
@@ -151,8 +160,9 @@ body.dark .search-input::placeholder {
 
 .panel-content {
     display: block;
-    margin-top: 8px;
+    margin-top: 0.3rem;
 }
+
 
 .panel.collapsed .panel-content,
 .sub-panel.collapsed .panel-content {
@@ -167,7 +177,7 @@ body.dark .search-input::placeholder {
 .edit-agent-panel input,
 .edit-agent-panel select {
     width: 100%;
-    padding: 8px 12px;
+    padding: 0.3rem;
     margin-bottom: 8px;
     border: 1px solid #dadce0;
     border-radius: 0.8rem;
@@ -191,7 +201,7 @@ body.dark .search-input::placeholder {
 .directions-panel button,
 .add-agent-panel button,
 .edit-agent-panel button {
-    padding: 8px 16px;
+    padding: 0.3rem;
     border: none;
     border-radius: 0.8rem;
     font-size: 14px;
@@ -243,8 +253,19 @@ body.dark .origin-input button svg {
 
 .directions-buttons {
     display: flex;
+    flex-direction: column;
     gap: 8px;
     margin-top: 8px;
+}
+
+.directions-buttons button {
+    width: 100%;
+}
+
+.directions-buttons .route-actions {
+    display: flex;
+    gap: 8px;
+    flex-direction: row;
 }
 
 .directions-buttons button:first-child {
@@ -266,7 +287,7 @@ body.dark .origin-input button svg {
 }
 
 .waypoint-list {
-    max-height: 100%;
+    max-height: 20vh;
     overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: #6b7280 #ffffff;
@@ -355,7 +376,7 @@ body.dark .waypoint-item {
 .edit-agent-panel p {
     font-size: 13px;
     color: #5f6368;
-    margin: 0 0 8px;
+    margin: 0;
 }
 
 .panel-buttons {
@@ -449,9 +470,16 @@ body.dark .waypoint-item {
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
     cursor: pointer;
     transition: all 0.3s ease;
+    opacity: 0.94;
+    backdrop-filter: blur(100rem);
+}
+
+.agent-card h4, .agent-card p, .agent-card div {
+    opacity: 1;
 }
 
 .agent-card:hover {
+    opacity: 1;
     transform: translateY(-2px);
 }
 
@@ -575,8 +603,6 @@ body.dark .waypoint-item {
     padding: 12px;
     border-radius: 0.8rem;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-    width: 12.5rem;
-    max-width: 100vw;
 }
 
 .gm-style-iw-d {
@@ -685,7 +711,6 @@ body.dark .origin-input button svg {
 
     .sub-panel.collapsed {
         padding-top: 0;
-        padding-left: 1rem;
     }
 
     .directions-panel {
@@ -1050,7 +1075,6 @@ body.dark .gm-style-iw-tc::after {
 
 .search-input {
     width: 100%;
-    padding: 0.625rem;
     font-size: 0.875rem;
     border: 1px solid #ddd;
     border-radius: 0.75rem;
@@ -1342,5 +1366,313 @@ body.dark .refresh-agents-btn:disabled {
 
     100% {
         transform: rotate(360deg);
+    }
+}
+
+
+
+
+
+.steps-container {
+    max-height: 200px;
+    overflow-y: auto;
+    padding: 12px;
+    background: #f8fafc;
+    border-radius: 0.6rem;
+    border: 1px solid #dadce0;
+    margin-top: 8px;
+    scrollbar-width: thin;
+    scrollbar-color: #6b7280 #f8fafc;
+}
+
+.steps-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.steps-container::-webkit-scrollbar-track {
+    background: #f8fafc;
+}
+
+.steps-container::-webkit-scrollbar-thumb {
+    background: #6b7280;
+    border-radius: 3px;
+}
+
+.step-item {
+    padding: 8px;
+    margin-bottom: 8px;
+    background: #ffffff;
+    border-radius: 0.8rem;
+    border: 1px solid #dadce0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.step-item:hover {
+    background: #f1f5f9;
+}
+
+.step-item.step-selected {
+    background: #4cb1c7;
+    color: #fff;
+    border-color: #4cb1c7;
+}
+
+.step-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: #323232;
+    margin: 0 0 4px;
+}
+
+.step-item.step-selected .step-title {
+    color: #fff;
+}
+
+.step-instruction {
+    font-size: 13px;
+    color: #5f6368;
+    margin: 0 0 4px;
+}
+
+.step-item.step-selected .step-instruction {
+    color: #e8eaed;
+}
+
+.step-details {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #5f6368;
+}
+
+.step-item.step-selected .step-details {
+    color: #e8eaed;
+}
+
+body.dark .steps-container {
+    background: #303134;
+    border-color: #5f6368;
+    scrollbar-color: #4b5563 #303134;
+}
+
+body.dark .steps-container::-webkit-scrollbar-track {
+    background: #303134;
+}
+
+body.dark .steps-container::-webkit-scrollbar-thumb {
+    background: #4b5563;
+}
+
+body.dark .step-item {
+    background: #323232;
+    border-color: #5f6368;
+    color: #e8eaed;
+}
+
+body.dark .step-item:hover {
+    background: #3c4043;
+}
+
+body.dark .step-item.step-selected {
+    background: #63b3ed;
+    border-color: #63b3ed;
+}
+
+body.dark .step-title {
+    color: #e8eaed;
+}
+
+body.dark .step-item.step-selected .step-title {
+    color: #fff;
+}
+
+body.dark .step-instruction {
+    color: #bdc1c6;
+}
+
+body.dark .step-item.step-selected .step-instruction {
+    color: #e8eaed;
+}
+
+body.dark .step-details {
+    color: #bdc1c6;
+}
+
+body.dark .step-item.step-selected .step-details {
+    color: #e8eaed;
+}
+
+
+
+.steps-sub-panel {
+    margin-bottom: 8px;
+    background: #f8fafc;
+    border-radius: 0.6rem;
+    overflow: hidden;
+    max-height: 35vh;
+}
+
+body.dark .steps-sub-panel {
+    background: #303134;
+}
+
+.steps-sub-panel .panel-header {
+    background: #ffffff;
+    padding: 0;
+    border-bottom: 1px solid #dadce0;
+}
+
+body.dark .steps-sub-panel .panel-header {
+    background: #323232;
+    border-bottom: 1px solid #5f6368;
+}
+
+.steps-sub-panel.collapsed .panel-header {
+    border-bottom: none;
+}
+
+.steps-sub-panel .panel-content {
+    padding: 0.5rem;
+}
+
+
+
+
+
+
+
+/* Mobile toggle button */
+.mobile-toggle-btn {
+    display: none !important;
+    position: absolute !important;
+    top: 0.57rem !important;
+    right: 0.8rem !important;
+    z-index: 15 !important;
+    background: #ffffff !important;
+    border: 1px solid #dadce0 !important;
+    border-radius: 0.8rem !important;
+    padding: 0.4rem !important;
+    cursor: pointer !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2) !important;
+}
+
+body.dark .mobile-toggle-btn {
+    background: #323232 !important;
+    border-color: #5f6368 !important;
+    color: #e8eaed !important;
+}
+
+.mobile-toggle-btn:hover {
+    background: #f0f0f0 !important;
+}
+
+body.dark .mobile-toggle-btn:hover {
+    background: #303134 !important;
+}
+
+.panel-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+}
+
+/* Mobile view styles */
+@media (max-width: 768px) {
+
+    /* Hide controls, panels, agent list, and buttons by default in mobile view */
+    .map-controls,
+    .filter-panel,
+    .directions-panel,
+    .agent-list,
+    .locate-btn,
+    .add-agent-btn,
+    .refresh-agents-btn {
+        display: none !important;
+    }
+
+    /* Show elements when visible-mobile class is applied */
+    .map-controls.visible-mobile,
+    .filter-panel.visible-mobile,
+    .directions-panel.visible-mobile,
+    .agent-list.visible-mobile,
+    .locate-btn.visible-mobile,
+    .add-agent-btn.visible-mobile,
+    .refresh-agents-btn.visible-mobile {
+        display: block !important;
+    }
+
+    /* Show toggle button in mobile view */
+    .mobile-toggle-btn {
+        display: block !important;
+    }
+
+
+    /* Adjust agent list for mobile */
+    .agent-list.visible-mobile {
+        bottom: 12px !important;
+        left: 12px !important;
+        right: 12px !important;
+        width: calc(100% - 24px) !important;
+    }
+
+    /* Adjust button positioning for mobile */
+    .locate-btn.visible-mobile {
+        bottom: 9.5rem !important;
+        left: 0.8rem !important;
+    }
+
+    .add-agent-btn.visible-mobile {
+        bottom: 9.5rem !important;
+        top: auto !important;
+        left: auto !important;
+        right: 0.8rem !important;
+    }
+
+    .refresh-agents-btn.visible-mobile {
+        bottom: 12.5rem !important;
+        top: auto !important;
+        left: 0.8rem !important;
+        right: auto !important;
+        padding: 0.55rem 0.7rem !important;
+        border: 1px solid #dadce0 !important;
+    }
+
+    /* Ensure add/edit panels are not affected by mobile toggle */
+    .add-agent-panel,
+    .edit-agent-panel {
+        z-index: 1000;
+        padding: 0.3rem;
+        max-height: calc(100vw - 9rem);
+        overflow-y: auto;
+    }
+
+    .control-buttons {
+        margin-top: 0.5rem !important;
+    }
+
+    .panel {
+        padding: 1rem !important;
+        z-index: 1005 !important;
+    }
+
+}
+
+/* Animation for smooth transitions */
+.visible-mobile {
+    animation: slideIn 0.3s ease-in-out !important;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(0);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
     }
 }

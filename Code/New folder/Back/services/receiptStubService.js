@@ -92,50 +92,76 @@ class ReceiptStubService {
                 )
             );
 
-
             return { message: `${bookIDs.length} stubs collected` };
         } catch (error) {
             throw error;
         }
     }
 
-    static async archiveStub(bookID, stockManagerID) {
+    static async archiveStub(bookIDs, stockManagerID) {
         try {
-            const book = await ReceiptBook.findByPk(bookID, { include: [ReceiptStub] });
-            if (!book) {
-                const error = new Error('Receipt book not found');
+            // Normalize bookIDs to an array
+            const normalizedBookIDs = Array.isArray(bookIDs) ? bookIDs : [bookIDs];
+
+            const books = await ReceiptBook.findAll({
+                where: { bookID: normalizedBookIDs },
+                include: [{ model: ReceiptStub, required: true }],
+            });
+
+            // Check for missing books
+            const foundBookIDs = books.map(book => book.bookID);
+            const missingBookIDs = normalizedBookIDs.filter(id => !foundBookIDs.includes(id));
+            if (missingBookIDs.length > 0) {
+                const error = new Error(`Receipt books not found: ${missingBookIDs.join(', ')}`);
                 error.status = 404;
                 throw error;
             }
-            if (book.currentHolderID !== stockManagerID) {
-                const error = new Error('Only the stock manager can archive');
-                error.status = 403;
-                throw error;
-            }
-            if (book.status !== 'With Stock Manager') {
-                const error = new Error('Book must be with stock manager');
-                error.status = 400;
-                throw error;
-            }
-            if (book.ReceiptStub.status === 'archived') {
-                const error = new Error('Stub already archived');
+
+            // Validate books and stubs
+            const invalidBooks = books.filter(book =>
+                book.currentHolderID !== stockManagerID ||
+                book.status !== 'With Stock Manager' ||
+                !book.ReceiptStub ||
+                book.ReceiptStub.status !== 'collected'
+            );
+
+            if (invalidBooks.length > 0) {
+                const errorMessages = invalidBooks.map(book => {
+                    if (!book.ReceiptStub) {
+                        return `Book ${book.bookID}: No associated stub found`;
+                    }
+                    if (book.currentHolderID !== stockManagerID) {
+                        return `Book ${book.bookID}: Not held by stock manager`;
+                    }
+                    if (book.status !== 'With Stock Manager') {
+                        return `Book ${book.bookID}: Not in 'With Stock Manager' status`;
+                    }
+                    if (book.ReceiptStub.status !== 'collected') {
+                        return `Book ${book.bookID}: Stub is ${book.ReceiptStub.status}, must be collected`;
+                    }
+                });
+                const error = new Error(`Invalid books: ${errorMessages.join('; ')}`);
                 error.status = 400;
                 throw error;
             }
 
-            await Promise.all([
-                book.update({ status: 'Archived' }),
-                book.ReceiptStub.update({ status: 'archived' }),
-                ReceiptBookTransfer.create({
-                    bookID,
-                    fromUserID: stockManagerID,
-                    toUserID: stockManagerID,
-                    status: 'Validated',
-                    transferType: 'Archived',
-                }),
-            ]);
+            await Promise.all(
+                books.map(book =>
+                    Promise.all([
+                        book.update({ status: 'Archived' }),
+                        book.ReceiptStub.update({ status: 'archived' }),
+                        ReceiptBookTransfer.create({
+                            bookID: book.bookID,
+                            fromUserID: stockManagerID,
+                            toUserID: stockManagerID,
+                            status: 'Validated',
+                            transferType: 'Archived',
+                        }),
+                    ])
+                )
+            );
 
-            return { message: 'Stub archived' };
+            return { message: `${normalizedBookIDs.length} stubs archived` };
         } catch (error) {
             throw error;
         }

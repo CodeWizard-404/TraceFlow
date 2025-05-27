@@ -1,30 +1,32 @@
-import React, { JSX, Suspense, useEffect, useState } from "react";
-import { Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { ThemeProvider, useTheme } from "./context/ThemeContext";
-import AuthProvider, { useAuth } from "./context/AuthContext";
-import { ErrorProvider } from "./context/ErrorContext";
-import Footer from "./components/Footer";
-import Header from "./components/Header";
-import ErrorDisplay from "./pages/Error/ErrorDisplay";
-import AccessDenied from "./pages/Error/AccessDenied";
-import "./App.css";
-import LoginPage from "./pages/Auth/Login";
-import ProfilePage from "./pages/Auth/ProfilePage";
-import Entry from "./pages/Dashboard/Entry";
-import AgentManagement from "./pages/Dashboard/AgentManagement";
+import React, { JSX, Suspense, useEffect, useState } from 'react';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { ThemeProvider, useTheme } from './context/ThemeContext';
+import AuthProvider, { useAuth } from './context/AuthContext';
+import { ErrorProvider, useError } from './context/ErrorContext';
+import { useNotification } from './context/NotificationContext';
+import Footer from './components/Footer';
+import Header from './components/Header';
+import ErrorManager from './components/ErrorManager';
+import ToastContainer from './components/ui/ToastContainer';
+import AccessDenied from './pages/Error/AccessDenied';
+import './App.css';
+import LoginPage from './pages/Auth/Login';
+import ProfilePage from './pages/Auth/Profile/ProfilePage';
+import Entry from './pages/Dashboard/Entry';
+import AgentManagement from './pages/Dashboard/AgentManagement';
 
 // Lazy load route components
-const Timesheets = React.lazy(() => import("./pages/Timesheet/Timesheets"));
-const TimesheetForm = React.lazy(() => import("./pages/Timesheet/TimesheetForm"));
-const QRScan = React.lazy(() => import("./pages/visit/QRScan"));
-const VisitDetailsView = React.lazy(() => import("./pages/visit/VisitView"));
-const VisitValidation = React.lazy(() => import("./pages/visit/VisitValidation"));
-const VisitEdit = React.lazy(() => import("./pages/visit/VisitEdit"));
-const PageNotFound = React.lazy(() => import("./pages/Error/PageNotFound"));
-const AdminDashboard = React.lazy(() => import("./pages/Admin/AdminDashboard"));
-const ReceiptBooks = React.lazy(() => import("./pages/Receipt/ReceiptBooks"));
-const TransferReceiptBook = React.lazy(() => import("./pages/Receipt/TransferReceiptBook"));
-const ReceiptBookHistory = React.lazy(() => import("./pages/Receipt/ReceiptBookHistory"));
+const Timesheets = React.lazy(() => import('./pages/Timesheet/Timesheets'));
+const TimesheetForm = React.lazy(() => import('./pages/Timesheet/TimesheetForm'));
+const QRScan = React.lazy(() => import('./pages/visit/QRScan'));
+const VisitDetailsView = React.lazy(() => import('./pages/visit/VisitView'));
+const VisitValidation = React.lazy(() => import('./pages/visit/VisitValidation'));
+const VisitEdit = React.lazy(() => import('./pages/visit/VisitEdit'));
+const PageNotFound = React.lazy(() => import('./pages/Error/PageNotFound'));
+const AdminDashboard = React.lazy(() => import('./pages/Admin/AdminDashboard'));
+const ReceiptBooks = React.lazy(() => import('./pages/Receipt/ReceiptBooks'));
+const TransferReceiptBook = React.lazy(() => import('./pages/Receipt/TransferReceiptBook'));
+const ReceiptBookHistory = React.lazy(() => import('./pages/Receipt/ReceiptBookHistory'));
 
 // Static permissions and roles from .env
 const PERMISSIONS = {
@@ -38,7 +40,8 @@ const PERMISSIONS = {
   ACCESS_RECEIPT_BOOK_HISTORY: import.meta.env.VITE_PERMISSIONS_ACCESS_RECEIPT_BOOK_HISTORY,
   TRANSFER_RECEIPT_BOOKS: import.meta.env.VITE_PERMISSIONS_TRANSFER_RECEIPT_BOOKS,
   ACCESS_RECEIPT_BOOKS_BY_HOLDER: import.meta.env.VITE_PERMISSIONS_ACCESS_RECEIPT_BOOKS_BY_HOLDER,
-  EDIT_VISIT_DETAILS: import.meta.env.VITE_PERMISSIONS_EDIT_VISIT
+  EDIT_VISIT_DETAILS: import.meta.env.VITE_PERMISSIONS_EDIT_VISIT,
+  ACCESS_AGENTS_MAP: import.meta.env.VITE_PERMISSIONS_READ_AGENTS_LOCATIONS
 };
 
 const ROLES = {
@@ -49,7 +52,7 @@ const ROLES = {
 // Permission-based ProtectedRoute component
 interface ProtectedRouteProps {
   children: JSX.Element;
-  requiredPermissions?: string[]; // Optional permissions
+  requiredPermissions?: string[];
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = React.memo(({ children, requiredPermissions = [] }) => {
@@ -68,12 +71,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = React.memo(({ children, re
     );
   }
 
-  // If no permissions are required, allow access
   if (requiredPermissions.length === 0) {
     return children;
   }
 
-  // Check if user has at least one required permission
   const hasPermission = requiredPermissions.some((perm) =>
     effectivePermissions?.some((p) => p.name === perm)
   );
@@ -111,6 +112,8 @@ const AppContent: React.FC = React.memo(() => {
   const { theme } = useTheme();
   const location = useLocation();
   const { user, permissionsLoaded } = useAuth();
+  const { setError } = useError();
+  const { toasts, removeToast } = useNotification();
   const [loadingTimeout, setLoadingTimeout] = useState(false);
 
   useEffect(() => {
@@ -122,12 +125,24 @@ const AppContent: React.FC = React.memo(() => {
     if (user && !permissionsLoaded) {
       const timeout = setTimeout(() => {
         setLoadingTimeout(true);
-      }, 10000); // 10 seconds timeout
+      }, 10000);
       return () => clearTimeout(timeout);
     }
   }, [user, permissionsLoaded]);
 
-  // Show loading screen or redirect if timed out
+  // Listen for API errors from axios interceptors
+  useEffect(() => {
+    const handleApiError = (event: Event) => {
+      const customEvent = event as CustomEvent<{ error: unknown; url: string }>;
+      setError(customEvent.detail.error, true); // Persist errors
+    };
+
+    window.addEventListener('apiError', handleApiError);
+    return () => {
+      window.removeEventListener('apiError', handleApiError);
+    };
+  }, [setError]);
+
   if (user && !permissionsLoaded) {
     if (loadingTimeout) {
       return <Navigate to="/login" replace state={{ error: 'Failed to load application. Please log in again.' }} />;
@@ -142,9 +157,10 @@ const AppContent: React.FC = React.memo(() => {
 
   return (
     <div className="app-container">
+      <ToastContainer toasts={toasts} onDismiss={removeToast} />
       <Header />
       <main>
-        {location.pathname !== "/login" && <ErrorDisplay />}
+        {location.pathname !== '/login' && <ErrorManager />}
         {location.state?.error && (
           <div className="error-message" style={{ textAlign: 'center', margin: '10px 0', color: '#ff4444' }}>
             {location.state.error}
@@ -155,7 +171,12 @@ const AppContent: React.FC = React.memo(() => {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/access-denied" element={<AccessDenied />} />
             <Route path="/" element={<Navigate to="/login" replace />} />
-            <Route path="/agents" element={<AgentManagement />} />
+            <Route path="/agents" element={
+              <ProtectedRoute requiredPermissions={[PERMISSIONS.ACCESS_AGENTS_MAP]}>
+                <AgentManagement />
+              </ProtectedRoute>
+            }
+            />
             <Route
               path="/dashboard"
               element={

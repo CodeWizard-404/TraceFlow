@@ -18,7 +18,6 @@ createRoot(document.getElementById('root')!).render(
         <AuthProvider>
           <NotificationProvider>
             <App />
-            {/* <ToastContainer /> */}
           </NotificationProvider>
         </AuthProvider>
       </ThemeProvider>

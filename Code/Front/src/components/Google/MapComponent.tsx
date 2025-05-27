@@ -40,7 +40,6 @@ import {
   getUsersByRole,
   getUsersByGovernorate,
   getUsersByDelegation,
-  getUsersByRegion,
 } from '../../apis/userAPI';
 import './Map.css';
 import { mapStyles } from './mapStyles';
@@ -51,6 +50,7 @@ import { useAuth } from '../../context/AuthContext';
 import { debounce } from 'lodash';
 import Delegation from 'models/Delegation';
 import Governorate from 'models/Governorate';
+import { DirectionsResponse } from '../../apis/';
 
 Modal.setAppElement('#root');
 
@@ -154,15 +154,7 @@ interface TrafficSegment {
   duration: number;
 }
 
-interface CustomDirectionsResponse {
-  distance: number;
-  duration: number;
-  steps: Array<{ instruction: string; distance: string; duration: string }>;
-  polyline: string;
-  waypointOrder?: number[];
-  mock?: boolean;
-  trafficSegments?: TrafficSegment[];
-}
+
 
 const containerStyle = { width: '100%', height: '70vh' };
 const defaultCenter = { lat: 36.8065, lng: 10.1815 };
@@ -180,6 +172,31 @@ const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: numbe
 };
 
 const deg2rad = (deg: number) => deg * (Math.PI / 180);
+
+const cleanInstruction = (instruction: string): string => {
+  const div = document.createElement('div');
+  div.innerHTML = instruction;
+  let text = div.textContent || div.innerText || '';
+  text = text.replace(/\s+/g, ' ').trim();
+  text = text.replace(/Go through \d+ roundabout/, 'Pass through roundabout');
+  return text;
+};
+
+const getStepHeading = (step: DirectionsResponse['steps'][0]) => {
+  try {
+    const path = polyline.decode(step.polyline).map(([lat, lng]) => ({ lat, lng }));
+    if (path.length < 2) return 0;
+    const start = path[0];
+    const next = path[1];
+    const deltaLat = next.lat - start.lat;
+    const deltaLng = next.lng - start.lng;
+    const heading = (Math.atan2(deltaLng, deltaLat) * 180) / Math.PI;
+    return (heading + 360) % 360; // Normalize to 0-360 degrees
+  } catch (err) {
+    console.error('Error calculating heading:', err);
+    return 0;
+  }
+};
 
 const MapComponent: React.FC = () => {
   const { t } = useTranslation();
@@ -221,8 +238,8 @@ const MapComponent: React.FC = () => {
   const [showFilterPanel, setShowFilterPanel] = useState(false);
   const [showDirectionsPanel, setShowDirectionsPanel] = useState(false);
   const [isFilterPanelCollapsed, setIsFilterPanelCollapsed] = useState(false);
-  const [isDirectionsPanelCollapsed, setIsDirectionsPanelCollapsed] = useState(false);
-  const [isRoutesPanelCollapsed, setIsRoutesPanelCollapsed] = useState(false);
+  const [isDirectionsPanelCollapsed, setIsDirectionsPanelCollapsed] = useState(true);
+  const [isRoutesPanelCollapsed, setIsRoutesPanelCollapsed] = useState(true);
   const [isAddAgentPanelCollapsed, setIsAddAgentPanelCollapsed] = useState(false);
   const [isEditAgentPanelCollapsed, setIsEditAgentPanelCollapsed] = useState(false);
   const [routeMode, setRouteMode] = useState<'DRIVING' | 'WALKING'>('DRIVING');
@@ -248,7 +265,13 @@ const MapComponent: React.FC = () => {
   const [isRouteProcessing, setIsRouteProcessing] = useState(false);
   const routePointsRef = useRef(routePoints);
   const [isOptimizing, setIsOptimizing] = useState(false);
+  const [selectedStepIndex, setSelectedStepIndex] = useState<number | null>(null);
+  const [isStepsPanelCollapsed, setIsStepsPanelCollapsed] = useState(true);
+  const [showMobileControls, setShowMobileControls] = useState(false);
 
+  const toggleMobileControls = useCallback(() => {
+    setShowMobileControls((prev) => !prev);
+  }, []);
 
   // Sync routePointsRef with routePoints
   useEffect(() => {
@@ -279,7 +302,7 @@ const MapComponent: React.FC = () => {
 
   const routeData = useRef<{
     points: RoutePoint[];
-    response: CustomDirectionsResponse | null;
+    response: DirectionsResponse | null;
     path: google.maps.LatLngLiteral[];
     traffic: Array<{ path: google.maps.LatLngLiteral[]; color: string }>;
   }>({
@@ -314,16 +337,23 @@ const MapComponent: React.FC = () => {
     );
   }, [filteredMarkers, userLocation]);
 
+  const parsedSteps = useMemo(() => {
+    if (!routeData.current.response?.steps) return [];
+    return routeData.current.response.steps.map(step => ({
+      ...step,
+      instruction: cleanInstruction(step.instruction),
+    }));
+  }, [routeData.current.response?.steps]);
+
   const handleRefreshAgents = useCallback(
     debounce(async () => {
       if (!hasPermission(PERMISSIONS.ACCESS_AGENT_MAP_LOCATIONS)) {
         toast.error(t('map.noPermission'));
         return;
       }
-      setLoading(true);
       try {
         const agentLocationsData = await getAgentLocations();
-        const initialMarkers = await Promise.all(
+        const updatedMarkers = await Promise.all(
           agentLocationsData.locations.map(async (loc) => {
             let lat = loc.latitude;
             let lng = loc.longitude;
@@ -366,17 +396,17 @@ const MapComponent: React.FC = () => {
             };
           })
         );
-        setAllMarkers(initialMarkers);
-        setFilteredMarkers(initialMarkers);
+        // Update only the necessary states
+        setAllMarkers(updatedMarkers);
+        setFilteredMarkers(updatedMarkers);
+        setFilteredAgents(updatedMarkers);
         toast.success(t('map.agentsRefreshed'));
       } catch (err) {
         console.error('Refresh Agents Error:', err);
         toast.error(t('map.refreshFailed'));
-      } finally {
-        setLoading(false);
       }
-    }, 1000), // Debounce for 1 second
-    [hasPermission, t, delegations]
+    }, 1000),
+    [t, delegations, hasPermission]
   );
 
   useEffect(() => {
@@ -527,7 +557,7 @@ const MapComponent: React.FC = () => {
   }, [filterSupervisor]);
 
   const handleCalculateRoute = useCallback(
-    async (points: RoutePoint[], mode: 'DRIVING' | 'WALKING', optimize: boolean = false) => {
+    async (points: RoutePoint[], mode: 'DRIVING' | 'WALKING', optimize: boolean = false, fitBounds: boolean = true) => {
       if (points.length < 2) {
         console.warn('Cannot calculate route: fewer than 2 points', points);
         toast.error(t('map.routePointsError'));
@@ -559,7 +589,6 @@ const MapComponent: React.FC = () => {
 
         let newPoints = [...points];
         if (optimize && directions.optimizedPoints && directions.optimizedPoints.length > 0) {
-          // Reorder all points based on optimized order
           const optimizedLocations = [origin, ...directions.optimizedPoints];
           newPoints = optimizedLocations.map((location, index) => {
             const originalPoint = points.find(p => p.location === location) || {
@@ -585,9 +614,9 @@ const MapComponent: React.FC = () => {
         setRoutePoints([...newPoints]);
         routePointsRef.current = [...newPoints];
 
-        const bounds = new google.maps.LatLngBounds();
-        newPath.forEach((point) => bounds.extend(new google.maps.LatLng(point.lat, point.lng)));
-        if (mapRef.current) {
+        if (fitBounds && mapRef.current) {
+          const bounds = new google.maps.LatLngBounds();
+          newPath.forEach((point) => bounds.extend(new google.maps.LatLng(point.lat, point.lng)));
           mapRef.current.fitBounds(bounds);
         }
       } catch (err) {
@@ -612,10 +641,6 @@ const MapComponent: React.FC = () => {
         if (prev && prev.lat === latitude && prev.lng === longitude) return prev;
         return newLocation;
       });
-      setMapCenter((prev) => {
-        if (prev.lat === latitude && prev.lng === longitude) return prev;
-        return newLocation;
-      });
 
       try {
         await updateUserLocation('currentUser', newLocation);
@@ -626,7 +651,8 @@ const MapComponent: React.FC = () => {
       }
 
       if (routeData.current.points.length >= 2) {
-        handleCalculateRoute(routeData.current.points, routeMode);
+        // Update route without fitting bounds to keep map centered on user
+        await handleCalculateRoute(routeData.current.points, routeMode, false, false);
       }
     };
 
@@ -646,7 +672,6 @@ const MapComponent: React.FC = () => {
       toast.error(t('map.trackLocationFailed', { message: error.message }));
       if (lastPosition.current) {
         setUserLocation({ lat: lastPosition.current.lat, lng: lastPosition.current.lng });
-        setMapCenter({ lat: lastPosition.current.lat, lng: lastPosition.current.lng });
       }
     };
 
@@ -739,6 +764,17 @@ const MapComponent: React.FC = () => {
       setFilteredMarkers(allMarkers);
     }
   }, [searchQuery, allMarkers, t]);
+
+  useEffect(() => {
+    if (!mapRef.current || !userLocation || !routePoints.length || !routeData.current.path.length) return;
+
+    if (selectedStepIndex !== null && routeData.current.response?.steps[selectedStepIndex]) {
+      const step = routeData.current.response.steps[selectedStepIndex];
+      mapRef.current.setCenter(step.start_location);
+      mapRef.current.setZoom(17);
+      mapRef.current.setHeading(getStepHeading(step));
+    }
+  }, [userLocation, routePoints, selectedStepIndex]);
 
   useEffect(() => {
     if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
@@ -841,51 +877,94 @@ const MapComponent: React.FC = () => {
     try {
       let filtered: AgentMarker[] = allMarkers;
 
+      // Apply supervisor and delegation filters together
+      if (filterSupervisor && filterDelegation) {
+        console.log('Applying both supervisor and delegation filters:', {
+          supervisor: filterSupervisor,
+          delegation: filterDelegation,
+        });
 
+        const [supervisorData, delegationData] = await Promise.all([
+          getAgentsByUser(filterSupervisor).catch((err) => {
+            console.error('getAgentsByUser error:', err);
+            return { agents: [] };
+          }),
+          getAgentsByDelegation(filterDelegation).catch((err) => {
+            console.error('getAgentsByDelegation error:', err);
+            return { agents: [] };
+          }),
+        ]);
 
-      // Apply supervisor filter
-      if (filterSupervisor) {
-        const agentData = await getAgentsByUser(filterSupervisor);
-        const supervisorAgents = agentData.agents.map((agent) => ({
-          id: agent.agentID,
-          lat: agent.latitude || defaultCenter.lat,
-          lng: agent.longitude || defaultCenter.lng,
-          name: agent.name,
-          lastname: agent.lastname,
-          email: agent.email,
-          phone: agent.phone,
-          address: agent.location || t('map.unknownLocation'),
-          source: 'agent',
-          delegation: agent.Delegation
-            ? {
-              id: agent.Delegation.delegationID,
-              name: agent.Delegation.name,
-              governorateID: agent.Delegation.Governorate?.governorateID,
-            }
-            : undefined,
-          governorate: agent.Delegation?.Governorate
-            ? { id: agent.Delegation.Governorate.governorateID, name: agent.Delegation.Governorate.name }
-            : undefined,
-          region: undefined,
-          supervisorID: agent.supervisorID,
-        }));
-        filtered = filtered.filter((m) =>
-          supervisorAgents.some((sa) => sa.id === m.id)
-        );
+        // Get agent IDs from both supervisor and delegation
+        const supervisorAgentIds = supervisorData.agents.map((agent) => agent.agentID);
+        const delegationAgentIds = delegationData.agents.map((agent) => agent.agentID);
+
+        console.log('Supervisor agent IDs:', supervisorAgentIds);
+        console.log('Delegation agent IDs:', delegationAgentIds);
+
+        // Find common agent IDs
+        const commonAgentIds = supervisorAgentIds.filter((id) => delegationAgentIds.includes(id));
+
+        console.log('Common agent IDs:', commonAgentIds);
+
+        // Filter allMarkers to include only common agents, preserving all properties
+        filtered = allMarkers.filter((m) => commonAgentIds.includes(m.id));
+
+        console.log('Common agents after intersection:', filtered.map(a => ({ id: a.id, name: a.name, delegationID: a.delegation?.id, governorateID: a.governorate?.id, regionID: a.region?.id })));
+
+        if (filtered.length === 0) {
+          console.warn('No common agents found between supervisor and delegation.');
+          toast.warn(t('map.noCommonAgents'));
+        }
+      } else if (filterSupervisor) {
+        // Apply only supervisor filter
+        console.log('Applying supervisor filter:', filterSupervisor);
+        const agentData = await getAgentsByUser(filterSupervisor).catch((err) => {
+          console.error('getAgentsByUser error:', err);
+          return { agents: [] };
+        });
+        const supervisorAgentIds = agentData.agents.map((agent) => agent.agentID);
+        console.log('Supervisor agent IDs (solo filter):', supervisorAgentIds);
+        filtered = allMarkers.filter((m) => supervisorAgentIds.includes(m.id));
+        if (filtered.length === 0) {
+          console.warn('No agents found for supervisor:', filterSupervisor);
+          toast.warn(t('map.noAgentsForSupervisor'));
+        }
+      } else if (filterDelegation) {
+        // Apply only delegation filter
+        console.log('Applying delegation filter:', filterDelegation);
+        const agentData = await getAgentsByDelegation(filterDelegation).catch((err) => {
+          console.error('getAgentsByDelegation error:', err);
+          return { agents: [] };
+        });
+        const delegationAgentIds = agentData.agents.map((agent) => agent.agentID);
+        console.log('Delegation agent IDs (solo filter):', delegationAgentIds);
+        filtered = allMarkers.filter((m) => delegationAgentIds.includes(m.id));
+        if (filtered.length === 0) {
+          console.warn('No agents found for delegation:', filterDelegation);
+          toast.warn(t('map.noAgentsForDelegation'));
+        }
       }
 
       // Apply governorate filter
       if (filterGovernorate) {
+        console.log('Applying governorate filter:', filterGovernorate);
         filtered = filtered.filter((m) => m.governorate?.id === filterGovernorate);
       }
 
       // Apply region filter
       if (filterRegion) {
+        console.log('Applying region filter:', filterRegion);
         filtered = filtered.filter((m) => m.region?.id === filterRegion);
       }
 
+      console.log('Final filtered agents:', filtered.map(a => ({ id: a.id, name: a.name, delegationID: a.delegation?.id, governorateID: a.governorate?.id, regionID: a.region?.id })));
       setFilteredAgents(filtered);
       setFilteredMarkers(filtered);
+
+      if (filtered.length === 0 && (filterSupervisor || filterDelegation || filterGovernorate || filterRegion)) {
+        toast.info(t('map.noAgentsMatchFilters'));
+      }
     } catch (err) {
       console.error('Filter Agents Error:', err);
       toast.error(t('map.filterAgentsFailed'));
@@ -905,6 +984,7 @@ const MapComponent: React.FC = () => {
     setIsFilterPanelCollapsed(false);
     setIsDirectionsPanelCollapsed(false);
     setIsRoutesPanelCollapsed(false);
+    setIsStepsPanelCollapsed(false); // Reset steps panel
     setIsAddAgentPanelCollapsed(false);
     setIsEditAgentPanelCollapsed(false);
   }, []);
@@ -1292,10 +1372,26 @@ const MapComponent: React.FC = () => {
     }
   }, [handleCalculateRoute, routeMode, isRouteProcessing, isOptimizing]);
 
-  // Update the WaypointList component to show loading indicator
+  const handleCenterRoute = useCallback(() => {
+    if (!mapRef.current || !routeData.current.path.length) return;
 
+    const bounds = new google.maps.LatLngBounds();
+    routeData.current.path.forEach(point => bounds.extend(new google.maps.LatLng(point.lat, point.lng)));
+    mapRef.current.fitBounds(bounds, { top: 50, bottom: isRoutesPanelCollapsed ? 50 : 200, left: 50, right: 50 });
+    setSelectedStepIndex(null); // Reset selected step to show full route
+  }, [isRoutesPanelCollapsed]);
 
-
+  const handleStartNavigation = useCallback(() => {
+    if (!userLocation || !routePoints.length || !routeData.current.response?.polyline) {
+      toast.error(t('map.directionsPanel.navigationError'));
+      return;
+    }
+    const origin = routePoints[0].location;
+    const destination = routePoints[routePoints.length - 1].location;
+    const waypoints = routePoints.slice(1, -1).map(p => p.location).join('|');
+    const mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}${waypoints ? `&waypoints=${encodeURIComponent(waypoints)}` : ''}&travelmode=${routeMode.toLowerCase()}&dir_action=navigate`;
+    window.open(mapsUrl, '_blank');
+  }, [userLocation, routePoints, routeMode, t]);
 
   const clearRoute = useCallback(() => {
     console.log('Clearing routePoints:', routePointsRef.current);
@@ -1338,13 +1434,46 @@ const MapComponent: React.FC = () => {
   );
 
   const handleReturnToCurrentLocation = useCallback(() => {
-    if (!userLocation) {
-      toast.error(t('map.userLocationNotAvailable'));
+    if (!navigator.geolocation) {
+      toast.error(t('map.geolocationNotSupported'));
       return;
     }
-    setMapCenter(userLocation);
-    setZoom(15);
-  }, [userLocation, t]);
+
+    const maxRetries = 3;
+    let retries = 0;
+
+    const attemptGeolocation = () => {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          const newLocation = { lat: latitude, lng: longitude };
+          setUserLocation(newLocation);
+          setMapCenter(newLocation); // Center on user location
+          setZoom(15); // Zoom to level 15
+          lastPosition.current = { ...newLocation, timestamp: Date.now() };
+          retryCount.current = 0;
+          toast.success(t('map.locationRetrieved'));
+        },
+        (error) => {
+          console.error('Geolocation Error:', error);
+          if (retries < maxRetries) {
+            retries += 1;
+            toast.warn(t('map.retryLocation', { count: retries, max: maxRetries }));
+            setTimeout(attemptGeolocation, 1000 * retries); // Exponential backoff
+          } else {
+            toast.error(t('map.locationError'));
+            if (lastPosition.current) {
+              setMapCenter({ lat: lastPosition.current.lat, lng: lastPosition.current.lng });
+              setZoom(15);
+            }
+          }
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    };
+
+    attemptGeolocation();
+  }, [t]);
 
   const toggleCarMode = useCallback(async () => {
     if (!carMode) {
@@ -1503,6 +1632,7 @@ const MapComponent: React.FC = () => {
       onGetDirections: (marker: AgentMarker) => void;
       onAddStop: (marker: AgentMarker) => void;
     }) => {
+      const { t } = useTranslation();
       const isInRoute = routeData.current.points.some((p) => p.agentId === marker.id);
       return (
         <div
@@ -1510,7 +1640,9 @@ const MapComponent: React.FC = () => {
             }`}
           onClick={() => {
             setSelectedAgents((prev) => {
-              const newSelected = prev.includes(marker.id) ? prev.filter((id) => id !== marker.id) : [...prev, marker.id];
+              const newSelected = prev.includes(marker.id)
+                ? prev.filter((id) => id !== marker.id)
+                : [...prev, marker.id];
               if (!newSelected.includes(marker.id)) {
                 setSelectedMarker((prev) => (prev?.id === marker.id ? null : prev));
               }
@@ -1529,7 +1661,15 @@ const MapComponent: React.FC = () => {
                   removeAgentFromRoute(marker.id);
                 }}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
                   <path d="M18 6L6 18M6 6l12 12" />
                 </svg>
                 {t('map.agentCard.remove')}
@@ -1541,7 +1681,15 @@ const MapComponent: React.FC = () => {
                   onAddStop(marker);
                 }}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
                   <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                   <circle cx="12" cy="10" r="3" />
                 </svg>
@@ -1554,7 +1702,15 @@ const MapComponent: React.FC = () => {
                   onGetDirections(marker);
                 }}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
                   <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                   <circle cx="12" cy="10" r="3" />
                 </svg>
@@ -1567,10 +1723,40 @@ const MapComponent: React.FC = () => {
                 window.location.href = `tel:${marker.phone}`;
               }}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
                 <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
               </svg>
               {t('map.agentCard.call')}
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                const now = new Date();
+                const date = now.toISOString().split('T')[0];
+                const time = now.toTimeString().slice(0, 5);
+                window.location.href = `/timesheet-form?agentId=${marker.id}&date=${date}&time=${time}`;
+              }}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+              {t('map.infoWindow.addVisit')}
             </button>
           </div>
         </div>
@@ -1581,14 +1767,16 @@ const MapComponent: React.FC = () => {
   const WaypointList = React.memo(() => (
     <div className="waypoint-list">
       <div className="waypoint-header">
-        <h3>{t('map.routes.title')}</h3>
         {routePoints.length > 2 && (
-          <button onClick={() => {
-            console.log('Optimize button clicked');
-            handleOptimizeRoute();
-          }} disabled={isOptimizing}>
+          <button
+            onClick={() => {
+              console.log('Optimize button clicked');
+              handleOptimizeRoute();
+            }}
+            disabled={isOptimizing}
+          >
             {isOptimizing ? (
-              <span className="loading-spinner"></span> // Add a spinner or loading text
+              <span className="loading-spinner"></span>
             ) : (
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -1606,10 +1794,6 @@ const MapComponent: React.FC = () => {
           </button>
         )}
       </div>
-      {(() => {
-        console.log('WaypointList routePoints:', routePoints.map(p => ({ id: p.id, type: p.type, agentId: p.agentId, address: p.address })));
-        return null;
-      })()}
       {routeData.current.response && (
         <div className="route-info">
           <p>
@@ -1666,6 +1850,7 @@ const MapComponent: React.FC = () => {
 
   if (loading) return <div className="loading">{t('map.loading')}</div>;
 
+
   return (
     <div className={`map-container ${addingAgentMode ? 'adding-agent' : ''}`}>
       <LoadScript googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY} libraries={libraries}>
@@ -1683,14 +1868,34 @@ const MapComponent: React.FC = () => {
             fullscreenControl: false,
           }}
         >
-          <div className="map-controls">
+          {/* Toggle Button for Mobile View */}
+          <button
+            className="mobile-toggle-btn"
+            onClick={toggleMobileControls}
+            title={showMobileControls ? t('map.hideControls') : t('map.showControls')}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d={showMobileControls ? 'M18 6L6 18M6 6l12 12' : 'M4 6h16M4 12h16M4 18h16'} />
+            </svg>
+          </button>
+
+          {/* Map Controls - Conditionally rendered in mobile view */}
+          <div className={`map-controls ${showMobileControls ? 'visible-mobile' : ''}`}>
             <Autocomplete onLoad={onAutocompleteLoad} onPlaceChanged={onPlaceChanged}>
               <input
                 type="text"
                 placeholder={t('map.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="search-input"
+                className="search-input search-input-99"
               />
             </Autocomplete>
             <div className="control-buttons">
@@ -1703,7 +1908,15 @@ const MapComponent: React.FC = () => {
                 }}
                 title={t('map.filter')}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
                   <path d="M22 3H2l8 9.46V19a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2v-6.54L22 3z" />
                 </svg>
               </button>
@@ -1716,7 +1929,15 @@ const MapComponent: React.FC = () => {
                 }}
                 title={t('map.directions')}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
                   <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                   <circle cx="12" cy="10" r="3" />
                 </svg>
@@ -1726,7 +1947,15 @@ const MapComponent: React.FC = () => {
                 onClick={toggleCarMode}
                 title={carMode ? t('map.carModeOff') : t('map.carModeOn')}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
                   <path d="M19 7l-7 5-7-5M19 12l-7 5-7-5" />
                 </svg>
               </button>
@@ -1749,8 +1978,9 @@ const MapComponent: React.FC = () => {
             </div>
           </div>
 
+          {/* Filter Panel - Conditionally rendered in mobile view */}
           {showFilterPanel && (
-            <div className={`panel filter-panel ${isFilterPanelCollapsed ? 'collapsed' : ''}`}>
+            <div className={`panel filter-panel ${isFilterPanelCollapsed ? 'collapsed' : ''} ${showMobileControls ? 'visible-mobile' : ''}`}>
               <div className="panel-header" onClick={() => setIsFilterPanelCollapsed(!isFilterPanelCollapsed)}>
                 <h2>{t('map.filters.title')}</h2>
                 <button className="toggle-btn">
@@ -1772,8 +2002,8 @@ const MapComponent: React.FC = () => {
                   value={filterRegion}
                   onChange={(e) => {
                     setFilterRegion(e.target.value);
-                    setFilterGovernorate(''); // Reset governorate when region changes
-                    setFilterDelegation(''); // Reset delegation
+                    setFilterGovernorate('');
+                    setFilterDelegation('');
                   }}
                 >
                   <option value="">{t('map.filters.allRegions')}</option>
@@ -1787,7 +2017,7 @@ const MapComponent: React.FC = () => {
                   value={filterGovernorate}
                   onChange={(e) => {
                     setFilterGovernorate(e.target.value);
-                    setFilterDelegation(''); // Reset delegation
+                    setFilterDelegation('');
                   }}
                 >
                   <option value="">{t('map.filters.allGovernorates')}</option>
@@ -1821,8 +2051,9 @@ const MapComponent: React.FC = () => {
             </div>
           )}
 
+          {/* Directions Panel - Conditionally rendered in mobile view */}
           {showDirectionsPanel && (
-            <div className="panel directions-panel">
+            <div className={`panel directions-panel ${showMobileControls ? 'visible-mobile' : ''}`}>
               <div className={`sub-panel directions-sub-panel ${isDirectionsPanelCollapsed ? 'collapsed' : ''}`}>
                 <div className="panel-header" onClick={() => setIsDirectionsPanelCollapsed(!isDirectionsPanelCollapsed)}>
                   <h2>{t('map.directionsPanel.title')}</h2>
@@ -1841,112 +2072,85 @@ const MapComponent: React.FC = () => {
                   </button>
                 </div>
                 <div className="panel-content">
-                  <div className="origin-input">
-                    <input
-                      type="text"
-                      placeholder={t('map.directionsPanel.originPlaceholder')}
-                      value={routePoints.length > 0 ? routePoints[0].address : ''}
-                      onChange={async (e) => {
-                        if (routePoints.length > 0) {
-                          const newPoints = [...routePoints];
-                          newPoints[0].address = e.target.value;
-                          try {
-                            const geocode = await getGeocode(e.target.value);
-                            newPoints[0].location = `${geocode.latitude},${geocode.longitude}`;
-                            setRoutePoints(newPoints);
-                          } catch (err) {
-                            console.error('Geocode Error:', err);
-                            toast.error(t('map.getAddressFailed'));
-                          }
-                        }
-                      }}
-                    />
-                    <button
-                      onClick={() => {
-                        if (userLocation) {
-                          const newPoints = routePoints.length > 0 ? [...routePoints] : [];
-                          const originPoint: RoutePoint = {
-                            id: 'origin',
-                            location: `${userLocation.lat},${userLocation.lng}`,
-                            address: t('map.directionsPanel.myLocation'),
-                            type: 'origin',
-                          };
-                          if (newPoints.length === 0) {
-                            newPoints.push(originPoint);
-                          } else {
-                            newPoints[0] = originPoint;
-                          }
-                          setRoutePoints(newPoints);
-                        }
-                      }}
-                      title={t('map.directionsPanel.myLocation')}
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
-                        <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
-                        <path d="M12 12m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
-                      </svg>
-                    </button>
-                  </div>
-                  <input
-                    type="text"
-                    placeholder={t('map.directionsPanel.destinationPlaceholder')}
-                    value={routePoints.length > 1 ? routePoints[routePoints.length - 1].address : ''}
-                    onChange={async (e) => {
-                      if (routePoints.length > 1) {
-                        const newPoints = [...routePoints];
-                        newPoints[newPoints.length - 1].address = e.target.value;
-                        try {
-                          const geocode = await getGeocode(e.target.value);
-                          newPoints[newPoints.length - 1].location = `${geocode.latitude},${geocode.longitude}`;
-                          setRoutePoints(newPoints);
-                        } catch (err) {
-                          console.error('Geocode Error:', err);
-                          toast.error(t('map.getAddressFailed'));
-                        }
-                      }
-                    }}
-                  />
                   <select value={routeMode} onChange={(e) => setRouteMode(e.target.value as 'DRIVING' | 'WALKING')}>
                     <option value="DRIVING">{t('map.directionsPanel.modes.driving')}</option>
                     <option value="WALKING">{t('map.directionsPanel.modes.walking')}</option>
                   </select>
                   <div className="directions-buttons">
-                    <button onClick={() => handleCalculateRoute(routePoints, routeMode)}>
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
-                        <path d="M5 12h14M12 5l7 7-7 7" />
-                      </svg>
-                      {t('map.directionsPanel.go')}
-                    </button>
-                    <button onClick={clearRoute}>
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
-                        <path d="M18 6L6 18M6 6l12 12" />
-                      </svg>
-                      {t('map.directionsPanel.clear')}
-                    </button>
+                    <div className='route-actions'>
+                      <button onClick={() => handleCalculateRoute(routePoints, routeMode)}>
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path d="M5 12h14M12 5l7 7-7 7" />
+                        </svg>
+                        {t('map.directionsPanel.go')}
+                      </button>
+                      <button onClick={clearRoute}>
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path d="M18 6L6 18M6 6l12 12" />
+                        </svg>
+                        {t('map.directionsPanel.clear')}
+                      </button>
+                      {routePoints.length >= 2 && (
+                        <button onClick={handleCenterRoute}>
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                          >
+                            <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
+                            <path d="M12 12m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+                          </svg>
+                          {t('map.directionsPanel.centerRoute')}
+                        </button>
+                      )}
+                    </div>
+                    {routePoints.length >= 2 && (
+                      <button onClick={handleStartNavigation} style={{ backgroundColor: 'white', color: '#333' }}>
+                        {/* Google Maps SVG */}
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          aria-label="Google Maps"
+                          role="img"
+                          viewBox="0 0 512 512"
+                          width="24"
+                          height="24"
+                        >
+                          <clipPath id="a">
+                            <path d="M375 136a133 133 0 00-79-66 136 136 0 00-40-6 133 133 0 00-103 48 133 133 0 00-31 86c0 38 13 64 13 64 15 32 42 61 61 86a399 399 0 0130 45 222 222 0 0117 42c3 10 6 13 13 13s11-5 13-13a228 228 0 0116-41 472 472 0 0145-63c5-6 32-39 45-64 0 0 15-29 15-68 0-37-15-63-15-63z" />
+                          </clipPath>
+                          <g strokeWidth="130" clipPath="url(#a)">
+                            <path stroke="#fbbc04" d="M104 379l152-181" />
+                            <path stroke="#4285f4" d="M256 198L378 53" />
+                            <path stroke="#34a853" d="M189 459l243-290" />
+                            <path stroke="#1a73e8" d="M255 120l-79-67" />
+                            <path stroke="#ea4335" d="M76 232l91-109" />
+                          </g>
+                        </svg>
+                        {t('map.directionsPanel.startNavigation')}
+                      </button>
+                    )}
+
+
                   </div>
                 </div>
               </div>
@@ -1971,31 +2175,100 @@ const MapComponent: React.FC = () => {
                   <WaypointList />
                 </div>
               </div>
+              {routeData.current.response && (
+                <div className={`sub-panel steps-sub-panel ${isStepsPanelCollapsed ? 'collapsed' : ''}`}>
+                  <div className="panel-header" onClick={() => setIsStepsPanelCollapsed(!isStepsPanelCollapsed)}>
+                    <h2>{t('map.routes.steps')}</h2>
+                    <button className="toggle-btn">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path d={isStepsPanelCollapsed ? 'M4 12h16M12 4v16' : 'M4 12h16'} />
+                      </svg>
+                    </button>
+                  </div>
+                  <div className="panel-content">
+                    <div>
+                      {parsedSteps.map((step, index) => (
+                        <div
+                          key={index}
+                          className={`step-item ${selectedStepIndex === index ? 'step-selected' : ''}`}
+                          onClick={() => setSelectedStepIndex(index)}
+                          role="button"
+                          tabIndex={0}
+                          onKeyDown={(e) => e.key === 'Enter' && setSelectedStepIndex(index)}
+                        >
+                          <h4 className="step-title">{t('map.routes.step', { number: index + 1 })}</h4>
+                          <p className="step-instruction">{step.instruction}</p>
+                          <div className="step-details">
+                            <span>{step.distance}</span>
+                            <span>{step.duration}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
+          {/* Rest of the GoogleMap content (Markers, Polylines, etc.)  */}
           {carMode && routeData.current.traffic.length > 0 ? (
             routeData.current.traffic.map((segment, index) => (
-              <Polyline
-                key={`traffic-segment-${index}`}
-                path={segment.path}
-                options={{
-                  strokeColor: segment.color,
-                  strokeOpacity: 0.75,
-                  strokeWeight: 6,
-                }}
-              />
+              <>
+                <Polyline
+                  key={`traffic-shadow-${index}`}
+                  path={segment.path}
+                  options={{
+                    strokeColor: mapStyle === 'satellite' ? '#000000' : document.body.classList.contains('dark') ? '#1a1a1a' : '#333333',
+                    strokeOpacity: 0.5,
+                    strokeWeight: 10,
+                    zIndex: 1,
+                  }}
+                />
+                <Polyline
+                  key={`traffic-segment-${index}`}
+                  path={segment.path}
+                  options={{
+                    strokeColor: segment.color,
+                    strokeOpacity: 0.9,
+                    strokeWeight: 6,
+                    zIndex: 2,
+                  }}
+                />
+              </>
             ))
           ) : (
             routeData.current.path.length > 0 && (
-              <Polyline
-                path={routeData.current.path}
-                options={{
-                  strokeColor: '#4285F4',
-                  strokeOpacity: 0.75,
-                  strokeWeight: 6,
-                }}
-              />
+              <>
+                <Polyline
+                  key="main-route-shadow"
+                  path={routeData.current.path}
+                  options={{
+                    strokeColor: mapStyle === 'satellite' ? '#000000' : document.body.classList.contains('dark') ? '#1a1a1a' : '#333333',
+                    strokeOpacity: 0.5,
+                    strokeWeight: 10,
+                    zIndex: 1,
+                  }}
+                />
+                <Polyline
+                  key="main-route"
+                  path={routeData.current.path}
+                  options={{
+                    strokeColor: mapStyle === 'satellite' ? '#8000' : document.body.classList.contains('dark') ? '#63b3ed' : '#4cb1c7',
+                    strokeOpacity: 0.9,
+                    strokeWeight: 6,
+                    zIndex: 2,
+                  }}
+                />
+              </>
             )
           )}
           {carMode && routeData.current.response && <TrafficLayer />}
@@ -2030,17 +2303,29 @@ const MapComponent: React.FC = () => {
                     }}
                   />
                 )}
+                {selectedStepIndex !== null && routeData.current.response?.steps[selectedStepIndex] && (
+                  <Marker
+                    position={routeData.current.response.steps[selectedStepIndex].start_location}
+                    title={`Step ${selectedStepIndex + 1}`}
+                    icon={{
+                      url: 'https://maps.gstatic.com/mapfiles/ms2/micons/blue.png',
+                      scaledSize: new google.maps.Size(32, 32),
+                    }}
+                    zIndex={1000}
+                  />
+                )}
               </>
             )}
           </MarkerClusterer>
           {selectedMarker && (
-            <InfoWindow position={{ lat: selectedMarker.lat, lng: selectedMarker.lng }} onCloseClick={() => setSelectedMarker(null)}>
+            <InfoWindow
+              position={{ lat: selectedMarker.lat, lng: selectedMarker.lng }}
+              onCloseClick={() => setSelectedMarker(null)}
+            >
               <div className="info-window">
                 <h3>{`${selectedMarker.name} ${selectedMarker.lastname}`}</h3>
                 <p>{selectedMarker.address}</p>
-                <p>
-                  {t('map.infoWindow.phone')}: {selectedMarker.phone}
-                </p>
+                <p>{t('map.infoWindow.phone')}: {selectedMarker.phone}</p>
                 <div className="info-buttons">
                   {hasPermission(PERMISSIONS.UPDATE_AGENTS) && (
                     <button
@@ -2065,7 +2350,24 @@ const MapComponent: React.FC = () => {
                       {t('map.infoWindow.edit')}
                     </button>
                   )}
-                  {routeData.current.response ? (
+                  {routeData.current.points.some((p) => p.agentId === selectedMarker.id) ? (
+                    <button
+                      onClick={() => removeAgentFromRoute(selectedMarker.id)}
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path d="M18 6L6 18M6 6l12 12" />
+                      </svg>
+                      {t('map.agentCard.remove')}
+                    </button>
+                  ) : routeData.current.response ? (
                     <button onClick={() => handleAddStop(selectedMarker)}>
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -2098,6 +2400,27 @@ const MapComponent: React.FC = () => {
                       {t('map.infoWindow.directions')}
                     </button>
                   )}
+                  <button
+                    onClick={() => {
+                      const now = new Date();
+                      const date = now.toISOString().split('T')[0];
+                      const time = now.toTimeString().slice(0, 5);
+                      window.location.href = `/timesheet-form?agentId=${selectedMarker.id}&date=${date}&time=${time}`;
+                    }}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <path d="M12 5v14M5 12h14" />
+                    </svg>
+                    {t('map.infoWindow.addVisit')}
+                  </button>
                 </div>
               </div>
             </InfoWindow>
@@ -2105,12 +2428,20 @@ const MapComponent: React.FC = () => {
         </GoogleMap>
 
         <button
-          className="locate-btn"
+          className={`locate-btn ${showMobileControls ? 'visible-mobile' : ''}`}
           onClick={handleReturnToCurrentLocation}
           disabled={!userLocation}
           title={t('map.returnToMyLocation')}
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
             <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
             <path d="M12 12m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
           </svg>
@@ -2118,13 +2449,21 @@ const MapComponent: React.FC = () => {
 
         {hasPermission(PERMISSIONS.CREATE_AGENTS) && (
           <button
-            className="add-agent-btn"
+            className={`add-agent-btn ${showMobileControls ? 'visible-mobile' : ''}`}
             onClick={() => {
               setAddingAgentMode(true);
               toast.info(t('map.addAgentPrompt'));
             }}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <path d="M12 5v14M5 12h14" />
             </svg>
             {t('map.addAgent')}
@@ -2132,15 +2471,31 @@ const MapComponent: React.FC = () => {
         )}
 
         {hasPermission(PERMISSIONS.ACCESS_AGENT_MAP_LOCATIONS) && (
-          <button className="refresh-agents-btn" onClick={handleRefreshAgents} title={t('map.refreshAgents')}>
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <button
+            className={`refresh-agents-btn ${showMobileControls ? 'visible-mobile' : ''}`}
+            onClick={handleRefreshAgents}
+            title={t('map.refreshAgents')}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <path d="M23 4v6h-6M1 20v-6h6" />
               <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
             </svg>
           </button>
         )}
-
-        <ConfirmationModal isOpen={showConfirmModal} message={confirmMessage} onConfirm={handleConfirm} onCancel={handleCancel} />
+        <ConfirmationModal
+          isOpen={showConfirmModal}
+          message={confirmMessage}
+          onConfirm={handleConfirm}
+          onCancel={handleCancel}
+        />
 
         {showAddPanel && (
           <div className={`panel add-agent-panel ${isAddAgentPanelCollapsed ? 'collapsed' : ''}`}>
@@ -2379,7 +2734,8 @@ const MapComponent: React.FC = () => {
           </div>
         )}
 
-        <div className="agent-list">
+        {/* Agent List - Conditionally rendered in mobile view */}
+        <div className={`agent-list ${showMobileControls ? 'visible-mobile' : ''}`}>
           {sortedMarkers.length === 0 ? (
             <p>{t('map.noAgents')}</p>
           ) : (
@@ -2393,7 +2749,6 @@ const MapComponent: React.FC = () => {
                   onAddStop={handleAddStop}
                 />
               ))}
-
             </div>
           )}
         </div>

@@ -152,15 +152,43 @@ export const getGeocode = async (address: string): Promise<GeocodeResponse> => {
     }
 };
 
-export const getDirections = async (origin: string, destination: string, mode: string = 'driving'): Promise<DirectionsResponse> => {
+export const getDirections = async (
+    origin: string,
+    destination: string,
+    mode: string = 'driving',
+    waypoints?: Array<{ location: string; stopover: boolean }>,
+    optimizeWaypoints: boolean = false
+): Promise<DirectionsResponse> => {
     try {
         if (!origin || !destination) throw new Error("Origin and destination are required.");
-        const response = await api.post<DirectionsResponse>("/locations/directions", { origin, destination, mode });
+        const response = await api.post<DirectionsResponse>("/locations/directions", {
+            origin,
+            destination,
+            mode,
+            waypoints,
+            optimizeWaypoints,
+        });
         return response.data;
     } catch (error) {
         throw new Error(handleApiError(error, "Unable to get directions."));
     }
 };
+
+export const updateUserLocation = async (userId: string, coordinates: { lat: number; lng: number }): Promise<{
+    userId: string;
+    latitude: number;
+    longitude: number;
+    address: string;
+    timestamp: string;
+}> => {
+    try {
+        const response = await api.post('/locations/update-location', { userId, ...coordinates });
+        return response.data;
+    } catch (error) {
+        throw new Error(handleApiError(error, 'Unable to update user location.'));
+    }
+};
+
 
 export const searchPlaces = async (query: string, location?: { lat: number; lng: number }, radius: number = 5000): Promise<PlacesResponse> => {
     try {

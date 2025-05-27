@@ -14,7 +14,7 @@ router.get('/week/:weekNumber/year/:year/supervisor/:supervisorID', requirePermi
 
 
 router.post('/suggest', requirePermission('suggest_timesheets'), TimesheetController.suggestTimesheet);
-router.post('/:id/sync-calendar', requirePermission('sync_calendar'), TimesheetController.syncTimesheetToCalendar);
+router.post('/:id/sync-calendar', requirePermission('sync_timesheet_to_calendar'), TimesheetController.syncTimesheetToCalendar);
 router.post('/suggest/cancel/:requestId', requirePermission('suggest_timesheets'), TimesheetController.cancelTimesheetSuggestion);
 
 module.exports = router;

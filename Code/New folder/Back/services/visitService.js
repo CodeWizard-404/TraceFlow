@@ -9,226 +9,9 @@ const { Op } = require('sequelize');
 const path = require('path');
 const fs = require('fs');
 const { sequelize } = require('../config/db');
+const logger = require('../utils/logger');
 
 class VisitService {
-    static async validateVisitOTP(visitId, otpCode, actorID) {
-        const transaction = await sequelize.transaction();
-        try {
-            const visit = await Visit.findByPk(visitId, { transaction });
-            if (!visit) {
-                const error = new Error('Visit not found');
-                error.status = 404;
-                throw error;
-            }
-            if (!visit.agentID) {
-                await transaction.commit();
-                return { valid: true, message: 'OTP validation skipped for recruitment visit' };
-            }
-            await OTPService.validateOTP(visit.agentID, otpCode, 'agent');
-            await transaction.commit();
-            return { valid: true, message: 'OTP validated successfully' };
-        } catch (error) {
-            await transaction.rollback();
-            const err = new Error('Failed to validate OTP: ' + error.message);
-            err.status = error.status || 500;
-            throw err;
-        }
-    }
-
-    static async logVisit(visitID, data, files, actorID) {
-        const transaction = await sequelize.transaction();
-        try {
-            const { duration, checklistUpdates, comment, date, time } = data;
-            if (!files || files.length === 0) {
-                const error = new Error('At least one photo is required to log a visit');
-                error.status = 400;
-                throw error;
-            }
-
-            const visit = await Visit.findByPk(visitID, {
-                include: [{ model: Timesheet, include: [User] }],
-                transaction,
-            });
-            if (!visit) {
-                const error = new Error('Visit not found');
-                error.status = 404;
-                throw error;
-            }
-
-            const newDate = date || visit.date;
-            const newTime = time || visit.time;
-
-            const newDateObj = new Date(newDate);
-            const newYear = newDateObj.getFullYear();
-            const newWeekNumber = this.getISOWeekNumber(newDateObj);
-            const oldTimesheet = visit.Timesheet;
-
-            let targetTimesheet = oldTimesheet;
-            if (newWeekNumber !== oldTimesheet.weekNumber || newYear !== oldTimesheet.year) {
-                targetTimesheet = await Timesheet.findOne({
-                    where: {
-                        weekNumber: newWeekNumber,
-                        year: newYear,
-                        supervisorID: oldTimesheet.supervisorID,
-                    },
-                    transaction,
-                });
-                if (!targetTimesheet) {
-                    targetTimesheet = await Timesheet.create(
-                        {
-                            weekNumber: newWeekNumber,
-                            year: newYear,
-                            supervisorID: oldTimesheet.supervisorID,
-                            status: 'pending',
-                        },
-                        { transaction }
-                    );
-                }
-                visit.timesheetID = targetTimesheet.timesheetID;
-            }
-
-            const oldDate = visit.date;
-            const oldTime = visit.time.replace(/:/g, '-');
-            const supervisorName = `${visit.Timesheet.User.firstname.toLowerCase()}_${visit.Timesheet.User.lastname.toLowerCase()}`;
-            const oldFolderName = `${oldDate}_${oldTime}_${supervisorName}`;
-            const oldFolderPath = path.join(__dirname, '../Uploads/photos', oldFolderName);
-
-            const newTimeForFolder = newTime.replace(/:/g, '-');
-            const newFolderName = `${newDate}_${newTimeForFolder}_${supervisorName}`;
-            const newFolderPath = path.join(__dirname, '../Uploads/photos', newFolderName);
-
-            let photoPaths = visit.photos ? [...visit.photos] : [];
-
-            if (newDate !== oldDate || newTime !== visit.time) {
-                if (!fs.existsSync(newFolderPath)) {
-                    fs.mkdirSync(newFolderPath, { recursive: true });
-                }
-                if (photoPaths.length > 0) {
-                    const updatedPhotoPaths = [];
-                    for (const photo of photoPaths) {
-                        const oldPhotoPath = path.join(__dirname, '..', photo);
-                        const filename = path.basename(photo);
-                        const newPhotoPath = path.join(newFolderPath, filename);
-                        if (fs.existsSync(oldPhotoPath)) {
-                            fs.renameSync(oldPhotoPath, newPhotoPath);
-                        }
-                        updatedPhotoPaths.push(`/uploads/photos/${newFolderName}/${filename}`);
-                    }
-                    photoPaths = updatedPhotoPaths;
-                }
-                if (fs.existsSync(oldFolderPath) && fs.readdirSync(oldFolderPath).length === 0) {
-                    fs.rmSync(oldFolderPath, { recursive: true, force: true });
-                }
-            }
-
-            if (!fs.existsSync(newFolderPath)) {
-                fs.mkdirSync(newFolderPath, { recursive: true });
-            }
-            const newPhotoPaths = files.map((file) => {
-                const destPath = path.join(newFolderPath, file.filename);
-                fs.renameSync(file.path, destPath);
-                return `/uploads/photos/${newFolderName}/${file.filename}`;
-            });
-            photoPaths = [...photoPaths, ...newPhotoPaths];
-
-            let parsedChecklistUpdates = checklistUpdates;
-            if (typeof checklistUpdates === 'string') {
-                try {
-                    parsedChecklistUpdates = JSON.parse(checklistUpdates);
-                } catch (e) {
-                    const error = new Error('Invalid checklistUpdates format');
-                    error.status = 400;
-                    throw error;
-                }
-            }
-
-            if (parsedChecklistUpdates && Array.isArray(parsedChecklistUpdates)) {
-                for (const update of parsedChecklistUpdates) {
-                    await ChecklistService.updateChecklistStatus(visitID, update.checklistID, update.checked, { transaction });
-                }
-            }
-
-            visit.date = newDate;
-            visit.time = newTime;
-            visit.duration = duration || visit.duration;
-            visit.photos = photoPaths;
-            visit.comment = comment || visit.comment;
-            visit.status = 'visited';
-            await visit.save({ transaction });
-
-            const reloadedVisit = await Visit.findByPk(visitID, {
-                include: [Checklist],
-                transaction,
-            });
-
-            try {
-                const userId = visit.Timesheet.User.userID;
-                const event = await GoogleCalendarService.updateCalendarEvent(userId, visitID);
-                await GoogleCalendarService.notifyCalendarUpdate(userId, {
-                    visitId: visitID,
-                    calendarEventId: event.id,
-                    action: 'updated',
-                });
-            } catch (error) {
-                console.error(`Failed to update calendar event for visit ${visitID}: ${error.message}`);
-            }
-
-            await transaction.commit();
-            return reloadedVisit;
-        } catch (error) {
-            await transaction.rollback();
-            const err = new Error('Failed to log visit: ' + error.message);
-            err.status = error.status || 500;
-            throw err;
-        }
-    }
-
-    static async verifyQRCode(qrData, visitId, actorID) {
-        if (!qrData || !visitId) {
-            const error = new Error('Missing required parameters');
-            error.status = 400;
-            throw error;
-        }
-        try {
-            const visit = await Visit.findByPk(visitId);
-            if (!visit) {
-                const error = new Error('Visit not found');
-                error.status = 404;
-                throw error;
-            }
-            if (!visit.agentID) {
-                return { valid: true, message: 'Verification skipped for recruitment visit' };
-            }
-            const parsedQR = parseTLV(qrData);
-            let agentPhoneFromQR = parsedQR['29']?.['03'] || parsedQR['02'];
-            if (typeof agentPhoneFromQR === 'object' && agentPhoneFromQR !== null) {
-                agentPhoneFromQR = Object.values(agentPhoneFromQR).join('').replace(/[^0-9+]/g, '');
-            } else {
-                agentPhoneFromQR = agentPhoneFromQR?.replace(/[^0-9+]/g, '');
-            }
-            if (!agentPhoneFromQR) {
-                const error = new Error('Invalid QR code - missing agent phone number');
-                error.status = 400;
-                throw error;
-            }
-            const agent = await Agent.findByPk(visit.agentID);
-            if (agent.phone !== agentPhoneFromQR) {
-                const error = new Error(`Phone mismatch:\nQR: ${agentPhoneFromQR}\nVisit: ${agent.phone}`);
-                error.status = 400;
-                throw error;
-            }
-
-            const otp = await OTPService.generateOTP(visit.agentID, 'agent');
-            await sendSMS(agent.phone, `Your OTP for visit ${visitId} verification is ${otp.code}`);
-
-            return { valid: true, message: 'Verification successful, OTP sent to agent' };
-        } catch (error) {
-            const err = new Error(error.message);
-            err.status = error.status || 500;
-            throw err;
-        }
-    }
-
     static async createVisit(data, actorID, options = {}) {
         const { date, time, agentID, supervisorID, timesheetID, reasons, checklists, location, status = 'pending' } = data;
 
@@ -248,10 +31,18 @@ class VisitService {
 
             let targetTimesheet;
             if (timesheetID) {
-                targetTimesheet = await Timesheet.findByPk(timesheetID, { transaction });
+                targetTimesheet = await Timesheet.findByPk(timesheetID, {
+                    include: [{ model: User }],
+                    transaction
+                });
                 if (!targetTimesheet) {
                     const error = new Error('Specified timesheet not found');
                     error.status = 404;
+                    throw error;
+                }
+                if (!targetTimesheet.User) {
+                    const error = new Error('Timesheet has no associated user');
+                    error.status = 500;
                     throw error;
                 }
             } else {
@@ -261,7 +52,7 @@ class VisitService {
                         year,
                         supervisorID,
                     },
-                    include: [{ model: Visit }],
+                    include: [{ model: Visit }, { model: User }],
                     transaction,
                 });
 
@@ -272,15 +63,22 @@ class VisitService {
                                 weekNumber,
                                 year,
                                 supervisorID,
-                                status: status,
+                                status,
                             },
                             { transaction }
                         );
+                        const user = await User.findByPk(supervisorID, { transaction });
+                        if (!user) {
+                            const error = new Error('Supervisor not found');
+                            error.status = 404;
+                            throw error;
+                        }
+                        targetTimesheet.User = user;
                     } catch (error) {
                         if (error.name === 'SequelizeUniqueConstraintError') {
                             targetTimesheet = await Timesheet.findOne({
                                 where: { weekNumber, year, supervisorID },
-                                include: [{ model: Visit }],
+                                include: [{ model: Visit }, { model: User }],
                                 transaction,
                             });
                             if (!targetTimesheet) {
@@ -290,6 +88,11 @@ class VisitService {
                             throw error;
                         }
                     }
+                }
+                if (!targetTimesheet.User) {
+                    const error = new Error('Timesheet has no associated user');
+                    error.status = 500;
+                    throw error;
                 }
             }
 
@@ -355,15 +158,27 @@ class VisitService {
             }
             await timesheetWithVisits.save({ transaction });
 
-            const reloadedVisit = await visit.reload({ include: [Reason, Checklist], transaction });
+            const reloadedVisit = await visit.reload({ include: [Reason, Checklist, Agent], transaction });
 
             try {
-                const userId = supervisorID;
+                const userId = targetTimesheet.User.userID;
+                if (typeof userId !== 'string') {
+                    throw new Error(`Invalid userId: ${userId}`);
+                }
                 const event = await GoogleCalendarService.createCalendarEvent(userId, visit.visitID);
                 visit.calendarEventId = event.id;
                 await visit.save({ transaction });
+                await GoogleCalendarService.notifyCalendarUpdate(userId, {
+                    visitId: visit.visitID,
+                    calendarEventId: event.id,
+                    action: 'created',
+                });
+                logger.info(`Synced visit ${visit.visitID} to Google Calendar`, { userId, visitId: visit.visitID });
             } catch (error) {
-                console.error(`Failed to sync visit ${visit.visitID} to Google Calendar: ${error.message}`);
+                logger.error(`Failed to sync visit ${visit.visitID} to Google Calendar: ${error.message}`, {
+                    userId: targetTimesheet.User?.userID || supervisorID,
+                    visitId: visit.visitID
+                });
             }
 
             if (isLocalTransaction) await transaction.commit();
@@ -371,6 +186,231 @@ class VisitService {
         } catch (error) {
             if (isLocalTransaction) await transaction.rollback();
             const err = new Error('Failed to create visit: ' + error.message);
+            err.status = error.status || 500;
+            throw err;
+        }
+    }
+
+    static async validateVisitOTP(visitId, otpCode, actorID) {
+        const transaction = await sequelize.transaction();
+        try {
+            const visit = await Visit.findByPk(visitId, { transaction });
+            if (!visit) {
+                const error = new Error('Visit not found');
+                error.status = 404;
+                throw error;
+            }
+            if (!visit.agentID) {
+                await transaction.commit();
+                return { valid: true, message: 'OTP validation skipped for recruitment visit' };
+            }
+            await OTPService.validateOTP(visit.agentID, otpCode, 'agent');
+            await transaction.commit();
+            return { valid: true, message: 'OTP validated successfully' };
+        } catch (error) {
+            await transaction.rollback();
+            const err = new Error('Failed to validate OTP: ' + error.message);
+            err.status = error.status || 500;
+            throw err;
+        }
+    }
+
+    static async logVisit(visitID, data, files, actorID) {
+        const transaction = await sequelize.transaction();
+        try {
+            const { duration, checklistUpdates, comment, date, time, status } = data;
+            if (!files || files.length === 0) {
+                const error = new Error('At least one photo is required to log a visit');
+                error.status = 400;
+                throw error;
+            }
+
+            const visit = await Visit.findByPk(visitID, {
+                include: [
+                    { model: Timesheet, include: [User] },
+                    { model: Reason, attributes: ['reasonID', 'item'], through: { attributes: [] } },
+                    { model: Checklist, attributes: ['checklistID', 'item'], through: { attributes: [] } }
+                ],
+                transaction,
+            });
+            if (!visit) {
+                const error = new Error('Visit not found');
+                error.status = 404;
+                throw error;
+            }
+
+            const newDate = date || visit.date;
+            const newTime = time || visit.time;
+
+            const newDateObj = new Date(newDate);
+            const newYear = newDateObj.getFullYear();
+            const newWeekNumber = this.getISOWeekNumber(newDateObj);
+            const oldTimesheet = visit.Timesheet;
+
+            let targetTimesheet = oldTimesheet;
+            if (newWeekNumber !== oldTimesheet.weekNumber || newYear !== oldTimesheet.year) {
+                targetTimesheet = await Timesheet.findOne({
+                    where: {
+                        weekNumber: newWeekNumber,
+                        year: newYear,
+                        supervisorID: oldTimesheet.supervisorID,
+                    },
+                    transaction,
+                });
+                if (!targetTimesheet) {
+                    targetTimesheet = await Timesheet.create(
+                        {
+                            weekNumber: newWeekNumber,
+                            year: newYear,
+                            supervisorID: oldTimesheet.supervisorID,
+                            status: 'pending',
+                        },
+                        { transaction }
+                    );
+                }
+                visit.timesheetID = targetTimesheet.timesheetID;
+            }
+
+            const oldDate = visit.date;
+            const oldTime = visit.time.replace(/:/g, '-');
+            const supervisorName = `${visit.Timesheet.User.firstname.toLowerCase()}_${visit.Timesheet.User.lastname.toLowerCase()}`;
+            const oldFolderName = `${oldDate}_${oldTime}_${supervisorName}`;
+            const oldFolderPath = path.join(__dirname, '../Uploads/photos', oldFolderName);
+
+            const newTimeForFolder = newTime.replace(/:/g, '-');
+            const newFolderName = `${newDate}_${newTimeForFolder}_${supervisorName}`;
+            const newFolderPath = path.join(__dirname, '../Uploads/photos', newFolderName);
+
+            let photoPaths = visit.photos ? [...visit.photos] : [];
+
+            if (newDate !== oldDate || newTime !== visit.time) {
+                if (!fs.existsSync(newFolderPath)) {
+                    fs.mkdirSync(newFolderPath, { recursive: true });
+                }
+                if (photoPaths.length > 0) {
+                    const updatedPhotoPaths = [];
+                    for (const photo of photoPaths) {
+                        const oldPhotoPath = path.join(__dirname, '..', photo);
+                        const filename = path.basename(photo);
+                        const newPhotoPath = path.join(newFolderPath, filename);
+                        if (fs.existsSync(oldPhotoPath)) {
+                            fs.renameSync(oldPhotoPath, newPhotoPath);
+                        }
+                        updatedPhotoPaths.push(`/Uploads/photos/${newFolderName}/${filename}`);
+                    }
+                    photoPaths = updatedPhotoPaths;
+                }
+                if (fs.existsSync(oldFolderPath) && fs.readdirSync(oldFolderPath).length === 0) {
+                    fs.rmSync(oldFolderPath, { recursive: true, force: true });
+                }
+            }
+
+            if (!fs.existsSync(newFolderPath)) {
+                fs.mkdirSync(newFolderPath, { recursive: true });
+            }
+            const newPhotoPaths = files.map((file) => {
+                const destPath = path.join(newFolderPath, file.filename);
+                fs.renameSync(file.path, destPath);
+                return `/Uploads/photos/${newFolderName}/${file.filename}`;
+            });
+            photoPaths = [...photoPaths, ...newPhotoPaths];
+
+            let parsedChecklistUpdates = checklistUpdates;
+            if (typeof checklistUpdates === 'string') {
+                try {
+                    parsedChecklistUpdates = JSON.parse(checklistUpdates);
+                } catch (e) {
+                    const error = new Error('Invalid checklistUpdates format');
+                    error.status = 400;
+                    throw error;
+                }
+            }
+
+            if (parsedChecklistUpdates && Array.isArray(parsedChecklistUpdates)) {
+                for (const update of parsedChecklistUpdates) {
+                    await ChecklistService.updateChecklistStatus(visitID, update.checklistID, update.checked, { transaction });
+                }
+            }
+
+            visit.date = newDate;
+            visit.time = newTime;
+            visit.duration = duration || visit.duration;
+            visit.photos = photoPaths;
+            visit.comment = comment || visit.comment;
+            visit.status = ['pending', 'visited', 'rejected', 'validated'].includes(status) ? status : 'visited';
+            await visit.save({ transaction });
+
+            const reloadedVisit = await visit.reload({ include: [Reason, Checklist, Agent], transaction });
+
+            try {
+                const userId = visit.Timesheet.User.userID;
+                if (typeof userId !== 'string') {
+                    throw new Error(`Invalid userId: ${userId}`);
+                }
+                const event = await GoogleCalendarService.updateCalendarEvent(userId, visitID);
+                await GoogleCalendarService.notifyCalendarUpdate(userId, {
+                    visitId: visitID,
+                    calendarEventId: event.id,
+                    action: 'updated',
+                });
+            } catch (error) {
+                logger.error(`Failed to update calendar event for visit ${visitID}: ${error.message}`, {
+                    userId: visit.Timesheet.User?.userID,
+                    visitId: visitID
+                });
+            }
+
+            await transaction.commit();
+            return reloadedVisit;
+        } catch (error) {
+            await transaction.rollback();
+            const err = new Error('Failed to log visit: ' + error.message);
+            err.status = error.status || 500;
+            throw err;
+        }
+    }
+
+    static async verifyQRCode(qrData, visitId, actorID) {
+        if (!qrData || !visitId) {
+            const error = new Error('Missing required parameters');
+            error.status = 400;
+            throw error;
+        }
+        try {
+            const visit = await Visit.findByPk(visitId);
+            if (!visit) {
+                const error = new Error('Visit not found');
+                error.status = 404;
+                throw error;
+            }
+            if (!visit.agentID) {
+                return { valid: true, message: 'Verification skipped for recruitment visit' };
+            }
+            const parsedQR = parseTLV(qrData);
+            let agentPhoneFromQR = parsedQR['29']?.['03'] || parsedQR['02'];
+            if (typeof agentPhoneFromQR === 'object' && agentPhoneFromQR !== null) {
+                agentPhoneFromQR = Object.values(agentPhoneFromQR).join('').replace(/[^0-9+]/g, '');
+            } else {
+                agentPhoneFromQR = agentPhoneFromQR?.replace(/[^0-9+]/g, '');
+            }
+            if (!agentPhoneFromQR) {
+                const error = new Error('Invalid QR code - missing agent phone number');
+                error.status = 400;
+                throw error;
+            }
+            const agent = await Agent.findByPk(visit.agentID);
+            if (agent.phone !== agentPhoneFromQR) {
+                const error = new Error(`Phone mismatch:\nQR: ${agentPhoneFromQR}\nVisit: ${agent.phone}`);
+                error.status = 400;
+                throw error;
+            }
+
+            const otp = await OTPService.generateOTP(visit.agentID, 'agent');
+            await sendSMS(agent.phone, `Your OTP for visit ${visitId} verification is ${otp.code}`);
+
+            return { valid: true, message: 'Verification successful, OTP sent to agent' };
+        } catch (error) {
+            const err = new Error(error.message);
             err.status = error.status || 500;
             throw err;
         }
@@ -399,11 +439,17 @@ class VisitService {
     }
 
     static async updateVisit(visitID, data, files = [], actorID) {
+        const transaction = await sequelize.transaction();
         try {
             const { date, time, duration, location, status, comment, agentID, checklists, reasons, photosToRemove, supervisorID } = data;
 
             const visit = await Visit.findByPk(visitID, {
-                include: [{ model: Timesheet, include: [User] }, Checklist, Reason],
+                include: [
+                    { model: Timesheet, include: [User] },
+                    { model: Reason, attributes: ['reasonID', 'item'], through: { attributes: [] } },
+                    { model: Checklist, attributes: ['checklistID', 'item'], through: { attributes: [] } }
+                ],
+                transaction
             });
             if (!visit) {
                 const error = new Error('Visit not found');
@@ -445,7 +491,7 @@ class VisitService {
                 files.forEach((file) => {
                     const destPath = path.join(folderPath, file.filename);
                     fs.renameSync(file.path, destPath);
-                    const newPhotoPath = `/uploads/photos/${folderName}/${file.filename}`;
+                    const newPhotoPath = `/Uploads/photos/${folderName}/${file.filename}`;
                     photoPaths.push(newPhotoPath);
                 });
             }
@@ -464,6 +510,7 @@ class VisitService {
                         year: newYear,
                         supervisorID: supervisorID,
                     },
+                    transaction
                 });
                 if (!targetTimesheet) {
                     targetTimesheet = await Timesheet.create({
@@ -471,7 +518,7 @@ class VisitService {
                         year: newYear,
                         supervisorID: supervisorID,
                         status: 'pending',
-                    });
+                    }, { transaction });
                 }
                 visit.timesheetID = targetTimesheet.timesheetID;
             } else if (newWeekNumber !== oldTimesheet.weekNumber || newYear !== oldTimesheet.year) {
@@ -481,6 +528,7 @@ class VisitService {
                         year: newYear,
                         supervisorID: oldTimesheet.supervisorID,
                     },
+                    transaction
                 });
                 if (!targetTimesheet) {
                     targetTimesheet = await Timesheet.create({
@@ -488,27 +536,27 @@ class VisitService {
                         year: newYear,
                         supervisorID: oldTimesheet.supervisorID,
                         status: 'pending',
-                    });
+                    }, { transaction });
                 }
                 visit.timesheetID = targetTimesheet.timesheetID;
             }
 
             if (agentID !== undefined) {
                 if (agentID) {
-                    const agent = await Agent.findByPk(agentID);
+                    const agent = await Agent.findByPk(agentID, { transaction });
                     if (!agent) {
                         const error = new Error('Agent not found');
                         error.status = 404;
                         throw error;
                     }
                     visit.agentID = agentID;
-                    visit.location = await this.getFormattedLocation(agentID, location);
+                    visit.location = await this.getFormattedLocation(agentID, location, { transaction });
                 } else {
                     visit.agentID = null;
                     visit.location = location;
                 }
             } else {
-                visit.location = await this.getFormattedLocation(visit.agentID, location !== undefined ? location : visit.location);
+                visit.location = await this.getFormattedLocation(visit.agentID, location !== undefined ? location : visit.location, { transaction });
             }
 
             let parsedChecklists = checklists;
@@ -530,32 +578,35 @@ class VisitService {
 
             if (parsedChecklists && Array.isArray(parsedChecklists)) {
                 const checklistIds = parsedChecklists.map((c) => c.id);
-                const updatedChecklists = await ChecklistService.getItemsByIds(checklistIds);
-                await visit.setChecklists(updatedChecklists);
+                const updatedChecklists = await ChecklistService.getItemsByIds(checklistIds, { transaction });
+                await visit.setChecklists(updatedChecklists, { transaction });
                 for (const checklist of parsedChecklists) {
                     if (checklist.checked !== undefined) {
-                        await ChecklistService.updateChecklistStatus(visitID, checklist.id, checklist.checked);
+                        await ChecklistService.updateChecklistStatus(visitID, checklist.id, checklist.checked, { transaction });
                     }
                 }
             }
 
             if (parsedReasons && Array.isArray(parsedReasons)) {
                 const reasonIds = parsedReasons.map((r) => r.id);
-                const updatedReasons = await ReasonService.getItemsByIds(reasonIds);
-                await visit.setReasons(updatedReasons);
+                const updatedReasons = await ReasonService.getItemsByIds(reasonIds, { transaction });
+                await visit.setReasons(updatedReasons, { transaction });
             }
 
             visit.date = newDate;
             visit.time = time || visit.time;
             visit.duration = duration !== undefined ? duration : visit.duration;
-            visit.status = status || visit.status;
+            visit.status = ['pending', 'visited', 'rejected', 'validated'].includes(status) ? status : visit.status;
             visit.photos = photoPaths;
             visit.comment = comment !== undefined ? comment : visit.comment;
 
-            await visit.save();
+            await visit.save({ transaction });
 
             try {
                 const userId = visit.Timesheet.User.userID;
+                if (typeof userId !== 'string') {
+                    throw new Error(`Invalid userId: ${userId}`);
+                }
                 const event = await GoogleCalendarService.updateCalendarEvent(userId, visitID);
                 await GoogleCalendarService.notifyCalendarUpdate(userId, {
                     visitId: visitID,
@@ -563,11 +614,17 @@ class VisitService {
                     action: 'updated',
                 });
             } catch (error) {
-                console.error(`Failed to update calendar event for visit ${visitID}: ${error.message}`);
+                logger.error(`Failed to update calendar event for visit ${visitID}: ${error.message}`, {
+                    userId: visit.Timesheet.User?.userID,
+                    visitId: visitID
+                });
             }
 
-            return visit.reload({ include: [Checklist, Reason] });
+            const reloadedVisit = await visit.reload({ include: [Checklist, Reason, Agent], transaction });
+            await transaction.commit();
+            return reloadedVisit;
         } catch (error) {
+            await transaction.rollback();
             const err = new Error('Failed to update visit: ' + error.message);
             err.status = error.status || 500;
             throw err;
@@ -583,9 +640,11 @@ class VisitService {
     }
 
     static async deleteVisit(visitID, actorID) {
+        const transaction = await sequelize.transaction();
         try {
             const visit = await Visit.findByPk(visitID, {
                 include: [{ model: Timesheet, include: [User] }],
+                transaction
             });
             if (!visit) {
                 const error = new Error('Visit not found');
@@ -604,18 +663,26 @@ class VisitService {
 
             try {
                 const userId = visit.Timesheet.User.userID;
+                if (typeof userId !== 'string') {
+                    throw new Error(`Invalid userId: ${userId}`);
+                }
                 await GoogleCalendarService.deleteCalendarEvent(userId, visitID);
                 await GoogleCalendarService.notifyCalendarUpdate(userId, {
                     visitId: visitID,
                     action: 'deleted',
                 });
             } catch (error) {
-                console.error(`Failed to delete calendar event for visit ${visitID}: ${error.message}`);
+                logger.error(`Failed to delete calendar event for visit ${visitID}: ${error.message}`, {
+                    userId: visit.Timesheet.User?.userID,
+                    visitId: visitID
+                });
             }
 
-            await visit.destroy();
+            await visit.destroy({ transaction });
+            await transaction.commit();
             return { message: 'Visit and associated photos deleted successfully' };
         } catch (error) {
+            await transaction.rollback();
             const err = new Error('Failed to delete visit: ' + error.message);
             err.status = error.status || 500;
             throw err;

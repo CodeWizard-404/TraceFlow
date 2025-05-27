@@ -6035,7 +6035,6 @@ body.dark .error-message {
     input[type="tel"],
     select {
         font-size: 0.875rem;
-        padding: 0.75rem;
     }
 
     label {

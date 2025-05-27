@@ -30,27 +30,26 @@ import {
   archiveStub,
 } from "../../apis/receiptStubAPI";
 import {
-  getAllUsers,
-  getUserByPhone,
   getSupervisorsByRegionalManager,
+  getRegionalManagerBySupervisor,
   getUsersByRegion,
   getUsersByGovernorate,
   getUsersByDelegation,
-  getUserById,
+  getUsersByRole,
 } from "../../apis/userAPI";
 import {
   getAgentsByDelegation,
-  getAgentLocations,
   getAgentByPhone,
   getAgentById,
+  getAgentsByUser,
 } from "../../apis/agentAPI";
 import {
   getAllRegions,
   getGovernoratesByRegion,
   getDelegationsByGovernorate,
-  getAllDelegations,
-  getGovernoratesByDelegation,
-  getRegionsByGovernorate,
+  getRegionsByUser,
+  getGovernoratesByUser,
+  getDelegationsByUser,
 } from "../../apis/locationApi";
 import "./TransferReceiptBook.css";
 import ReceiptBook from "../../models/ReceiptBook";
@@ -62,10 +61,17 @@ import Governorate from "../../models/Governorate";
 import Delegation from "../../models/Delegation";
 import { useTranslation } from "react-i18next";
 import { t } from "i18next";
+import { debounce } from "lodash";
 
 const PERMISSIONS = {
-  TRANSFER_RECEIPT_BOOKS: import.meta.env
-    .VITE_PERMISSIONS_TRANSFER_RECEIPT_BOOKS,
+  ACCESS_RECEIPT_BOOKS: import.meta.env.VITE_PERMISSIONS_ACCESS_RECEIPT_BOOKS,
+  SEND_RECEIPT_BOOKS: import.meta.env.VITE_PERMISSIONS_SEND_RECEIPT_BOOKS,
+  COLLECT_SUPPLIER_RECEIPT_BOOKS: import.meta.env.VITE_PERMISSIONS_COLLECT_SUPPLIER_RECEIPT_BOOKS,
+  TRANSFER_RECEIPT_BOOKS: import.meta.env.VITE_PERMISSIONS_TRANSFER_RECEIPT_BOOKS,
+  VALIDATE_RECEIPT_BOOKS_TRANSFER: import.meta.env.VITE_PERMISSIONS_VALIDATE_RECEIPT_BOOKS_TRANSFER,
+  COLLECT_RECEIPT_STUBS: import.meta.env.VITE_PERMISSIONS_COLLECT_RECEIPT_STUBS,
+  VALIDATE_RECEIPT_STUBS: import.meta.env.VITE_PERMISSIONS_VALIDATE_RECEIPT_STUBS,
+  ARCHIVE_RECEIPT_STUBS: import.meta.env.VITE_PERMISSIONS_ARCHIVE_RECEIPT_STUBS,
 };
 
 const ROLES = {
@@ -78,21 +84,42 @@ const ROLES = {
 
 const ROLE_TRANSFER_RULES = {
   [ROLES.PURCHASE_TEAM]: {
-    transferable: (book: ReceiptBook, userID: string) =>
+    transferable: (book: ReceiptBook, userID: string, recipientType: string) =>
       (book.status === t("common.receiptBookStatuses.inStock") &&
-        book.currentHolderID === userID) ||
-      book.status === t("common.receiptBookStatuses.sentToSupplier") ||
+        book.currentHolderID === userID &&
+        recipientType === "ToSupplier") ||
       (book.status === t("common.receiptBookStatuses.collectFromSupplier") &&
-        book.currentHolderID === userID),
-    recipientOptions: ["Supplier", "Regional Manager", "Collect from Supplier"],
+        book.currentHolderID === userID &&
+        recipientType === "ToRegionalManager"),
+    recipientOptions: ["ToSupplier", "FromSupplier", "ToRegionalManager"],
   },
   [ROLES.REGIONAL_MANAGER]: {
-    transferable: (book: ReceiptBook, userID: string) =>
-      [
+    transferable: (book: ReceiptBook, userID: string, recipientType: string) => {
+      const isValidStatus = [
         t("common.receiptBookStatuses.withRegionalManager"),
         t("common.receiptBookStatuses.stubCollected"),
-      ].includes(book.status) && book.currentHolderID === userID,
-    recipientOptions: ["Regional Manager", "Supervisor", "Stock Manager"],
+      ].includes(book.status);
+      const isHolderMatch = book.currentHolderID === userID;
+      // Fallback to "pending" if translation fails
+      const pendingStubStatus = t("common.receiptStubStatuses.pending").toLowerCase() === "common.receiptstubstatuses.pending"
+        ? "pending"
+        : t("common.receiptStubStatuses.pending").toLowerCase();
+      const bookStubStatus = book.ReceiptStub?.status?.toLowerCase();
+      const isPendingStub = bookStubStatus === pendingStubStatus;
+      console.log(
+        `REGIONAL_MANAGER transferable check for book ${book.number}: ` +
+        `isValidStatus=${isValidStatus}, isHolderMatch=${isHolderMatch}, ` +
+        `recipientType=${recipientType}, isPendingStub=${isPendingStub}, ` +
+        `bookStubStatus=${bookStubStatus}, pendingStubStatus=${pendingStubStatus}, ` +
+        `rawTranslatedPending=${t("common.receiptStubStatuses.pending")}`
+      );
+      return (
+        isValidStatus &&
+        isHolderMatch &&
+        (recipientType !== "ToStockManager" || !isPendingStub)
+      );
+    },
+    recipientOptions: ["ToRegionalManager", "ToSupervisor", "ToStockManager"],
   },
   [ROLES.SUPERVISOR]: {
     transferable: (book: ReceiptBook, userID: string) =>
@@ -103,37 +130,57 @@ const ROLE_TRANSFER_RULES = {
       ].includes(book.status) &&
       (book.currentHolderID === userID || book.agentID),
     recipientOptions: [
-      "Supervisor",
-      "Regional Manager",
-      "Agent",
-      "Stock Manager",
-      "Stub Collection",
+      "ToAgent",
+      "StubToSupervisor",
+      "ToRegionalManager",
+      "ToRegionalManagerFromSupervisor",
+      "ToSupervisor",
+      "ToStockManager",
     ],
   },
   [ROLES.STOCK_MANAGER]: {
-    transferable: (book: ReceiptBook, userID: string) =>
-      book.status === t("common.receiptBookStatuses.withStockManager") &&
-      book.currentHolderID === userID,
-    recipientOptions: ["Stock Manager", "Archive"],
+    transferable: (book: ReceiptBook, userID: string, recipientType: string) => {
+      // Fallback to "pending" if translation fails
+      const pendingStubStatus = t("common.receiptStubStatuses.pending").toLowerCase() === "common.receiptstubstatuses.pending"
+        ? "pending"
+        : t("common.receiptStubStatuses.pending").toLowerCase();
+      const bookStubStatus = book.ReceiptStub?.status?.toLowerCase();
+      const isPendingStub = bookStubStatus === pendingStubStatus;
+      const isValid = (
+        book.status === t("common.receiptBookStatuses.withStockManager") &&
+        book.currentHolderID === userID &&
+        (recipientType === "Archived" ||
+          (recipientType === "ToStockManager" && !isPendingStub))
+      );
+      console.log(
+        `STOCK_MANAGER transferable check for book ${book.number}: ` +
+        `isValid=${isValid}, recipientType=${recipientType}, ` +
+        `isPendingStub=${isPendingStub}, bookStubStatus=${bookStubStatus}, ` +
+        `pendingStubStatus=${pendingStubStatus}, ` +
+        `rawTranslatedPending=${t("common.receiptStubStatuses.pending")}`
+      );
+      return isValid;
+    },
+    recipientOptions: ["ToStockManager", "Archived"],
   },
   [ROLES.SUPER_ADMIN]: {
     transferable: () => true,
     recipientOptions: [
-      "Supplier",
-      "Regional Manager",
-      "Supervisor",
-      "Agent",
-      "Stock Manager",
-      "Stub Collection",
-      "Archive",
-      "Collect from Supplier",
+      "ToSupplier",
+      "FromSupplier",
+      "ToRegionalManager",
+      "ToSupervisor",
+      "ToAgent",
+      "StubToSupervisor",
+      "ToRegionalManagerFromSupervisor",
+      "ToStockManager",
+      "Archived",
     ],
   },
-} as const;
+};
 
 const ITEMS_PER_PAGE = 6;
 const OTP_EXPIRY_SECONDS = 600;
-const ERROR_DISPLAY_DURATION = 5000;
 
 const TransferReceiptBook: React.FC = () => {
   const navigate = useNavigate();
@@ -145,11 +192,7 @@ const TransferReceiptBook: React.FC = () => {
     return <div>{t("transferReceiptBook.errors.unknown")}</div>;
   }
 
-  const {
-    agentID: preSelectedAgentID,
-    forceAgent,
-    transferType,
-  } = (location.state as {
+  const { agentID: preSelectedAgentID, forceAgent, transferType } = (location.state as {
     agentID?: string;
     forceAgent?: boolean;
     transferType?: string;
@@ -158,13 +201,16 @@ const TransferReceiptBook: React.FC = () => {
   const currentUserID = user.userID;
   const isSuperAdmin = userRoleSet.has(ROLES.SUPER_ADMIN);
   const isSupervisor = userRoleSet.has(ROLES.SUPERVISOR);
+  const isRegionalManager = userRoleSet.has(ROLES.REGIONAL_MANAGER);
 
   const [receiptBooks, setReceiptBooks] = useState<ReceiptBook[]>([]);
+  const [booksLoading, setBooksLoading] = useState<boolean>(false);
   const [receiptBookTypes, setReceiptBookTypes] = useState<ReceiptBookType[]>([]);
   const [selectedBookIDs, setSelectedBookIDs] = useState<string[]>([]);
   const [users, setUsers] = useState<User[]>([]);
-  const [locations, setLocations] = useState<string[]>([]);
+  const [usersLoading, setUsersLoading] = useState<boolean>(false);
   const [agents, setAgents] = useState<Agent[]>([]);
+  const [agentsLoading, setAgentsLoading] = useState<boolean>(false);
   const [regions, setRegions] = useState<Region[]>([]);
   const [selectedRegion, setSelectedRegion] = useState<string>("");
   const [governorates, setGovernorates] = useState<Governorate[]>([]);
@@ -174,20 +220,21 @@ const TransferReceiptBook: React.FC = () => {
   const [selectedAgent, setSelectedAgent] = useState<string>("");
   const [supervisors, setSupervisors] = useState<User[]>([]);
   const [selectedSupervisor, setSelectedSupervisor] = useState<string>("");
+  const [supervisorSearch, setSupervisorSearch] = useState<string>("");
+  const [supervisorPhone, setSupervisorPhone] = useState<string>("");
   const [regionalManagers, setRegionalManagers] = useState<User[]>([]);
   const [selectedRegionalManager, setSelectedRegionalManager] = useState<string>("");
+  const [regionalManagerSearch, setRegionalManagerSearch] = useState<string>("");
   const [recipientType, setRecipientType] = useState<string>("");
   const [recipientID, setRecipientID] = useState<string>("");
   const [supplierEmail, setSupplierEmail] = useState<string>("");
   const [agentPhone, setAgentPhone] = useState<string>("");
   const [agentSearch, setAgentSearch] = useState<string>("");
-  const [supervisorSearch, setSupervisorSearch] = useState<string>("");
-  const [supervisorPhone, setSupervisorPhone] = useState<string>("");
-  const [regionalManagerSearch, setRegionalManagerSearch] = useState<string>("");
   const [bookSearchQuery, setBookSearchQuery] = useState<string>("");
   const [scannedQR, setScannedQR] = useState<string[]>([]);
   const [otp, setOtp] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
+  const [transferring, setTransferring] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [transferInitiated, setTransferInitiated] = useState<boolean>(false);
   const [isScannerRunning, setIsScannerRunning] = useState<boolean>(false);
@@ -199,12 +246,18 @@ const TransferReceiptBook: React.FC = () => {
   const scannedQRRef = useRef<Set<string>>(new Set());
   const stopLockRef = useRef<boolean>(false);
   const scanLockRef = useRef<boolean>(false);
+  const bookListRef = useRef<HTMLUListElement>(null);
 
   const userPermissions = useMemo(
     () => ({
-      canTransferReceiptBooks: effectivePermissions?.some(
-        (p) => p.name === PERMISSIONS.TRANSFER_RECEIPT_BOOKS
-      ),
+      canAccessReceiptBooks: effectivePermissions?.some((p) => p.name === PERMISSIONS.ACCESS_RECEIPT_BOOKS),
+      canSendReceiptBooks: effectivePermissions?.some((p) => p.name === PERMISSIONS.SEND_RECEIPT_BOOKS),
+      canCollectSupplierReceiptBooks: effectivePermissions?.some((p) => p.name === PERMISSIONS.COLLECT_SUPPLIER_RECEIPT_BOOKS),
+      canTransferReceiptBooks: effectivePermissions?.some((p) => p.name === PERMISSIONS.TRANSFER_RECEIPT_BOOKS),
+      canValidateReceiptBooksTransfer: effectivePermissions?.some((p) => p.name === PERMISSIONS.VALIDATE_RECEIPT_BOOKS_TRANSFER),
+      canCollectReceiptStubs: effectivePermissions?.some((p) => p.name === PERMISSIONS.COLLECT_RECEIPT_STUBS),
+      canValidateReceiptStubs: effectivePermissions?.some((p) => p.name === PERMISSIONS.VALIDATE_RECEIPT_STUBS),
+      canArchiveReceiptStubs: effectivePermissions?.some((p) => p.name === PERMISSIONS.ARCHIVE_RECEIPT_STUBS),
     }),
     [effectivePermissions]
   );
@@ -216,12 +269,6 @@ const TransferReceiptBook: React.FC = () => {
     },
     [receiptBookTypes, t]
   );
-
-  useEffect(() => {
-    if (!error) return;
-    const timer = setTimeout(() => setError(null), ERROR_DISPLAY_DURATION);
-    return () => clearTimeout(timer);
-  }, [error]);
 
   useEffect(() => {
     if (!transferInitiated) {
@@ -244,16 +291,22 @@ const TransferReceiptBook: React.FC = () => {
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${minutes.toString().padStart(2, "0")}:${secs
-      .toString()
-      .padStart(2, "0")}`;
+    return `${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
+  useEffect(() => {
+    if (!error) return;
+    const timer = setTimeout(() => {
+      setError(null);
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [error]);
+
   const recipientDetails = useMemo(() => {
-    if (recipientType === "Agent") {
+    if (recipientType === "ToAgent") {
       const agent = agents.find((a) => a.agentID === recipientID);
       return agent ? `${agent.name} ${agent.lastname} (${agent.phone})` : t("transferReceiptBook.form.loading");
-    } else if (recipientType === "Stub Collection") {
+    } else if (recipientType === "StubToSupervisor") {
       const books = receiptBooks.filter((b) => selectedBookIDs.includes(b.bookID));
       const agentIDs = [...new Set(books.map((b) => b.agentID).filter((id) => id))];
       if (agentIDs.length !== 1) {
@@ -269,18 +322,42 @@ const TransferReceiptBook: React.FC = () => {
 
   const isTransferable = useCallback(
     (book: ReceiptBook) => {
-      if (recipientType === "Supplier") {
-        return book.status === t("common.receiptBookStatuses.inStock") && book.currentHolderID === currentUserID;
+      if (recipientType === "ToSupplier") {
+        const isInStock = book.status.toLowerCase() === t("common.receiptBookStatuses.inStock").toLowerCase();
+        const isHolderMatch = book.currentHolderID === currentUserID;
+        console.log(`ToSupplier check for book ${book.number}: isInStock=${isInStock}, isHolderMatch=${isHolderMatch}, isSuperAdmin=${isSuperAdmin}`);
+        return isInStock && (isSuperAdmin || isHolderMatch);
       }
-      if (recipientType === "Collect from Supplier") {
-        return book.status === t("common.receiptBookStatuses.sentToSupplier");
+      if (recipientType === "FromSupplier") {
+        const isSentToSupplier = book.status.toLowerCase() === t("common.receiptBookStatuses.sentToSupplier").toLowerCase();
+        console.log(`FromSupplier check for book ${book.number}: isSentToSupplier=${isSentToSupplier}`);
+        return isSentToSupplier && (isSuperAdmin || userRoleSet.has(ROLES.PURCHASE_TEAM));
+      }
+      if (recipientType === "ToStockManager") {
+        // Fallback to "pending" if translation fails
+        const pendingStubStatus = t("common.receiptStubStatuses.pending").toLowerCase() === "common.receiptstubstatuses.pending"
+          ? "pending"
+          : t("common.receiptStubStatuses.pending").toLowerCase();
+        const bookStubStatus = book.ReceiptStub?.status?.toLowerCase();
+        const isPendingStub = bookStubStatus === pendingStubStatus;
+        console.log(
+          `ToStockManager check for book ${book.number}: ` +
+          `isPendingStub=${isPendingStub}, bookStubStatus=${bookStubStatus}, ` +
+          `pendingStubStatus=${pendingStubStatus}, ` +
+          `rawTranslatedPending=${t("common.receiptStubStatuses.pending")}`
+        );
+        if (isPendingStub) {
+          return false;
+        }
       }
       return Array.from(userRoleSet).some((role) => {
         const rule = ROLE_TRANSFER_RULES[role as unknown as keyof typeof ROLE_TRANSFER_RULES];
-        return rule && rule.transferable(book, currentUserID);
+        const isTransferable = rule && rule.transferable(book, currentUserID, recipientType);
+        console.log(`Checking role ${role} for book ${book.number}: transferable=${isTransferable}, recipientType=${recipientType}, stubStatus=${book.ReceiptStub?.status}`);
+        return isTransferable;
       });
     },
-    [userRoleSet, currentUserID, recipientType, t]
+    [userRoleSet, currentUserID, recipientType, t, isSuperAdmin]
   );
 
   const handleScanSuccess = useCallback(
@@ -288,64 +365,108 @@ const TransferReceiptBook: React.FC = () => {
       if (scanLockRef.current) return;
       scanLockRef.current = true;
       try {
+        console.log("Starting QR scan processing for:", decodedText);
         const parseTLV = (text: string) => {
-          const numberLength = parseInt(text.slice(2, 4), 10);
-          const number = text.slice(4, 4 + numberLength);
-          const typeStart = 4 + numberLength + 2;
-          const typeLength = parseInt(text.slice(typeStart, typeStart + 2), 10);
-          const typeID = text.slice(typeStart + 2, typeStart + 2 + typeLength);
-          return { number, typeID };
+          try {
+            const numberLength = parseInt(text.slice(2, 4), 10);
+            if (isNaN(numberLength) || numberLength < 0) {
+              throw new Error("Invalid number length");
+            }
+            const number = text.slice(4, 4 + numberLength);
+            const typeStart = 4 + numberLength + 2;
+            const typeLength = parseInt(text.slice(typeStart, typeStart + 2), 10);
+            if (isNaN(typeLength) || typeLength < 0) {
+              throw new Error("Invalid type length");
+            }
+            const typeName = text.slice(typeStart + 2, typeStart + 2 + typeLength);
+            if (typeName.length !== typeLength) {
+              throw new Error(`Type length mismatch: expected ${typeLength}, got ${typeName.length}`);
+            }
+            console.log(`Parsed TLV: number=${number}, typeName=${typeName}`);
+            return { number, typeName };
+          } catch (error) {
+            throw new Error(
+              `Invalid QR code format: ${typeof error === "object" && error !== null && "message" in error
+                ? (error as { message?: string }).message
+                : String(error)
+              }`
+            );
+          }
         };
-        const { number, typeID } = parseTLV(decodedText);
-        const matchingBook = receiptBooks.find((r) => r.number === number && r.typeID === typeID);
+        const { number, typeName } = parseTLV(decodedText);
+        const typeObj = receiptBookTypes.find(
+          (t) => t.name.trim().toLowerCase() === typeName.trim().toLowerCase()
+        );
+        console.log(`Found typeID: ${typeObj?.typeID}`);
+        if (!typeObj) {
+          console.log("Error: Type not found for typeName:", typeName);
+          setError(t("transferReceiptBook.errors.typeNotFound", { typeName }));
+          return;
+        }
+        const matchingBook = receiptBooks.find(
+          (r) => r.number === number && r.typeID === typeObj.typeID
+        );
         if (!matchingBook) {
+          console.log("Error: Book not found for number:", number);
           setError(t("transferReceiptBook.errors.qrNotFound", { number }));
           return;
         }
-        if (scannedQRRef.current.has(decodedText) || selectedBookIDs.includes(matchingBook.bookID)) {
-          setError(t("transferReceiptBook.errors.qrAlreadyScanned", { number }));
-          return;
-        }
         if (!isTransferable(matchingBook)) {
-          setError(
-            t("transferReceiptBook.errors.bookNotTransferable", {
-              number,
-              status: t(`common.receiptBookStatuses.${matchingBook.status.toLowerCase()}`, { defaultValue: matchingBook.status }),
-            })
-          );
+          console.log("Error: Book not transferable:", matchingBook.number);
+          setError(t("transferReceiptBook.errors.bookNotTransferable", { number }));
           return;
         }
-        if (
-          recipientType === "Stub Collection" &&
-          matchingBook.status !== t("common.receiptBookStatuses.assignedToAgent")
-        ) {
-          setError(t("transferReceiptBook.errors.invalidStubCollectionStatus", { number }));
+        if (recipientType === "Archived") {
+          const stubStatus = matchingBook.ReceiptStub?.status?.toLowerCase();
+          const notAllowedStatuses = ["pending", "archived"];
+          if (stubStatus && notAllowedStatuses.includes(stubStatus)) {
+            console.log("Error: Invalid stub status for archive:", stubStatus);
+            setError(t("transferReceiptBook.errors.invalidStubStatusForArchive", { number: matchingBook.number }));
+            return;
+          }
+        }
+        if (recipientType === "ToAgent" && userRoleSet.has("Supervisor") && selectedBookIDs.length >= 1) {
+          console.log("Error: Supervisor book limit reached");
+          setError(t("transferReceiptBook.errors.supervisorLimit"));
           return;
         }
-        if (
-          recipientType === "Stock Manager" &&
-          matchingBook.ReceiptStub?.status !== t("common.receiptBookStatuses.collected")
-        ) {
-          setError(t("transferReceiptBook.errors.stubNotCollected", { number }));
-          return;
+        setSelectedBookIDs((prev) => {
+          if (prev.includes(matchingBook.bookID)) {
+            console.log(`Book ${matchingBook.number} already selected`);
+            return prev;
+          }
+          const newSelected = [...prev, matchingBook.bookID];
+          console.log("Updated selectedBookIDs:", newSelected);
+          return newSelected;
+        });
+        if (matchingBook.qrCode) {
+          scannedQRRef.current.add(matchingBook.qrCode);
+          setScannedQR((prev) => {
+            if (prev.includes(matchingBook.qrCode)) {
+              console.log(`QR code ${matchingBook.qrCode} already scanned`);
+              return prev;
+            }
+            const newScanned = [...prev, matchingBook.qrCode];
+            console.log("Updated scannedQR:", newScanned);
+            return newScanned;
+          });
         }
-        setScannedQR((prev) => [...prev, decodedText]);
-        setSelectedBookIDs((prev) => [...prev, matchingBook.bookID]);
-        scannedQRRef.current.add(decodedText);
-        setError(null);
+        console.log("Scan successful, resetting error");
+        setError(null); // Clear any previous error on successful scan
       } catch (err) {
-        setError(t("transferReceiptBook.errors.invalidQR"));
         console.error("QR Parse Error:", err);
+        setError(t("transferReceiptBook.errors.invalidQR"));
       } finally {
         scanLockRef.current = false;
+        console.log("Scan lock released");
       }
     },
-    [isTransferable, recipientType, selectedBookIDs, receiptBooks, t]
+    [isTransferable, recipientType, selectedBookIDs, receiptBooks, receiptBookTypes, t, userRoleSet]
   );
 
   useEffect(() => {
     if (preSelectedAgentID && forceAgent && !recipientType) {
-      const initialRecipientType = transferType || "Agent";
+      const initialRecipientType = transferType || "ToAgent";
       setRecipientType(initialRecipientType);
       setRecipientID(preSelectedAgentID);
       setAgentPhone("");
@@ -363,8 +484,7 @@ const TransferReceiptBook: React.FC = () => {
   }, [preSelectedAgentID, forceAgent, recipientType, transferType, t]);
 
   const stopScanner = useCallback(async () => {
-    if (stopLockRef.current || !qrScannerRef.current || !isScannerRunning)
-      return;
+    if (stopLockRef.current || !qrScannerRef.current || !isScannerRunning) return;
     stopLockRef.current = true;
     try {
       await qrScannerRef.current.stop();
@@ -380,13 +500,7 @@ const TransferReceiptBook: React.FC = () => {
   }, [isScannerRunning]);
 
   const startScanner = useCallback(async () => {
-    if (
-      stopLockRef.current ||
-      !qrReaderRef.current ||
-      isScannerRunning ||
-      isScannerStarting
-    )
-      return;
+    if (stopLockRef.current || !qrReaderRef.current || isScannerRunning || isScannerStarting) return;
     setIsScannerStarting(true);
     const html5QrCode = qrScannerRef.current || new Html5Qrcode("qr-reader");
     qrScannerRef.current = html5QrCode;
@@ -412,15 +526,10 @@ const TransferReceiptBook: React.FC = () => {
     if (
       !qrReaderRef.current ||
       !recipientType ||
-      !(
-        recipientID ||
-        recipientType === "Supplier" ||
-        recipientType === "Archive" ||
-        recipientType === "Stub Collection" ||
-        recipientType === "Collect from Supplier"
-      ) ||
+      !(recipientID || recipientType === "ToSupplier" || recipientType === "Archived" || recipientType === "StubToSupervisor" || recipientType === "FromSupplier") ||
       transferInitiated ||
-      recipientType === "Supplier"
+      receiptBookTypes.length === 0 ||
+      error
     ) {
       return;
     }
@@ -428,13 +537,7 @@ const TransferReceiptBook: React.FC = () => {
     return () => {
       stopScanner();
     };
-  }, [
-    recipientType,
-    recipientID,
-    transferInitiated,
-    startScanner,
-    stopScanner,
-  ]);
+  }, [recipientType, recipientID, transferInitiated, startScanner, stopScanner, receiptBookTypes, error]);
 
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -442,11 +545,8 @@ const TransferReceiptBook: React.FC = () => {
         stopScanner();
       } else if (
         recipientType &&
-        recipientType !== "Supplier" &&
-        (recipientID ||
-          recipientType === "Archive" ||
-          recipientType === "Stub Collection" ||
-          recipientType === "Collect from Supplier") &&
+        recipientType !== "ToSupplier" &&
+        (recipientID || recipientType === "Archived" || recipientType === "StubToSupervisor" || recipientType === "FromSupplier") &&
         !transferInitiated
       ) {
         startScanner();
@@ -457,13 +557,7 @@ const TransferReceiptBook: React.FC = () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       stopScanner();
     };
-  }, [
-    recipientType,
-    recipientID,
-    transferInitiated,
-    startScanner,
-    stopScanner,
-  ]);
+  }, [recipientType, recipientID, transferInitiated, startScanner, stopScanner]);
 
   useEffect(() => {
     if (transferInitiated && isScannerRunning) {
@@ -472,94 +566,300 @@ const TransferReceiptBook: React.FC = () => {
   }, [transferInitiated, isScannerRunning, stopScanner]);
 
   useEffect(() => {
-    const fetchData = async () => {
-      if (!userPermissions.canTransferReceiptBooks) {
+    if (!recipientType) return;
+
+    const fetchBooks = async () => {
+      setBooksLoading(true);
+      try {
+        const [booksResponse, typesData] = await Promise.all([
+          getAllReceiptBooks(),
+          getAllReceiptBookTypes(),
+        ]);
+        console.log("Fetched receiptBookTypes:", typesData);
+        setReceiptBooks(Array.isArray(booksResponse) ? booksResponse : booksResponse.books || []);
+        setReceiptBookTypes(typesData);
+        if (typesData.length === 0) {
+          setError(t("transferReceiptBook.errors.noTypesAvailable"));
+        }
+      } catch (err) {
+        setError(t("transferReceiptBook.errors.fetchDataFailed"));
+        console.error("Fetch Books Error:", err);
+      } finally {
+        setBooksLoading(false);
+      }
+    };
+
+    fetchBooks();
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && receiptBooks.length === 0) {
+          fetchBooks();
+        }
+      },
+      { threshold: 0.1 }
+    );
+    if (bookListRef.current) {
+      observer.observe(bookListRef.current);
+    }
+    return () => {
+      if (bookListRef.current) {
+        observer.unobserve(bookListRef.current);
+      }
+    };
+  }, [recipientType, t]);
+
+  useEffect(() => {
+    const fetchInitialData = async () => {
+      if (!userPermissions.canAccessReceiptBooks && !userPermissions.canTransferReceiptBooks && !userPermissions.canArchiveReceiptStubs) {
         setError(t("transferReceiptBook.errors.accessDenied"));
         setLoading(false);
         return;
       }
       try {
-        const [booksData, usersData, locationsData, regionsData, typesData] = await Promise.all([
-          getAllReceiptBooks(),
-          getAllUsers(),
-          getAgentLocations(),
-          isSuperAdmin ? getAllRegions() : Promise.resolve([]),
-          getAllReceiptBookTypes(), // NEW: Fetch receipt book types
-        ]);
-        setReceiptBooks(booksData);
-        setUsers(usersData);
-        setLocations(locationsData);
+        let regionsData: Region[] = [];
+        if (isSupervisor && (recipientType === "ToAgent" || recipientType === "StubToSupervisor")) {
+          const regionalManagers = await getRegionalManagerBySupervisor(currentUserID);
+          const regionPromises = regionalManagers.map(rm => getRegionsByUser(rm.userID));
+          const regionArrays = await Promise.all(regionPromises);
+          regionsData = [...new Set(regionArrays.flat().map(r => JSON.stringify(r)))].map(r => JSON.parse(r));
+        } else {
+          regionsData = await getAllRegions();
+        }
         setRegions(regionsData);
-        setReceiptBookTypes(typesData); // NEW: Set types state
       } catch (err) {
         setError(t("transferReceiptBook.errors.fetchDataFailed"));
-        console.error("Fetch Data Error:", err);
+        console.error("Fetch Initial Data Error:", err);
       } finally {
         setLoading(false);
       }
     };
-    fetchData();
-  }, [userPermissions.canTransferReceiptBooks, isSuperAdmin, t]);
+    fetchInitialData();
+  }, [userPermissions, isSupervisor, recipientType, currentUserID, t]);
 
   const getRecipientOptions = useCallback(() => {
     const options = new Set<string>();
     Array.from(userRoleSet).forEach((role) => {
-      const rule =
-        ROLE_TRANSFER_RULES[
-        role as unknown as keyof typeof ROLE_TRANSFER_RULES
-        ];
+      const rule = ROLE_TRANSFER_RULES[role as unknown as keyof typeof ROLE_TRANSFER_RULES];
       if (rule) {
-        rule.recipientOptions.forEach((opt) => options.add(opt));
+        rule.recipientOptions.forEach((opt) => {
+          if (
+            (opt === "ToSupplier" && userPermissions.canSendReceiptBooks && userPermissions.canAccessReceiptBooks) ||
+            (opt === "FromSupplier" && userPermissions.canCollectSupplierReceiptBooks && userPermissions.canAccessReceiptBooks) ||
+            (opt === "Archived" && userPermissions.canArchiveReceiptStubs) ||
+            (["ToAgent", "StubToSupervisor"].includes(opt) &&
+              (isSupervisor || isSuperAdmin) &&
+              userPermissions.canTransferReceiptBooks &&
+              userPermissions.canValidateReceiptBooksTransfer &&
+              userPermissions.canCollectReceiptStubs &&
+              userPermissions.canValidateReceiptStubs) ||
+            (["ToRegionalManager", "ToSupervisor", "ToStockManager"].includes(opt) &&
+              (isRegionalManager || isSupervisor || isSuperAdmin || userRoleSet.has(ROLES.PURCHASE_TEAM)) &&
+              userPermissions.canTransferReceiptBooks &&
+              userPermissions.canValidateReceiptBooksTransfer) ||
+            (opt === "ToRegionalManagerFromSupervisor" &&
+              (isSupervisor || isSuperAdmin) &&
+              userPermissions.canTransferReceiptBooks &&
+              userPermissions.canValidateReceiptBooksTransfer)
+          ) {
+            options.add(opt);
+          }
+        });
       }
     });
     return Array.from(options);
-  }, [userRoleSet]);
+  }, [userRoleSet, userPermissions, isSupervisor, isSuperAdmin, isRegionalManager]);
 
-  const fetchAgentsByLocation = useCallback(
-    async (delegationID: string) => {
-      try {
-        const agentsData = await getAgentsByDelegation(delegationID);
-        setAgents(agentsData.agents);
-      } catch (err) {
-        setError(t("transferReceiptBook.errors.fetchAgentsFailed"));
-        console.error(err);
+  useEffect(() => {
+    const fetchUsers = async () => {
+      const roleMap = {
+        ToRegionalManager: ROLES.REGIONAL_MANAGER,
+        ToSupervisor: ROLES.SUPERVISOR,
+        ToStockManager: ROLES.STOCK_MANAGER,
+        ToRegionalManagerFromSupervisor: ROLES.REGIONAL_MANAGER,
+      };
+      const role = roleMap[recipientType as keyof typeof roleMap];
+      if (role) {
+        setUsersLoading(true);
+        try {
+          let userList: User[] = [];
+          if (isSupervisor) {
+            if (recipientType === "ToRegionalManager" || recipientType === "ToRegionalManagerFromSupervisor") {
+              userList = await getRegionalManagerBySupervisor(currentUserID);
+            } else if (recipientType === "ToSupervisor") {
+              userList = (await getUsersByRole(ROLES.SUPERVISOR)).filter(u => u.userID !== currentUserID);
+            } else if (recipientType === "ToStockManager") {
+              userList = await getUsersByRole(ROLES.STOCK_MANAGER);
+            }
+          } else if (isRegionalManager) {
+            if (recipientType === "ToSupervisor") {
+              userList = await getSupervisorsByRegionalManager(currentUserID);
+            } else if (recipientType === "ToRegionalManager") {
+              userList = (await getUsersByRole(ROLES.REGIONAL_MANAGER)).filter(u => u.userID !== currentUserID);
+            } else if (recipientType === "ToStockManager") {
+              userList = await getUsersByRole(ROLES.STOCK_MANAGER);
+            }
+          } else if (isSuperAdmin || userRoleSet.has(ROLES.PURCHASE_TEAM)) {
+            userList = await getUsersByRole(role);
+          }
+          if (regionalManagerSearch) {
+            userList = userList.filter(u =>
+              u.userID !== currentUserID &&
+              `${u.firstname} ${u.lastname} ${u.phone}`.toLowerCase().includes(regionalManagerSearch.toLowerCase())
+            );
+          }
+          setUsers(userList);
+          if (userList.length === 1) {
+            setRecipientID(userList[0].userID);
+          }
+        } catch (err) {
+          setError(t("transferReceiptBook.errors.fetchUsersFailed"));
+        } finally {
+          setUsersLoading(false);
+        }
       }
-    },
-    [t]
-  );
+    };
+    fetchUsers();
+  }, [recipientType, isSupervisor, isRegionalManager, isSuperAdmin, currentUserID, regionalManagerSearch, t]);
 
-  // Fetch Governorates when Region is Selected
+  useEffect(() => {
+    const fetchRegionalManagers = async () => {
+      if (!isSuperAdmin || !["ToAgent", "StubToSupervisor"].includes(recipientType)) return;
+      setUsersLoading(true);
+      let rmList: User[] = [];
+      try {
+        if (selectedSupervisor && selectedRegion) {
+          const [supervisorRM, regionRM] = await Promise.all([
+            getRegionalManagerBySupervisor(selectedSupervisor),
+            getUsersByRegion(selectedRegion).then(users => users.filter(u => u.Roles?.some(r => r.name === ROLES.REGIONAL_MANAGER))),
+          ]);
+          rmList = supervisorRM.filter(rm => regionRM.some(rrm => rrm.userID === rm.userID));
+        } else if (selectedSupervisor) {
+          rmList = await getRegionalManagerBySupervisor(selectedSupervisor);
+        } else if (selectedRegion) {
+          rmList = await getUsersByRegion(selectedRegion).then(users => users.filter(u => u.Roles?.some(r => r.name === ROLES.REGIONAL_MANAGER)));
+        } else {
+          rmList = await getUsersByRole(ROLES.REGIONAL_MANAGER);
+          rmList = rmList.filter(u => u.userID !== currentUserID);
+        }
+        if (regionalManagerSearch) {
+          rmList = rmList.filter(rm => `${rm.firstname} ${rm.lastname} ${rm.phone}`.toLowerCase().includes(regionalManagerSearch.toLowerCase()));
+        }
+        setRegionalManagers(rmList);
+        if (rmList.length === 1) {
+          setSelectedRegionalManager(rmList[0].userID);
+        }
+      } catch (err) {
+        setError(t("transferReceiptBook.errors.loadRegionalManagers"));
+      } finally {
+        setUsersLoading(false);
+      }
+    };
+    fetchRegionalManagers();
+  }, [recipientType, isSuperAdmin, selectedSupervisor, selectedRegion, regionalManagerSearch, t, currentUserID]);
+
+  useEffect(() => {
+    const fetchSupervisors = async () => {
+      if (!isSuperAdmin || !["ToAgent", "StubToSupervisor"].includes(recipientType)) return;
+      setUsersLoading(true);
+      let supList: User[] = [];
+      try {
+        if (selectedRegionalManager || selectedGovernorate || selectedDelegation || selectedAgent) {
+          const promises: Promise<User[]>[] = [];
+          if (selectedRegionalManager) promises.push(getSupervisorsByRegionalManager(selectedRegionalManager));
+          if (selectedGovernorate) promises.push(getUsersByGovernorate(selectedGovernorate).then(users => users.filter(u => u.Roles?.some(r => r.name === ROLES.SUPERVISOR))));
+          if (selectedDelegation) promises.push(getUsersByDelegation(selectedDelegation).then(users => users.filter(u => u.Roles?.some(r => r.name === ROLES.SUPERVISOR))));
+          if (selectedAgent) promises.push(getAgentById(selectedAgent).then(agent => getUsersByRole(ROLES.SUPERVISOR).then(users => users.filter(u => u.userID === agent?.supervisorID))));
+          const results = await Promise.all(promises);
+          supList = results.reduce((acc, curr) => acc.filter(a => curr.some(c => c.userID === a.userID)), results[0] || []);
+          supList = supList.filter(u => u.userID !== currentUserID);
+        } else {
+          supList = await getUsersByRole(ROLES.SUPERVISOR);
+          supList = supList.filter(u => u.userID !== currentUserID);
+        }
+        if (supervisorSearch) {
+          supList = supList.filter(s => `${s.firstname} ${s.lastname}`.toLowerCase().includes(supervisorSearch.toLowerCase()));
+        }
+        if (supervisorPhone && supervisorPhone.length === 8) {
+          supList = supList.filter(s => s.phone === supervisorPhone);
+        }
+        setSupervisors(supList);
+        if (supList.length === 1) {
+          setSelectedSupervisor(supList[0].userID);
+        }
+      } catch (err) {
+        setError(t("transferReceiptBook.errors.loadSupervisors"));
+      } finally {
+        setUsersLoading(false);
+      }
+    };
+    fetchSupervisors();
+  }, [recipientType, isSuperAdmin, selectedRegionalManager, selectedGovernorate, selectedDelegation, selectedAgent, supervisorSearch, supervisorPhone, t, currentUserID]);
+
+  useEffect(() => {
+    const fetchRegions = async () => {
+      if (!["ToAgent", "StubToSupervisor"].includes(recipientType)) {
+        setRegions([]);
+        setSelectedRegion("");
+        return;
+      }
+      try {
+        let regionsData: Region[] = [];
+        if (isSupervisor) {
+          const regionalManagers = await getRegionalManagerBySupervisor(currentUserID);
+          const regionPromises = regionalManagers.map(rm => getRegionsByUser(rm.userID));
+          const regionArrays = await Promise.all(regionPromises);
+          regionsData = [...new Set(regionArrays.flat().map(r => JSON.stringify(r)))].map(r => JSON.parse(r));
+        } else if (isSuperAdmin && selectedRegionalManager) {
+          regionsData = await getRegionsByUser(selectedRegionalManager);
+        } else {
+          regionsData = await getAllRegions();
+        }
+        setRegions(regionsData);
+        if (regionsData.length === 1) {
+          setSelectedRegion(regionsData[0].regionID);
+        }
+      } catch (err) {
+        setError(t("transferReceiptBook.errors.loadRegions"));
+      }
+    };
+    fetchRegions();
+  }, [recipientType, isSupervisor, isSuperAdmin, selectedRegionalManager, currentUserID, t]);
+
   useEffect(() => {
     const fetchGovernorates = async () => {
-      if (!selectedRegion) {
+      if (!selectedRegion || !["ToAgent", "StubToSupervisor"].includes(recipientType)) {
         setGovernorates([]);
         setSelectedGovernorate("");
         setDelegations([]);
         setSelectedDelegation("");
-        setAgents([]);
-        setSelectedAgent("");
         return;
       }
       try {
-        const governoratesData = await getGovernoratesByRegion(selectedRegion);
-        setGovernorates(governoratesData);
-        setSelectedGovernorate(governoratesData.length === 1 ? governoratesData[0].governorateID : "");
+        let govList: Governorate[] = await getGovernoratesByRegion(selectedRegion);
+        if (isSupervisor || (isSuperAdmin && selectedSupervisor)) {
+          const userID = isSupervisor ? currentUserID : selectedSupervisor;
+          const userGovs = await getGovernoratesByUser(userID);
+          govList = govList.filter(g => userGovs.some(ug => ug.governorateID === g.governorateID));
+        }
+        setGovernorates(govList);
+        if (govList.length === 1) {
+          setSelectedGovernorate(govList[0].governorateID);
+        } else {
+          setSelectedGovernorate("");
+        }
         setDelegations([]);
         setSelectedDelegation("");
-        setAgents([]);
-        setSelectedAgent("");
       } catch (err) {
         setError(t("transferReceiptBook.errors.loadGovernorates"));
-        console.error("Fetch governorates error:", err);
       }
     };
     fetchGovernorates();
-  }, [selectedRegion, t]);
+  }, [recipientType, selectedRegion, isSupervisor, isSuperAdmin, selectedSupervisor, currentUserID, t]);
 
-  // Fetch Delegations when Governorate is Selected
   useEffect(() => {
     const fetchDelegations = async () => {
-      if (!selectedGovernorate) {
+      if (!selectedGovernorate || !["ToAgent", "StubToSupervisor"].includes(recipientType)) {
         setDelegations([]);
         setSelectedDelegation("");
         setAgents([]);
@@ -567,254 +867,126 @@ const TransferReceiptBook: React.FC = () => {
         return;
       }
       try {
-        const delegationsData = await getDelegationsByGovernorate(selectedGovernorate);
-        setDelegations(delegationsData);
-        setSelectedDelegation(delegationsData.length === 1 ? delegationsData[0].delegationID : "");
-        setAgents([]);
-        setSelectedAgent("");
+        let delList: Delegation[] = await getDelegationsByGovernorate(selectedGovernorate);
+        if (isSupervisor || (isSuperAdmin && selectedSupervisor)) {
+          const userID = isSupervisor ? currentUserID : selectedSupervisor;
+          const userDels = await getDelegationsByUser(userID);
+          delList = delList.filter(d => userDels.some(ud => ud.delegationID === d.delegationID));
+        }
+        setDelegations(delList);
+        if (delList.length === 1) {
+          setSelectedDelegation(delList[0].delegationID);
+        } else {
+          setSelectedDelegation("");
+        }
       } catch (err) {
         setError(t("transferReceiptBook.errors.loadDelegations"));
-        console.error("Fetch delegations error:", err);
       }
     };
     fetchDelegations();
-  }, [selectedGovernorate, t]);
+  }, [recipientType, selectedGovernorate, isSupervisor, isSuperAdmin, selectedSupervisor, currentUserID, t]);
 
-  // Fetch Supervisors when Regional Manager is Selected
-  useEffect(() => {
-    const fetchSupervisors = async () => {
-      if (!selectedRegionalManager) {
-        setSupervisors([]);
-        setSelectedSupervisor("");
-        return;
-      }
-      try {
-        const supervisorsData = await getSupervisorsByRegionalManager(selectedRegionalManager);
-        setSupervisors(supervisorsData);
-        setSelectedSupervisor(supervisorsData.length === 1 ? supervisorsData[0].userID : "");
-      } catch (err) {
-        setError(t("transferReceiptBook.errors.loadSupervisors"));
-        console.error("Fetch supervisors error:", err);
-      }
-    };
-    fetchSupervisors();
-  }, [selectedRegionalManager, t]);
-
-  // Fetch Regional Managers when Region is Selected
-  useEffect(() => {
-    const fetchRegionalManagers = async () => {
-      if (!selectedRegion) {
-        setRegionalManagers([]);
-        setSelectedRegionalManager("");
-        return;
-      }
-      try {
-        const regionalManagersData = await getUsersByRegion(selectedRegion);
-        const filteredRegionalManagers = regionalManagersData.filter((u) =>
-          u.Roles?.some((role) => role.name.toLowerCase() === ROLES.REGIONAL_MANAGER.toLowerCase())
-        );
-        setRegionalManagers(filteredRegionalManagers);
-        setSelectedRegionalManager(filteredRegionalManagers.length === 1 ? filteredRegionalManagers[0].userID : "");
-      } catch (err) {
-        setError(t("transferReceiptBook.errors.loadRegionalManagers"));
-        console.error("Fetch regional managers error:", err);
-      }
-    };
-    fetchRegionalManagers();
-  }, [selectedRegion, t]);
-
-  // Fetch Supervisors when Governorate is Selected
-  useEffect(() => {
-    const fetchSupervisorsByGovernorate = async () => {
-      if (!selectedGovernorate || selectedRegionalManager) {
-        return;
-      }
-      try {
-        const supervisorsData = await getUsersByGovernorate(selectedGovernorate);
-        const filteredSupervisors = supervisorsData.filter((u) =>
-          u.Roles?.some((role) => role.name.toLowerCase() === ROLES.SUPERVISOR.toLowerCase())
-        );
-        setSupervisors(filteredSupervisors);
-        setSelectedSupervisor(filteredSupervisors.length === 1 ? filteredSupervisors[0].userID : "");
-      } catch (err) {
-        setError(t("transferReceiptBook.errors.loadSupervisors"));
-        console.error("Fetch supervisors by governorate error:", err);
-      }
-    };
-    fetchSupervisorsByGovernorate();
-  }, [selectedGovernorate, selectedRegionalManager, t]);
-
-  // Fetch Agents when Delegation is Selected
   useEffect(() => {
     const fetchAgents = async () => {
-      if (!selectedDelegation) {
+      if (recipientType !== "ToAgent" || !(agentPhone || selectedDelegation)) {
         setAgents([]);
         setSelectedAgent("");
         return;
       }
+      setAgentsLoading(true);
       try {
-        const agentsData = await getAgentsByDelegation(selectedDelegation);
-        setAgents(agentsData.agents);
-        setSelectedAgent(agentsData.agents.length === 1 ? agentsData.agents[0].agentID : "");
+        let agentList: Agent[] = [];
+        if (selectedDelegation && (isSupervisor || selectedSupervisor)) {
+          const userID = isSupervisor ? currentUserID : selectedSupervisor;
+          const [delAgents, userAgents] = await Promise.all([
+            getAgentsByDelegation(selectedDelegation),
+            getAgentsByUser(userID),
+          ]);
+          agentList = delAgents.agents.filter(a => userAgents.agents.some(ua => ua.agentID === a.agentID));
+        } else if (selectedDelegation) {
+          agentList = (await getAgentsByDelegation(selectedDelegation)).agents;
+        }
+        setAgents(agentList);
+        if (agentList.length === 1) {
+          setSelectedAgent(agentList[0].agentID);
+          setRecipientID(agentList[0].agentID);
+        }
       } catch (err) {
         setError(t("transferReceiptBook.errors.loadAgents"));
-        console.error("Fetch agents error:", err);
+      } finally {
+        setAgentsLoading(false);
       }
     };
-    fetchAgents();
-  }, [selectedDelegation, t]);
+    if (!agentPhone) fetchAgents();
+  }, [recipientType, selectedDelegation, selectedSupervisor, isSupervisor, currentUserID, t]);
 
-  // Debounced Fetch Agent by Phone
-  useEffect(() => {
-    if (!agentPhone || recipientType !== "Agent") return;
-    const timeout = setTimeout(async () => {
+  const fetchAgentByPhone = useCallback(
+    debounce(async (phone: string) => {
+      if (!phone || recipientType !== "ToAgent") return;
+      setAgentsLoading(true);
       try {
-        const agentData = await getAgentByPhone(agentPhone);
+        const agentData = await getAgentByPhone(phone);
         if (!agentData) throw new Error("Agent not found");
-        if (!agentData.delegationID) throw new Error("Agent has no delegation assigned");
-
-        // Fetch supervisor
-        let supervisor: User | null = null;
-        if (agentData.supervisorID) {
-          supervisor = await getUserById(agentData.supervisorID);
-        } else {
-          throw new Error("Agent has no supervisor assigned");
+        if (isSupervisor || (isSuperAdmin && selectedSupervisor)) {
+          const userID = isSupervisor ? currentUserID : selectedSupervisor;
+          const supervisorAgents = await getAgentsByUser(userID);
+          if (!supervisorAgents.agents.some(a => a.agentID === agentData.agentID)) {
+            throw new Error("Agent not under selected supervisor");
+          }
         }
-
-        // Fetch delegation and verify
-        const allDelegations = await getAllDelegations();
-        const agentDelegation = allDelegations.find((del) => del.delegationID === agentData.delegationID);
-        if (!agentDelegation) throw new Error("Delegation not found");
-
-        // Fetch governorate and verify
-        const governoratesData = await getGovernoratesByDelegation(agentData.delegationID);
-        if (governoratesData.length === 0) throw new Error("No governorate found for delegation");
-        if (governoratesData.length > 1) throw new Error("Multiple governorates found for delegation");
-
-        // Fetch region
-        const regionsData = await getRegionsByGovernorate(governoratesData[0].governorateID);
-        if (regionsData.length === 0) throw new Error("No region found for governorate");
-        if (regionsData.length > 1) throw new Error("Multiple regions found for governorate");
-
-        // Set all fields
-        setRecipientID(agentData.agentID);
         setAgents([agentData]);
+        setSelectedAgent(agentData.agentID);
+        setRecipientID(agentData.agentID);
         setAgentSearch(`${agentData.name || ""} ${agentData.lastname || ""}`);
-        setSelectedDelegation(agentData.delegationID);
-        setDelegations([agentDelegation]);
-        setSelectedGovernorate(governoratesData[0].governorateID);
-        setGovernorates(governoratesData);
-        setSelectedRegion(regionsData[0].regionID);
-        setRegions(regionsData);
-        setSelectedSupervisor(supervisor.userID);
-        setSupervisors([supervisor]);
-
-        // Fetch and set regional managers
-        const regionalManagersData = await getUsersByRegion(regionsData[0].regionID);
-        const filteredRegionalManagers = regionalManagersData.filter((u) =>
-          u.Roles?.some((role) => role.name.toLowerCase() === ROLES.REGIONAL_MANAGER.toLowerCase())
-        );
-        setRegionalManagers(filteredRegionalManagers);
-        setSelectedRegionalManager(filteredRegionalManagers.length === 1 ? filteredRegionalManagers[0].userID : "");
-
-        setError(null);
-      } catch (err: any) {
-        setRecipientID("");
-        setError(
-          t("transferReceiptBook.errors.noAgentFound", { phone: agentPhone }) + `: ${err.message}`
-        );
-        console.error(err);
-      }
-    }, 500);
-    return () => clearTimeout(timeout);
-  }, [agentPhone, recipientType, t]);
-
-  // Debounced Fetch Supervisor by Phone
-  useEffect(() => {
-    if (!supervisorPhone || recipientType !== "Supervisor" || !isSuperAdmin) return;
-    const timeout = setTimeout(async () => {
-      try {
-        const supervisor = await getUserByPhone(supervisorPhone);
-        if (!supervisor.Roles?.some((role) => role.name.toLowerCase() === ROLES.SUPERVISOR.toLowerCase())) {
-          throw new Error("User is not a supervisor");
-        }
-        setRecipientID(supervisor.userID);
-        setSupervisors((prev) => prev.some((s) => s.userID === supervisor.userID) ? prev : [...prev, supervisor]);
-        setSupervisorSearch(`${supervisor.firstname || ""} ${supervisor.lastname || ""}`);
-        setError(null);
       } catch (err) {
         setRecipientID("");
-        setError(
-          t("transferReceiptBook.errors.noUserFound", { phone: supervisorPhone })
-        );
+        setSelectedAgent("");
+        setError(t("transferReceiptBook.errors.noAgentFound", { phone }));
         console.error(err);
+      } finally {
+        setAgentsLoading(false);
       }
-    }, 500);
-    return () => clearTimeout(timeout);
-  }, [supervisorPhone, recipientType, isSuperAdmin, t]);
+    }, 500),
+    [recipientType, isSupervisor, isSuperAdmin, selectedSupervisor, currentUserID, t]
+  );
 
-  // Debounced Fetch Regional Manager by Phone
   useEffect(() => {
-    if (!regionalManagerSearch || recipientType !== "Regional Manager" || !isSuperAdmin) return;
-    const timeout = setTimeout(async () => {
-      try {
-        const regionalManager = await getUserByPhone(regionalManagerSearch);
-        if (!regionalManager.Roles?.some((role) => role.name.toLowerCase() === ROLES.REGIONAL_MANAGER.toLowerCase())) {
-          throw new Error("User is not a regional manager");
-        }
-        setRecipientID(regionalManager.userID);
-        setRegionalManagers((prev) => prev.some((rm) => rm.userID === regionalManager.userID) ? prev : [...prev, regionalManager]);
-        setRegionalManagerSearch(`${regionalManager.firstname || ""} ${regionalManager.lastname || ""}`);
-        setError(null);
-      } catch (err) {
-        setRecipientID("");
-        setError(
-          t("transferReceiptBook.errors.noUserFound", { phone: regionalManagerSearch })
-        );
-        console.error(err);
-      }
-    }, 500);
-    return () => clearTimeout(timeout);
-  }, [regionalManagerSearch, recipientType, isSuperAdmin, t]);
+    fetchAgentByPhone(agentPhone);
+  }, [agentPhone, fetchAgentByPhone]);
 
   const filteredAgents = useCallback(() => {
     if (!selectedDelegation) return [];
-    return agents.filter(
-      (a) =>
-        `${a.name || ""} ${a.lastname || ""} ${a.phone || ""}`
-          .toLowerCase()
-          .includes(agentSearch.toLowerCase())
+    return agents.filter((a) =>
+      `${a.name || ""} ${a.lastname || ""} ${a.phone || ""}`.toLowerCase().includes(agentSearch.toLowerCase())
     );
   }, [agents, selectedDelegation, agentSearch]);
 
   const filteredSupervisors = useCallback(() => {
-    return supervisors.filter(
-      (s) =>
-        `${s.firstname || ""} ${s.lastname || ""} ${s.phone || ""}`
-          .toLowerCase()
-          .includes(supervisorSearch.toLowerCase())
+    return supervisors.filter((s) =>
+      `${s.firstname || ""} ${s.lastname || ""} ${s.phone || ""}`.toLowerCase().includes(supervisorSearch.toLowerCase())
     );
   }, [supervisors, supervisorSearch]);
 
   const filteredRegionalManagers = useCallback(() => {
-    return regionalManagers.filter(
-      (rm) =>
-        `${rm.firstname || ""} ${rm.lastname || ""} ${rm.phone || ""}`
-          .toLowerCase()
-          .includes(regionalManagerSearch.toLowerCase())
+    return regionalManagers.filter((rm) =>
+      `${rm.firstname || ""} ${rm.lastname || ""} ${rm.phone || ""}`.toLowerCase().includes(regionalManagerSearch.toLowerCase())
     );
   }, [regionalManagers, regionalManagerSearch]);
 
   const filteredUsers = useCallback(() => {
-    return users.filter(
-      (u) =>
-        `${u.firstname || ""} ${u.lastname || ""} ${u.phone || ""}`
-          .toLowerCase()
-          .includes(regionalManagerSearch.toLowerCase())
+    return users.filter((u) =>
+      `${u.firstname || ""} ${u.lastname || ""} ${u.phone || ""}`.toLowerCase().includes(regionalManagerSearch.toLowerCase())
     );
   }, [users, regionalManagerSearch]);
+
   const filteredBooks = useMemo(() => {
-    const transferableBooks = receiptBooks
+    console.log("Computing filteredBooks, selectedBookIDs:", selectedBookIDs);
+    const booksArray = Array.isArray(receiptBooks)
+      ? receiptBooks
+      : receiptBooks && typeof receiptBooks === 'object' && 'books' in receiptBooks
+        ? (receiptBooks as { books: ReceiptBook[] }).books
+        : [];
+    const transferableBooks = booksArray
       .filter((book) => isTransferable(book))
       .filter((book) => {
         const typeName = getTypeName(book.typeID).toLowerCase();
@@ -826,10 +998,17 @@ const TransferReceiptBook: React.FC = () => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     const endIndex = startIndex + ITEMS_PER_PAGE;
     return transferableBooks.slice(startIndex, endIndex);
-  }, [receiptBooks, bookSearchQuery, isTransferable, currentPage, getTypeName]);
+  }, [receiptBooks, bookSearchQuery, isTransferable, currentPage, getTypeName, currentUserID, selectedBookIDs]);
 
   const totalPages = useMemo(() => {
-    const transferableBooks = receiptBooks
+    // Extract books array from receiptBooks, handling both array and object cases
+    const booksArray = Array.isArray(receiptBooks)
+      ? receiptBooks
+      : receiptBooks && typeof receiptBooks === 'object' && 'books' in receiptBooks
+        ? (receiptBooks as { books: ReceiptBook[] }).books
+        : [];
+
+    const transferableBooks = booksArray
       .filter((book) => isTransferable(book))
       .filter((book) => {
         const typeName = getTypeName(book.typeID).toLowerCase();
@@ -870,11 +1049,7 @@ const TransferReceiptBook: React.FC = () => {
       setError(t("transferReceiptBook.errors.noBooksSelected"));
       return;
     }
-    if (
-      recipientType === "Agent" &&
-      userRoleSet.has("Supervisor") &&
-      selectedBookIDs.length > 1
-    ) {
+    if (recipientType === "ToAgent" && userRoleSet.has("Supervisor") && selectedBookIDs.length > 1) {
       setError(t("transferReceiptBook.errors.supervisorLimit"));
       return;
     }
@@ -882,41 +1057,38 @@ const TransferReceiptBook: React.FC = () => {
       setError(t("transferReceiptBook.errors.noRecipientType"));
       return;
     }
-    if (recipientType === "Supplier" && !supplierEmail) {
+    if (recipientType === "ToSupplier" && !supplierEmail) {
       setError(t("transferReceiptBook.errors.noSupplierEmail"));
       return;
     }
-    if (recipientType === "Agent" && !recipientID) {
+    if (recipientType === "ToAgent" && !recipientID) {
       setError(t("transferReceiptBook.errors.noAgentSelected"));
       return;
     }
     if (
-      recipientType !== "Supplier" &&
-      recipientType !== "Archive" &&
-      recipientType !== "Stub Collection" &&
-      recipientType !== "Collect from Supplier" &&
+      !["ToSupplier", "Archived", "StubToSupervisor", "FromSupplier"].includes(recipientType) &&
       !recipientID
     ) {
       setError(t("transferReceiptBook.errors.noRecipientSelected"));
       return;
     }
+    setTransferring(true);
     try {
-      if (recipientType === "Supplier") {
+      if (recipientType === "ToSupplier") {
         await sendToSupplier(selectedBookIDs, supplierEmail);
         navigate(-1);
-      } else if (recipientType === "Stub Collection") {
+      } else if (recipientType === "StubToSupervisor") {
         await collectStub(selectedBookIDs);
         setTransferInitiated(true);
         setError(null);
-      } else if (recipientType === "Archive") {
-        await Promise.all(selectedBookIDs.map((bookID) => archiveStub(bookID)));
+      } else if (recipientType === "Archived") {
+        await archiveStub(selectedBookIDs);
         navigate(-1);
-      } else if (recipientType === "Collect from Supplier") {
+      } else if (recipientType === "FromSupplier") {
         await collectFromSupplier(selectedBookIDs, currentUserID);
         navigate(-1);
       } else {
-        const recipientTypeForAPI =
-          recipientType === "Agent" ? "agent" : "user";
+        const recipientTypeForAPI = recipientType === "ToAgent" ? "agent" : "user";
         await transfer(selectedBookIDs, recipientID, recipientTypeForAPI);
         setTransferInitiated(true);
         setError(null);
@@ -924,22 +1096,18 @@ const TransferReceiptBook: React.FC = () => {
     } catch (err) {
       setError(
         t("transferReceiptBook.errors.initiateFailed", {
-          message:
-            err instanceof Error
-              ? err.message
-              : t("transferReceiptBook.errors.unknown"),
+          message: err instanceof Error ? err.message : t("transferReceiptBook.errors.unknown"),
         })
       );
       console.error(err);
+    } finally {
+      setTransferring(false);
     }
   };
 
   const handleValidateTransfer = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (
-      recipientType === "Archive" ||
-      recipientType === "Collect from Supplier"
-    ) {
+    if (recipientType === "Archived" || recipientType === "FromSupplier") {
       navigate(-1);
       return;
     }
@@ -947,31 +1115,25 @@ const TransferReceiptBook: React.FC = () => {
       setError(t("transferReceiptBook.errors.noOTP"));
       return;
     }
+    setTransferring(true);
     try {
-      if (recipientType === "Stub Collection") {
+      if (recipientType === "StubToSupervisor") {
         await validateStubCollection(selectedBookIDs, otp);
         navigate(-1);
       } else {
-        const recipientTypeForAPI =
-          recipientType === "Agent" ? "agent" : "user";
-        await validateTransfer(
-          selectedBookIDs,
-          recipientID,
-          otp,
-          recipientTypeForAPI
-        );
+        const recipientTypeForAPI = recipientType === "ToAgent" ? "agent" : "user";
+        await validateTransfer(selectedBookIDs, recipientID, otp, recipientTypeForAPI);
         navigate(-1);
       }
     } catch (err) {
       setError(
         t("transferReceiptBook.errors.validateFailed", {
-          message:
-            err instanceof Error
-              ? err.message
-              : t("transferReceiptBook.errors.unknown"),
+          message: err instanceof Error ? err.message : t("transferReceiptBook.errors.unknown"),
         })
       );
       console.error(err);
+    } finally {
+      setTransferring(false);
     }
   };
 
@@ -1008,6 +1170,9 @@ const TransferReceiptBook: React.FC = () => {
                   id="recipientType"
                   value={recipientType}
                   onChange={(e) => {
+                    stopScanner();
+                    setIsScannerRunning(false);
+                    setIsScannerStarting(false);
                     setRecipientType(e.target.value);
                     setRecipientID("");
                     setSupplierEmail("");
@@ -1028,7 +1193,7 @@ const TransferReceiptBook: React.FC = () => {
                     setAgents([]);
                     setSupervisors([]);
                     setRegionalManagers([]);
-                    setIsScannerRunning(false);
+                    setUsers([]);
                     setCurrentPage(1);
                   }}
                   required
@@ -1045,31 +1210,23 @@ const TransferReceiptBook: React.FC = () => {
             )}
             {recipientType && (
               <>
-                {recipientType === "Agent" && !forceAgent && (
+                {recipientType === "ToAgent" && !forceAgent && (
                   <div className="form-group">
-                    <label htmlFor="agentPhone">
-                      {t("transferReceiptBook.form.agentSelection")}
-                    </label>
+                    <label htmlFor="agentPhone">{t("transferReceiptBook.form.agentSelection")}</label>
                     <input
                       id="agentPhone"
                       type="tel"
                       value={agentPhone}
                       onChange={(e) => setAgentPhone(e.target.value)}
-                      placeholder={t(
-                        "transferReceiptBook.form.placeholders.enterAgentPhone"
-                      )}
-                      aria-label={t(
-                        "transferReceiptBook.form.placeholders.enterAgentPhone"
-                      )}
+                      placeholder={t("transferReceiptBook.form.placeholders.enterAgentPhone")}
+                      aria-label={t("transferReceiptBook.form.placeholders.enterAgentPhone")}
                     />
                     {!recipientID && (
                       <>
                         <p>{t("transferReceiptBook.form.or")}</p>
                         {isSuperAdmin && (
                           <>
-                            <label htmlFor="regionalManager">
-                              {t("transferReceiptBook.form.regionalManager")}
-                            </label>
+                            <label htmlFor="regionalManager">{t("transferReceiptBook.form.regionalManager")}</label>
                             <input
                               type="text"
                               id="regional-manager-search"
@@ -1092,18 +1249,14 @@ const TransferReceiptBook: React.FC = () => {
                               }}
                               aria-label={t("transferReceiptBook.form.placeholders.regionalManagerSelect")}
                             >
-                              <option value="">
-                                {t("transferReceiptBook.form.placeholders.regionalManagerSelect")}
-                              </option>
+                              <option value="">{t("transferReceiptBook.form.placeholders.regionalManagerSelect")}</option>
                               {filteredRegionalManagers().map((rm) => (
                                 <option key={rm.userID} value={rm.userID}>
                                   {rm.firstname} {rm.lastname} ({rm.phone})
                                 </option>
                               ))}
                             </select>
-                            <label htmlFor="supervisor">
-                              {t("transferReceiptBook.form.supervisor")}
-                            </label>
+                            <label htmlFor="supervisor">{t("transferReceiptBook.form.supervisor")}</label>
                             <input
                               type="text"
                               id="supervisor-search"
@@ -1134,9 +1287,7 @@ const TransferReceiptBook: React.FC = () => {
                               }}
                               aria-label={t("transferReceiptBook.form.placeholders.supervisorSelect")}
                             >
-                              <option value="">
-                                {t("transferReceiptBook.form.placeholders.supervisorSelect")}
-                              </option>
+                              <option value="">{t("transferReceiptBook.form.placeholders.supervisorSelect")}</option>
                               {filteredSupervisors().map((s) => (
                                 <option key={s.userID} value={s.userID}>
                                   {s.firstname} {s.lastname} ({s.phone})
@@ -1145,9 +1296,7 @@ const TransferReceiptBook: React.FC = () => {
                             </select>
                           </>
                         )}
-                        <label htmlFor="region">
-                          {t("transferReceiptBook.form.region")}
-                        </label>
+                        <label htmlFor="region">{t("transferReceiptBook.form.region")}</label>
                         <select
                           id="region"
                           value={selectedRegion}
@@ -1157,24 +1306,16 @@ const TransferReceiptBook: React.FC = () => {
                             setSelectedDelegation("");
                             setSelectedAgent("");
                           }}
-                          aria-label={t(
-                            "transferReceiptBook.form.placeholders.selectRegion"
-                          )}
+                          aria-label={t("transferReceiptBook.form.placeholders.selectRegion")}
                         >
-                          <option value="">
-                            {t(
-                              "transferReceiptBook.form.placeholders.selectRegion"
-                            )}
-                          </option>
+                          <option value="">{t("transferReceiptBook.form.placeholders.selectRegion")}</option>
                           {regions.map((region) => (
                             <option key={region.regionID} value={region.regionID}>
                               {region.name}
                             </option>
                           ))}
                         </select>
-                        <label htmlFor="governorate">
-                          {t("transferReceiptBook.form.governorate")}
-                        </label>
+                        <label htmlFor="governorate">{t("transferReceiptBook.form.governorate")}</label>
                         <select
                           id="governorate"
                           value={selectedGovernorate}
@@ -1183,24 +1324,17 @@ const TransferReceiptBook: React.FC = () => {
                             setSelectedDelegation("");
                             setSelectedAgent("");
                           }}
-                          aria-label={t(
-                            "transferReceiptBook.form.placeholders.selectGovernorate"
-                          )}
+                          aria-label={t("transferReceiptBook.form.placeholders.selectGovernorate")}
+                          disabled={!selectedRegion}
                         >
-                          <option value="">
-                            {t(
-                              "transferReceiptBook.form.placeholders.selectGovernorate"
-                            )}
-                          </option>
+                          <option value="">{t("transferReceiptBook.form.placeholders.selectGovernorate")}</option>
                           {governorates.map((gov) => (
                             <option key={gov.governorateID} value={gov.governorateID}>
                               {gov.name}
                             </option>
                           ))}
                         </select>
-                        <label htmlFor="delegation">
-                          {t("transferReceiptBook.form.delegation")}
-                        </label>
+                        <label htmlFor="delegation">{t("transferReceiptBook.form.delegation")}</label>
                         <select
                           id="delegation"
                           value={selectedDelegation}
@@ -1208,15 +1342,10 @@ const TransferReceiptBook: React.FC = () => {
                             setSelectedDelegation(e.target.value);
                             setSelectedAgent("");
                           }}
-                          aria-label={t(
-                            "transferReceiptBook.form.placeholders.selectDelegation"
-                          )}
+                          aria-label={t("transferReceiptBook.form.placeholders.selectDelegation")}
+                          disabled={!selectedGovernorate}
                         >
-                          <option value="">
-                            {t(
-                              "transferReceiptBook.form.placeholders.selectDelegation"
-                            )}
-                          </option>
+                          <option value="">{t("transferReceiptBook.form.placeholders.selectDelegation")}</option>
                           {delegations.map((del) => (
                             <option key={del.delegationID} value={del.delegationID}>
                               {del.name}
@@ -1225,59 +1354,43 @@ const TransferReceiptBook: React.FC = () => {
                         </select>
                         {selectedDelegation && (
                           <>
-                            <label htmlFor="agentSearch">
-                              {t("transferReceiptBook.form.searchAgents")}
-                            </label>
+                            <label htmlFor="agentSearch">{t("transferReceiptBook.form.searchAgents")}</label>
                             <input
                               id="agentSearch"
                               type="text"
                               value={agentSearch}
                               onChange={(e) => setAgentSearch(e.target.value)}
-                              placeholder={t(
-                                "transferReceiptBook.form.placeholders.searchAgents"
-                              )}
-                              aria-label={t(
-                                "transferReceiptBook.form.placeholders.searchAgents"
-                              )}
+                              placeholder={t("transferReceiptBook.form.placeholders.searchAgents")}
+                              aria-label={t("transferReceiptBook.form.placeholders.searchAgents")}
                             />
-                            <label htmlFor="agentSelect">
-                              {t("transferReceiptBook.form.selectAgent")}
-                            </label>
-                            <select
-                              id="agentSelect"
-                              value={recipientID}
-                              onChange={(e) => setRecipientID(e.target.value)}
-                              aria-label={t(
-                                "transferReceiptBook.form.placeholders.selectAgent"
-                              )}
-                            >
-                              <option value="">
-                                {t(
-                                  "transferReceiptBook.form.placeholders.selectAgent"
-                                )}
-                              </option>
-                              {filteredAgents().map((a) => (
-                                <option key={a.agentID} value={a.agentID}>
-                                  {a.name} {a.lastname} ({a.phone})
-                                </option>
-                              ))}
-                            </select>
+                            <label htmlFor="agentSelect">{t("transferReceiptBook.form.selectAgent")}</label>
+                            {agentsLoading ? (
+                              <div className="skeleton-select">Loading...</div>
+                            ) : (
+                              <select
+                                id="agentSelect"
+                                value={recipientID}
+                                onChange={(e) => {
+                                  setSelectedAgent(e.target.value);
+                                  setRecipientID(e.target.value);
+                                }}
+                                aria-label={t("transferReceiptBook.form.placeholders.selectAgent")}
+                              >
+                                <option value="">{t("transferReceiptBook.form.placeholders.selectAgent")}</option>
+                                {filteredAgents().map((a) => (
+                                  <option key={a.agentID} value={a.agentID}>
+                                    {a.name} {a.lastname} ({a.phone})
+                                  </option>
+                                ))}
+                              </select>
+                            )}
                           </>
                         )}
                       </>
                     )}
-                    {recipientID && (
-                      <p>
-                        {t("transferReceiptBook.form.selectedAgent")}:{" "}
-                        {agents.find((a) => a.agentID === recipientID)?.name +
-                          " " +
-                          agents.find((a) => a.agentID === recipientID)
-                            ?.lastname || t("transferReceiptBook.loading")}
-                      </p>
-                    )}
                   </div>
                 )}
-                {recipientType === "Supplier" && (
+                {recipientType === "ToSupplier" && (
                   <>
                     <div className="form-group">
                       <label htmlFor="supplierEmail">{t("transferReceiptBook.form.supplierEmail")}</label>
@@ -1304,8 +1417,53 @@ const TransferReceiptBook: React.FC = () => {
                         placeholder={t("transferReceiptBook.form.placeholders.searchBooks")}
                         aria-label={t("transferReceiptBook.form.placeholders.searchBooks")}
                       />
-                      <ul className="book-list">
-                        {filteredBooks.length > 0 ? (
+                      <div className="selection-controls">
+                        <button
+                          type="button"
+                          className="select-all-btn"
+                          onClick={() => {
+                            const allBookIDs = receiptBooks
+                              .filter((book) => isTransferable(book))
+                              .filter((book) => {
+                                const typeName = getTypeName(book.typeID).toLowerCase();
+                                return (
+                                  book.number.toLowerCase().includes(bookSearchQuery.toLowerCase()) ||
+                                  typeName.includes(bookSearchQuery.toLowerCase())
+                                );
+                              })
+                              .map((book) => book.bookID);
+                            setSelectedBookIDs(allBookIDs);
+                            const qrCodes = receiptBooks
+                              .filter((book) => allBookIDs.includes(book.bookID))
+                              .map((book) => book.qrCode)
+                              .filter((qr): qr is string => !!qr);
+                            setScannedQR(qrCodes);
+                            qrCodes.forEach((qr) => scannedQRRef.current.add(qr));
+                          }}
+                          aria-label={t("transferReceiptBook.actions.aria.selectAll")}
+                        >
+                          {t("transferReceiptBook.actions.selectAll")}
+                        </button>
+                        <button
+                          type="button"
+                          className="deselect-all-btn"
+                          onClick={() => {
+                            setSelectedBookIDs([]);
+                            setScannedQR([]);
+                            scannedQRRef.current.clear();
+                          }}
+                          aria-label={t("transferReceiptBook.actions.aria.deselectAll")}
+                          disabled={selectedBookIDs.length === 0}
+                        >
+                          {t("transferReceiptBook.actions.deselectAll")}
+                        </button>
+                      </div>
+                      <ul className="book-list" ref={bookListRef}>
+                        {booksLoading ? (
+                          Array.from({ length: ITEMS_PER_PAGE }).map((_, index) => (
+                            <li key={index} className="skeleton-book-item">Loading...</li>
+                          ))
+                        ) : filteredBooks.length > 0 ? (
                           filteredBooks.map((book) => (
                             <li key={book.bookID} className={selectedBookIDs.includes(book.bookID) ? "checked" : ""}>
                               <label className="custom-checkbox-label">
@@ -1319,7 +1477,7 @@ const TransferReceiptBook: React.FC = () => {
                                   <FaCheck className="check-icon" aria-hidden="true" />
                                 </span>
                                 <span className="checklist-text">
-                                  {book.number} - {getTypeName(book.typeID)} {/* MODIFIED: Use type name */}
+                                  {book.number} - {getTypeName(book.typeID)} (Status: {t(`common.receiptBookStatuses.${book.status.toLowerCase()}`, { defaultValue: book.status })})
                                 </span>
                               </label>
                             </li>
@@ -1357,290 +1515,129 @@ const TransferReceiptBook: React.FC = () => {
                     </div>
                   </>
                 )}
-                {recipientType === "Regional Manager" && isSuperAdmin && (
+                {["ToRegionalManager", "ToSupervisor", "ToStockManager", "ToRegionalManagerFromSupervisor"].includes(recipientType) && (
                   <div className="form-group">
-                    <label htmlFor="regionalManagerSearch">
-                      {t("transferReceiptBook.form.recipientSelection", {
-                        type: recipientType,
-                      })}
+                    <label htmlFor="recipientSearch">
+                      {t("transferReceiptBook.form.recipientSelection", { type: recipientType })}
                     </label>
                     <input
-                      id="regionalManagerSearch"
+                      id="recipientSearch"
                       type="text"
                       value={regionalManagerSearch}
                       onChange={(e) => setRegionalManagerSearch(e.target.value)}
-                      placeholder={t(
-                        "transferReceiptBook.form.placeholders.searchRecipient"
-                      )}
-                      aria-label={t(
-                        "transferReceiptBook.form.placeholders.searchRecipient"
-                      )}
+                      placeholder={t("transferReceiptBook.form.placeholders.searchRecipient")}
+                      aria-label={t("transferReceiptBook.form.placeholders.searchRecipient")}
                     />
-                    <label htmlFor="regionalManagerSelect">
-                      {t("transferReceiptBook.form.selectRecipient", {
-                        type: recipientType,
-                      })}
+                    <label htmlFor="recipientSelect">
+                      {t("transferReceiptBook.form.selectRecipient", { type: recipientType })}
                     </label>
-                    <select
-                      id="regionalManagerSelect"
-                      value={recipientID}
-                      onChange={(e) => setRecipientID(e.target.value)}
-                      aria-label={t(
-                        "transferReceiptBook.form.placeholders.selectRecipient",
-                        {
-                          type: recipientType,
-                        }
-                      )}
-                    >
-                      <option value="">
-                        {t(
-                          "transferReceiptBook.form.placeholders.selectRecipient",
-                          {
-                            type: recipientType,
-                          }
-                        )}
-                      </option>
-                      {filteredRegionalManagers().map((rm) => (
-                        <option key={rm.userID} value={rm.userID}>
-                          {rm.firstname} {rm.lastname} ({rm.phone})
-                        </option>
-                      ))}
-                    </select>
-                    {recipientID && (
-                      <p>
-                        {t("transferReceiptBook.form.selectedUser")}:{" "}
-                        {
-                          regionalManagers.find((rm) => rm.userID === recipientID)
-                            ?.firstname
-                        }{" "}
-                        {
-                          regionalManagers.find((rm) => rm.userID === recipientID)
-                            ?.lastname
-                        }
-                      </p>
-                    )}
-                  </div>
-                )}
-                {recipientType === "Supervisor" && isSuperAdmin && (
-                  <div className="form-group">
-                    <label htmlFor="supervisorSearch">
-                      {t("transferReceiptBook.form.recipientSelection", {
-                        type: recipientType,
-                      })}
-                    </label>
-                    <input
-                      id="supervisorSearch"
-                      type="text"
-                      value={supervisorSearch}
-                      onChange={(e) => setSupervisorSearch(e.target.value)}
-                      placeholder={t(
-                        "transferReceiptBook.form.placeholders.searchRecipient"
-                      )}
-                      aria-label={t(
-                        "transferReceiptBook.form.placeholders.searchRecipient"
-                      )}
-                    />
-                    <input
-                      id="supervisorPhone"
-                      type="tel"
-                      value={supervisorPhone}
-                      onChange={(e) => setSupervisorPhone(e.target.value)}
-                      placeholder={t(
-                        "transferReceiptBook.form.placeholders.enterSupervisorPhone"
-                      )}
-                      aria-label={t(
-                        "transferReceiptBook.form.placeholders.enterSupervisorPhone"
-                      )}
-                    />
-                    <label htmlFor="supervisorSelect">
-                      {t("transferReceiptBook.form.selectRecipient", {
-                        type: recipientType,
-                      })}
-                    </label>
-                    <select
-                      id="supervisorSelect"
-                      value={recipientID}
-                      onChange={(e) => setRecipientID(e.target.value)}
-                      aria-label={t(
-                        "transferReceiptBook.form.placeholders.selectRecipient",
-                        {
-                          type: recipientType,
-                        }
-                      )}
-                    >
-                      <option value="">
-                        {t(
-                          "transferReceiptBook.form.placeholders.selectRecipient",
-                          {
-                            type: recipientType,
-                          }
-                        )}
-                      </option>
-                      {filteredSupervisors().map((s) => (
-                        <option key={s.userID} value={s.userID}>
-                          {s.firstname} {s.lastname} ({s.phone})
-                        </option>
-                      ))}
-                    </select>
-                    {recipientID && (
-                      <p>
-                        {t("transferReceiptBook.form.selectedUser")}:{" "}
-                        {
-                          supervisors.find((s) => s.userID === recipientID)
-                            ?.firstname
-                        }{" "}
-                        {
-                          supervisors.find((s) => s.userID === recipientID)
-                            ?.lastname
-                        }
-                      </p>
-                    )}
-                  </div>
-                )}
-                {recipientType !== "Agent" &&
-                  recipientType !== "Supplier" &&
-                  recipientType !== "Regional Manager" &&
-                  recipientType !== "Supervisor" &&
-                  recipientType !== "Archive" &&
-                  recipientType !== "Stub Collection" &&
-                  recipientType !== "Collect from Supplier" && (
-                    <div className="form-group">
-                      <label htmlFor="recipientSearch">
-                        {t("transferReceiptBook.form.recipientSelection", {
-                          type: recipientType,
-                        })}
-                      </label>
-                      <input
-                        id="recipientSearch"
-                        type="text"
-                        value={regionalManagerSearch}
-                        onChange={(e) => setRegionalManagerSearch(e.target.value)}
-                        placeholder={t(
-                          "transferReceiptBook.form.placeholders.searchRecipient"
-                        )}
-                        aria-label={t(
-                          "transferReceiptBook.form.placeholders.searchRecipient"
-                        )}
-                      />
-                      <label htmlFor="recipientSelect">
-                        {t("transferReceiptBook.form.selectRecipient", {
-                          type: recipientType,
-                        })}
-                      </label>
+                    {usersLoading ? (
+                      <div className="skeleton-select">Loading...</div>
+                    ) : (
                       <select
                         id="recipientSelect"
                         value={recipientID}
                         onChange={(e) => setRecipientID(e.target.value)}
-                        aria-label={t(
-                          "transferReceiptBook.form.placeholders.selectRecipient",
-                          {
-                            type: recipientType,
-                          }
-                        )}
+                        aria-label={t("transferReceiptBook.form.placeholders.selectRecipient", { type: recipientType })}
                       >
-                        <option value="">
-                          {t(
-                            "transferReceiptBook.form.placeholders.selectRecipient",
-                            {
-                              type: recipientType,
-                            }
-                          )}
-                        </option>
+                        <option value="">{t("transferReceiptBook.form.placeholders.selectRecipient", { type: recipientType })}</option>
                         {filteredUsers().map((u) => (
                           <option key={u.userID} value={u.userID}>
                             {u.firstname} {u.lastname} ({u.phone})
                           </option>
                         ))}
                       </select>
-                      {recipientID && (
-                        <p>
-                          {t("transferReceiptBook.form.selectedUser")}:{" "}
-                          {
-                            users.find((u) => u.userID === recipientID)
-                              ?.firstname
-                          }{" "}
-                          {
-                            users.find((u) => u.userID === recipientID)
-                              ?.lastname
-                          }
-                        </p>
-                      )}
-                    </div>
-                  )}
-                {(recipientType === "Agent" ||
-                  recipientType === "Stub Collection") &&
-                  forceAgent && (
-                    <div className="form-group">
-                      <label>
-                        {t("transferReceiptBook.form.selectedAgent")}
-                      </label>
-                      <p>
-                        {agents.find((a) => a.agentID === recipientID)?.name +
-                          " " +
-                          agents.find((a) => a.agentID === recipientID)
-                            ?.lastname || t("transferReceiptBook.loading")}
-                      </p>
-                    </div>
-                  )}
-                {recipientType !== "Supplier" && recipientType && (recipientID || recipientType === "Archive" || recipientType === "Stub Collection" || recipientType === "Collect from Supplier") && (
-                  <div className="form-group qr-section">
-                    <label>
-                      {recipientType === "Collect from Supplier"
-                        ? t("transferReceiptBook.form.scanCollect")
-                        : recipientType === "Stub Collection"
-                          ? t("transferReceiptBook.form.scanStub")
-                          : t("transferReceiptBook.form.scanQR")}
-                    </label>
-                    {error && <div className="error-above-camera">{error}</div>}
-                    <div id="qr-reader" ref={qrReaderRef} className="qr-reader" />
-                    <div className="scanned-list">
-                      <h4>{t("transferReceiptBook.form.selectedBooks", { count: selectedBookIDs.length })}</h4>
-                      <ul>
-                        {selectedBookIDs.map((bookID) => {
-                          const book = receiptBooks.find((r) => r.bookID === bookID);
-                          return (
-                            <li key={bookID}>
-                              {book?.number} ({t(`common.receiptBookStatuses.${book?.status.toLowerCase()}`, { defaultValue: book?.status })} - {getTypeName(book?.typeID || "")}) {/* MODIFIED: Include type name */}
-                              <button
-                                onClick={() => {
-                                  setSelectedBookIDs((prev) => prev.filter((id) => id !== bookID));
-                                  setScannedQR((prev) => prev.filter((qr) => qr !== book?.qrCode));
-                                  scannedQRRef.current.delete(book?.qrCode || "");
-                                }}
-                                aria-label={t("transferReceiptBook.actions.aria.removeBook", { number: book?.number })}
-                              >
-                                X
-                              </button>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                      {scannedQR.length > 0 && (
-                        <p>{t("transferReceiptBook.list.scannedQRs", { count: scannedQR.length })}</p>
-                      )}
-                    </div>
+                    )}
                   </div>
+                )}
+                {(recipientType === "ToAgent" || recipientType === "StubToSupervisor") && forceAgent && (
+                  <div className="form-group">
+                    <label>{t("transferReceiptBook.form.selectedAgent")}</label>
+                    <p>
+                      {agents.find((a) => a.agentID === recipientID)?.name +
+                        " " +
+                        agents.find((a) => a.agentID === recipientID)?.lastname || t("transferReceiptBook.form.loading")}
+                    </p>
+                  </div>
+                )}
+                {recipientType !== "ToSupplier" && recipientType && (recipientID || recipientType === "Archived" || recipientType === "StubToSupervisor" || recipientType === "FromSupplier") && (
+                  <>
+                    {error && (
+                      <div className="error-above-camera">
+                        {error}
+                        <button
+                          type="button"
+                          className="dismiss-error-btn"
+                          onClick={() => setError(null)}
+                          aria-label={t("transferReceiptBook.actions.aria.dismissError")}
+                        >
+                          {t("transferReceiptBook.actions.dismissError")}
+                        </button>
+                      </div>
+                    )}
+                    <div className="form-group qr-section">
+                      <label>
+                        {recipientType === "FromSupplier"
+                          ? t("transferReceiptBook.form.scanCollect")
+                          : recipientType === "StubToSupervisor"
+                            ? t("transferReceiptBook.form.scanStub")
+                            : t("transferReceiptBook.form.scanQR")}
+                      </label>
+                      <div id="qr-reader" ref={qrReaderRef} className="qr-reader" />
+                      <div className="scanned-list">
+                        <h4>{t("transferReceiptBook.form.selectedBooks", { count: selectedBookIDs.length })}</h4>
+                        <ul>
+                          {selectedBookIDs.map((bookID) => {
+                            const book = receiptBooks.find((r) => r.bookID === bookID);
+                            return (
+                              <li key={bookID}>
+                                {book?.number} ({t(`common.receiptBookStatuses.${book?.status.toLowerCase()}`, { defaultValue: book?.status })} - {getTypeName(book?.typeID || "")})
+                                <button
+                                  onClick={() => {
+                                    setSelectedBookIDs((prev) => prev.filter((id) => id !== bookID));
+                                    setScannedQR((prev) => prev.filter((qr) => qr !== book?.qrCode));
+                                    scannedQRRef.current.delete(book?.qrCode || "");
+                                  }}
+                                  aria-label={t("transferReceiptBook.actions.aria.removeBook", { number: book?.number })}
+                                >
+                                  X
+                                </button>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                        {scannedQR.length > 0 && (
+                          <p>{t("transferReceiptBook.list.scannedQRs", { count: scannedQR.length })}</p>
+                        )}
+                      </div>
+                    </div>
+                  </>
                 )}
                 <div className="form-actions">
                   <button type="button" className="back-btn" onClick={() => navigate(-1)} aria-label={t("transferReceiptBook.actions.aria.back")}>
                     <FaArrowLeft aria-hidden="true" /> {t("transferReceiptBook.actions.back")}
                   </button>
-                  {recipientType && (recipientID || recipientType === "Supplier" || recipientType === "Archive" || recipientType === "Stub Collection" || recipientType === "Collect from Supplier") && (
+                  {recipientType && (recipientID || recipientType === "ToSupplier" || recipientType === "Archived" || recipientType === "StubToSupervisor" || recipientType === "FromSupplier") && (
                     <button
                       type="submit"
                       className="transfer-btn"
+                      disabled={transferring || selectedBookIDs.length === 0}
                       aria-label={
-                        recipientType === "Stub Collection"
+                        recipientType === "StubToSupervisor"
                           ? t("transferReceiptBook.actions.aria.initiateStub")
-                          : recipientType === "Collect from Supplier"
+                          : recipientType === "FromSupplier"
                             ? t("transferReceiptBook.actions.aria.collect")
                             : t("transferReceiptBook.actions.aria.initiate")
                       }
                     >
-                      <FaExchangeAlt aria-hidden="true" />{" "}
-                      {recipientType === "Stub Collection"
+                      {transferring ? (
+                        <span className="spinner"></span>
+                      ) : (
+                        <FaExchangeAlt aria-hidden="true" />
+                      )}{" "}
+                      {recipientType === "StubToSupervisor"
                         ? t("transferReceiptBook.actions.initiateStub")
-                        : recipientType === "Collect from Supplier"
+                        : recipientType === "FromSupplier"
                           ? t("transferReceiptBook.actions.collect")
                           : t("transferReceiptBook.actions.initiate")}
                     </button>
@@ -1651,36 +1648,28 @@ const TransferReceiptBook: React.FC = () => {
           </form>
         ) : (
           <form onSubmit={handleValidateTransfer}>
-            {recipientType !== "Archive" &&
-              recipientType !== "Collect from Supplier" && (
-                <div className="form-group">
-                  <div className="otp-timer">
-                    {t("transferReceiptBook.otpTimer")}:{" "}
-                    <span className={otpTimer <= 30 ? "timer-warning" : ""}>
-                      {formatTime(otpTimer)}
-                    </span>
-                  </div>
-                  <label htmlFor="otpInput">
-                    {t("transferReceiptBook.form.otp", {
-                      type: recipientType,
-                      details: recipientDetails,
-                    })}
-                  </label>
-                  <input
-                    id="otpInput"
-                    type="text"
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value)}
-                    placeholder={t(
-                      "transferReceiptBook.form.placeholders.enterOTP"
-                    )}
-                    required
-                    aria-label={t(
-                      "transferReceiptBook.form.placeholders.enterOTP"
-                    )}
-                  />
+            {recipientType !== "Archived" && recipientType !== "FromSupplier" && (
+              <div className="form-group">
+                <div className="otp-timer">
+                  {t("transferReceiptBook.otpTimer")}:{" "}
+                  <span className={otpTimer <= 30 ? "timer-warning" : ""}>
+                    {formatTime(otpTimer)}
+                  </span>
                 </div>
-              )}
+                <label htmlFor="otpInput">
+                  {t("transferReceiptBook.form.otp", { type: recipientType, details: recipientDetails })}
+                </label>
+                <input
+                  id="otpInput"
+                  type="text"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                  placeholder={t("transferReceiptBook.form.placeholders.enterOTP")}
+                  required
+                  aria-label={t("transferReceiptBook.form.placeholders.enterOTP")}
+                />
+              </div>
+            )}
             {error && <div className="error">{error}</div>}
             <div className="form-actions">
               <button
@@ -1689,22 +1678,24 @@ const TransferReceiptBook: React.FC = () => {
                 onClick={() => setTransferInitiated(false)}
                 aria-label={t("transferReceiptBook.actions.aria.back")}
               >
-                <FaArrowLeft aria-hidden="true" />{" "}
-                {t("transferReceiptBook.actions.back")}
+                <FaArrowLeft aria-hidden="true" /> {t("transferReceiptBook.actions.back")}
               </button>
               <button
                 type="submit"
                 className="validate-btn"
+                disabled={transferring}
                 aria-label={
-                  recipientType === "Stub Collection"
-                    ? t(
-                      "transferReceiptBook.actions.aria.validateStubCollection"
-                    )
+                  recipientType === "StubToSupervisor"
+                    ? t("transferReceiptBook.actions.aria.validateStubCollection")
                     : t("transferReceiptBook.actions.aria.validateTransfer")
                 }
               >
-                <FaCheck aria-hidden="true" />{" "}
-                {recipientType === "Stub Collection"
+                {transferring ? (
+                  <span className="spinner"></span>
+                ) : (
+                  <FaCheck aria-hidden="true" />
+                )}{" "}
+                {recipientType === "StubToSupervisor"
                   ? t("transferReceiptBook.actions.validateStubCollection")
                   : t("transferReceiptBook.actions.validateTransfer")}
               </button>

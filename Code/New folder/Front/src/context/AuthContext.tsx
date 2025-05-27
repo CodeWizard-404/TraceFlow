@@ -426,6 +426,9 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
                 lastname: '',
                 password: '',
                 keycloakId: '',
+                isOnline: false,
+                hasGoogleAuth: false,
+                hasCalendarAccess: false,
                 Roles: (response.user.roles || []).map(role => ({
                     roleID: role.roleID,
                     name: role.name,

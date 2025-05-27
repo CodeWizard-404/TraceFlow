@@ -380,7 +380,7 @@ const RoleAdd: React.FC<RoleAddProps> = ({
   const validateRoleName = (value: string): string => {
     const trimmed = value.trim();
     if (!trimmed) return "Role name is required";
-    if (trimmed.length < 3) return "Role name must be at least 3 characters";
+    if (trimmed.length < 2) return "Role name must be at least 2 characters";
     if (trimmed.length > 20) return "Role name must be 20 characters or less";
     if (!/^[a-zA-Z\s-]+$/.test(trimmed))
       return "Role name can only contain letters, spaces, or hyphens";
@@ -413,7 +413,7 @@ const RoleAdd: React.FC<RoleAddProps> = ({
             <div key={i} className="permission-class">
               <div className="custom-skeleton pulsing" style={{ width: "120px", height: "20px" }} />
               <div className="permissions-container">
-                {Array.from({ length: 3 }).map((_, j) => (
+                {Array.from({ length: 2 }).map((_, j) => (
                   <div key={j} className="custom-skeleton pulsing" style={{ width: "80%", height: "32px" }} />
                 ))}
               </div>
@@ -620,8 +620,8 @@ const RoleAdd: React.FC<RoleAddProps> = ({
                                     <motion.button
                                       key={perm.permissionID}
                                       className={`permission-button ${selectedPermissionsForNewRole.includes(perm.permissionID)
-                                          ? "assigned"
-                                          : ""
+                                        ? "assigned"
+                                        : ""
                                         }`}
                                       onClick={() => handleTogglePermission(perm)}
                                       disabled={loading}

@@ -23,6 +23,7 @@ import {
   getUsersByGovernorate,
   getUsersByDelegation,
   getUsersByRole,
+  getUserById,
 } from "../../apis/userAPI";
 import {
   getGovernoratesByUser,
@@ -31,6 +32,7 @@ import {
   getAllRegions,
   getGovernoratesByRegion,
   getDelegationsByGovernorate,
+  getLocationDetailsById,
 } from "../../apis/locationApi";
 import { getAllChecklists } from "../../apis/checklistAPI";
 import { getAllReasons } from "../../apis/reasonAPI";
@@ -40,6 +42,7 @@ import { Reason } from "../../models/Reason";
 import { useAuth } from "../../context/AuthContext";
 import { useError } from "../../context/ErrorContext";
 import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router-dom";
 
 // Define roles and permissions from environment variables
 const ROLES = {
@@ -96,6 +99,7 @@ const TimesheetForm: React.FC = () => {
   const [selectedChecklists, setSelectedChecklists] = useState<Array<{ id?: string }>>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [agentLoading, setAgentLoading] = useState<boolean>(false);
+  const [searchParams] = useSearchParams();
 
   // Current date and time for input validation
   const currentDate = new Date().toISOString().split("T")[0];
@@ -264,28 +268,58 @@ const TimesheetForm: React.FC = () => {
     const fetchInitialData = async () => {
       setLoading(true);
       try {
-        const [regionsData, reasonsData, checklistsData] = await Promise.all([
+        const [regionsData, reasonsData, checkpointsData] = await Promise.all([
           getAllRegions(),
           getAllReasons(),
           getAllChecklists(),
         ]);
         setRegions(regionsData);
         setReasons(reasonsData);
-        setChecklists(checklistsData);
+        setChecklists(checkpointsData);
+
+        // Handle query parameters
+        const agentId = searchParams.get('agentId');
+        const dateParam = searchParams.get('date');
+        const timeParam = searchParams.get('time');
+
+        if (dateParam) setDate(dateParam);
+        if (timeParam) setTime(timeParam);
+
+        if (agentId) {
+          try {
+            const agent = await getAgentById(agentId);
+            if (agent) {
+              setAgents([agent]);
+              setSelectedAgent(agent.agentID);
+              setAgentPhone(agent.phone);
+
+              // Optionally set supervisor and location based on agent
+              if (agent.supervisorID) {
+                setSelectedSupervisor(agent.supervisorID);
+                const supervisor = await getUserById(agent.supervisorID);
+                setSupervisors([supervisor]);
+                setSupervisorPhone(supervisor.phone);
+              }
+            }
+          } catch (err) {
+            setError(t('timesheetForm.errors.agentNotFound'));
+          }
+        }
+
         if (reasonsData.length === 1 && !isRecruitmentVisit) {
           setSelectedReasons([{ id: reasonsData[0].reasonID }]);
         }
-        if (checklistsData.length === 1) {
-          setSelectedChecklists([{ id: checklistsData[0].checklistID }]);
+        if (checkpointsData.length === 1) {
+          setSelectedChecklists([{ id: checkpointsData[0].checklistID }]);
         }
       } catch (err) {
-        setError(t("timesheetForm.errors.loadInitialData"));
+        setError(t('timesheetForm.errors.loadInitialData'));
       } finally {
         setLoading(false);
       }
     };
     fetchInitialData();
-  }, [setError, t, isRecruitmentVisit]);
+  }, [setError, t, isRecruitmentVisit, searchParams]);
 
   // Fetch regional managers based on role and filters
   useEffect(() => {
@@ -621,6 +655,11 @@ const TimesheetForm: React.FC = () => {
                       <option key={a.agentID} value={a.agentID}>{`${a.name} ${a.lastname} (${a.phone})`}</option>
                     ))}
                   </select>
+                  {selectedAgent && (
+                    <div className="agent-location">
+                      {t("timesheetForm.form.agentLocation")}: {agents.find(a => a.agentID === selectedAgent)?.Delegation?.name}, {agents.find(a => a.agentID === selectedAgent)?.Delegation?.Governorate?.name}
+                    </div>
+                  )}
                 </div>
               </>
             )}

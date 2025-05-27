@@ -18,18 +18,21 @@ class GoogleMapsService {
             this.client = new Client({});
             this.redisClient = (await initializeRedis()).redisClient;
         } catch (error) {
-            logger.error(`Redis initialization failed: ${error.message}`);
             this.redisClient = null;
             this.client = new Client({});
         }
     }
-
 
     // Get directions
     static async getDirections(origin, destination, mode = 'driving', waypoints = [], trafficModel = 'best_guess', optimizeWaypoints = false) {
         try {
             if (!origin) {
                 throw new Error('Origin is required');
+            }
+
+            // Validate mode for traffic data
+            if (mode !== 'driving' && trafficModel) {
+                throw new Error('Traffic data is only available for driving mode');
             }
 
             // Extract waypoint locations
@@ -43,7 +46,6 @@ class GoogleMapsService {
 
             // Combine waypoints and destination (if provided) for optimization
             const allPoints = destination ? [...waypointLocations, destination] : waypointLocations;
-            logger.debug('Constructing allPoints', { waypointLocations, destination, allPoints });
 
             const formattedWaypoints = waypoints.map(wp => {
                 const location = typeof wp === 'string' ? wp : wp.location;
@@ -92,7 +94,6 @@ class GoogleMapsService {
                 };
             }
 
-            logger.debug('Directions API params', { params });
 
             const url = 'https://maps.googleapis.com/maps/api/directions/json';
             const response = await axios.get(url, { params });
@@ -106,19 +107,39 @@ class GoogleMapsService {
             }
 
             const trafficSegments = route.legs.map((leg, legIndex) => {
+                // Check leg-level traffic data
+                const legTrafficRatio = leg.duration_in_traffic && leg.duration
+                    ? leg.duration_in_traffic.value / leg.duration.value
+                    : null;
+
+
                 const steps = leg.steps.map((step) => {
                     let trafficCondition = 'clear';
-                    let color = '#00FF00';
+                    let color = '#008000'; // Green
+                    let trafficRatio = null;
+
+                    // Try step-level traffic data first
                     if (step.duration_in_traffic && step.duration) {
-                        const trafficRatio = step.duration_in_traffic.value / step.duration.value;
+                        trafficRatio = step.duration_in_traffic.value / step.duration.value;
+                    } else if (legTrafficRatio !== null) {
+                        // Fallback to leg-level traffic data
+                        trafficRatio = legTrafficRatio;
+                    } else {
+                        trafficCondition = 'unknown';
+                        color = '#808080'; // Gray for unavailable data
+                    }
+
+                    // Apply traffic condition based on trafficRatio
+                    if (trafficRatio !== null) {
                         if (trafficRatio > 1.5) {
                             trafficCondition = 'heavy';
-                            color = '#FF0000';
+                            color = '#9B1313'; // Red
                         } else if (trafficRatio > 1.2) {
                             trafficCondition = 'moderate';
-                            color = '#FFA500';
+                            color = '#FFA500'; // Orange
                         }
                     }
+
                     return {
                         polyline: step.polyline.points,
                         trafficCondition,
@@ -128,6 +149,7 @@ class GoogleMapsService {
                         instruction: step.html_instructions,
                     };
                 });
+
                 return {
                     legIndex,
                     steps,
@@ -144,6 +166,11 @@ class GoogleMapsService {
                         instruction: step.html_instructions,
                         distance: step.distance.text,
                         duration: step.duration.text,
+                        start_location: {
+                            lat: step.start_location.lat,
+                            lng: step.start_location.lng,
+                        },
+                        polyline: step.polyline.points,
                     }))
                 ),
                 polyline: route.overview_polyline.points,
@@ -155,7 +182,6 @@ class GoogleMapsService {
             await this.redisClient?.set(cacheKey, JSON.stringify(data), 'EX', 3600);
             return data;
         } catch (error) {
-            logger.error(`Failed to get directions: ${error.message}`, { origin, destination, mode, waypoints, trafficModel, optimizeWaypoints });
             throw new Error(`Failed to get directions: ${error.message}`);
         }
     }
@@ -179,7 +205,6 @@ class GoogleMapsService {
             await RedisUtils.publishEvent('userLocationUpdate', locationData);
             return locationData;
         } catch (error) {
-            logger.error(`Failed to update user location: ${error.message}`);
             throw new Error(`Failed to update user location: ${error.message}`);
         }
     }
@@ -220,7 +245,6 @@ class GoogleMapsService {
             await this.redisClient?.set(cacheKey, JSON.stringify(data), 'EX', 3600);
             return data;
         } catch (error) {
-            logger.error(`Failed to geocode address: ${error.message}`);
             throw new Error(`Failed to geocode address: ${error.message}`);
         }
     }
@@ -258,7 +282,6 @@ class GoogleMapsService {
             await this.redisClient?.set(cacheKey, JSON.stringify(data), 'EX', 3600);
             return data;
         } catch (error) {
-            logger.error(`Failed to reverse geocode: ${error.message}`);
             throw new Error(`Failed to reverse geocode: ${error.message}`);
         }
     }
@@ -303,7 +326,6 @@ class GoogleMapsService {
             await this.redisClient?.set(cacheKey, JSON.stringify(data), 'EX', 3600);
             return data;
         } catch (error) {
-            logger.error(`Failed to get distance matrix: ${error.message}`);
             throw new Error(`Failed to get distance matrix: ${error.message}`);
         }
     }
@@ -339,7 +361,6 @@ class GoogleMapsService {
             await this.redisClient?.set(cacheKey, JSON.stringify(results), 'EX', 3600);
             return results;
         } catch (error) {
-            logger.error(`Failed to search places: ${error.message}`);
             throw new Error(`Failed to search places: ${error.message}`);
         }
     }
@@ -375,7 +396,6 @@ class GoogleMapsService {
             await this.redisClient?.set(cacheKey, JSON.stringify(data), 'EX', 3600);
             return data;
         } catch (error) {
-            logger.error(`Failed to get place details: ${error.message}`);
             throw new Error(`Failed to get place details: ${error.message}`);
         }
     }
@@ -398,7 +418,6 @@ class GoogleMapsService {
 
             return nearbyAgents.filter(agent => agent).sort((a, b) => a.distance - b.distance);
         } catch (error) {
-            logger.error(`Failed to get nearby agents: ${error.message}`);
             throw new Error(`Failed to get nearby agents: ${error.message}`);
         }
     }
@@ -421,7 +440,6 @@ class GoogleMapsService {
 
             return notifications;
         } catch (error) {
-            logger.error(`Failed to notify nearby agents: ${error.message}`);
             throw new Error(`Failed to notify nearby agents: ${error.message}`);
         }
     }
@@ -451,7 +469,6 @@ class GoogleMapsService {
             await agent.save();
             return { agentId, location: agent.location, address: geocode.formattedAddress };
         } catch (error) {
-            logger.error(`Failed to add agent location: ${error.message}`);
             throw new Error(`Failed to add agent location: ${error.message}`);
         }
     }
@@ -477,7 +494,6 @@ class GoogleMapsService {
                 delegation: agent.Delegation ? { id: agent.Delegation.delegationID, name: agent.Delegation.name } : null,
             };
         } catch (error) {
-            logger.error(`Failed to update agent location: ${error.message}`);
             throw new Error(`Failed to update agent location: ${error.message}`);
         }
     }
@@ -493,7 +509,6 @@ class GoogleMapsService {
             await agent.save();
             return { agentId, message: 'Agent location deleted' };
         } catch (error) {
-            logger.error(`Failed to delete agent location: ${error.message}`);
             throw new Error(`Failed to delete agent location: ${error.message}`);
         }
     }
@@ -539,7 +554,6 @@ class GoogleMapsService {
                             const reverseGeocode = await this.reverseGeocode(lat, lng);
                             address = { formattedAddress: reverseGeocode.formattedAddress };
                         } catch (error) {
-                            logger.warn(`Failed to reverse geocode for agent ${agent.agentID}: ${error.message}`);
                             address = { formattedAddress: agent.location || 'Unknown Address' };
                         }
                     } else {
@@ -569,7 +583,7 @@ class GoogleMapsService {
                                     await this.redisClient?.set(cacheKey, JSON.stringify(geocode), 'EX', 3600);
                                     source = 'delegation';
                                 } catch (error) {
-                                    logger.warn(`Failed to geocode delegation ${delegation.name}: ${error.message}`);
+                                    throw new Error(`Failed to geocode delegation ${delegation.name}: ${error.message}`);
                                 }
                             }
                         }
@@ -596,7 +610,7 @@ class GoogleMapsService {
                                     await this.redisClient?.set(cacheKey, JSON.stringify(geocode), 'EX', 3600);
                                     source = 'governorate';
                                 } catch (error) {
-                                    logger.warn(`Failed to geocode governorate ${governorate.name}: ${error.message}`);
+                                    throw new Error(`Failed to geocode governorate ${governorate.name}: ${error.message}`);
                                 }
                             }
                         }
@@ -650,7 +664,6 @@ class GoogleMapsService {
 
             return { locations, center };
         } catch (error) {
-            logger.error(`Failed to get agent locations: ${error.message}`);
             throw new Error(`Failed to get agent locations: ${error.message}`);
         }
     }
@@ -660,7 +673,6 @@ class GoogleMapsService {
             const geocode = await this.geocodeAddress(address);
             return `https://www.google.com/maps?q=${geocode.latitude},${geocode.longitude}`;
         } catch (error) {
-            logger.error(`Failed to generate map link: ${error.message}`);
             return address;
         }
     }
@@ -677,7 +689,6 @@ class GoogleMapsService {
             const address = await this.reverseGeocode(lat, lng);
             return { userId, latitude: lat, longitude: lng, address: address.formattedAddress };
         } catch (error) {
-            logger.error(`Failed to get current user location: ${error.message}`);
             throw new Error(`Failed to get current user location: ${error.message}`);
         }
     }
@@ -701,7 +712,6 @@ class GoogleMapsService {
 
             throw new Error('No location found for user');
         } catch (error) {
-            logger.error(`Failed to get specific user location: ${error.message}`);
             throw new Error(`Failed to get specific user location: ${error.message}`);
         }
     }
@@ -734,7 +744,6 @@ class GoogleMapsService {
             await this.redisClient?.set(cacheKey, JSON.stringify(results), 'EX', 3600);
             return results;
         } catch (error) {
-            logger.error(`Failed to get nearby places: ${error.message}`);
             throw new Error(`Failed to get nearby places: ${error.message}`);
         }
     }

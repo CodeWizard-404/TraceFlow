@@ -1,5 +1,6 @@
 import TimesheetStatus from "./Enum/TimesheetStatus";
 import Visit from "./Visit";
+import User from "./User";
 
 interface Timesheet {
   timesheetID: string;
@@ -7,7 +8,10 @@ interface Timesheet {
   year: number;
   status: TimesheetStatus;
   supervisorID: string;
-  Visits?: Visit[];
+  Visits?: Array<Visit & { address?: string }>;
+  User?: User;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export default Timesheet;

@@ -6,6 +6,7 @@ const GoogleCalendarService = require('./googleCalendarService');
 const GoogleMapsService = require('./googleMapsService');
 const { Op } = require('sequelize');
 const { nanoid } = require('nanoid');
+const logger = require('../utils/logger');
 
 const ERROR_MESSAGES = {
     INVALID_SUPERVISOR: 'Invalid supervisor ID.',
@@ -33,6 +34,7 @@ class TimesheetService {
                                 through: { attributes: [] },
                             },
                             { model: Agent },
+                            { model: Checklist, attributes: ['checklistID', 'item'], through: { attributes: [] } },
                         ],
                     },
                     { model: User },
@@ -57,6 +59,7 @@ class TimesheetService {
                                 through: { attributes: [] },
                             },
                             { model: Agent },
+                            { model: Checklist, attributes: ['checklistID', 'item'], through: { attributes: [] } },
                         ],
                     },
                     { model: User },
@@ -87,6 +90,7 @@ class TimesheetService {
                                 through: { attributes: [] },
                             },
                             { model: Agent },
+                            { model: Checklist, attributes: ['checklistID', 'item'], through: { attributes: [] } },
                         ],
                     },
                     { model: User },
@@ -112,6 +116,7 @@ class TimesheetService {
                                 through: { attributes: [] },
                             },
                             { model: Agent },
+                            { model: Checklist, attributes: ['checklistID', 'item'], through: { attributes: [] } },
                         ],
                     },
                     { model: User },
@@ -174,7 +179,9 @@ class TimesheetService {
                             ...visit,
                             timesheetID: timesheet.timesheetID,
                             supervisorID,
-                            status: visit.status || 'pending',
+                            status: ['pending', 'visited', 'rejected', 'validated'].includes(visit.status)
+                                ? visit.status
+                                : 'pending',
                         },
                         actorID,
                         { transaction }
@@ -194,12 +201,25 @@ class TimesheetService {
 
             await transaction.commit();
             const reloadedTimesheet = await Timesheet.findByPk(timesheet.timesheetID, {
-                include: [Visit, User],
+                include: [
+                    {
+                        model: Visit,
+                        include: [
+                            { model: Reason, attributes: ['reasonID', 'item'], through: { attributes: [] } },
+                            { model: Checklist, attributes: ['checklistID', 'item'], through: { attributes: [] } },
+                            { model: Agent },
+                        ],
+                    },
+                    { model: User },
+                ],
             });
 
             let warning = null;
             try {
-                const userId = supervisorID;
+                const userId = supervisor.userID;
+                if (typeof userId !== 'string') {
+                    throw new Error(`Invalid userId: ${userId}`);
+                }
                 const syncResults = await GoogleCalendarService.syncTimesheetToCalendar(userId, timesheet.timesheetID);
                 await GoogleCalendarService.notifyCalendarUpdate(userId, {
                     timesheetId: timesheet.timesheetID,
@@ -208,7 +228,10 @@ class TimesheetService {
                 });
             } catch (error) {
                 warning = 'Timesheet created successfully, but Google Calendar sync failed.';
-                console.error(`Failed to sync timesheet ${timesheet.timesheetID} to Google Calendar: ${error.message}`);
+                logger.error(`Failed to sync timesheet ${timesheet.timesheetID} to Google Calendar: ${error.message}`, {
+                    userId: supervisorID,
+                    timesheetId: timesheet.timesheetID,
+                });
             }
 
             return {
@@ -225,13 +248,26 @@ class TimesheetService {
         const transaction = await sequelize.transaction();
         try {
             const { visitIDs, status } = data;
-            const timesheet = await Timesheet.findByPk(id, { include: [Visit], transaction });
+            const timesheet = await Timesheet.findByPk(id, {
+                include: [
+                    {
+                        model: Visit,
+                        include: [
+                            { model: Reason, attributes: ['reasonID', 'item'], through: { attributes: [] } },
+                            { model: Checklist, attributes: ['checklistID', 'item'], through: { attributes: [] } },
+                            { model: Agent },
+                        ],
+                    },
+                    { model: User },
+                ],
+                transaction,
+            });
             if (!timesheet) {
                 const error = new Error('Timesheet not found');
                 error.status = 404;
                 throw error;
             }
-            if (!['pending', 'validated'].includes(status)) {
+            if (!['pending', 'visited', 'rejected', 'validated'].includes(status)) {
                 const error = new Error('Invalid status');
                 error.status = 400;
                 throw error;
@@ -247,14 +283,45 @@ class TimesheetService {
                     throw error;
                 }
                 for (const visit of visits) {
-                    visit.status = status === 'validated' ? 'validated' : 'pending';
+                    visit.status = status;
                     await visit.save({ transaction });
                 }
             }
             timesheet.status = status;
             await timesheet.save({ transaction });
+
+            try {
+                const userId = timesheet.User.userID;
+                if (typeof userId !== 'string') {
+                    throw new Error(`Invalid userId: ${userId}`);
+                }
+                const syncResults = await GoogleCalendarService.syncTimesheetToCalendar(userId, id);
+                await GoogleCalendarService.notifyCalendarUpdate(userId, {
+                    timesheetId: id,
+                    syncedVisits: syncResults,
+                    action: 'synced',
+                });
+            } catch (error) {
+                logger.warn(`Failed to sync timesheet ${id} to calendar after validation: ${error.message}`, {
+                    userId: timesheet.supervisorID,
+                    timesheetId: id,
+                });
+            }
+
             await transaction.commit();
-            const updatedTimesheet = await Timesheet.findByPk(id, { include: [Visit, User] });
+            const updatedTimesheet = await Timesheet.findByPk(id, {
+                include: [
+                    {
+                        model: Visit,
+                        include: [
+                            { model: Reason, attributes: ['reasonID', 'item'], through: { attributes: [] } },
+                            { model: Checklist, attributes: ['checklistID', 'item'], through: { attributes: [] } },
+                            { model: Agent },
+                        ],
+                    },
+                    { model: User },
+                ],
+            });
             return updatedTimesheet;
         } catch (error) {
             await transaction.rollback();
@@ -381,7 +448,7 @@ class TimesheetService {
             const validDates = preferredDays.length > 0
                 ? preferredDays
                 : Array.from({ length: 7 }, (_, i) => AIService.getDateString(weekStart, i));
-            const today = new Date('2025-05-22T20:44:00.000Z'); // Updated to current CET time
+            const today = new Date('2025-05-23T10:17:00.000Z'); // Updated to current CET time
             const todayDate = today.toISOString().split('T')[0];
             const todayMinutes = (today.getUTCHours() + 1) * 60 + today.getUTCMinutes(); // CET
 
@@ -511,6 +578,7 @@ class TimesheetService {
                     reasons,
                     checklists,
                     agent,
+                    status: ['pending', 'visited', 'rejected', 'validated'].includes(visit.status) ? visit.status : 'pending',
                 });
             }
 
@@ -575,7 +643,7 @@ class TimesheetService {
                     date: visit.date,
                     time: visit.time,
                     location: visit.location,
-                    status: 'pending',
+                    status: visit.status,
                     photos: [],
                     comment: null,
                     agentID: visit.agentID,

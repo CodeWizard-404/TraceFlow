@@ -1,3 +1,4 @@
+// models/user.js
 const { nanoid } = require('nanoid');
 module.exports = (sequelize, DataTypes) => {
     return sequelize.define('User', {
@@ -16,40 +17,32 @@ module.exports = (sequelize, DataTypes) => {
         phone: { type: DataTypes.STRING, unique: true, allowNull: false },
         email: { type: DataTypes.STRING, unique: true, allowNull: false },
         password: { type: DataTypes.STRING, allowNull: false },
-        googleEmail: {
-            type: DataTypes.STRING,
-            unique: true,
-            allowNull: true,
+        isOnline: {
+            type: DataTypes.BOOLEAN,
+            defaultValue: false,
+            allowNull: false,
         },
-        googleAccessToken: {
-            type: DataTypes.TEXT,
-            allowNull: true,
+        hasGoogleAuth: {
+            type: DataTypes.BOOLEAN,
+            defaultValue: false,
+            allowNull: false,
         },
-        googleRefreshToken: {
-            type: DataTypes.TEXT,
-            allowNull: true,
-        },
-        googleCalendarId: {
-            type: DataTypes.STRING,
-            allowNull: true,
+        hasCalendarAccess: {
+            type: DataTypes.BOOLEAN,
+            defaultValue: false,
+            allowNull: false,
         },
         PFP: { type: DataTypes.BLOB, allowNull: true },
         tempResetToken: { type: DataTypes.STRING, allowNull: true },
         regionalManagerID: {
             type: DataTypes.STRING,
             allowNull: true,
-            references: {
-                model: 'Users',
-                key: 'userID',
-            },
+            references: { model: 'Users', key: 'userID' },
         },
         directorID: {
             type: DataTypes.STRING,
             allowNull: true,
-            references: {
-                model: 'Users',
-                key: 'userID',
-            },
+            references: { model: 'Users', key: 'userID' },
         },
     });
 };

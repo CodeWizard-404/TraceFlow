@@ -12,6 +12,7 @@ import User from "../models/User";
 import Role from "../models/Role";
 import Permission from "../models/Permission";
 import ReceiptStub from "../models/ReceiptStub";
+import { Log } from "models/log";
 
 export type AxiosErrorResponse = { response?: { data?: { error?: string }; status?: number } };
 
@@ -214,6 +215,8 @@ export interface DirectionsResponse {
         instruction: string;
         distance: string;
         duration: string;
+        start_location: { lat: number; lng: number };
+        polyline: string;
     }>;
     polyline: string;
     waypointOrder?: number[];
@@ -230,8 +233,62 @@ export interface DirectionsResponse {
         distance: number;
         duration: number;
     }>;
-    optimizedPoints?: string[]; // Added to reflect optimized order of waypoints + destination
+    optimizedPoints?: string[];
     mock?: boolean;
 }
 export type PlacesResponse = Array<{ place_id: string; name: string; formatted_address: string; geometry: { location: { lat: number; lng: number } }; }>;
 export type DistanceMatrixResponse = Array<{ elements: Array<{ distance: { text: string; value: number }; duration: { text: string; value: number }; status: string; }>; }>;
+
+
+
+// Log API respons types
+export type GetLogsResponse = {
+    data: Log[];
+    total: number;
+    page: number;
+    pageSize: number;
+    totalPages: number;
+};
+
+export type GetLogsByCategoryResponse = Array<{
+    [key: string]: string | number;
+    count: number;
+}>;
+
+export type DeleteLogsResponse = {
+    deletedCount: number;
+};
+
+export type ArchiveLogsResponse = {
+    deletedCount: number;
+};
+
+export type LogStatisticsResponse = {
+    total: number;
+    byLevel: Array<{ level: string; count: number }>;
+    byRoute: Array<{ route: string; count: number }>;
+    byService: Array<{ service: string; count: number }>;
+    byStatus: Array<{ status: number; count: number }>;
+};
+
+export type ExportLogsResponse = Log[];
+
+export type ClearLogsResponse = {
+    deletedCount: number;
+};
+
+export type UniqueValuesResponse = string[];
+
+export type LoggerHealthResponse = {
+    status: string;
+    config: {
+        logLevel: string;
+        logSampleRate: number;
+        encryptionKey: string;
+        batchSize: number;
+        batchInterval: number;
+        baseLogDir: string;
+    };
+    transports: string[];
+};
+

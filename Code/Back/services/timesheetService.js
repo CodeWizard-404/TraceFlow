@@ -228,10 +228,7 @@ class TimesheetService {
                 });
             } catch (error) {
                 warning = 'Timesheet created successfully, but Google Calendar sync failed.';
-                logger.error(`Failed to sync timesheet ${timesheet.timesheetID} to Google Calendar: ${error.message}`, {
-                    userId: supervisorID,
-                    timesheetId: timesheet.timesheetID,
-                });
+                throw error;
             }
 
             return {
@@ -302,10 +299,8 @@ class TimesheetService {
                     action: 'synced',
                 });
             } catch (error) {
-                logger.warn(`Failed to sync timesheet ${id} to calendar after validation: ${error.message}`, {
-                    userId: timesheet.supervisorID,
-                    timesheetId: id,
-                });
+                throw error;
+
             }
 
             await transaction.commit();

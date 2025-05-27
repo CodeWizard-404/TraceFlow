@@ -233,7 +233,7 @@ const RoleView: React.FC<RoleViewProps> = React.memo(
     const validateRoleName = useCallback((value: string): string => {
       const trimmed = value.trim();
       if (!trimmed) return "Role name is required";
-      if (trimmed.length < 3) return "Role name must be at least 3 characters";
+      if (trimmed.length < 2) return "Role name must be at least 2 characters";
       if (trimmed.length > 50) return "Role name must be 50 characters or less";
       if (!/^[A-Za-z0-9\s-_]+$/.test(trimmed))
         return "Role name can only contain letters, numbers, spaces, hyphens, or underscores";
@@ -592,7 +592,7 @@ const RoleView: React.FC<RoleViewProps> = React.memo(
             <div key={i} className="permission-class-section">
               <div className="custom-skeleton pulsing" style={{ width: "120px", height: "20px" }} />
               <div className="permission-class-grid">
-                {Array.from({ length: 3 }).map((_, j) => (
+                {Array.from({ length: 2 }).map((_, j) => (
                   <div key={j} className="permission-card">
                     <div className="custom-skeleton pulsing" style={{ width: "80%", height: "16px" }} />
                   </div>

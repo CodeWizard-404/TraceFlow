@@ -36,9 +36,24 @@ io.use(async (socket, next) => {
     next();
 });
 
-io.on('connection', (socket) => {
-    socket.join(socket.user.userID);
 
+io.on('connection', async (socket) => {
+    socket.join(socket.user.userID);
+    const userId = socket.handshake.auth?.token ? socket.handshake.auth.userId : null;
+    if (userId) {
+        await User.update({ isOnline: true }, { where: { userID: userId } });
+        socket.join(userId);
+        console.log(`User ${userId} connected`);
+
+        socket.on('disconnect', async () => {
+            await User.update({ isOnline: false }, { where: { userID: userId } });
+            console.log(`User ${userId} disconnected`);
+        });
+    }
+    socket.on('message', (message) => {
+        console.log(`Message from ${socket.user.userID}: ${message}`);
+        socket.to(socket.user.userID).emit('message', message);
+    });
     socket.on('join', (room) => socket.join(room));
     socket.on('leave', (room) => socket.leave(room));
     socket.on('disconnect', () => {

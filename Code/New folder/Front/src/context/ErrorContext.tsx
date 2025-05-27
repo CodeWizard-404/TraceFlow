@@ -70,7 +70,6 @@ export const ErrorProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     );
 };
 
-// eslint-disable-next-line react-refresh/only-export-components
 export const useError = () => {
     const context = useContext(ErrorContext);
     if (!context) throw new Error('useError must be used within an ErrorProvider');

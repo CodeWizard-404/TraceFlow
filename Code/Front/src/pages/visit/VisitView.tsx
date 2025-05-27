@@ -195,9 +195,9 @@ const VisitDetailsView: React.FC = () => {
                     lng: agentData.longitude,
                     address: agentData.location,
                 });
-            } else if (visitData.address) {
+            } else if (visitData.location || visitData.address) {
                 try {
-                    const geocode = await getGeocode(visitData.address);
+                    const geocode = await getGeocode(visitData.location ? visitData.location! : visitData.address!);
                     setDestination({
                         lat: geocode.latitude,
                         lng: geocode.longitude,

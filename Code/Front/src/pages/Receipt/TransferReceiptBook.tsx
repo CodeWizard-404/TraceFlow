@@ -294,6 +294,14 @@ const TransferReceiptBook: React.FC = () => {
     return `${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
+  useEffect(() => {
+    if (!error) return;
+    const timer = setTimeout(() => {
+      setError(null);
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [error]);
+
   const recipientDetails = useMemo(() => {
     if (recipientType === "ToAgent") {
       const agent = agents.find((a) => a.agentID === recipientID);
@@ -357,6 +365,7 @@ const TransferReceiptBook: React.FC = () => {
       if (scanLockRef.current) return;
       scanLockRef.current = true;
       try {
+        console.log("Starting QR scan processing for:", decodedText);
         const parseTLV = (text: string) => {
           try {
             const numberLength = parseInt(text.slice(2, 4), 10);
@@ -384,14 +393,13 @@ const TransferReceiptBook: React.FC = () => {
             );
           }
         };
-        console.log("Raw QR code text:", decodedText);
         const { number, typeName } = parseTLV(decodedText);
         const typeObj = receiptBookTypes.find(
           (t) => t.name.trim().toLowerCase() === typeName.trim().toLowerCase()
         );
         console.log(`Found typeID: ${typeObj?.typeID}`);
-        console.log(`Available types: ${receiptBookTypes.map((t) => t.name).join(", ")}`);
         if (!typeObj) {
+          console.log("Error: Type not found for typeName:", typeName);
           setError(t("transferReceiptBook.errors.typeNotFound", { typeName }));
           return;
         }
@@ -399,16 +407,26 @@ const TransferReceiptBook: React.FC = () => {
           (r) => r.number === number && r.typeID === typeObj.typeID
         );
         if (!matchingBook) {
+          console.log("Error: Book not found for number:", number);
           setError(t("transferReceiptBook.errors.qrNotFound", { number }));
-          console.log("Available books:", receiptBooks.map(b => ({ number: b.number, typeID: b.typeID })));
           return;
         }
-        console.log("Matching book:", matchingBook);
         if (!isTransferable(matchingBook)) {
+          console.log("Error: Book not transferable:", matchingBook.number);
           setError(t("transferReceiptBook.errors.bookNotTransferable", { number }));
           return;
         }
+        if (recipientType === "Archived") {
+          const stubStatus = matchingBook.ReceiptStub?.status?.toLowerCase();
+          const notAllowedStatuses = ["pending", "archived"];
+          if (stubStatus && notAllowedStatuses.includes(stubStatus)) {
+            console.log("Error: Invalid stub status for archive:", stubStatus);
+            setError(t("transferReceiptBook.errors.invalidStubStatusForArchive", { number: matchingBook.number }));
+            return;
+          }
+        }
         if (recipientType === "ToAgent" && userRoleSet.has("Supervisor") && selectedBookIDs.length >= 1) {
+          console.log("Error: Supervisor book limit reached");
           setError(t("transferReceiptBook.errors.supervisorLimit"));
           return;
         }
@@ -433,11 +451,14 @@ const TransferReceiptBook: React.FC = () => {
             return newScanned;
           });
         }
+        console.log("Scan successful, resetting error");
+        setError(null); // Clear any previous error on successful scan
       } catch (err) {
-        setError(t("transferReceiptBook.errors.invalidQR"));
         console.error("QR Parse Error:", err);
+        setError(t("transferReceiptBook.errors.invalidQR"));
       } finally {
         scanLockRef.current = false;
+        console.log("Scan lock released");
       }
     },
     [isTransferable, recipientType, selectedBookIDs, receiptBooks, receiptBookTypes, t, userRoleSet]
@@ -507,7 +528,8 @@ const TransferReceiptBook: React.FC = () => {
       !recipientType ||
       !(recipientID || recipientType === "ToSupplier" || recipientType === "Archived" || recipientType === "StubToSupervisor" || recipientType === "FromSupplier") ||
       transferInitiated ||
-      receiptBookTypes.length === 0 // Wait for types to be loaded
+      receiptBookTypes.length === 0 ||
+      error
     ) {
       return;
     }
@@ -515,7 +537,7 @@ const TransferReceiptBook: React.FC = () => {
     return () => {
       stopScanner();
     };
-  }, [recipientType, recipientID, transferInitiated, startScanner, stopScanner, receiptBookTypes]);
+  }, [recipientType, recipientID, transferInitiated, startScanner, stopScanner, receiptBookTypes, error]);
 
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -1539,43 +1561,57 @@ const TransferReceiptBook: React.FC = () => {
                   </div>
                 )}
                 {recipientType !== "ToSupplier" && recipientType && (recipientID || recipientType === "Archived" || recipientType === "StubToSupervisor" || recipientType === "FromSupplier") && (
-                  <div className="form-group qr-section">
-                    <label>
-                      {recipientType === "FromSupplier"
-                        ? t("transferReceiptBook.form.scanCollect")
-                        : recipientType === "StubToSupervisor"
-                          ? t("transferReceiptBook.form.scanStub")
-                          : t("transferReceiptBook.form.scanQR")}
-                    </label>
-                    {error && <div className="error-above-camera">{error}</div>}
-                    <div id="qr-reader" ref={qrReaderRef} className="qr-reader" />
-                    <div className="scanned-list">
-                      <h4>{t("transferReceiptBook.form.selectedBooks", { count: selectedBookIDs.length })}</h4>
-                      <ul>
-                        {selectedBookIDs.map((bookID) => {
-                          const book = receiptBooks.find((r) => r.bookID === bookID);
-                          return (
-                            <li key={bookID}>
-                              {book?.number} ({t(`common.receiptBookStatuses.${book?.status.toLowerCase()}`, { defaultValue: book?.status })} - {getTypeName(book?.typeID || "")})
-                              <button
-                                onClick={() => {
-                                  setSelectedBookIDs((prev) => prev.filter((id) => id !== bookID));
-                                  setScannedQR((prev) => prev.filter((qr) => qr !== book?.qrCode));
-                                  scannedQRRef.current.delete(book?.qrCode || "");
-                                }}
-                                aria-label={t("transferReceiptBook.actions.aria.removeBook", { number: book?.number })}
-                              >
-                                X
-                              </button>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                      {scannedQR.length > 0 && (
-                        <p>{t("transferReceiptBook.list.scannedQRs", { count: scannedQR.length })}</p>
-                      )}
+                  <>
+                    {error && (
+                      <div className="error-above-camera">
+                        {error}
+                        <button
+                          type="button"
+                          className="dismiss-error-btn"
+                          onClick={() => setError(null)}
+                          aria-label={t("transferReceiptBook.actions.aria.dismissError")}
+                        >
+                          {t("transferReceiptBook.actions.dismissError")}
+                        </button>
+                      </div>
+                    )}
+                    <div className="form-group qr-section">
+                      <label>
+                        {recipientType === "FromSupplier"
+                          ? t("transferReceiptBook.form.scanCollect")
+                          : recipientType === "StubToSupervisor"
+                            ? t("transferReceiptBook.form.scanStub")
+                            : t("transferReceiptBook.form.scanQR")}
+                      </label>
+                      <div id="qr-reader" ref={qrReaderRef} className="qr-reader" />
+                      <div className="scanned-list">
+                        <h4>{t("transferReceiptBook.form.selectedBooks", { count: selectedBookIDs.length })}</h4>
+                        <ul>
+                          {selectedBookIDs.map((bookID) => {
+                            const book = receiptBooks.find((r) => r.bookID === bookID);
+                            return (
+                              <li key={bookID}>
+                                {book?.number} ({t(`common.receiptBookStatuses.${book?.status.toLowerCase()}`, { defaultValue: book?.status })} - {getTypeName(book?.typeID || "")})
+                                <button
+                                  onClick={() => {
+                                    setSelectedBookIDs((prev) => prev.filter((id) => id !== bookID));
+                                    setScannedQR((prev) => prev.filter((qr) => qr !== book?.qrCode));
+                                    scannedQRRef.current.delete(book?.qrCode || "");
+                                  }}
+                                  aria-label={t("transferReceiptBook.actions.aria.removeBook", { number: book?.number })}
+                                >
+                                  X
+                                </button>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                        {scannedQR.length > 0 && (
+                          <p>{t("transferReceiptBook.list.scannedQRs", { count: scannedQR.length })}</p>
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  </>
                 )}
                 <div className="form-actions">
                   <button type="button" className="back-btn" onClick={() => navigate(-1)} aria-label={t("transferReceiptBook.actions.aria.back")}>

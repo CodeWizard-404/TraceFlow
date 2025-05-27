@@ -462,6 +462,7 @@
       "reasons": "Reasons",
       "checklists": "Checklists",
       "recruitmentVisit": "Recruitment Visit",
+      "agentLocation": "- Location",
       "placeholders": {
         "location": "Enter visit location (optional)",
         "supervisorSearch": "Search supervisors by name...",
@@ -534,7 +535,7 @@
       "region": "Region",
       "governorate": "Governorate",
       "delegation": "Delegation",
-      "multipleAgents": "Multiple Agents",
+      "multipleAgents": "Multiple Agents Selected",
       "placeholders": {
         "selectRecipientType": "Select Recipient Type",
         "enterAgentPhone": "Enter agent phone number",
@@ -564,6 +565,7 @@
       "validateStubCollection": "Validate Stub Collection",
       "selectAll": "Select All",
       "deselectAll": "Deselect All",
+      "dismissError": "Dismiss Error",
       "aria": {
         "back": "Back to previous step",
         "initiate": "Initiate transfer of receipt books",
@@ -573,7 +575,8 @@
         "validateStubCollection": "Validate stub collection",
         "removeBook": "Remove book {{number}}",
         "selectAll": "Select all books",
-        "deselectAll": "Deselect all books"
+        "deselectAll": "Deselect all books",
+        "dismissError": "Dismiss error message"
       }
     },
     "types": {
@@ -605,7 +608,7 @@
       "tosupervisor": "Supervisor",
       "toagent": "Agent",
       "stubtosupervisor": "Stub Collection",
-      "toregional pharmacistfromsupervisor": "Stub Collection",
+      "toregionalmanagerfromsupervisor": "Stub Collection",
       "tostockmanager": "Stock Manager",
       "archived": " To Archive"
     },
@@ -616,7 +619,7 @@
       "fetchAgentFailed": "Failed to fetch agent details",
       "cameraAccessDenied": "Camera access denied or unavailable",
       "qrNotFound": "QR code \"{{number}}\" not found in receipt books",
-      "bookNotTransferable": "Book cannot be transferred to the selected recipient",
+      "bookNotTransferable": "Book \"{{number}}\" cannot be transferred to the selected recipient",
       "supervisorLimit": "Supervisors can only assign one receipt book to an agent",
       "invalidQR": "Invalid QR code format",
       "otpExpired": "OTP has expired. Please initiate the transfer again",
@@ -624,11 +627,11 @@
       "noRecipientType": "Please select a recipient type",
       "noSupplierEmail": "Please enter a supplier email",
       "noAgentSelected": "Please select an agent",
-      "noRecipient": "Please select a recipient",
+      "noRecipientSelected": "Please select a recipient",
       "initiateFailed": "Failed to initiate transfer: {{message}}",
       "noOTP": "Please enter the OTP",
-      "validationFailed": "Invalid OTP or transfer validation failed: {{message}}",
-      "agentNotFound": "No agent found with phone {{phone}}",
+      "validateFailed": "Invalid OTP or transfer validation failed: {{message}}",
+      "noAgentFound": "No agent found with phone {{phone}}",
       "loadRegionalManagers": "Failed to load regional managers",
       "loadSupervisors": "Failed to load supervisors",
       "loadAgents": "Failed to load agents",
@@ -637,6 +640,7 @@
       "loadDelegations": "Failed to load delegations",
       "noTypesAvailable": "No receipt book types available",
       "typeNotFound": "Receipt book type \"{{typeName}}\" not found",
+      "invalidStubStatusForArchive": "Cannot archive book \"{{number}}\" due to invalid stub status",
       "unknown": "An unknown error occurred"
     }
   },
@@ -1828,6 +1832,8 @@
     "directions": "Directions",
     "carModeOn": "Car Mode On",
     "carModeOff": "Car Mode Off",
+    "showControls": "Show Controls",
+    "hideControls": "Hide Controls",
     "mapStyles": {
       "standard": "Standard",
       "platformDark": "Dark",
@@ -1853,6 +1859,8 @@
       "originPlaceholder": "Enter origin",
       "destinationPlaceholder": "Enter destination",
       "myLocation": "My Location",
+      "centerRoute": "Center",
+      "startNavigation": "Start in Maps",
       "modes": {
         "driving": "Driving",
         "walking": "Walking"
@@ -1865,7 +1873,10 @@
       "noStops": "No stops added",
       "optimize": "Optimize Route",
       "distance": "Distance",
-      "duration": "Duration"
+      "duration": "Duration",
+      "steps": "Steps",
+      "stops": "Stops",
+      "step": "Step {{number}}"
     },
     "agentsList": {
       "title": "Agents",
@@ -1873,15 +1884,16 @@
     },
     "agentCard": {
       "directions": "Directions",
-      "addStop": "Add Stop",
+      "addStop": "Add_Stop",
       "call": "Call",
       "remove": "Remove"
     },
     "infoWindow": {
       "edit": "Edit",
-      "addStop": "Add Stop",
+      "addStop": "Add_Stop",
       "directions": "Directions",
-      "phone": "Phone"
+      "phone": "Phone",
+      "addVisit": "Visit"
     },
     "addAgent": "Add Agent",
     "addAgentPrompt": "Click on the map to select a location for the new agent",

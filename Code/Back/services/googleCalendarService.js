@@ -41,11 +41,9 @@ function getColorId(status) {
 class GoogleCalendarService {
     static async getCalendarClient(userId) {
         if (typeof userId !== 'string') {
-            logger.error('Invalid userId type', { userId: String(userId) });
             throw new Error(`Invalid userId type: expected string, got ${typeof userId}`);
         }
         const accessToken = await VaultService.getAccessToken(userId);
-        logger.info('Retrieved access token from Vault', { userId });
         const oauth2Client = new google.auth.OAuth2();
         oauth2Client.setCredentials({ access_token: accessToken });
         return google.calendar({ version: 'v3', auth: oauth2Client });
@@ -55,11 +53,9 @@ class GoogleCalendarService {
         try {
             // Input validation
             if (typeof userId !== 'string') {
-                logger.error('Invalid userId type', { userId: String(userId), visitId });
                 throw new Error(`Invalid userId type: expected string, got ${typeof userId}`);
             }
             if (typeof visitId !== 'string') {
-                logger.error('Invalid visitId type', { userId, visitId: String(visitId) });
                 throw new Error(`Invalid visitId type: expected string, got ${typeof visitId}`);
             }
 
@@ -74,53 +70,35 @@ class GoogleCalendarService {
                 ]
             });
             if (!visit) {
-                logger.error('Visit not found', { userId, visitId });
                 throw new Error('Visit not found');
             }
             if (!visit.Timesheet || !visit.Timesheet.User) {
-                logger.error('Visit has no associated timesheet or user', { userId, visitId });
                 throw new Error('Visit has no associated timesheet or user');
             }
 
             // Validate supervisor
             if (visit.Timesheet.User.userID !== userId) {
-                logger.warn('User ID mismatch', {
-                    userId,
-                    visitId,
-                    timesheetUserId: visit.Timesheet.User.userID
-                });
+                throw new Error(`User ${userId} is not authorized to create events for this visit`);
             }
 
             // Validate date and time
             if (!isValidDateTime(visit.date, visit.time)) {
-                logger.error('Invalid date or time format', {
-                    userId,
-                    visitId,
-                    date: visit.date,
-                    time: visit.time,
-                });
+
                 throw new Error(`Invalid date (${visit.date}) or time (${visit.time}) format. Expected YYYY-MM-DD and HH:MM or HH:MM:SS.`);
             }
 
             // Normalize time
             const normalizedTime = normalizeTime(visit.time);
-            logger.debug('Normalized time', { userId, visitId, originalTime: visit.time, normalizedTime });
 
             // Construct start and end times
             const startDateTime = new Date(`${visit.date}T${normalizedTime}:00`);
             if (isNaN(startDateTime.getTime())) {
-                logger.error('Invalid startDateTime computed', {
-                    userId,
-                    visitId,
-                    date: visit.date,
-                    time: normalizedTime,
-                });
+
                 throw new Error('Computed startDateTime is invalid');
             }
             const duration = Number(visit.duration) || 60;
             const endDateTime = new Date(startDateTime.getTime() + duration * 60000);
             if (isNaN(endDateTime.getTime())) {
-                logger.error('Invalid endDateTime computed', { userId, visitId, duration });
                 throw new Error('Computed endDateTime is invalid');
             }
 
@@ -135,7 +113,6 @@ class GoogleCalendarService {
                     latitude = geocode.latitude;
                     longitude = geocode.longitude;
                 } catch (error) {
-                    logger.warn(`Failed to geocode location: ${error.message}`, { userId, visitId, location: visit.location });
                     location = visit.location;
                 }
             }
@@ -180,14 +157,6 @@ class GoogleCalendarService {
                 }
             };
 
-            logger.debug('Creating calendar event', {
-                userId,
-                visitId,
-                start: event.start,
-                end: event.end,
-                colorId: event.colorId,
-                attendees: event.attendees
-            });
 
             const response = await calendar.events.insert({
                 calendarId: 'primary',
@@ -205,31 +174,17 @@ class GoogleCalendarService {
                             role: 'writer'
                         }
                     });
-                    logger.info(`Granted write access to regional manager`, {
-                        userId,
-                        visitId,
-                        regionalManagerEmail: visit.Timesheet.User.RegionalManager.email
-                    });
                 } catch (error) {
-                    logger.warn(`Failed to set ACL for regional manager: ${error.message}`, {
-                        userId,
-                        visitId,
-                        regionalManagerEmail: visit.Timesheet.User.RegionalManager.email
-                    });
+                    throw new Error(`Failed to set ACL for regional manager: ${error.message}`);
                 }
             }
 
             visit.calendarEventId = response.data.id;
             await visit.save();
 
-            logger.info(`Created calendar event for visit ${visitId}`, { userId, eventId: response.data.id });
             return response.data;
         } catch (error) {
-            logger.error(`Failed to create calendar event for visit ${visitId}: ${error.message}`, {
-                userId,
-                visitId,
-                fullError: JSON.stringify(error, null, 2)
-            });
+
             throw error;
         }
     }
@@ -237,11 +192,9 @@ class GoogleCalendarService {
     static async updateCalendarEvent(userId, visitId) {
         try {
             if (typeof userId !== 'string') {
-                logger.error('Invalid userId type', { userId: String(userId), visitId });
                 throw new Error(`Invalid userId type: expected string, got ${typeof userId}`);
             }
             if (typeof visitId !== 'string') {
-                logger.error('Invalid visitId type', { userId, visitId: String(visitId) });
                 throw new Error(`Invalid visitId type: expected string, got ${typeof visitId}`);
             }
 
@@ -255,38 +208,25 @@ class GoogleCalendarService {
                 ]
             });
             if (!visit || !visit.calendarEventId) {
-                logger.error('Visit not found or no calendar event associated', { userId, visitId });
                 throw new Error('Visit not found or no calendar event associated');
             }
             if (!visit.Timesheet || !visit.Timesheet.User) {
-                logger.error('Visit has no associated timesheet or user', { userId, visitId });
                 throw new Error('Visit has no associated timesheet or user');
             }
 
             // Validate date and time
             if (!isValidDateTime(visit.date, visit.time)) {
-                logger.error('Invalid date or time format', {
-                    userId,
-                    visitId,
-                    date: visit.date,
-                    time: visit.time,
-                });
+
                 throw new Error(`Invalid date (${visit.date}) or time (${visit.time}) format. Expected YYYY-MM-DD and HH:MM or HH:MM:SS.`);
             }
 
             // Normalize time to HH:MM
             const normalizedTime = normalizeTime(visit.time);
-            logger.debug('Normalized time', { userId, visitId, originalTime: visit.time, normalizedTime });
 
             // Construct startDateTime
             const startDateTime = new Date(`${visit.date}T${normalizedTime}:00`);
             if (isNaN(startDateTime.getTime())) {
-                logger.error('Invalid startDateTime computed', {
-                    userId,
-                    visitId,
-                    date: visit.date,
-                    time: normalizedTime,
-                });
+
                 throw new Error('Computed startDateTime is invalid');
             }
 
@@ -294,11 +234,7 @@ class GoogleCalendarService {
             const duration = Number(visit.duration) || 60;
             const endDateTime = new Date(startDateTime.getTime() + duration * 60000);
             if (isNaN(endDateTime.getTime())) {
-                logger.error('Invalid endDateTime computed', {
-                    userId,
-                    visitId,
-                    duration,
-                });
+
                 throw new Error('Computed endDateTime is invalid');
             }
 
@@ -313,7 +249,6 @@ class GoogleCalendarService {
                     latitude = geocode.latitude;
                     longitude = geocode.longitude;
                 } catch (error) {
-                    logger.warn(`Failed to geocode location: ${error.message}`, { userId, visitId, location: visit.location });
                     location = visit.location;
                 }
             }
@@ -355,10 +290,8 @@ class GoogleCalendarService {
                 resource: event,
             });
 
-            logger.info(`Updated calendar event for visit ${visitId}`, { userId, eventId: response.data.id });
             return response.data;
         } catch (error) {
-            logger.error(`Failed to update calendar event for visit ${visitId}: ${error.message}`, { userId, visitId });
             throw error;
         }
     }
@@ -366,18 +299,15 @@ class GoogleCalendarService {
     static async deleteCalendarEvent(userId, visitId) {
         try {
             if (typeof userId !== 'string') {
-                logger.error('Invalid userId type', { userId: String(userId), visitId });
                 throw new Error(`Invalid userId type: expected string, got ${typeof userId}`);
             }
             if (typeof visitId !== 'string') {
-                logger.error('Invalid visitId type', { userId, visitId: String(visitId) });
                 throw new Error(`Invalid visitId type: expected string, got ${typeof visitId}`);
             }
 
             const calendar = await this.getCalendarClient(userId);
             const visit = await Visit.findByPk(visitId);
             if (!visit || !visit.calendarEventId) {
-                logger.error('Visit not found or no calendar event associated', { userId, visitId });
                 throw new Error('Visit not found or no calendar event associated');
             }
 
@@ -390,9 +320,7 @@ class GoogleCalendarService {
             visit.calendarEventId = null;
             await visit.save();
 
-            logger.info(`Deleted calendar event for visit ${visitId}`, { userId });
         } catch (error) {
-            logger.error(`Failed to delete calendar event for visit ${visitId}: ${error.message}`, { userId, visitId });
             throw error;
         }
     }
@@ -400,18 +328,15 @@ class GoogleCalendarService {
     static async listCalendarEvents(userId, timesheetId) {
         try {
             if (typeof userId !== 'string') {
-                logger.error('Invalid userId type', { userId: String(userId), timesheetId });
                 throw new Error(`Invalid userId type: expected string, got ${typeof userId}`);
             }
             if (typeof timesheetId !== 'string') {
-                logger.error('Invalid timesheetId type', { userId, timesheetId: String(timesheetId) });
                 throw new Error(`Invalid timesheetId type: expected string, got ${typeof timesheetId}`);
             }
 
             const calendar = await this.getCalendarClient(userId);
             const timesheet = await Timesheet.findByPk(timesheetId);
             if (!timesheet) {
-                logger.error('Timesheet not found', { userId, timesheetId });
                 throw new Error('Timesheet not found');
             }
 
@@ -429,15 +354,12 @@ class GoogleCalendarService {
                 privateExtendedProperty: `timesheetId=${timesheetId}`,
             });
 
-            logger.info(`Listed calendar events for timesheet ${timesheetId}`, { userId });
             return response.data.items;
         } catch (error) {
             if (error.message.includes('Invalid Credentials') || error.response?.status === 401) {
-                logger.error(`Invalid Google Calendar credentials`, { userId, timesheetId });
                 await VaultService.clearTokens(userId);
                 throw new Error('Invalid Google Calendar credentials. Please re-authorize.');
             }
-            logger.error(`Failed to list calendar events for timesheet ${timesheetId}: ${error.message}`, { userId, timesheetId });
             throw error;
         }
     }
@@ -445,24 +367,20 @@ class GoogleCalendarService {
     static async notifyCalendarUpdate(userId, updateData) {
         try {
             if (typeof userId !== 'string') {
-                logger.error('Invalid userId type', { userId: String(userId), updateData });
                 throw new Error(`Invalid userId type: expected string, got ${typeof userId}`);
             }
             await RedisUtils.publishEvent('calendar_updates', { userId, ...updateData });
-            logger.info(`Notified calendar update for user ${userId}`, { updateData });
         } catch (error) {
-            logger.warn(`Failed to notify calendar update: ${error.message}`, { userId });
+            throw error;
         }
     }
 
     static async syncTimesheetToCalendar(userId, timesheetId) {
         try {
             if (typeof userId !== 'string') {
-                logger.error('Invalid userId type', { userId: String(userId), timesheetId });
                 throw new Error(`Invalid userId type: expected string, got ${typeof userId}`);
             }
             if (typeof timesheetId !== 'string') {
-                logger.error('Invalid timesheetId type', { userId, timesheetId: String(timesheetId) });
                 throw new Error(`Invalid timesheetId type: expected string, got ${typeof timesheetId}`);
             }
 
@@ -481,7 +399,6 @@ class GoogleCalendarService {
                 ],
             });
             if (!timesheet) {
-                logger.error('Timesheet not found', { userId, timesheetId });
                 throw new Error('Timesheet not found');
             }
 
@@ -499,14 +416,11 @@ class GoogleCalendarService {
                         results.push({ visitId: visit.visitID, status: 'created' });
                     }
                 } catch (error) {
-                    logger.error(`Failed to sync visit ${visit.visitID}: ${error.message}`, { userId, visitId: visit.visitID });
                     results.push({ visitId: visit.visitID, status: 'failed', error: error.message });
                 }
             }
-            logger.info(`Synced timesheet ${timesheetId} to calendar`, { userId });
             return results;
         } catch (error) {
-            logger.error(`Failed to sync timesheet ${timesheetId}: ${error.message}`, { userId, timesheetId });
             throw error;
         }
     }

@@ -39,7 +39,7 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ className, onClos
         try {
             const fetchedNotifications = await getNotifications();
             mergeNotifications(fetchedNotifications);
-            setPage(1); // Reset to first page
+            setPage(1);
         } catch (error) {
             console.error('Failed to refresh notifications:', error);
         } finally {
@@ -74,7 +74,7 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ className, onClos
         <div ref={panelRef} className={cn('notification-panel', className)} onClick={(e) => e.stopPropagation()}>
             <div className="notification-panel-header">
                 <h2>
-                    Notifications  {unreadCount > 0 && <span className="unread-count">{unreadCount}</span>}&nbsp;
+                    Notifications {unreadCount > 0 && <span className="unread-count">{unreadCount}</span>}
                 </h2>
                 <div className="notification-panel-controls">
                     <button onClick={handleRefresh} className="control-button" disabled={isLoading}>

@@ -511,11 +511,24 @@ class ReceiptBookService {
     static async sendToSupplier(transferID, bookIDs, supplierEmail, isPartial, userID) {
         try {
             if (isPartial) {
-                // Partial request handling (unchanged)
+                // Check if user is Super Admin
+                const user = await User.findByPk(userID, { include: [Role] });
+                const isSuperAdmin = user?.Roles?.some(r => r.name === process.env.ROLE_SUPER_ADMIN);
+
+                // Modify query to bypass currentHolderID check for Super Admin
+                const whereClause = {
+                    bookID: bookIDs,
+                    status: 'In Stock',
+                };
+                if (!isSuperAdmin) {
+                    whereClause.currentHolderID = userID;
+                }
+
                 const books = await ReceiptBook.findAll({
-                    where: { bookID: bookIDs, status: 'In Stock', currentHolderID: userID },
+                    where: whereClause,
                     include: [{ model: ReceiptBookType, attributes: ['name'] }],
                 });
+
                 if (books.length !== bookIDs.length) {
                     const error = new Error('Some books are not in stock or not held by you');
                     error.status = 400;
@@ -638,15 +651,15 @@ class ReceiptBookService {
                 // Generate preview table (first 10 books)
                 const previewBooks = bookDetails.slice(0, 10);
                 const receiptBooksTable = `
-          <table>
-            <thead>
-              <tr><th>Book Number</th><th>Type</th></tr>
-            </thead>
-            <tbody>
-              ${previewBooks.map(b => `<tr><td>${b.number}</td><td>${b.type}</td></tr>`).join('')}
-            </tbody>
-          </table>
-        `;
+                <table>
+                    <thead>
+                        <tr><th>Book Number</th><th>Type</th></tr>
+                    </thead>
+                    <tbody>
+                        ${previewBooks.map(b => `<tr><td>${b.number}</td><td>${b.type}</td></tr>`).join('')}
+                    </tbody>
+                </table>
+            `;
                 const bookTypes = Object.entries(
                     bookDetails.reduce((acc, b) => {
                         acc[b.type] = (acc[b.type] || 0) + 1;
@@ -691,7 +704,7 @@ class ReceiptBookService {
             }
 
             const user = await User.findByPk(userID, { include: [Role] });
-            if (!user || !user.Roles.some(r => r.name === process.env.PURCHASE_TEAM || r.name === process.env.SUPER_ADMIN)) {
+            if (!user || !user.Roles.some(r => r.name === process.env.ROLE_PURCHASE_TEAM || r.name === process.env.ROLE_SUPER_ADMIN)) {
                 const error = new Error('Only Purchase Team or Super Admin can collect from supplier');
                 error.status = 403;
                 throw error;
@@ -844,7 +857,7 @@ class ReceiptBookService {
         }
     }
 
-    static async canTransfer(books, senderID) {
+    static async canTransfer(books, senderID, recipientType, recipient) {
         try {
             const sender = await User.findByPk(senderID, { include: [Role] });
             const isSuperAdmin = sender?.Roles?.some(r => r.name === process.env.ROLE_SUPER_ADMIN);
@@ -853,19 +866,40 @@ class ReceiptBookService {
                 return true;
             }
 
-            return books.every(book =>
-                (book.status === 'In Stock' && book.currentHolderID === senderID) ||
-                (book.status === 'Sent to Supplier' && !book.currentHolderID) ||
-                (book.status === 'Collect from Supplier' && book.currentHolderID === senderID) ||
-                (['With Regional Manager', 'With Supervisor', 'Stub Collected'].includes(book.status) && book.currentHolderID === senderID)
-            );
+            // Check if recipient is a supplier for 'In Stock' books
+            const isRecipientSupplier = recipientType === 'supplier' ||
+                (recipient?.Roles?.length && recipient.Roles.some(r => r.name === 'Supplier'));
+
+            return books.every(book => {
+                if (book.status === 'In Stock') {
+                    // 'In Stock' books can only be sent to a supplier by the current holder
+                    return book.currentHolderID === senderID && isRecipientSupplier;
+                }
+                // 'Sent to Supplier' books cannot be transferred
+                if (book.status === 'Sent to Supplier') {
+                    return false;
+                }
+                // Other statuses require the sender to be the current holder
+                return (
+                    (book.status === 'Collect from Supplier' && book.currentHolderID === senderID) ||
+                    (['With Regional Manager', 'With Supervisor', 'Stub Collected'].includes(book.status) &&
+                        book.currentHolderID === senderID)
+                );
+            });
         } catch (error) {
-            throw error;
+            throw new Error(`Failed to validate transfer: ${error.message}`);
         }
     }
 
     static determineTransferDetails(currentStatus, recipientType, recipient) {
         try {
+            // Validate that 'In Stock' books can only be sent to a supplier
+            if (currentStatus === 'In Stock' && recipientType !== 'supplier' &&
+                !(recipient?.Roles?.length && recipient.Roles.some(r => r.name === 'Supplier'))) {
+                throw new Error('In Stock books can only be sent to a supplier');
+            }
+
+            // Handle agent transfers
             if (recipientType === 'agent') {
                 return { status: 'Assigned to Agent', transferType: 'ToAgent' };
             }
@@ -899,6 +933,7 @@ class ReceiptBookService {
                 'Regional Manager': 'ToRegionalManager',
                 Supervisor: 'ToSupervisor',
                 'Stock Manager': 'ToStockManager',
+                Supplier: 'ToSupplier',
             };
 
             let newStatus;
@@ -934,6 +969,8 @@ class ReceiptBookService {
             throw new Error('Failed to determine transfer details: ' + error.message);
         }
     }
+
+
 
     /**
      * Process receipt book CSV file.

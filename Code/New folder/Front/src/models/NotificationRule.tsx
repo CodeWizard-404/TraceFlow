@@ -7,7 +7,6 @@ interface NotificationRule {
         userIDs?: string[];
     };
     channels: {
-        websocket: boolean;
         email: boolean;
         sms: boolean;
         inApp: boolean;
@@ -15,6 +14,7 @@ interface NotificationRule {
     conditions?: Record<string, unknown>;
     messageTemplate: string;
     enabled: boolean;
+    priority: 'high' | 'normal';
     creatorID: string;
     createdAt: Date;
     updatedAt: Date;

@@ -1,9 +1,57 @@
 // utils/tokenExchange.js
 const axios = require('axios');
 require('dotenv').config();
+const logger = require('./logger');
 
 const KEYCLOAK_URL = process.env.KEYCLOAK_URL || 'http://localhost:8080';
 const REALM = process.env.REALM || 'TraceFlow';
+const CLIENT_ID = process.env.KEYCLOAK_CLIENT_ID || 'traceflow-backend';
+const CLIENT_SECRET = process.env.KEYCLOAK_CLIENT_SECRET || '';
+
+async function getKeycloakAdminToken() {
+    try {
+        const response = await axios.post(
+            `${KEYCLOAK_URL}/realms/${REALM}/protocol/openid-connect/token`,
+            new URLSearchParams({
+                grant_type: 'client_credentials',
+                client_id: CLIENT_ID,
+                client_secret: CLIENT_SECRET,
+            }),
+            { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+        );
+
+        const { access_token } = response.data;
+        logger.info('Retrieved Keycloak admin token', { clientId: CLIENT_ID });
+        return access_token;
+    } catch (error) {
+        logger.error('Failed to retrieve Keycloak admin token', { error: error.message });
+        throw new Error(`Failed to retrieve Keycloak admin token: ${error.message}`);
+    }
+}
+
+async function getGoogleAccessTokenForUser(keycloakUserId, adminToken) {
+    try {
+        const response = await axios.post(
+            `${KEYCLOAK_URL}/realms/${REALM}/protocol/openid-connect/token`,
+            new URLSearchParams({
+                grant_type: 'urn:ietf:params:oauth:grant-type:token-exchange',
+                client_id: CLIENT_ID,
+                client_secret: CLIENT_SECRET,
+                subject_token: adminToken,
+                requested_subject: keycloakUserId,
+                requested_token_type: 'urn:ietf:params:oauth:token-type:access_token',
+            }),
+            { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+        );
+
+        const { access_token } = response.data;
+        logger.info('Exchanged Keycloak token for Google access token', { keycloakUserId });
+        return access_token;
+    } catch (error) {
+        logger.error('Failed to exchange token for Google access', { keycloakUserId, error: error.message });
+        throw new Error(`Failed to exchange token for Google access: ${error.message}`);
+    }
+}
 
 
 async function getGoogleAccessToken(keycloakToken) {
@@ -24,53 +72,4 @@ async function getGoogleAccessToken(keycloakToken) {
     }
 }
 
-async function getKeycloakAdminToken() {
-    const response = await axios.post(
-        `${KEYCLOAK_URL}/realms/master/protocol/openid-connect/token`,
-        new URLSearchParams({
-            grant_type: 'password',
-            client_id: 'admin-cli',
-            username: process.env.KEYCLOAK_ADMIN_USER || 'admin',
-            password: process.env.KEYCLOAK_ADMIN_PASSWORD || 'admin',
-        })
-    );
-    return response.data.access_token;
-}
-
-async function getGoogleAccessTokenForUser(userId, adminToken) {
-    try {
-        // Step 1: Exchange admin token for target user's Keycloak token
-        const userTokenResponse = await axios.post(
-            `${KEYCLOAK_URL}/realms/${REALM}/protocol/openid-connect/token`,
-            new URLSearchParams({
-                grant_type: 'urn:ietf:params:oauth:grant-type:token-exchange',
-                requested_subject: userId, // Target user's Keycloak ID
-                subject_token: adminToken,
-                subject_token_type: 'urn:ietf:params:oauth:token-type:access_token',
-            }),
-            { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
-        );
-
-        const userKeycloakToken = userTokenResponse.data.access_token;
-
-        // Step 2: Exchange user's Keycloak token for Google access token
-        const googleTokenResponse = await axios.post(
-            `${KEYCLOAK_URL}/realms/${REALM}/protocol/openid-connect/token`,
-            new URLSearchParams({
-                grant_type: 'urn:ietf:params:oauth:grant-type:token-exchange',
-                subject_token: userKeycloakToken,
-                subject_token_type: 'urn:ietf:params:oauth:token-type:access_token',
-                requested_issuer: 'google',
-            }),
-            { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
-        );
-
-        return googleTokenResponse.data.access_token;
-    } catch (error) {
-        throw new Error('Failed to obtain Google access token for user: ' + (error.message || 'Unknown error'));
-    }
-}
-
 module.exports = { getGoogleAccessToken, getKeycloakAdminToken, getGoogleAccessTokenForUser };
-
-module.exports = { getGoogleAccessToken };

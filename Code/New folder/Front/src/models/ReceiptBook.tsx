@@ -7,9 +7,15 @@ interface ReceiptBook {
     typeID: string;
     qrCode: string;
     status: ReceiptBookStatus;
-    currentHolderID?: string;
+    holder?: {
+        userID: string;
+        firstname: string;
+        lastname: string;
+        phone: string;
+    };
     agentID?: string;
     ReceiptStub?: ReceiptStub;
+    currentHolderID?: string;
 }
 
 export default ReceiptBook;

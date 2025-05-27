@@ -254,10 +254,8 @@ export const getAllReceiptBookTypes = async (): Promise<ReceiptBookType[]> => {
         const response = await api.get(`/receipt-books/types`, {
             headers: { 'Accept': 'application/json' },
         });
-        console.log("getAllReceiptBookTypes response:", response.data);
         return response.data;
     } catch (error) {
-        console.error("getAllReceiptBookTypes error:", error);
         throw new Error(handleApiError(error, 'Failed to fetch receipt book types'));
     }
 };

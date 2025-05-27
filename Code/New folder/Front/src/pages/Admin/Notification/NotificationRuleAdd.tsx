@@ -12,7 +12,6 @@ import User from '../../../models/User';
 import Role from '../../../models/Role';
 import { isValidNotificationEvent, getNotificationEntities, getEntityActions, getNotificationTypes } from '../../../lib/notifEvents';
 
-
 interface NotificationRuleAddProps {
     rules: NotificationRule[];
     setRules: React.Dispatch<React.SetStateAction<NotificationRule[]>>;
@@ -32,7 +31,7 @@ const formVariants = {
 const NotificationRuleAddSkeleton: React.FC = () => (
     <div className="form-card skeleton">
         <div className="custom-skeleton pulsing" style={{ width: '200px', height: '24px', marginBottom: '16px' }} />
-        {[...Array(4)].map((_, i) => (
+        {[...Array(5)].map((_, i) => (
             <div key={i} className="form-section">
                 <div className="custom-skeleton pulsing" style={{ width: '150px', height: '20px', marginBottom: '12px' }} />
                 <div className="form-row">
@@ -43,7 +42,6 @@ const NotificationRuleAddSkeleton: React.FC = () => (
         ))}
         <div className="form-actions-0">
             <div className="custom-skeleton pulsing" style={{ width: '120px', height: '40px' }} />
-
         </div>
     </div>
 );
@@ -58,9 +56,10 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
         event: '',
         type: 'general',
         recipients: { roles: [], userIDs: [] },
-        channels: { websocket: true, email: false, sms: false, inApp: true },
+        channels: { email: false, sms: false, inApp: true },
         messageTemplate: '',
         enabled: true,
+        priority: 'normal',
     });
     const [selectedEntity, setSelectedEntity] = useState<string | null>(null);
     const [selectedAction, setSelectedAction] = useState<string | null>(null);
@@ -84,7 +83,6 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
     useEffect(() => {
         const fetchData = async () => {
             try {
-
                 const [usersData, rolesData, entitiesData, typesData] = await Promise.all([
                     getAllUsers(),
                     getAllRoles(),
@@ -93,8 +91,6 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
                 ]);
                 setUsers(usersData || []);
                 setRoles(rolesData || []);
-
-                // Set notification types
                 setNotificationTypes(typesData || []);
 
                 // Set entities and actions
@@ -110,14 +106,11 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
                     for (const entity of entitiesData) {
                         actionMap[entity] = await getEntityActions(entity);
                     }
-
-
                     cachedEntityActions.current = actionMap;
                     lastCacheTime.current = Date.now();
                 }
                 setEntities(cachedEntities.current || []);
                 setEntityActions(cachedEntityActions.current || {});
-
             } catch (err) {
                 setError('Failed to fetch data');
                 console.error(err);
@@ -135,8 +128,6 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
         const event = `${entity}:${action}`;
         const isValid = await isValidNotificationEvent(event);
         if (isValid) return 'Event already exists; it will reuse existing rules';
-
-
         return '';
     };
 
@@ -152,7 +143,7 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
     ) => {
         const entity = option ? option.value : null;
         setSelectedEntity(entity);
-        setSelectedAction(null); // Reset action when entity changes
+        setSelectedAction(null);
         const event = entity && selectedAction ? `${entity}:${selectedAction}` : '';
         setFormData((prev) => ({ ...prev, event }));
         setTouched((prev) => ({ ...prev, event: true }));
@@ -181,14 +172,13 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
             setFormData((prev) => ({
                 ...prev,
                 channels: {
-                    websocket: prev.channels?.websocket ?? false,
                     email: prev.channels?.email ?? false,
                     sms: prev.channels?.sms ?? false,
                     inApp: prev.channels?.inApp ?? false,
                     [name]: checked,
                 },
             }));
-        } else if (name === 'type' || name === 'messageTemplate') {
+        } else {
             setFormData((prev) => ({ ...prev, [name]: value }));
             if (name === 'messageTemplate') {
                 setTouched((prev) => ({ ...prev, messageTemplate: true }));
@@ -276,7 +266,6 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
                 },
             } as NotificationRule);
             setRules((prev) => [...prev, newRule]);
-            setError('Notification rule created successfully');
             setView('notifications');
         } catch (err: unknown) {
             console.error('Failed to create notification rule:', err);
@@ -374,6 +363,22 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
                                     ))}
                                 </select>
                             </div>
+                            <div className="form-group">
+                                <label htmlFor="priority">
+                                    Priority
+                                    <span className="tooltip" data-tooltip="Select the priority of the notification"></span>
+                                </label>
+                                <select
+                                    id="priority"
+                                    name="priority"
+                                    value={formData.priority}
+                                    onChange={handleChange}
+                                    className="form-input"
+                                >
+                                    <option value="normal">Normal</option>
+                                    <option value="high">High</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                     <div className="form-section">
@@ -413,8 +418,9 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
                     </div>
                     <div className="form-section">
                         <h3 className="form-header">Channels</h3>
+                        <p className="info-text">Real-time notifications are always enabled and cannot be disabled.</p>
                         <div className="channels-grid">
-                            {(['websocket', 'email', 'sms', 'inApp'] as Array<keyof typeof formData.channels>).map((channel: string) => (
+                            {(['email', 'sms', 'inApp'] as Array<keyof typeof formData.channels>).map((channel: string) => (
                                 <label key={channel} className="toggle-switch">
                                     <input
                                         type="checkbox"

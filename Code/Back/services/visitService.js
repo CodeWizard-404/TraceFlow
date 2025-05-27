@@ -173,12 +173,9 @@ class VisitService {
                     calendarEventId: event.id,
                     action: 'created',
                 });
-                logger.info(`Synced visit ${visit.visitID} to Google Calendar`, { userId, visitId: visit.visitID });
             } catch (error) {
-                logger.error(`Failed to sync visit ${visit.visitID} to Google Calendar: ${error.message}`, {
-                    userId: targetTimesheet.User?.userID || supervisorID,
-                    visitId: visit.visitID
-                });
+                throw new Error(`Failed to create calendar event for visit ${visit.visitID}: ${error.message}`);
+
             }
 
             if (isLocalTransaction) await transaction.commit();
@@ -354,10 +351,8 @@ class VisitService {
                     action: 'updated',
                 });
             } catch (error) {
-                logger.error(`Failed to update calendar event for visit ${visitID}: ${error.message}`, {
-                    userId: visit.Timesheet.User?.userID,
-                    visitId: visitID
-                });
+                throw new Error(`Failed to update calendar event for visit ${visitID}: ${error.message}`);
+
             }
 
             await transaction.commit();
@@ -614,10 +609,7 @@ class VisitService {
                     action: 'updated',
                 });
             } catch (error) {
-                logger.error(`Failed to update calendar event for visit ${visitID}: ${error.message}`, {
-                    userId: visit.Timesheet.User?.userID,
-                    visitId: visitID
-                });
+                throw new Error(`Failed to update calendar event for visit ${visitID}: ${error.message}`);
             }
 
             const reloadedVisit = await visit.reload({ include: [Checklist, Reason, Agent], transaction });
@@ -672,10 +664,8 @@ class VisitService {
                     action: 'deleted',
                 });
             } catch (error) {
-                logger.error(`Failed to delete calendar event for visit ${visitID}: ${error.message}`, {
-                    userId: visit.Timesheet.User?.userID,
-                    visitId: visitID
-                });
+                throw new Error(`Failed to delete calendar event for visit ${visitID}: ${error.message}`);
+
             }
 
             await visit.destroy({ transaction });
