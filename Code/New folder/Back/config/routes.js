@@ -15,6 +15,7 @@ const locationRoutes = require('../routes/locationRoutes');
 const csvHeaderRoutes = require('../routes/csvHeaderRoutes');
 const aiRoutes = require('../routes/aiRoutes');
 const logRoutes = require('../routes/systemRoutes');
+const reportRoutes = require('../routes/reportRoutes');
 const { initializeRedis } = require('./redis');
 const logger = require('../utils/logger');
 
@@ -35,6 +36,7 @@ function setupRoutes(app) {
     app.use('/api/csv-headers', authenticateCookie, csvHeaderRoutes);
     app.use('/api/ai', authenticateCookie, aiRoutes);
     app.use('/api/logs', authenticateCookie, logRoutes);
+    app.use('/api/reports', authenticateCookie, reportRoutes);
 
     // Test endpoint
     app.get('/api/test', authenticateCookie, (req, res) => {

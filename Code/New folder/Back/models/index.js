@@ -26,6 +26,7 @@ const Governorate = require('./location/governorate')(sequelize, DataTypes);
 const Delegation = require('./location/delegation')(sequelize, DataTypes);
 const CsvHeader = require('./CsvHeader')(sequelize, DataTypes);
 const AIConfig = require('./aiConfig')(sequelize, DataTypes);
+const ReportSchedule = require('./reportSchedule')(sequelize, DataTypes);
 
 // Define model associations
 const setupAssociations = () => {
@@ -177,5 +178,6 @@ module.exports = {
     Delegation,
     CsvHeader,
     AIConfig,
+    ReportSchedule,
     setupAssociations,
 };

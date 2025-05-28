@@ -106,6 +106,7 @@ class GoogleCalendarService {
             }
 
             let description = `Status: ${visit.status}\n`;
+            description += `Adress: ${location}\n`;
             if (visit.Reasons && visit.Reasons.length > 0) {
                 description += `Reasons:\n${visit.Reasons.map(r => `- ${r.item}`).join('\n')}\n`;
             }
@@ -235,13 +236,14 @@ class GoogleCalendarService {
             }
 
             let description = `Status: ${visit.status}`;
+            description += `\n\nAdress: ${location}`;
             if (visit.Reasons && visit.Reasons.length > 0) {
                 description += `\n\nReasons:\n${visit.Reasons.map(r => `- ${r.item}`).join('\n')}`;
             }
             if (visit.Checklists && visit.Checklists.length > 0) {
                 description += `\n\nChecklists:\n${visit.Checklists.map(c => `- ${c.item}`).join('\n')}`;
             }
-            if (visit.status === 'visited' && visit.photos && visit.photos.length > 0) {
+            if (visit.status === '\n\nvisited' && visit.photos && visit.photos.length > 0) {
                 description += `Photos: ${visit.photos.length}\n`;
             }
             if (visit.status === 'visited' && visit.comment) {

@@ -92,6 +92,11 @@ function Header() {
       visible: () =>
         hasPermission(PERMISSIONS.ACCESS_RECEIPT_BOOKS) || hasPermission(PERMISSIONS.ACCESS_RECEIPT_BOOKS_BY_HOLDER),
     },
+    {
+      path: '/reports',
+      label: t('header.navbar.reports'),
+      visible: () => hasPermission('generate_report'),
+    }
   ];
 
   const handleNavClick = (path: string) => {

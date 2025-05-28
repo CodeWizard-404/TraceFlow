@@ -9,8 +9,7 @@ const logger = require('../utils/logger');
 class ReportController {
     static async generateReport(req, res) {
         try {
-            const { reportType, filters = {}, format } = req.body;
-
+            const { reportType, filters, format } = req.body;
             if (!['pdf', 'excel'].includes(format)) {
                 logger.error('Invalid format specified', {
                     traceId: req.traceId,
@@ -26,18 +25,7 @@ class ReportController {
                 return res.status(400).json({ error: 'Invalid format. Use "pdf" or "excel"' });
             }
 
-            const validReportTypes = [
-                'VisitSummary',
-                'Timesheet',
-                'ReceiptBookInventory',
-                'StubCollection',
-                'UserActivity',
-                'AIAnomaly',
-                'AgentPerformance',
-                'RegionPerformance',
-                'Full',
-            ];
-            if (!validReportTypes.includes(reportType)) {
+            if (!['VisitSummary', 'Timesheet', 'ReceiptBookInventory', 'StubCollection', 'UserActivity', 'AIAnomaly', 'AgentPerformance', 'RegionPerformance', 'Full'].includes(reportType)) {
                 logger.error('Invalid report type', {
                     traceId: req.traceId,
                     route: 'reports',
@@ -52,6 +40,7 @@ class ReportController {
                 return res.status(400).json({ error: 'Invalid report type' });
             }
 
+            // Log filters for debugging
             logger.debug(`Generating ${reportType} report with filters`, {
                 traceId: req.traceId,
                 route: 'reports',
@@ -116,21 +105,20 @@ class ReportController {
                 traceId: req.traceId,
                 route: 'reports',
                 service: 'api',
-                status: error.status || 500,
+                status: 500,
                 method: req.method,
                 url: req.originalUrl,
                 ip: req.ip,
                 userId: req.user.userID,
-                metadata: { error: error.message, stack: error.stack },
+                metadata: { error: error.message },
             });
-            return res.status(error.status || 500).json({ error: error.message || 'Failed to generate report' });
+            return res.status(500).json({ error: error.message || 'Failed to generate report' });
         }
     }
 
     static async scheduleReport(req, res) {
         try {
-            const { reportType, filters = {}, format, cronExpression } = req.body;
-
+            const { reportType, filters, format, cronExpression } = req.body;
             if (!['pdf', 'excel'].includes(format)) {
                 logger.error('Invalid format specified', {
                     traceId: req.traceId,
@@ -146,18 +134,7 @@ class ReportController {
                 return res.status(400).json({ error: 'Invalid format. Use "pdf" or "excel"' });
             }
 
-            const validReportTypes = [
-                'VisitSummary',
-                'Timesheet',
-                'ReceiptBookInventory',
-                'StubCollection',
-                'UserActivity',
-                'AIAnomaly',
-                'AgentPerformance',
-                'RegionPerformance',
-                'Full',
-            ];
-            if (!validReportTypes.includes(reportType)) {
+            if (!['VisitSummary', 'Timesheet', 'ReceiptBookInventory', 'StubCollection', 'UserActivity', 'AIAnomaly', 'AgentPerformance', 'RegionPerformance', 'Full'].includes(reportType)) {
                 logger.error('Invalid report type', {
                     traceId: req.traceId,
                     route: 'reports',
@@ -227,12 +204,7 @@ class ReportController {
                             data = await ReportService.generateFullReport(filters);
                             break;
                     }
-                    const filePath = await ReportService.exportReport(reportType, data, format);
-                    await NotificationService.triggerNotification({
-                        event: 'report:scheduled',
-                        data: { reportType, format, filePath: path.basename(filePath) },
-                        metadata: { scheduleID: schedule.scheduleID },
-                    });
+                    await ReportService.exportReport(reportType, data, format);
                     logger.info(`Scheduled ${reportType} report generated`, {
                         route: 'reports',
                         service: 'cron',
@@ -264,6 +236,7 @@ class ReportController {
                 url: req.originalUrl,
                 ip: req.ip,
                 userId: req.user.userID,
+                sensitiveFields: ['createdBy'],
                 metadata: { reportType, format, scheduleID: schedule.scheduleID, createdBy: req.user.email },
             });
 
@@ -273,14 +246,14 @@ class ReportController {
                 traceId: req.traceId,
                 route: 'reports',
                 service: 'api',
-                status: error.status || 500,
+                status: 500,
                 method: req.method,
                 url: req.originalUrl,
                 ip: req.ip,
                 userId: req.user.userID,
-                metadata: { error: error.message, stack: error.stack },
+                metadata: { error: error.message },
             });
-            return res.status(error.status || 500).json({ error: error.message || 'Failed to schedule report' });
+            return res.status(500).json({ error: error.message || 'Failed to schedule report' });
         }
     }
 
@@ -303,7 +276,7 @@ class ReportController {
             }
 
             const filePath = path.join(__dirname, '../reports', file);
-            if (!(await fs.access(filePath).then(() => true).catch(() => false))) {
+            if (!await fs.access(filePath).then(() => true).catch(() => false)) {
                 logger.error('Report file not found', {
                     traceId: req.traceId,
                     route: 'reports',
@@ -332,14 +305,12 @@ class ReportController {
                         metadata: { error: err.message, file },
                     });
                 } else {
-                    fs.unlink(filePath).catch((err) =>
-                        logger.error(`Failed to delete report file: ${err.message}`, {
-                            route: 'reports',
-                            service: 'api',
-                            status: 500,
-                            metadata: { error: err.message, file },
-                        })
-                    );
+                    fs.unlink(filePath).catch(err => logger.error(`Failed to delete report file: ${err.message}`, {
+                        route: 'reports',
+                        service: 'api',
+                        status: 500,
+                        metadata: { error: err.message, file },
+                    }));
                     logger.info(`Downloaded report ${file}`, {
                         traceId: req.traceId,
                         route: 'reports',
@@ -358,14 +329,14 @@ class ReportController {
                 traceId: req.traceId,
                 route: 'reports',
                 service: 'api',
-                status: error.status || 500,
+                status: 500,
                 method: req.method,
                 url: req.originalUrl,
                 ip: req.ip,
                 userId: req.user.userID,
-                metadata: { error: error.message, stack: error.stack },
+                metadata: { error: error.message },
             });
-            return res.status(error.status || 500).json({ error: error.message || 'Failed to download report' });
+            return res.status(500).json({ error: error.message || 'Failed to download report' });
         }
     }
 }

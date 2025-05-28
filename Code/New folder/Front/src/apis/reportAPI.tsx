@@ -25,23 +25,14 @@ export const generateReport = async (
     format: 'pdf' | 'excel'
 ): Promise<GenerateReportResponse> => {
     try {
-        // Ensure dateRange is properly formatted
-        const formattedFilters = {
-            ...filters,
-            dateRange: filters.dateRange ? {
-                start: new Date(filters.dateRange.start).toISOString().split('T')[0],
-                end: new Date(filters.dateRange.end).toISOString().split('T')[0],
-            } : undefined,
-        };
         const response = await api.post<GenerateReportResponse>('/reports/generate', {
             reportType,
-            filters: formattedFilters,
+            filters,
             format,
         });
         return response.data;
     } catch (error: any) {
-        const errorMessage = error.response?.data?.error || 'Failed to generate report';
-        throw new Error(errorMessage);
+        throw new Error(error.response?.data?.error || 'Failed to generate report');
     }
 };
 
@@ -60,40 +51,31 @@ export const scheduleReport = async (
     cronExpression: string
 ): Promise<ScheduleReportResponse> => {
     try {
-        // Ensure dateRange is properly formatted
-        const formattedFilters = {
-            ...filters,
-            dateRange: filters.dateRange ? {
-                start: new Date(filters.dateRange.start).toISOString().split('T')[0],
-                end: new Date(filters.dateRange.end).toISOString().split('T')[0],
-            } : undefined,
-        };
         const response = await api.post<ScheduleReportResponse>('/reports/schedule', {
             reportType,
-            filters: formattedFilters,
+            filters,
             format,
             cronExpression,
         });
         return response.data;
     } catch (error: any) {
-        const errorMessage = error.response?.data?.error || 'Failed to schedule report';
-        throw new Error(errorMessage);
+        throw new Error(error.response?.data?.error || 'Failed to schedule report');
     }
 };
 
 /**
  * Downloads a generated report file.
  * @param file - The file name of the report to download.
- * @returns Promise resolving to the file Blob for download.
+ * @returns Promise resolving to the file URL for download.
  */
-export const downloadReport = async (file: string): Promise<Blob> => {
+export const downloadReport = async (file: string): Promise<string> => {
     try {
         const response = await api.get(`/reports/download?file=${encodeURIComponent(file)}`, {
             responseType: 'blob',
         });
-        return response.data;
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        return url;
     } catch (error: any) {
-        const errorMessage = error.response?.data?.error || 'Failed to download report';
-        throw new Error(errorMessage);
+        throw new Error(error.response?.data?.error || 'Failed to download report');
     }
 };

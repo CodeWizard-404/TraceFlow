@@ -6,6 +6,8 @@ const fs = require('fs').promises;
 const path = require('path');
 const logger = require('../utils/logger');
 const { getRedisClient } = require('./redis');
+const ReportService = require('../services/reportService');
+const { ReportSchedule } = require('../models');
 
 function setupCron() {
     // Schedule hourly OTP cleanup
@@ -81,6 +83,65 @@ function setupCron() {
             });
         }
     });
+
+    // Load and schedule existing report schedules
+    ReportSchedule.findAll().then(schedules => {
+        schedules.forEach(schedule => {
+            cron.schedule(schedule.cronExpression, async () => {
+                try {
+                    let data;
+                    switch (schedule.reportType) {
+                        case 'VisitSummary':
+                            data = await ReportService.generateVisitSummaryReport(schedule.filters);
+                            break;
+                        case 'Timesheet':
+                            data = await ReportService.generateTimesheetReport(schedule.filters);
+                            break;
+                        case 'ReceiptBookInventory':
+                            data = await ReportService.generateReceiptBookInventoryReport(schedule.filters);
+                            break;
+                        case 'StubCollection':
+                            data = await ReportService.generateStubCollectionReport(schedule.filters);
+                            break;
+                        case 'UserActivity':
+                            data = await ReportService.generateUserActivityReport(schedule.filters);
+                            break;
+                        case 'AIAnomaly':
+                            data = await ReportService.generateAIAnomalyReport(schedule.filters);
+                            break;
+                        case 'AgentPerformance':
+                            data = await ReportService.generateAgentPerformanceReport(schedule.filters);
+                            break;
+                        case 'RegionPerformance':
+                            data = await ReportService.generateRegionPerformanceReport(schedule.filters);
+                            break;
+                        case 'Full':
+                            data = await ReportService.generateFullReport(schedule.filters);
+                            break;
+                    }
+                    await ReportService.exportReport(schedule.reportType, data, schedule.format);
+                    logger.info(`Scheduled ${schedule.reportType} report generated`, {
+                        route: 'reports',
+                        service: 'cron',
+                        status: 200,
+                        metadata: { reportType: schedule.reportType, scheduleID: schedule.scheduleID },
+                    });
+                } catch (error) {
+                    logger.error(`Scheduled report generation failed: ${error.message}`, {
+                        route: 'reports',
+                        service: 'cron',
+                        status: 500,
+                        metadata: { reportType: schedule.reportType, scheduleID: schedule.scheduleID, error: error.message },
+                    });
+                }
+            });
+        });
+    }).catch(error => logger.error('Failed to load report schedules', {
+        route: 'reports',
+        service: 'cron',
+        status: 500,
+        metadata: { error: error.message },
+    }));
 }
 
 module.exports = { setupCron };

@@ -2,7 +2,22 @@ const PDFDocument = require('pdfkit');
 const xlsx = require('xlsx');
 const fs = require('fs');
 const path = require('path');
-const { Visit, Role, Timesheet, ReceiptBook, ReceiptStub, User, Log, Agent, Region, Delegation, ReceiptBookType } = require('../models');
+const {
+    Visit,
+    Role,
+    Timesheet,
+    ReceiptBook,
+    ReceiptStub,
+    User,
+    Log,
+    Agent,
+    Region,
+    Delegation,
+    Governorate,
+    ReceiptBookType,
+    ReceiptBookTransfer,
+    Reason
+} = require('../models');
 const { Op } = require('sequelize');
 const logger = require('../utils/logger');
 
@@ -10,54 +25,61 @@ class ReportService {
     static async generateVisitSummaryReport(filters) {
         const { supervisorID, dateRange, regionID, agentID, status } = filters;
         const where = {};
-        const agentWhere = {};
         if (dateRange) where.date = { [Op.between]: [dateRange.start, dateRange.end] };
-        if (regionID) agentWhere['$Delegation.Region.regionID$'] = regionID;
         if (agentID) where.agentID = agentID;
         if (status) where.status = status;
-        if (supervisorID) agentWhere.supervisorID = supervisorID;
 
         try {
-            // Debug: Check if Agent-Visit association exists
-            const associations = Visit.associations;
-            if (!associations.Agent) {
-                logger.error('Agent-Visit association not found', { metadata: { associations: Object.keys(associations) } });
-                throw new Error('Agent-Visit association not registered');
-            }
-
             const visits = await Visit.findAll({
                 where,
-                include: [{
-                    model: Agent,
-                    where: agentWhere,
-                    required: false,
-                    include: [{
-                        model: Delegation,
-                        include: [{ model: Region }],
+                include: [
+                    {
+                        model: Agent,
+                        where: supervisorID ? { supervisorID } : {},
                         required: false,
-                    }],
-                }],
+                        include: [
+                            {
+                                model: Delegation,
+                                required: false,
+                                include: [
+                                    {
+                                        model: Governorate,
+                                        required: false,
+                                        include: [{ model: Region, required: false, where: regionID ? { regionID } : {} }],
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    { model: Timesheet, include: [{ model: User }], required: false }, // Removed 'as: Supervisor'
+                ],
             });
 
             const totalVisits = visits.length;
-            const completedVisits = visits.filter(v => v.status === 'completed').length;
-            const pendingVisits = totalVisits - completedVisits;
-            const averageDuration = visits.length ? visits.reduce((sum, v) => sum + (v.duration || 0), 0) / visits.length : 0;
+            const validatedVisits = visits.filter((v) => v.status === 'validated').length;
+            const pendingVisits = visits.filter((v) => v.status === 'pending').length;
+            const averageDuration =
+                visits.length > 0
+                    ? visits.reduce((sum, v) => sum + (v.duration || 0), 0) / visits.length / 60
+                    : 0;
 
             return {
                 summary: {
                     totalVisits,
-                    completedVisits,
+                    validatedVisits,
                     pendingVisits,
                     averageDuration: averageDuration.toFixed(2),
                 },
-                details: visits.map(v => ({
+                details: visits.map((v) => ({
                     id: v.visitID,
                     date: v.date,
                     location: v.location || 'N/A',
                     status: v.status,
-                    agent: v.Agent ? `${v.Agent.name} ${v.Agent.lastname}` : 'Unassigned',
-                    region: v.Agent?.Delegation?.Region?.name || 'N/A',
+                    agent: v.Agent ? `${v.Agent.name} ${v.Agent.lastname}` : 'No Agent',
+                    supervisor: v.Timesheet?.User
+                        ? `${v.Timesheet.User.firstname} ${v.Timesheet.User.lastname}`
+                        : 'N/A',
+                    region: v.Agent?.Delegation?.Governorate?.Region?.name || 'N/A',
                 })),
             };
         } catch (error) {
@@ -79,23 +101,36 @@ class ReportService {
             const timesheets = await Timesheet.findAll({
                 where,
                 include: [
-                    { model: User, where: userWhere, required: false },
-                    { model: Visit, required: false },
+                    {
+                        model: User, // Removed 'as: Supervisor'
+                        where: userWhere,
+                        required: false,
+                    },
+                    {
+                        model: Visit,
+                        required: false,
+                        include: [{ model: Agent }, { model: Reason }],
+                    },
                 ],
             });
 
             return {
                 summary: {
                     totalTimesheets: timesheets.length,
-                    totalHours: timesheets.reduce((sum, t) => sum + t.Visits.reduce((s, v) => s + (v.duration || 0), 0), 0) / 60,
+                    totalHours: timesheets
+                        .reduce((sum, t) => sum + t.Visits.reduce((s, v) => s + (v.duration || 0), 0), 0)
+                        / 60,
+                    validatedTimesheets: timesheets.filter((t) => t.status === 'validated').length,
                 },
-                details: timesheets.map(t => ({
+                details: timesheets.map((t) => ({
                     id: t.timesheetID,
-                    supervisor: t.User ? `${t.User.firstname} ${t.User.lastname}` : 'N/A',
+                    supervisor: t.User
+                        ? `${t.User.firstname} ${t.User.lastname}`
+                        : 'N/A',
                     week: `${t.weekNumber}/${t.year}`,
                     status: t.status,
                     totalHours: (t.Visits.reduce((sum, v) => sum + (v.duration || 0), 0) / 60).toFixed(2),
-                    anomalies: t.status === 'anomaly' ? 'Detected' : 'None',
+                    visitReasons: t.Visits.map((v) => v.Reasons?.map((r) => r.name).join(', ') || 'N/A'),
                 })),
             };
         } catch (error) {
@@ -109,7 +144,7 @@ class ReportService {
         const where = {};
         const agentWhere = {};
         if (dateRange) where.createdAt = { [Op.between]: [dateRange.start, dateRange.end] };
-        if (regionID) agentWhere['$Delegation.Region.regionID$'] = regionID;
+        if (regionID) agentWhere['$Delegation.Governorate.Region.regionID$'] = regionID;
         if (bookType) where.typeID = bookType;
         if (status) where.status = status;
 
@@ -120,26 +155,37 @@ class ReportService {
                     {
                         model: Agent,
                         where: agentWhere,
-                        include: [{ model: Delegation, include: [Region], required: false }],
+                        include: [
+                            {
+                                model: Delegation,
+                                include: [{ model: Governorate, include: [Region] }],
+                            },
+                        ],
                         required: false,
                     },
                     { model: ReceiptBookType, required: false },
+                    { model: User, as: 'CurrentHolder', required: false },
                 ],
             });
 
             return {
                 summary: {
                     totalBooks: receiptBooks.length,
-                    inStock: receiptBooks.filter(b => b.status === 'In Stock').length,
-                    distributed: receiptBooks.filter(b => b.status === 'Assigned to Agent').length,
-                    returned: receiptBooks.filter(b => b.status === 'Stub Collected').length,
+                    inStock: receiptBooks.filter((b) => b.status === 'In Stock').length,
+                    withAgents: receiptBooks.filter((b) => b.status === 'Assigned to Agent').length,
+                    archived: receiptBooks.filter((b) => b.status === 'Archived').length,
                 },
-                details: receiptBooks.map(b => ({
+                details: receiptBooks.map((b) => ({
                     id: b.bookID,
                     number: b.number,
                     status: b.status,
                     type: b.ReceiptBookType?.name || 'N/A',
-                    region: b.Agent?.Delegation?.Region?.name || 'N/A',
+                    region: b.Agent?.Delegation?.Governorate?.Region?.name || 'N/A',
+                    currentHolder: b.CurrentHolder
+                        ? `${b.CurrentHolder.firstname} ${b.CurrentHolder.lastname}`
+                        : b.Agent
+                            ? `${b.Agent.name} ${b.Agent.lastname}`
+                            : 'N/A',
                 })),
             };
         } catch (error) {
@@ -162,29 +208,35 @@ class ReportService {
         try {
             const stubs = await ReceiptStub.findAll({
                 where,
-                include: [{
-                    model: ReceiptBook,
-                    where: bookWhere,
-                    include: [
-                        { model: User, as: 'CurrentHolder', where: userWhere, required: false },
-                        { model: Agent, required: false },
-                    ],
-                }],
+                include: [
+                    {
+                        model: ReceiptBook,
+                        where: bookWhere,
+                        include: [
+                            { model: User, as: 'CurrentHolder', where: userWhere, required: false },
+                            { model: Agent, required: false },
+                        ],
+                    },
+                ],
             });
 
             return {
                 summary: {
-                    totalStubs: stubs.length,
-                    collected: stubs.filter(s => s.status === 'collected').length,
-                    pending: stubs.filter(s => s.status === 'pending').length,
-                    archived: stubs.filter(s => s.status === 'archived').length,
+                    status: stubs.length,
+                    collected: stubs.filter((s) => s.status === 'collected').length,
+                    transmitted: stubs.filter((t) => t.status === 'transmitted').length,
+                    archived: stubs.filter((s) => s.status === 'archived').length,
                 },
-                details: stubs.map(s => ({
+                details: stubs.map((s) => ({
                     id: s.stubID,
                     bookNumber: s.ReceiptBook?.number || 'N/A',
                     status: s.status,
-                    agent: s.ReceiptBook?.Agent ? `${s.ReceiptBook.Agent.name} ${s.ReceiptBook.Agent.lastname}` : 'N/A',
-                    supervisor: s.ReceiptBook?.CurrentHolder ? `${s.ReceiptBook.CurrentHolder.firstname} ${s.ReceiptBook.CurrentHolder.lastname}` : 'N/A',
+                    agent: s.ReceiptBook?.Agent
+                        ? `${s.ReceiptBook.Agent.name} ${s.ReceiptBook.Agent.lastname}`
+                        : 'N/A',
+                    currentHolder: s.ReceiptBook?.CurrentHolder
+                        ? `${s.ReceiptBook.CurrentHolder.firstname} ${s.ReceiptBook.CurrentHolder.lastname}`
+                        : 'N/A',
                 })),
             };
         } catch (error) {
@@ -198,30 +250,56 @@ class ReportService {
         const where = {};
         const roleWhere = {};
         if (dateRange) where.timestamp = { [Op.between]: [dateRange.start, dateRange.end] };
-        if (activityType) where.route = activityType;
+        if (activityType) where.route = { [Op.like]: `%${activityType}%` };
         if (roleID) roleWhere.roleID = roleID;
 
         try {
-            const logs = await Log.findAll({
-                where,
-                include: [{
-                    model: User,
-                    include: [{ model: Role, where: roleWhere, required: false }],
-                    required: false,
-                }],
+            // Fetch logs without including User
+            const logs = await Log.findAll({ where });
+
+            // Get unique user IDs from logs
+            const userIds = [...new Set(logs.map((l) => l.userId).filter((id) => id))];
+
+            // Fetch users and their roles
+            const users = await User.findAll({
+                where: { userID: { [Op.in]: userIds } },
+                include: [
+                    {
+                        model: Role,
+                        where: roleWhere,
+                        required: !!roleID, // Only require Role if roleID is provided
+                        through: { attributes: [] }, // Exclude join table attributes
+                    },
+                ],
             });
+
+            // Create a user lookup map
+            const userMap = users.reduce((map, user) => {
+                map[user.userID] = {
+                    firstname: user.firstname,
+                    lastname: user.lastname,
+                    role: user.Roles?.[0]?.name || 'N/A',
+                };
+                return map;
+            }, {});
 
             return {
                 summary: {
-                    totalLogins: logs.filter(l => l.route === '/api/auth/login').length,
-                    lastActive: logs.length ? new Date(Math.max(...logs.map(l => new Date(l.timestamp).getTime()))).toISOString() : 'N/A',
+                    totalActivities: logs.length,
+                    uniqueUsers: userIds.length,
+                    lastActivity: logs.length
+                        ? new Date(Math.max(...logs.map((l) => new Date(l.timestamp).getTime()))).toISOString()
+                        : 'N/A',
                 },
-                details: logs.map(l => ({
-                    user: l.User ? `${l.User.firstname} ${l.User.lastname}` : 'N/A',
-                    role: l.User?.Roles[0]?.name || 'N/A',
+                details: logs.map((l) => ({
+                    user: l.userId && userMap[l.userId]
+                        ? `${userMap[l.userId].firstname} ${userMap[l.userId].lastname}`
+                        : 'N/A',
+                    role: l.userId && userMap[l.userId] ? userMap[l.userId].role : 'N/A',
                     activity: l.route,
                     timestamp: l.timestamp,
-                    suspicious: l.level === 'warn' || l.level === 'error' ? 'Yes' : 'No',
+                    status: l.status || 'N/A',
+                    suspicious: ['warn', 'error'].includes(l.level) ? 'Yes' : 'No',
                 })),
             };
         } catch (error) {
@@ -232,30 +310,57 @@ class ReportService {
 
     static async generateAIAnomalyReport(filters) {
         const { dateRange, anomalyType, roleID } = filters;
-        const where = { level: 'warn' };
+        const where = { level: ['warn', 'error'] };
         const roleWhere = {};
         if (dateRange) where.timestamp = { [Op.between]: [dateRange.start, dateRange.end] };
         if (anomalyType) where.message = { [Op.like]: `%${anomalyType}%` };
-        if (roleID) where.roleID = roleID;
+        if (roleID) roleWhere.roleID = roleID;
 
         try {
-            const logs = await Log.findAll({
-                where,
-                include: [{
-                    model: User,
-                    include: [{ model: Role, where: roleWhere, required: false }],
-                    required: false,
-                }],
+            // Fetch logs without including User
+            const logs = await Log.findAll({ where });
+
+            // Get unique user IDs from logs
+            const userIds = [...new Set(logs.map((l) => l.userId).filter((id) => id))];
+
+            // Fetch users and their roles
+            const users = await User.findAll({
+                where: { userID: { [Op.in]: userIds } },
+                include: [
+                    {
+                        model: Role,
+                        where: roleWhere,
+                        required: !!roleID, // Only require Role if roleID is provided
+                        through: { attributes: [] }, // Exclude join table attributes
+                    },
+                ],
             });
+
+            // Create a user lookup map
+            const userMap = users.reduce((map, user) => {
+                map[user.userID] = {
+                    firstname: user.firstname,
+                    lastname: user.lastname,
+                    role: user.Roles?.[0]?.name || 'N/A',
+                };
+                return map;
+            }, {});
 
             return {
                 summary: { totalAnomalies: logs.length },
-                details: logs.map(l => ({
+                details: logs.map((l) => ({
                     id: l.logID,
-                    user: l.User ? `${l.User.firstname} ${l.User.lastname}` : 'N/A',
+                    user: l.userId && userMap[l.userId]
+                        ? `${userMap[l.userId].firstname} ${userMap[l.userId].lastname}`
+                        : 'N/A',
+                    role: l.userId && userMap[l.userId] ? userMap[l.userId].role : 'N/A',
                     anomaly: l.message || 'N/A',
-                    affected: l.route.includes('timesheet') ? 'Timesheet' : l.route.includes('visit') ? 'Visit' : 'Other',
-                    status: 'Pending',
+                    affected: l.route.includes('timesheet')
+                        ? 'Timesheet'
+                        : l.route.includes('visit')
+                            ? 'Visit'
+                            : 'Other',
+                    timestamp: l.timestamp,
                 })),
             };
         } catch (error) {
@@ -270,7 +375,7 @@ class ReportService {
         const visitWhere = {};
         const delegationWhere = {};
         if (supervisorID) where.supervisorID = supervisorID;
-        if (regionalManagerID) delegationWhere['$Region.regionalManagerID$'] = regionalManagerID;
+        if (regionalManagerID) delegationWhere['$Governorate.Region.regionalManagerID$'] = regionalManagerID;
         if (dateRange) visitWhere.date = { [Op.between]: [dateRange.start, dateRange.end] };
         if (agentID) where.agentID = agentID;
 
@@ -279,8 +384,17 @@ class ReportService {
                 where,
                 include: [
                     { model: Visit, where: visitWhere, required: false },
-                    { model: ReceiptBook, include: [{ model: ReceiptStub, required: false }], required: false },
-                    { model: Delegation, where: delegationWhere, include: [Region], required: false },
+                    {
+                        model: ReceiptBook,
+                        include: [{ model: ReceiptStub, required: false }],
+                        required: false,
+                    },
+                    {
+                        model: Delegation,
+                        where: delegationWhere,
+                        include: [{ model: Governorate, include: [Region] }],
+                        required: false,
+                    },
                 ],
             });
 
@@ -288,15 +402,26 @@ class ReportService {
                 summary: {
                     totalAgents: agents.length,
                     totalVisits: agents.reduce((sum, a) => sum + a.Visits.length, 0),
-                    totalStubs: agents.reduce((sum, a) => sum + a.ReceiptBooks.reduce((s, b) => s + (b.ReceiptStub ? 1 : 0), 0), 0),
+                    totalStubsCollected: agents.reduce(
+                        (sum, a) =>
+                            sum +
+                            a.ReceiptBooks.reduce((s, b) => s + (b.ReceiptStub?.status === 'collected' ? 1 : 0), 0),
+                        0
+                    ),
                 },
-                details: agents.map(a => ({
+                details: agents.map((a) => ({
                     id: a.agentID,
                     name: `${a.name} ${a.lastname}`,
-                    visitsCompleted: a.Visits.filter(v => v.status === 'completed').length,
-                    stubsCollected: a.ReceiptBooks.reduce((sum, b) => sum + (b.ReceiptStub?.status === 'collected' ? 1 : 0), 0),
-                    region: a.Delegation?.Region?.name || 'N/A',
-                    performanceScore: ((a.Visits.filter(v => v.status === 'completed').length / (a.Visits.length || 1)) * 100).toFixed(1),
+                    visitsCompleted: a.Visits.filter((v) => v.status === 'validated').length,
+                    stubsCollected: a.ReceiptBooks.reduce(
+                        (sum, b) => sum + (b.ReceiptStub?.status === 'collected' ? 1 : 0),
+                        0
+                    ),
+                    region: a.Delegation?.Governorate?.Region?.name || 'N/A',
+                    performanceScore: (
+                        (a.Visits.filter((v) => v.status === 'validated').length / (a.Visits.length || 1)) *
+                        100
+                    ).toFixed(1),
                 })),
             };
         } catch (error) {
@@ -316,32 +441,113 @@ class ReportService {
         try {
             const regions = await Region.findAll({
                 where,
-                include: [{
-                    model: Delegation,
-                    include: [{
-                        model: Agent,
+                include: [
+                    {
+                        model: Governorate,
                         include: [
-                            { model: Visit, where: visitWhere, required: false },
-                            { model: ReceiptBook, include: [{ model: ReceiptStub, required: false }], required: false },
+                            {
+                                model: Delegation,
+                                include: [
+                                    {
+                                        model: Agent,
+                                        include: [
+                                            { model: Visit, where: visitWhere, required: false },
+                                            {
+                                                model: ReceiptBook,
+                                                include: [{ model: ReceiptStub, required: false }],
+                                                required: false,
+                                            },
+                                        ],
+                                        required: false,
+                                    },
+                                ],
+                                required: false,
+                            },
                         ],
                         required: false,
-                    }],
-                    required: false,
-                }],
+                    },
+                ],
             });
 
             return {
                 summary: {
                     totalRegions: regions.length,
-                    totalVisits: regions.reduce((sum, r) => sum + r.Delegations.reduce((s, d) => s + (d.Agent?.Visits.length || 0), 0), 0),
-                    totalStubs: regions.reduce((sum, r) => sum + r.Delegations.reduce((s, d) => s + (d.Agent?.ReceiptBooks.reduce((t, b) => t + (b.ReceiptStub ? 1 : 0), 0) || 0), 0), 0),
+                    totalVisits: regions.reduce(
+                        (sum, r) =>
+                            sum +
+                            r.Governorates.reduce(
+                                (s, g) =>
+                                    s +
+                                    g.Delegations.reduce((t, d) => t + (d.Agent?.Visits.length || 0), 0),
+                                0
+                            ),
+                        0
+                    ),
+                    totalStubs: regions.reduce(
+                        (sum, r) =>
+                            sum +
+                            r.Governorates.reduce(
+                                (s, g) =>
+                                    s +
+                                    g.Delegations.reduce(
+                                        (t, d) =>
+                                            t +
+                                            (d.Agent?.ReceiptBooks.reduce(
+                                                (u, b) => u + (b.ReceiptStub ? 1 : 0),
+                                                0
+                                            ) || 0),
+                                        0
+                                    ),
+                                0
+                            ),
+                        0
+                    ),
                 },
-                details: regions.map(r => ({
+                details: regions.map((r) => ({
                     id: r.regionID,
                     name: r.name || 'N/A',
-                    visitsCompleted: r.Delegations.reduce((sum, d) => sum + (d.Agent?.Visits.filter(v => v.status === 'completed').length || 0), 0),
-                    stubsCollected: r.Delegations.reduce((sum, d) => sum + (d.Agent?.ReceiptBooks.reduce((s, b) => s + (b?.ReceiptStub?.status === 'collected' ? 1 : 0), 0) || 0), 0),
-                    performanceScore: ((r.Delegations.reduce((sum, d) => sum + (d.Agent?.Visits.filter(v => v.status === 'completed').length || 0), 0) / (r.Delegations.reduce((sum, d) => sum + (d?.Agent?.Visits.length || 0), 0) || 1)) * 100).toFixed(1),
+                    visitsCompleted: r.Governorates.reduce(
+                        (sum, g) =>
+                            sum +
+                            g.Delegations.reduce(
+                                (s, d) => s + (d.Agent?.Visits.filter((v) => v.status === 'validated').length || 0),
+                                0
+                            ),
+                        0
+                    ),
+                    stubsCollected: r.Governorates.reduce(
+                        (sum, g) =>
+                            sum +
+                            g.Delegations.reduce(
+                                (s, d) =>
+                                    s +
+                                    (d.Agent?.ReceiptBooks.reduce(
+                                        (t, b) => t + (b.ReceiptStub?.status === 'collected' ? 1 : 0),
+                                        0
+                                    ) || 0),
+                                0
+                            ),
+                        0
+                    ),
+                    performanceScore: (
+                        (r.Governorates.reduce(
+                            (sum, g) =>
+                                sum +
+                                g.Delegations.reduce(
+                                    (s, d) =>
+                                        s + (d.Agent?.Visits.filter((v) => v.status === 'validated').length || 0),
+                                    0
+                                ),
+                            0
+                        ) /
+                            (r.Governorates.reduce(
+                                (sum, g) =>
+                                    sum +
+                                    g.Delegations.reduce((s, d) => s + (d.Agent?.Visits.length || 0), 0),
+                                0
+                            ) || 1)) *
+                        100
+                    ).toFixed(1),
                 })),
             };
         } catch (error) {
@@ -357,14 +563,25 @@ class ReportService {
         }
 
         try {
-            const visitSummary = await this.generateVisitSummaryReport({ supervisorID, dateRange, regionID });
-            const timesheet = await this.generateTimesheetReport({ supervisorID, regionalManagerID, dateRange });
-            const receiptBookInventory = await this.generateReceiptBookInventoryReport({ dateRange, regionID });
-            const stubCollection = await this.generateStubCollectionReport({ supervisorID, regionalManagerID, dateRange });
-            const userActivity = await this.generateUserActivityReport({ dateRange });
-            const aiAnomaly = await this.generateAIAnomalyReport({ dateRange });
-            const agentPerformance = await this.generateAgentPerformanceReport({ supervisorID, regionalManagerID, dateRange, regionID });
-            const regionPerformance = await this.generateRegionPerformanceReport({ regionalManagerID, dateRange, regionID });
+            const [
+                visitSummary,
+                timesheet,
+                receiptBookInventory,
+                stubCollection,
+                userActivity,
+                aiAnomaly,
+                agentPerformance,
+                regionPerformance,
+            ] = await Promise.all([
+                this.generateVisitSummaryReport({ supervisorID, dateRange, regionID }),
+                this.generateTimesheetReport({ supervisorID, regionalManagerID, dateRange }),
+                this.generateReceiptBookInventoryReport({ dateRange, regionID }),
+                this.generateStubCollectionReport({ supervisorID, regionalManagerID, dateRange }),
+                this.generateUserActivityReport({ dateRange }),
+                this.generateAIAnomalyReport({ dateRange }),
+                this.generateAgentPerformanceReport({ supervisorID, regionalManagerID, dateRange, regionID }),
+                this.generateRegionPerformanceReport({ regionalManagerID, dateRange, regionID }),
+            ]);
 
             return {
                 visitSummary,
@@ -408,7 +625,6 @@ class ReportService {
         const doc = new PDFDocument({ size: 'A4', margin: 50 });
         doc.pipe(fs.createWriteStream(filePath));
 
-        // Add Logo
         const logoPath = path.join(__dirname, '../emailTemplates/logo/Logo.png');
         if (fs.existsSync(logoPath)) {
             doc.image(logoPath, 50, 50, { width: 100 });
@@ -423,7 +639,6 @@ class ReportService {
                 doc.fontSize(16).text(section.replace(/([A-Z])/g, ' $1').trim(), { underline: true });
                 doc.moveDown();
 
-                // Summary
                 doc.fontSize(14).text('Summary', { underline: true });
                 doc.fontSize(12);
                 for (const [key, value] of Object.entries(sectionData.summary)) {
@@ -431,31 +646,22 @@ class ReportService {
                 }
                 doc.moveDown();
 
-                // Details
                 if (sectionData.details && sectionData.details.length) {
                     doc.fontSize(14).text('Details', { underline: true });
+                    const headers = Object.keys(sectionData.details[0]).map(h => h.replace(/([A-Z])/g, ' $1').trim());
+                    const colWidths = headers.map(() => 500 / headers.length); // Equal widths for simplicity
                     const tableTop = doc.y + 10;
-                    const headers = Object.keys(sectionData.details[0]);
-                    const colWidth = 500 / headers.length;
-
-                    // Headers
-                    doc.fontSize(10).font('Helvetica-Bold');
-                    headers.forEach((header, i) => {
-                        doc.text(header.replace(/([A-Z])/g, ' $1').trim(), 50 + i * colWidth, tableTop, { width: colWidth - 10, align: 'left' });
-                    });
-
-                    // Rows
-                    doc.font('Helvetica');
-                    sectionData.details.forEach((row, rowIndex) => {
-                        const y = tableTop + 20 + rowIndex * 20;
-                        headers.forEach((header, colIndex) => {
-                            doc.text(String(row[header] || 'N/A'), 50 + colIndex * colWidth, y, { width: colWidth - 10, align: 'left' });
-                        });
-                    });
+                    let y = this.drawTable(doc, headers, sectionData.details, tableTop, colWidths);
+                    // Add signature
+                    if (y + 50 > doc.page.height - 50) {
+                        doc.addPage();
+                        y = 50;
+                    }
+                    doc.fontSize(10).text(`Report generated on ${new Date().toLocaleString()}`, 50, y + 20);
+                    doc.text('Authorized by TraceFlow', 50, y + 40);
                 }
             }
         } else {
-            // Summary
             doc.fontSize(14).text('Summary', { underline: true });
             doc.fontSize(12);
             for (const [key, value] of Object.entries(data.summary)) {
@@ -463,31 +669,66 @@ class ReportService {
             }
             doc.moveDown();
 
-            // Details
             if (data.details && data.details.length) {
                 doc.fontSize(14).text('Details', { underline: true });
+                const headers = Object.keys(data.details[0]).map(h => h.replace(/([A-Z])/g, ' $1').trim());
+                const colWidths = headers.map(() => 500 / headers.length);
                 const tableTop = doc.y + 10;
-                const headers = Object.keys(data.details[0]);
-                const colWidth = 500 / headers.length;
-
-                // Headers
-                doc.fontSize(10).font('Helvetica-Bold');
-                headers.forEach((header, i) => {
-                    doc.text(header.replace(/([A-Z])/g, ' $1').trim(), 50 + i * colWidth, tableTop, { width: colWidth - 10, align: 'left' });
-                });
-
-                // Rows
-                doc.font('Helvetica');
-                data.details.forEach((row, rowIndex) => {
-                    const y = tableTop + 20 + rowIndex * 20;
-                    headers.forEach((header, colIndex) => {
-                        doc.text(String(row[header] || 'N/A'), 50 + colIndex * colWidth, y, { width: colWidth - 10, align: 'left' });
-                    });
-                });
+                let y = this.drawTable(doc, headers, data.details, tableTop, colWidths);
+                // Add signature
+                if (y + 50 > doc.page.height - 50) {
+                    doc.addPage();
+                    y = 50;
+                }
+                doc.fontSize(10).text(`Report generated on ${new Date().toLocaleString()}`, 50, y + 20);
+                doc.text('Authorized by TraceFlow', 50, y + 40);
             }
         }
 
         doc.end();
+    }
+
+    static drawTable(doc, headers, data, startY, colWidths) {
+        let y = startY;
+
+        // Draw headers
+        doc.fontSize(10).font('Helvetica-Bold');
+        headers.forEach((header, i) => {
+            doc.text(header, 50 + i * colWidths[i], y, { width: colWidths[i] - 10, align: 'left' });
+        });
+        y += 20; // Header height
+
+        // Draw rows
+        doc.font('Helvetica');
+        data.forEach((row) => {
+            const cellHeights = headers.map((header, i) => {
+                const text = String(row[header] || 'N/A');
+                return doc.heightOfString(text, { width: colWidths[i] - 10 });
+            });
+            const rowHeight = Math.max(...cellHeights) + 10; // Add padding
+
+            // Check if we need a new page
+            if (y + rowHeight > doc.page.height - 50) {
+                doc.addPage();
+                y = 50;
+                // Redraw headers
+                doc.fontSize(10).font('Helvetica-Bold');
+                headers.forEach((header, i) => {
+                    doc.text(header, 50 + i * colWidths[i], y, { width: colWidths[i] - 10, align: 'left' });
+                });
+                y += 20;
+                doc.font('Helvetica');
+            }
+
+            // Draw each cell
+            headers.forEach((header, i) => {
+                const text = String(row[header] || 'N/A');
+                doc.text(text, 50 + i * colWidths[i], y, { width: colWidths[i] - 10, align: 'left' });
+            });
+            y += rowHeight;
+        });
+
+        return y;
     }
 
     static async generateExcel(data, reportType, filePath) {
@@ -495,31 +736,61 @@ class ReportService {
 
         if (reportType === 'Full') {
             for (const [section, sectionData] of Object.entries(data)) {
-                // Summary Sheet
-                const summaryData = Object.entries(sectionData.summary).map(([key, value]) => [key.replace(/([A-Z])/g, ' $1').trim(), value]);
-                const summarySheet = xlsx.utils.aoa_to_sheet([[section.replace(/([A-Z])/g, ' $1').trim() + ' Summary'], ...summaryData]);
-                xlsx.utils.book_append_sheet(workbook, summarySheet, `${section}_Summary`.slice(0, 31));
+                // Summary sheet
+                const summaryTitle = `${section.replace(/([A-Z])/g, ' $1').trim()} Summary`;
+                const summarySheetData = this.buildSummarySheetData(summaryTitle, sectionData.summary);
+                const summaryWs = xlsx.utils.aoa_to_sheet(summarySheetData);
+                summaryWs['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 1 } }];
+                xlsx.utils.book_append_sheet(workbook, summaryWs, `${section}_Summary`.slice(0, 31));
 
-                // Details Sheet
                 if (sectionData.details && sectionData.details.length) {
-                    const detailsSheet = xlsx.utils.json_to_sheet(sectionData.details);
-                    xlsx.utils.book_append_sheet(workbook, detailsSheet, `${section}_Details`.slice(0, 31));
+                    // Details sheet
+                    const detailsTitle = `${section.replace(/([A-Z])/g, ' $1').trim()} Details`;
+                    const headers = Object.keys(sectionData.details[0]);
+                    const detailsSheetData = this.buildSheetData(detailsTitle, headers, sectionData.details);
+                    const detailsWs = xlsx.utils.aoa_to_sheet(detailsSheetData);
+                    detailsWs['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: headers.length - 1 } }];
+                    xlsx.utils.book_append_sheet(workbook, detailsWs, `${section}_Details`.slice(0, 31));
                 }
             }
         } else {
-            // Summary Sheet
-            const summaryData = Object.entries(data.summary).map(([key, value]) => [key.replace(/([A-Z])/g, ' $1').trim(), value]);
-            const summarySheet = xlsx.utils.aoa_to_sheet([['Summary'], ...summaryData]);
-            xlsx.utils.book_append_sheet(workbook, summarySheet, 'Summary');
+            // Summary sheet
+            const summaryTitle = 'Summary';
+            const summarySheetData = this.buildSummarySheetData(summaryTitle, data.summary);
+            const summaryWs = xlsx.utils.aoa_to_sheet(summarySheetData);
+            summaryWs['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 1 } }];
+            xlsx.utils.book_append_sheet(workbook, summaryWs, 'Summary');
 
-            // Details Sheet
             if (data.details && data.details.length) {
-                const detailsSheet = xlsx.utils.json_to_sheet(data.details);
-                xlsx.utils.book_append_sheet(workbook, detailsSheet, 'Details');
+                // Details sheet
+                const detailsTitle = 'Details';
+                const headers = Object.keys(data.details[0]);
+                const detailsSheetData = this.buildSheetData(detailsTitle, headers, data.details);
+                const detailsWs = xlsx.utils.aoa_to_sheet(detailsSheetData);
+                detailsWs['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: headers.length - 1 } }];
+                xlsx.utils.book_append_sheet(workbook, detailsWs, 'Details');
             }
         }
 
         xlsx.writeFile(workbook, filePath);
+    }
+
+    static buildSheetData(title, headers, data) {
+        const titleRow = [title];
+        const headerRow = headers.map(h => h.replace(/([A-Z])/g, ' $1').trim());
+        const dataRows = data.map(row => headers.map(h => row[h] || 'N/A'));
+        const footerRow = ['Generated on ' + new Date().toLocaleString()];
+        return [titleRow, headerRow, ...dataRows, footerRow];
+    }
+
+    static buildSummarySheetData(title, summary) {
+        const titleRow = [title];
+        const summaryRows = Object.entries(summary).map(([key, value]) => [
+            key.replace(/([A-Z])/g, ' $1').trim(),
+            value,
+        ]);
+        const footerRow = ['Generated on ' + new Date().toLocaleString()];
+        return [titleRow, ...summaryRows, footerRow];
     }
 }
 

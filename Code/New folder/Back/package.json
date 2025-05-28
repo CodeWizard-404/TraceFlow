@@ -75,6 +75,7 @@
     "node-cron": "^3.0.3",
     "node-vault": "^0.10.2",
     "nodemailer": "^6.10.0",
+    "pdfkit": "^0.17.1",
     "pino": "^9.6.0",
     "pluralize": "^8.0.0",
     "progress": "^2.0.3",
@@ -92,7 +93,8 @@
     "unidecode": "^1.1.0",
     "uuid": "^11.1.0",
     "winston": "^3.17.0",
-    "winston-daily-rotate-file": "^5.0.0"
+    "winston-daily-rotate-file": "^5.0.0",
+    "xlsx": "^0.18.5"
   },
   "description": "",
   "devDependencies": {
