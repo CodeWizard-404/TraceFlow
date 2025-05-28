@@ -105,6 +105,10 @@ class AuthService {
                 throw Object.assign(new Error('Invalid email or phone number'), { status: 400 });
             }
 
+            if (isEmail) {
+                identifier = identifier.toLowerCase();
+            }
+
             let user = await User.findOne({
                 where: {
                     [Op.or]: [

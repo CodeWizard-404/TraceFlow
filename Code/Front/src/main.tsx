@@ -5,6 +5,7 @@ import AuthProvider from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 import App from './App';
 import './index.css';
+import './components/Google/Map.css'
 import './i18n';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css';

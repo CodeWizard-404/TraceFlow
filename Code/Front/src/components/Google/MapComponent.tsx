@@ -328,6 +328,17 @@ const MapComponent: React.FC = () => {
     return () => darkModeMediaQuery.removeEventListener('change', handleThemeChange);
   }, []);
 
+  useEffect(() => {
+    console.log('Rendered with classes:', {
+      mapContainer: `map-container ${addingAgentMode ? 'adding-agent' : ''}`,
+      mapControls: `map-controls ${showMobileControls ? 'visible-mobile' : ''}`,
+    });
+  });
+
+
+
+
+
   const sortedMarkers = useMemo(() => {
     if (!userLocation) return filteredMarkers;
     return [...filteredMarkers].sort(

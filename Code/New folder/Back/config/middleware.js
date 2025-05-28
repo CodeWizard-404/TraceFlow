@@ -28,31 +28,12 @@ function setupMiddleware(app) {
             // Serve the file
             res.sendFile(filePath, (err) => {
                 if (err) {
-                    logger.error('Error sending photo file', {
-                        folder,
-                        filename,
-                        error: err.message,
-                        ip: req.ip,
-                        service: 'photo-access',
-                    });
                     next(err);
                 } else {
-                    logger.info('Photo file served', {
-                        folder,
-                        filename,
-                        ip: req.ip,
-                        service: 'photo-access',
-                    });
+                    throw new Error('File not found');
                 }
             });
         } catch (error) {
-            logger.warn('Photo file not found or inaccessible', {
-                folder,
-                filename,
-                error: error.message,
-                ip: req.ip,
-                service: 'photo-access',
-            });
             res.status(404).json({ error: 'File not found' });
         }
     });
@@ -63,11 +44,6 @@ function setupMiddleware(app) {
         const { token } = req.query;
 
         if (!token) {
-            logger.warn('Missing token for file access', {
-                filename,
-                ip: req.ip,
-                service: 'file-access',
-            });
             return res.status(401).json({ error: 'Token required' });
         }
 
@@ -77,12 +53,6 @@ function setupMiddleware(app) {
             const fileData = await redisClient.hgetall(fileKey);
 
             if (!fileData || !fileData.filePath || fileData.fileName !== filename) {
-                logger.warn('Invalid or expired token', {
-                    token,
-                    filename,
-                    ip: req.ip,
-                    service: 'file-access',
-                });
                 return res.status(403).json({ error: 'Invalid or expired token' });
             }
 
@@ -93,42 +63,23 @@ function setupMiddleware(app) {
 
             // Check if file has expired (7 days since first download)
             if (firstDownloadedAt && Date.now() - firstDownloadedAt > sevenDays) {
-                logger.info('File access expired after 7 days, deleting file', {
-                    filename,
-                    token,
-                    ip: req.ip,
-                    service: 'file-access',
-                });
+
                 await redisClient.del(fileKey);
                 try {
                     await fs.unlink(fileData.filePath);
                 } catch (err) {
-                    logger.error('Failed to delete expired file', {
-                        filename,
-                        error: err.message,
-                        service: 'file-access',
-                    });
+                    throw new Error('Failed to delete expired file: ' + err.message);
                 }
                 return res.status(403).json({ error: 'File access expired' });
             }
 
             // Check if download limit is reached
             if (downloadCount >= maxDownloads) {
-                logger.info('Download limit reached, deleting file', {
-                    filename,
-                    token,
-                    ip: req.ip,
-                    service: 'file-access',
-                });
                 await redisClient.del(fileKey);
                 try {
                     await fs.unlink(fileData.filePath);
                 } catch (err) {
-                    logger.error('Failed to delete file after limit', {
-                        filename,
-                        error: err.message,
-                        service: 'file-access',
-                    });
+                    throw new Error('Failed to delete file after download limit reached: ' + err.message);
                 }
                 return res.status(403).json({ error: 'Download limit reached' });
             }
@@ -141,64 +92,26 @@ function setupMiddleware(app) {
                 const now = Date.now();
                 await redisClient.hset(fileKey, 'firstDownloadedAt', now);
                 await redisClient.expire(fileKey, 7 * 24 * 60 * 60); // 7 days in seconds
-                logger.info('First download, setting 7-day expiration', {
-                    filename,
-                    token,
-                    firstDownloadedAt: new Date(now).toISOString(),
-                    ip: req.ip,
-                    service: 'file-access',
-                });
             }
-
-            logger.info('Serving supplier file', {
-                filename,
-                token,
-                downloadCount: downloadCount + 1,
-                maxDownloads,
-                ip: req.ip,
-                service: 'file-access',
-            });
 
             // Serve the file
             res.sendFile(fileData.filePath, (err) => {
                 if (err) {
-                    logger.error('Error sending file', {
-                        filename,
-                        error: err.message,
-                        ip: req.ip,
-                        service: 'file-access',
-                    });
                     next(err);
                 }
             });
 
             // Delete file and Redis entry if this was the last download
             if (downloadCount + 1 >= maxDownloads) {
-                logger.info('Last download, deleting file', {
-                    filename,
-                    token,
-                    ip: req.ip,
-                    service: 'file-access',
-                });
+
                 await redisClient.del(fileKey);
                 try {
                     await fs.unlink(fileData.filePath);
                 } catch (err) {
-                    logger.error('Failed to delete file after last download', {
-                        filename,
-                        error: err.message,
-                        service: 'file-access',
-                    });
+                    throw new Error('Failed to delete file after last download: ' + err.message);
                 }
             }
         } catch (error) {
-            logger.error('Error processing file request', {
-                filename,
-                token,
-                error: error.message,
-                ip: req.ip,
-                service: 'file-access',
-            });
             res.status(500).json({ error: 'Internal server error' });
         }
     });

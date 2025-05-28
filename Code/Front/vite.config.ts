@@ -15,6 +15,7 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       port: parseInt(env.PORT || '5173'),
+      hmr: false,
       proxy: {
         '/api': {
           target: env.VITE_API_URL,
@@ -58,6 +59,8 @@ export default defineConfig(({ mode }) => {
     },
     css: {
       postcss: './postcss.config.js',
+      modules: false, // Ensure global CSS
+      devSourcemap: true, // Enable source maps for debugging
     },
   };
 });

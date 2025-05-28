@@ -1468,9 +1468,9 @@ const Timesheets: React.FC = React.memo(() => {
                                                 {week.visits.length} {t("timesheets.yearView.visits")}
                                             </span>
                                             {!isSupervisor && (
-                                                <span className="week-info">
+                                                <span className="week-info week-range">
                                                     <br />
-                                                    {t("timesheets.yearView.supervisors")}
+                                                    {t("timesheets.yearView.supervisors")}: {week.supervisorCount}
                                                 </span>
                                             )}
                                         </div>

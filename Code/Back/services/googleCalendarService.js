@@ -6,23 +6,20 @@ const RedisUtils = require('../utils/redisUtils');
 const logger = require('../utils/logger');
 require('dotenv').config();
 
-// Helper function to validate and normalize date and time
 function isValidDateTime(dateStr, timeStr) {
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
     const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)(?::([0-5]\d))?$/;
     return dateRegex.test(dateStr) && timeRegex.test(timeStr);
 }
 
-// Helper function to normalize time to HH:MM
 function normalizeTime(timeStr) {
     const match = timeStr.match(/^([01]\d|2[0-3]):([0-5]\d)(?::([0-5]\d))?$/);
     if (match) {
-        return `${match[1]}:${match[2]}`; // Return HH:MM
+        return `${match[1]}:${match[2]}`;
     }
-    return timeStr; // Return unchanged if invalid (will be caught by validation)
+    return timeStr;
 }
 
-// Helper function to get color ID based on status
 function getColorId(status) {
     switch (status?.toLowerCase()) {
         case 'pending':
@@ -49,9 +46,8 @@ class GoogleCalendarService {
         return google.calendar({ version: 'v3', auth: oauth2Client });
     }
 
-    static async createCalendarEvent(userId, visitId) {
+    static async createCalendarEvent(userId, visitId, options = {}) {
         try {
-            // Input validation
             if (typeof userId !== 'string') {
                 throw new Error(`Invalid userId type: expected string, got ${typeof userId}`);
             }
@@ -59,7 +55,6 @@ class GoogleCalendarService {
                 throw new Error(`Invalid visitId type: expected string, got ${typeof visitId}`);
             }
 
-            // Fetch supervisor's calendar client
             const calendar = await this.getCalendarClient(userId);
             const visit = await Visit.findByPk(visitId, {
                 include: [
@@ -67,7 +62,8 @@ class GoogleCalendarService {
                     { model: Timesheet, include: [{ model: User, include: [{ model: User, as: 'RegionalManager' }] }] },
                     { model: Reason, attributes: ['reasonID', 'item'], through: { attributes: [] } },
                     { model: Checklist, attributes: ['checklistID', 'item'], through: { attributes: [] } }
-                ]
+                ],
+                transaction: options.transaction
             });
             if (!visit) {
                 throw new Error('Visit not found');
@@ -76,24 +72,17 @@ class GoogleCalendarService {
                 throw new Error('Visit has no associated timesheet or user');
             }
 
-            // Validate supervisor
             if (visit.Timesheet.User.userID !== userId) {
                 throw new Error(`User ${userId} is not authorized to create events for this visit`);
             }
 
-            // Validate date and time
             if (!isValidDateTime(visit.date, visit.time)) {
-
                 throw new Error(`Invalid date (${visit.date}) or time (${visit.time}) format. Expected YYYY-MM-DD and HH:MM or HH:MM:SS.`);
             }
 
-            // Normalize time
             const normalizedTime = normalizeTime(visit.time);
-
-            // Construct start and end times
             const startDateTime = new Date(`${visit.date}T${normalizedTime}:00`);
             if (isNaN(startDateTime.getTime())) {
-
                 throw new Error('Computed startDateTime is invalid');
             }
             const duration = Number(visit.duration) || 60;
@@ -102,7 +91,6 @@ class GoogleCalendarService {
                 throw new Error('Computed endDateTime is invalid');
             }
 
-            // Get location
             let location = 'No location';
             let latitude = null;
             let longitude = null;
@@ -117,8 +105,8 @@ class GoogleCalendarService {
                 }
             }
 
-            // Build description with image links
             let description = `Status: ${visit.status}\n`;
+            description += `Adress: ${location}\n`;
             if (visit.Reasons && visit.Reasons.length > 0) {
                 description += `Reasons:\n${visit.Reasons.map(r => `- ${r.item}`).join('\n')}\n`;
             }
@@ -132,7 +120,6 @@ class GoogleCalendarService {
                 description += `Comment: ${visit.comment}`;
             }
 
-            // Get attendees (supervisor and regional manager)
             const attendees = [{ email: visit.Timesheet.User.email }];
             if (visit.Timesheet.User.RegionalManager?.email) {
                 attendees.push({ email: visit.Timesheet.User.RegionalManager.email });
@@ -157,14 +144,12 @@ class GoogleCalendarService {
                 }
             };
 
-
             const response = await calendar.events.insert({
                 calendarId: 'primary',
                 resource: event,
                 sendUpdates: 'all'
             });
 
-            // Set ACL for regional manager (if exists)
             if (visit.Timesheet.User.RegionalManager?.email) {
                 try {
                     await calendar.acl.insert({
@@ -180,16 +165,15 @@ class GoogleCalendarService {
             }
 
             visit.calendarEventId = response.data.id;
-            await visit.save();
+            await visit.save({ transaction: options.transaction });
 
             return response.data;
         } catch (error) {
-
             throw error;
         }
     }
 
-    static async updateCalendarEvent(userId, visitId) {
+    static async updateCalendarEvent(userId, visitId, options = {}) {
         try {
             if (typeof userId !== 'string') {
                 throw new Error(`Invalid userId type: expected string, got ${typeof userId}`);
@@ -205,40 +189,38 @@ class GoogleCalendarService {
                     { model: Timesheet, include: [User] },
                     { model: Reason, attributes: ['reasonID', 'item'], through: { attributes: [] } },
                     { model: Checklist, attributes: ['checklistID', 'item'], through: { attributes: [] } }
-                ]
+                ],
+                transaction: options.transaction
             });
             if (!visit || !visit.calendarEventId) {
+                logger.error(`Visit not found or no calendar event associated for visitId: ${visitId}`);
                 throw new Error('Visit not found or no calendar event associated');
             }
-            if (!visit.Timesheet || !visit.Timesheet.User) {
-                throw new Error('Visit has no associated timesheet or user');
+            if (!visit.Timesheet) {
+                logger.error(`Timesheet not found for visit ${visitId}, timesheetID: ${visit.timesheetID}`);
+                throw new Error('Timesheet not found');
+            }
+            if (!visit.Timesheet.User) {
+                logger.error(`User not found for timesheet ${visit.timesheetID}, supervisorID: ${visit.Timesheet.supervisorID}`);
+                throw new Error('Supervisor not found');
             }
 
-            // Validate date and time
             if (!isValidDateTime(visit.date, visit.time)) {
-
                 throw new Error(`Invalid date (${visit.date}) or time (${visit.time}) format. Expected YYYY-MM-DD and HH:MM or HH:MM:SS.`);
             }
 
-            // Normalize time to HH:MM
             const normalizedTime = normalizeTime(visit.time);
-
-            // Construct startDateTime
             const startDateTime = new Date(`${visit.date}T${normalizedTime}:00`);
             if (isNaN(startDateTime.getTime())) {
-
                 throw new Error('Computed startDateTime is invalid');
             }
 
-            // Construct endDateTime
             const duration = Number(visit.duration) || 60;
             const endDateTime = new Date(startDateTime.getTime() + duration * 60000);
             if (isNaN(endDateTime.getTime())) {
-
                 throw new Error('Computed endDateTime is invalid');
             }
 
-            // Get location coordinates
             let location = 'No location';
             let latitude = null;
             let longitude = null;
@@ -253,15 +235,15 @@ class GoogleCalendarService {
                 }
             }
 
-            // Build description with image links
             let description = `Status: ${visit.status}`;
+            description += `\n\nAdress: ${location}`;
             if (visit.Reasons && visit.Reasons.length > 0) {
                 description += `\n\nReasons:\n${visit.Reasons.map(r => `- ${r.item}`).join('\n')}`;
             }
             if (visit.Checklists && visit.Checklists.length > 0) {
                 description += `\n\nChecklists:\n${visit.Checklists.map(c => `- ${c.item}`).join('\n')}`;
             }
-            if (visit.status === 'visited' && visit.photos && visit.photos.length > 0) {
+            if (visit.status === '\n\nvisited' && visit.photos && visit.photos.length > 0) {
                 description += `Photos: ${visit.photos.length}\n`;
             }
             if (visit.status === 'visited' && visit.comment) {
@@ -424,8 +406,6 @@ class GoogleCalendarService {
             throw error;
         }
     }
-
-
 }
 
 module.exports = GoogleCalendarService;

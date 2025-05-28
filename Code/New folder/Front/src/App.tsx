@@ -12,7 +12,6 @@ import AccessDenied from './pages/Error/AccessDenied';
 import './App.css';
 import LoginPage from './pages/Auth/Login';
 import ProfilePage from './pages/Auth/Profile/ProfilePage';
-import Entry from './pages/Dashboard/Entry';
 import AgentManagement from './pages/Dashboard/AgentManagement';
 
 // Lazy load route components
@@ -27,6 +26,7 @@ const AdminDashboard = React.lazy(() => import('./pages/Admin/AdminDashboard'));
 const ReceiptBooks = React.lazy(() => import('./pages/Receipt/ReceiptBooks'));
 const TransferReceiptBook = React.lazy(() => import('./pages/Receipt/TransferReceiptBook'));
 const ReceiptBookHistory = React.lazy(() => import('./pages/Receipt/ReceiptBookHistory'));
+const Dashboard = React.lazy(() => import('./pages/Dashboard/Dashboard'));
 
 // Static permissions and roles from .env
 const PERMISSIONS = {
@@ -117,6 +117,16 @@ const AppContent: React.FC = React.memo(() => {
   const [loadingTimeout, setLoadingTimeout] = useState(false);
 
   useEffect(() => {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = './src/components/Google/Map.css';
+    document.head.appendChild(link);
+    return () => {
+      document.head.removeChild(link);
+    };
+  }, [location.pathname]);
+
+  useEffect(() => {
     document.body.className = theme;
   }, [theme]);
 
@@ -177,11 +187,12 @@ const AppContent: React.FC = React.memo(() => {
               </ProtectedRoute>
             }
             />
+
             <Route
               path="/dashboard"
               element={
                 <ProtectedRoute>
-                  <Entry />
+                  <Dashboard />
                 </ProtectedRoute>
               }
             />

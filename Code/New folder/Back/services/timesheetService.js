@@ -199,7 +199,6 @@ class TimesheetService {
             timesheetWithVisits.status = uniqueStatuses.length > 1 ? 'pending' : uniqueStatuses[0] || status;
             await timesheetWithVisits.save({ transaction });
 
-            await transaction.commit();
             const reloadedTimesheet = await Timesheet.findByPk(timesheet.timesheetID, {
                 include: [
                     {
@@ -227,13 +226,11 @@ class TimesheetService {
                     action: 'synced',
                 });
             } catch (error) {
-                warning = 'Timesheet created successfully, but Google Calendar sync failed.';
-                logger.error(`Failed to sync timesheet ${timesheet.timesheetID} to Google Calendar: ${error.message}`, {
-                    userId: supervisorID,
-                    timesheetId: timesheet.timesheetID,
-                });
+                warning = `Timesheet created successfully, but Google Calendar sync failed: ${error.message}`;
+                logger.warn(warning); // Log the warning for debugging
             }
 
+            await transaction.commit();
             return {
                 timesheet: reloadedTimesheet,
                 warning,
@@ -290,6 +287,7 @@ class TimesheetService {
             timesheet.status = status;
             await timesheet.save({ transaction });
 
+            let warning = null;
             try {
                 const userId = timesheet.User.userID;
                 if (typeof userId !== 'string') {
@@ -302,10 +300,8 @@ class TimesheetService {
                     action: 'synced',
                 });
             } catch (error) {
-                logger.warn(`Failed to sync timesheet ${id} to calendar after validation: ${error.message}`, {
-                    userId: timesheet.supervisorID,
-                    timesheetId: id,
-                });
+                warning = `Timesheet validated successfully, but Google Calendar sync failed: ${error.message}`;
+                logger.warn(warning); // Log the warning for debugging
             }
 
             await transaction.commit();
@@ -322,7 +318,10 @@ class TimesheetService {
                     { model: User },
                 ],
             });
-            return updatedTimesheet;
+            return {
+                timesheet: updatedTimesheet,
+                warning,
+            };
         } catch (error) {
             await transaction.rollback();
             throw error.status ? error : Object.assign(new Error(ERROR_MESSAGES.DATABASE_ERROR), { status: 500 });

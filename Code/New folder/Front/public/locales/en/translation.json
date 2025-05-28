@@ -64,7 +64,8 @@
       "dashboard": "Dashboard",
       "admin": "Admin",
       "timesheets": "Timesheets",
-      "receiptBooks": "Receipt Books"
+      "receiptBooks": "Receipt Books",
+      "agents": "Agents"
     },
     "profile": "Profile"
   },

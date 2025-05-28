@@ -77,6 +77,11 @@ function Header() {
       visible: () => hasRole(ROLES.ADMIN) || hasRole(ROLES.SUPER_ADMIN),
     },
     {
+      path: "/agents",
+      label: t("header.navbar.agents"),
+      visible: () => true,
+    },
+    {
       path: "/timesheet",
       label: t("header.navbar.timesheets"),
       visible: () => hasPermission(PERMISSIONS.ACCESS_SUPERVISOR_TIMESHEETS),

@@ -345,9 +345,7 @@ body.dark .form-group label {
 .form-group input, .form-group textarea, .form-group select, .form-group .search-input {
   width: 100%;
   font-size: 0.875rem;
-  border: 1px solid #ddd;
   border-radius: 0.75rem;
-  background: #f8fafc;
   color: #363636;
   transition: border-color 0.3s ease;
 }

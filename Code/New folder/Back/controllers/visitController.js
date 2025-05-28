@@ -4,6 +4,8 @@ const VaultService = require('../services/vaultService');
 const NotificationService = require('../services/notificationService');
 const logger = require('../utils/logger');
 const { Visit, Timesheet, User, Reason, Checklist, Agent } = require('../models');
+const { sequelize } = require('../config/db');
+const Sequelize = require('sequelize');
 
 class VisitController {
     static async validateOTP(req, res) {
@@ -38,8 +40,13 @@ class VisitController {
             const visit = await VisitService.logVisit(id, { duration, checklistUpdates, comment, date, time, status }, files, req.user.userID);
             try {
                 const timesheet = await Timesheet.findByPk(visit.timesheetID, { include: [{ model: User }] });
-                if (!timesheet || !timesheet.User) {
-                    throw new Error('Timesheet or supervisor not found');
+                if (!timesheet) {
+                    logger.error(`Timesheet not found for visit ${id}, timesheetID: ${visit.timesheetID}`);
+                    throw new Error('Timesheet not found');
+                }
+                if (!timesheet.User) {
+                    logger.error(`User not found for timesheet ${visit.timesheetID}, supervisorID: ${timesheet.supervisorID}`);
+                    throw new Error('Supervisor not found');
                 }
                 const userId = timesheet.User.userID;
                 if (typeof userId !== 'string') {
@@ -107,41 +114,27 @@ class VisitController {
     }
 
     static async updateVisit(req, res) {
+        const transaction = await sequelize.transaction({ isolationLevel: Sequelize.Transaction.ISOLATION_LEVELS.READ_COMMITTED });
         try {
             const { id } = req.params;
             const { date, time, duration, location, status, comment, agentID, checklists, reasons, photosToRemove, supervisorID } = req.body;
             const files = req.files || [];
             if (!id) {
                 logger.warn(`Update visit failed: Missing visit ID, user: ${req.user.userID}, IP: ${req.ip}`);
+                await transaction.rollback();
                 return res.status(400).json({ error: 'Visit ID is required' });
             }
-            const visit = await VisitService.updateVisit(id, { date, time, duration, location, status, comment, agentID, checklists, reasons, photosToRemove, supervisorID }, files, req.user.userID);
-            try {
-                const timesheet = await Timesheet.findByPk(visit.timesheetID, { include: [{ model: User }] });
-                if (!timesheet || !timesheet.User) {
-                    throw new Error('Timesheet or supervisor not found');
-                }
-                const userId = timesheet.User.userID;
-                if (typeof userId !== 'string') {
-                    throw new Error(`Invalid userId: ${userId}`);
-                }
-                const event = await GoogleCalendarService.updateCalendarEvent(userId, id);
-                await GoogleCalendarService.notifyCalendarUpdate(userId, {
-                    visitId: id,
-                    calendarEventId: event.id,
-                    action: 'updated',
-                });
-            } catch (error) {
-                logger.warn(`Failed to update calendar event for visit ${id}: ${error.message}`);
-            }
+            const result = await VisitService.updateVisit(id, { date, time, duration, location, status, comment, agentID, checklists, reasons, photosToRemove, supervisorID }, files, req.user.userID, { transaction });
             await NotificationService.triggerNotification({
                 event: 'visit:updated',
                 data: { visitId: id, updates: Object.keys(req.body), status },
                 metadata: { updatedBy: req.user.email },
             });
             logger.info(`Updated visit ${id} by user ${req.user.userID}, IP: ${req.ip}`);
-            return res.status(200).json(visit);
+            await transaction.commit();
+            return res.status(200).json(result);
         } catch (error) {
+            await transaction.rollback();
             logger.error(`Update visit error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
             return res.status(error.status || 500).json({ error: error.message || 'Failed to update visit' });
         }
@@ -260,8 +253,13 @@ class VisitController {
                 return res.status(400).json({ error: 'Timesheet ID is required' });
             }
             const timesheet = await Timesheet.findByPk(timesheetId, { include: [{ model: User }] });
-            if (!timesheet || !timesheet.User) {
-                throw new Error('Timesheet or supervisor not found');
+            if (!timesheet) {
+                logger.error(`Timesheet not found for timesheetID: ${timesheetId}`);
+                throw new Error('Timesheet not found');
+            }
+            if (!timesheet.User) {
+                logger.error(`User not found for timesheet ${timesheetId}, supervisorID: ${timesheet.supervisorID}`);
+                throw new Error('Supervisor not found');
             }
             const userId = timesheet.User.userID;
             if (typeof userId !== 'string') {
@@ -275,7 +273,6 @@ class VisitController {
             return res.status(error.status || 500).json({ error: error.message || 'Failed to list calendar events' });
         }
     }
-
 }
 
 module.exports = VisitController;

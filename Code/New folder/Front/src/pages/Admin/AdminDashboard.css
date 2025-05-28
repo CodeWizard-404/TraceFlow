@@ -6051,3 +6051,12 @@ body.dark .error-message {
         font-size: 0.75rem;
     }
 }
+
+
+body.dark .search-input {
+    border: none !important;
+}
+
+.search-input {
+    border: none !important;
+}

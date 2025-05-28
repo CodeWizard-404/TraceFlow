@@ -129,11 +129,6 @@ class GoogleAuthService {
             );
 
             const { access_token, refresh_token, expires_in } = response.data;
-            logger.info('Google token response', {
-                userId,
-                hasRefreshToken: !!refresh_token,
-                hasAccessToken: !!access_token,
-            });
 
             if (!refresh_token) {
                 throw new Error('No refresh token received from Google. Ensure access_type=offline and prompt=consent are set.');
@@ -146,10 +141,8 @@ class GoogleAuthService {
                 { where: { userID: userId } }
             );
 
-            logger.info('Stored tokens and updated user', { userId });
             return { message: 'Calendar access granted', user: { userID: userId }, refreshToken: refresh_token };
         } catch (error) {
-            logger.error('Google calendar callback error', { userId, error: error.message });
             throw new Error(`${ERROR_MESSAGES.CALENDAR_AUTH_FAILED}: ${error.message}`);
         }
     }

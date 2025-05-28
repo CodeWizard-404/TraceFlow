@@ -77,6 +77,11 @@ function Header() {
       visible: () => hasRole(ROLES.ADMIN) || hasRole(ROLES.SUPER_ADMIN),
     },
     {
+      path: "/agents",
+      label: t("header.navbar.agents"),
+      visible: () => true,
+    },
+    {
       path: "/timesheet",
       label: t("header.navbar.timesheets"),
       visible: () => hasPermission(PERMISSIONS.ACCESS_SUPERVISOR_TIMESHEETS),
@@ -87,6 +92,11 @@ function Header() {
       visible: () =>
         hasPermission(PERMISSIONS.ACCESS_RECEIPT_BOOKS) || hasPermission(PERMISSIONS.ACCESS_RECEIPT_BOOKS_BY_HOLDER),
     },
+    {
+      path: '/reports',
+      label: t('header.navbar.reports'),
+      visible: () => hasPermission('generate_report'),
+    }
   ];
 
   const handleNavClick = (path: string) => {

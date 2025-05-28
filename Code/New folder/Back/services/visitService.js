@@ -1,4 +1,4 @@
-const { Visit, Agent, Reason, Checklist, Timesheet, User, Delegation, Governorate, Region, OTP } = require('../models');
+const { Visit, Agent, Reason, Checklist, Timesheet, User, Delegation, Governorate, Region, sequelize } = require('../models');
 const { parseTLV } = require('../utils/qrParser');
 const ChecklistService = require('./checklistService');
 const ReasonService = require('./reasonService');
@@ -8,8 +8,8 @@ const { sendSMS } = require('../config/sms');
 const { Op } = require('sequelize');
 const path = require('path');
 const fs = require('fs');
-const { sequelize } = require('../config/db');
 const logger = require('../utils/logger');
+const retry = require('async-retry');
 
 class VisitService {
     static async createVisit(data, actorID, options = {}) {
@@ -160,12 +160,13 @@ class VisitService {
 
             const reloadedVisit = await visit.reload({ include: [Reason, Checklist, Agent], transaction });
 
+            let warning = null;
             try {
                 const userId = targetTimesheet.User.userID;
                 if (typeof userId !== 'string') {
                     throw new Error(`Invalid userId: ${userId}`);
                 }
-                const event = await GoogleCalendarService.createCalendarEvent(userId, visit.visitID);
+                const event = await GoogleCalendarService.createCalendarEvent(userId, visit.visitID, { transaction });
                 visit.calendarEventId = event.id;
                 await visit.save({ transaction });
                 await GoogleCalendarService.notifyCalendarUpdate(userId, {
@@ -173,16 +174,16 @@ class VisitService {
                     calendarEventId: event.id,
                     action: 'created',
                 });
-                logger.info(`Synced visit ${visit.visitID} to Google Calendar`, { userId, visitId: visit.visitID });
             } catch (error) {
-                logger.error(`Failed to sync visit ${visit.visitID} to Google Calendar: ${error.message}`, {
-                    userId: targetTimesheet.User?.userID || supervisorID,
-                    visitId: visit.visitID
-                });
+                warning = `Visit created successfully, but Google Calendar event creation failed: ${error.message}`;
+                logger.warn(warning);
             }
 
             if (isLocalTransaction) await transaction.commit();
-            return reloadedVisit;
+            return {
+                visit: reloadedVisit,
+                warning,
+            };
         } catch (error) {
             if (isLocalTransaction) await transaction.rollback();
             const err = new Error('Failed to create visit: ' + error.message);
@@ -342,26 +343,28 @@ class VisitService {
 
             const reloadedVisit = await visit.reload({ include: [Reason, Checklist, Agent], transaction });
 
+            let warning = null;
             try {
                 const userId = visit.Timesheet.User.userID;
                 if (typeof userId !== 'string') {
                     throw new Error(`Invalid userId: ${userId}`);
                 }
-                const event = await GoogleCalendarService.updateCalendarEvent(userId, visitID);
+                const event = await GoogleCalendarService.updateCalendarEvent(userId, visitID, { transaction });
                 await GoogleCalendarService.notifyCalendarUpdate(userId, {
                     visitId: visitID,
                     calendarEventId: event.id,
                     action: 'updated',
                 });
             } catch (error) {
-                logger.error(`Failed to update calendar event for visit ${visitID}: ${error.message}`, {
-                    userId: visit.Timesheet.User?.userID,
-                    visitId: visitID
-                });
+                warning = `Visit logged successfully, but Google Calendar event update failed: ${error.message}`;
+                logger.warn(warning);
             }
 
             await transaction.commit();
-            return reloadedVisit;
+            return {
+                visit: reloadedVisit,
+                warning,
+            };
         } catch (error) {
             await transaction.rollback();
             const err = new Error('Failed to log visit: ' + error.message);
@@ -416,7 +419,7 @@ class VisitService {
         }
     }
 
-    static async getFormattedLocation(agentID, providedLocation) {
+    static async getFormattedLocation(agentID, providedLocation, options = {}) {
         if (agentID) {
             const agent = await Agent.findByPk(agentID, {
                 include: [
@@ -430,6 +433,7 @@ class VisitService {
                         ],
                     },
                 ],
+                transaction: options.transaction
             });
             if (agent && agent.Delegation && agent.Delegation.Governorate && agent.Delegation.Governorate.Region) {
                 return `${agent.Delegation.Governorate.Region.name}, ${agent.Delegation.Governorate.name}, ${agent.Delegation.name}`;
@@ -438,24 +442,46 @@ class VisitService {
         return providedLocation || null;
     }
 
-    static async updateVisit(visitID, data, files = [], actorID) {
-        const transaction = await sequelize.transaction();
+    static async updateVisit(visitID, data, files = [], actorID, options = {}) {
+        const transaction = options.transaction || await sequelize.transaction();
+        const isLocalTransaction = !options.transaction;
         try {
             const { date, time, duration, location, status, comment, agentID, checklists, reasons, photosToRemove, supervisorID } = data;
 
-            const visit = await Visit.findByPk(visitID, {
-                include: [
-                    { model: Timesheet, include: [User] },
-                    { model: Reason, attributes: ['reasonID', 'item'], through: { attributes: [] } },
-                    { model: Checklist, attributes: ['checklistID', 'item'], through: { attributes: [] } }
-                ],
-                transaction
+            const visit = await retry(async () => {
+                const v = await Visit.findByPk(visitID, {
+                    include: [
+                        { model: Timesheet, include: [User] },
+                        { model: Reason, attributes: ['reasonID', 'item'], through: { attributes: [] } },
+                        { model: Checklist, attributes: ['checklistID', 'item'], through: { attributes: [] } }
+                    ],
+                    transaction
+                });
+                if (!v) {
+                    logger.error(`Visit not found for visitID: ${visitID}`);
+                    const error = new Error('Visit not found');
+                    error.status = 404;
+                    throw error;
+                }
+                if (!v.Timesheet) {
+                    logger.error(`Timesheet not found for visit ${visitID}, timesheetID: ${v.timesheetID}`);
+                    const error = new Error('Timesheet not found');
+                    error.status = 404;
+                    throw error;
+                }
+                if (!v.Timesheet.User) {
+                    logger.error(`User not found for timesheet ${v.timesheetID}, supervisorID: ${v.Timesheet.supervisorID}`);
+                    const error = new Error('Supervisor not found');
+                    error.status = 500;
+                    throw error;
+                }
+                return v;
+            }, {
+                retries: 3,
+                factor: 2,
+                minTimeout: 1000,
+                maxTimeout: 5000
             });
-            if (!visit) {
-                const error = new Error('Visit not found');
-                error.status = 404;
-                throw error;
-            }
 
             const oldDate = visit.date;
             const oldTime = visit.time.replace(/:/g, '-');
@@ -602,29 +628,31 @@ class VisitService {
 
             await visit.save({ transaction });
 
+            let warning = null;
             try {
                 const userId = visit.Timesheet.User.userID;
                 if (typeof userId !== 'string') {
                     throw new Error(`Invalid userId: ${userId}`);
                 }
-                const event = await GoogleCalendarService.updateCalendarEvent(userId, visitID);
+                const event = await GoogleCalendarService.updateCalendarEvent(userId, visitID, { transaction });
                 await GoogleCalendarService.notifyCalendarUpdate(userId, {
                     visitId: visitID,
                     calendarEventId: event.id,
                     action: 'updated',
                 });
             } catch (error) {
-                logger.error(`Failed to update calendar event for visit ${visitID}: ${error.message}`, {
-                    userId: visit.Timesheet.User?.userID,
-                    visitId: visitID
-                });
+                warning = `Visit updated successfully, but Google Calendar event update failed: ${error.message}`;
+                logger.warn(warning);
             }
 
             const reloadedVisit = await visit.reload({ include: [Checklist, Reason, Agent], transaction });
-            await transaction.commit();
-            return reloadedVisit;
+            if (isLocalTransaction) await transaction.commit();
+            return {
+                visit: reloadedVisit,
+                warning,
+            };
         } catch (error) {
-            await transaction.rollback();
+            if (isLocalTransaction) await transaction.rollback();
             const err = new Error('Failed to update visit: ' + error.message);
             err.status = error.status || 500;
             throw err;
@@ -661,6 +689,7 @@ class VisitService {
                 fs.rmSync(folderPath, { recursive: true, force: true });
             }
 
+            let warning = null;
             try {
                 const userId = visit.Timesheet.User.userID;
                 if (typeof userId !== 'string') {
@@ -672,15 +701,16 @@ class VisitService {
                     action: 'deleted',
                 });
             } catch (error) {
-                logger.error(`Failed to delete calendar event for visit ${visitID}: ${error.message}`, {
-                    userId: visit.Timesheet.User?.userID,
-                    visitId: visitID
-                });
+                warning = `Visit deleted successfully, but Google Calendar event deletion failed: ${error.message}`;
+                logger.warn(warning);
             }
 
             await visit.destroy({ transaction });
             await transaction.commit();
-            return { message: 'Visit and associated photos deleted successfully' };
+            return {
+                message: 'Visit and associated photos deleted successfully',
+                warning,
+            };
         } catch (error) {
             await transaction.rollback();
             const err = new Error('Failed to delete visit: ' + error.message);

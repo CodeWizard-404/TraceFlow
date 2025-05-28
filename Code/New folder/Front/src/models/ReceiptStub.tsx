@@ -1,9 +1,9 @@
-import ReceiptStubtatus from "./Enum/ReceiptStubStatus";
+import ReceiptStubStatus from "./Enum/ReceiptStubStatus";
 
 interface ReceiptStub {
     stubID: string;
     bookID: string;
-    status: ReceiptStubtatus
+    status: ReceiptStubStatus
 }
 
 export default ReceiptStub;

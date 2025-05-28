@@ -13,7 +13,7 @@ import './App.css';
 import LoginPage from './pages/Auth/Login';
 import ProfilePage from './pages/Auth/Profile/ProfilePage';
 import AgentManagement from './pages/Dashboard/AgentManagement';
-
+import Reports from './pages/Admin/Reports';
 
 // Lazy load route components
 const Timesheets = React.lazy(() => import('./pages/Timesheet/Timesheets'));
@@ -42,7 +42,10 @@ const PERMISSIONS = {
   TRANSFER_RECEIPT_BOOKS: import.meta.env.VITE_PERMISSIONS_TRANSFER_RECEIPT_BOOKS,
   ACCESS_RECEIPT_BOOKS_BY_HOLDER: import.meta.env.VITE_PERMISSIONS_ACCESS_RECEIPT_BOOKS_BY_HOLDER,
   EDIT_VISIT_DETAILS: import.meta.env.VITE_PERMISSIONS_EDIT_VISIT,
-  ACCESS_AGENTS_MAP: import.meta.env.VITE_PERMISSIONS_READ_AGENTS_LOCATIONS
+  ACCESS_AGENTS_MAP: import.meta.env.VITE_PERMISSIONS_READ_AGENTS_LOCATIONS,
+  GENERATE_REPORT: import.meta.env.VITE_PERMISSIONS_GENERATE_REPORT,
+  SCHEDULE_REPORT: import.meta.env.VITE_PERMISSIONS_SCHEDULE_REPORT,
+  DOWNLOAD_REPORT: import.meta.env.VITE_PERMISSIONS_DOWNLOAD_REPORT,
 };
 
 const ROLES = {
@@ -116,6 +119,16 @@ const AppContent: React.FC = React.memo(() => {
   const { setError } = useError();
   const { toasts, removeToast } = useNotification();
   const [loadingTimeout, setLoadingTimeout] = useState(false);
+
+  useEffect(() => {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = './src/components/Google/Map.css';
+    document.head.appendChild(link);
+    return () => {
+      document.head.removeChild(link);
+    };
+  }, [location.pathname]);
 
   useEffect(() => {
     document.body.className = theme;
@@ -272,6 +285,14 @@ const AppContent: React.FC = React.memo(() => {
               element={
                 <ProtectedRoute requiredPermissions={[PERMISSIONS.TRANSFER_RECEIPT_BOOKS]}>
                   <TransferReceiptBook />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/reports"
+              element={
+                <ProtectedRoute requiredPermissions={['generate_report']}>
+                  <Reports />
                 </ProtectedRoute>
               }
             />
