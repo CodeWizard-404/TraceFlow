@@ -1,81 +1,110 @@
-import api from './axiosConfig';
-import { ReportFilters } from '../models/Report';
+import { AxiosError } from "axios";
+import api from "./axiosConfig";
+import { AxiosErrorResponse, GenerateReportResponse, ScheduleReportResponse, DownloadReportResponse } from ".";
 
-// Interface for the response of generateReport
-interface GenerateReportResponse {
-    reportPath: string;
-}
-
-// Interface for the response of scheduleReport
-interface ScheduleReportResponse {
-    message: string;
-    scheduleID: string;
-}
-
-/**
- * Generates a report based on the specified type, filters, and format.
- * @param reportType - Type of report (e.g., VisitSummary, Timesheet).
- * @param filters - Filters to apply to the report.
- * @param format - Output format (pdf or excel).
- * @returns Promise resolving to the report download path.
- */
-export const generateReport = async (
-    reportType: string,
-    filters: ReportFilters,
-    format: 'pdf' | 'excel'
-): Promise<GenerateReportResponse> => {
-    try {
-        const response = await api.post<GenerateReportResponse>('/reports/generate', {
-            reportType,
-            filters,
-            format,
-        });
-        return response.data;
-    } catch (error: any) {
-        throw new Error(error.response?.data?.error || 'Failed to generate report');
+// Generic error handler
+const handleApiError = (error: unknown, defaultMessage: string): string => {
+    const axiosError = error as AxiosError<AxiosErrorResponse>;
+    if (axiosError.response) {
+        return axiosError.message;
+    }
+    switch (axiosError.status) {
+        case 400:
+            return "Invalid request. Please check your input and try again.";
+        case 401:
+            return "Authentication failed. Please log in again.";
+        case 403:
+            return "You don’t have permission to perform this action.";
+        case 404:
+            return "Resource not found.";
+        case 500:
+            return "Something went wrong on our end. Please try again later.";
+        default:
+            return defaultMessage;
     }
 };
 
-/**
- * Schedules a report for periodic generation.
- * @param reportType - Type of report (e.g., VisitSummary, Timesheet).
- * @param filters - Filters to apply to the report.
- * @param format - Output format (pdf or excel).
- * @param cronExpression - Cron expression for scheduling.
- * @returns Promise resolving to the schedule ID and success message.
- */
-export const scheduleReport = async (
-    reportType: string,
-    filters: ReportFilters,
-    format: 'pdf' | 'excel',
-    cronExpression: string
-): Promise<ScheduleReportResponse> => {
+// Generate a report
+export const generateReport = async (data: {
+    reportType: string;
+    filters?: Record<string, any>;
+    format: 'pdf' | 'excel';
+}): Promise<GenerateReportResponse> => {
     try {
-        const response = await api.post<ScheduleReportResponse>('/reports/schedule', {
-            reportType,
-            filters,
-            format,
-            cronExpression,
-        });
+        if (!data.reportType || !data.format) {
+            throw new Error("Report type and format are required.");
+        }
+        if (!['pdf', 'excel'].includes(data.format)) {
+            throw new Error("Invalid format. Use 'pdf' or 'excel'.");
+        }
+        const validReportTypes = [
+            'VisitSummary',
+            'Timesheet',
+            'ReceiptBookInventory',
+            'StubCollection',
+            'UserActivity',
+            'AIAnomaly',
+            'AgentPerformance',
+            'RegionPerformance',
+            'Full',
+        ];
+        if (!validReportTypes.includes(data.reportType)) {
+            throw new Error("Invalid report type.");
+        }
+        const response = await api.post<GenerateReportResponse>("/reports/generate", data);
         return response.data;
-    } catch (error: any) {
-        throw new Error(error.response?.data?.error || 'Failed to schedule report');
+    } catch (error: unknown) {
+        throw new Error(handleApiError(error, "Unable to generate report."));
     }
 };
 
-/**
- * Downloads a generated report file.
- * @param file - The file name of the report to download.
- * @returns Promise resolving to the file URL for download.
- */
-export const downloadReport = async (file: string): Promise<string> => {
+// Schedule a recurring report
+export const scheduleReport = async (data: {
+    reportType: string;
+    filters?: Record<string, any>;
+    format: 'pdf' | 'excel';
+    cronExpression: string;
+}): Promise<ScheduleReportResponse> => {
     try {
-        const response = await api.get(`/reports/download?file=${encodeURIComponent(file)}`, {
-            responseType: 'blob',
+        if (!data.reportType || !data.format || !data.cronExpression) {
+            throw new Error("Report type, format, and cron expression are required.");
+        }
+        if (!['pdf', 'excel'].includes(data.format)) {
+            throw new Error("Invalid format. Use 'pdf' or 'excel'.");
+        }
+        const validReportTypes = [
+            'VisitSummary',
+            'Timesheet',
+            'ReceiptBookInventory',
+            'StubCollection',
+            'UserActivity',
+            'AIAnomaly',
+            'AgentPerformance',
+            'RegionPerformance',
+            'Full',
+        ];
+        if (!validReportTypes.includes(data.reportType)) {
+            throw new Error("Invalid report type.");
+        }
+        const response = await api.post<ScheduleReportResponse>("/reports/schedule", data);
+        return response.data;
+    } catch (error: unknown) {
+        throw new Error(handleApiError(error, "Unable to schedule report."));
+    }
+};
+
+// Download a generated report
+export const downloadReport = async (file: string): Promise<DownloadReportResponse> => {
+    try {
+        if (!file) {
+            throw new Error("File name is required.");
+        }
+        const response = await api.get<DownloadReportResponse>("/reports/download", {
+            params: { file },
+            responseType: 'blob', // For file download
         });
-        const url = window.URL.createObjectURL(new Blob([response.data]));
-        return url;
-    } catch (error: any) {
-        throw new Error(error.response?.data?.error || 'Failed to download report');
+        return response.data;
+    } catch (error: unknown) {
+        throw new Error(handleApiError(error, "Unable to download report."));
     }
 };

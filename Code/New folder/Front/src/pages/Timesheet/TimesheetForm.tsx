@@ -72,18 +72,20 @@ const TimesheetForm: React.FC = () => {
   const { user, effectivePermissions, permissionsLoaded, userRoles } = useAuth();
   const { setError } = useError();
   const { t } = useTranslation();
+  const [searchParams] = useSearchParams();
 
   // State Declarations
   const [date, setDate] = useState<string>("");
   const [time, setTime] = useState<string>("");
   const [isRecruitmentVisit, setIsRecruitmentVisit] = useState<boolean>(false);
   const [regionalManagers, setRegionalManagers] = useState<User[]>([]);
+  const [allRegionalManagers, setAllRegionalManagers] = useState<User[]>([]);
   const [selectedRegionalManager, setSelectedRegionalManager] = useState<string>("");
   const [regionalManagerSearch, setRegionalManagerSearch] = useState<string>("");
   const [supervisors, setSupervisors] = useState<User[]>([]);
+  const [allSupervisors, setAllSupervisors] = useState<User[]>([]);
   const [selectedSupervisor, setSelectedSupervisor] = useState<string>("");
   const [supervisorSearch, setSupervisorSearch] = useState<string>("");
-  const [supervisorPhone, setSupervisorPhone] = useState<string>("");
   const [agentPhone, setAgentPhone] = useState<string>("");
   const [regions, setRegions] = useState<Region[]>([]);
   const [selectedRegion, setSelectedRegion] = useState<string>("");
@@ -93,13 +95,17 @@ const TimesheetForm: React.FC = () => {
   const [selectedDelegation, setSelectedDelegation] = useState<string>("");
   const [agents, setAgents] = useState<Agent[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<string>("");
+  const [agentLocation, setAgentLocation] = useState<string>("");
   const [reasons, setReasons] = useState<Reason[]>([]);
+  const [filteredReasons, setFilteredReasons] = useState<Reason[]>([]);
+  const [reasonSearch, setReasonSearch] = useState<string>("");
   const [selectedReasons, setSelectedReasons] = useState<Array<{ id?: string }>>([]);
   const [checklists, setChecklists] = useState<Checklist[]>([]);
+  const [filteredChecklists, setFilteredChecklists] = useState<Checklist[]>([]);
+  const [checklistSearch, setChecklistSearch] = useState<string>("");
   const [selectedChecklists, setSelectedChecklists] = useState<Array<{ id?: string }>>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [agentLoading, setAgentLoading] = useState<boolean>(false);
-  const [searchParams] = useSearchParams();
 
   // Current date and time for input validation
   const currentDate = new Date().toISOString().split("T")[0];
@@ -162,7 +168,7 @@ const TimesheetForm: React.FC = () => {
       setSelectedAgent("");
       setAgentPhone("");
       setAgents([]);
-      // Pre-select "Recruitment" reason if available
+      setAgentLocation("");
       const recruitmentReason = reasons.find(r => r.item.toLowerCase() === "recruitment");
       if (recruitmentReason && !selectedReasons.some(r => r.id === recruitmentReason.reasonID)) {
         setSelectedReasons([{ id: recruitmentReason.reasonID }]);
@@ -171,7 +177,6 @@ const TimesheetForm: React.FC = () => {
   };
   const handleRegionalManagerChange = (e: React.ChangeEvent<HTMLSelectElement>) => setSelectedRegionalManager(e.target.value);
   const handleSupervisorChange = (e: React.ChangeEvent<HTMLSelectElement>) => setSelectedSupervisor(e.target.value);
-  const handleSupervisorPhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => setSupervisorPhone(e.target.value);
   const handleAgentPhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => setAgentPhone(e.target.value);
   const handleRegionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedRegion(e.target.value);
@@ -194,6 +199,70 @@ const TimesheetForm: React.FC = () => {
       setSelectedChecklists([...selectedChecklists, { id: checklist.checklistID }]);
     }
   };
+  const handleReasonSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const searchTerm = e.target.value;
+    setReasonSearch(searchTerm);
+    if (searchTerm) {
+      setFilteredReasons(reasons.filter(r =>
+        r.item.toLowerCase().includes(searchTerm.toLowerCase())
+      ));
+    } else {
+      setFilteredReasons(reasons);
+    }
+  };
+  const handleChecklistSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const searchTerm = e.target.value;
+    setChecklistSearch(searchTerm);
+    if (searchTerm) {
+      setFilteredChecklists(checklists.filter(c =>
+        c.item.toLowerCase().includes(searchTerm.toLowerCase())
+      ));
+    } else {
+      setFilteredChecklists(checklists);
+    }
+  };
+  const handleSupervisorSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const searchTerm = e.target.value;
+    setSupervisorSearch(searchTerm);
+    let filteredSupervisors = [...allSupervisors];
+    if (searchTerm) {
+      filteredSupervisors = filteredSupervisors.filter(s =>
+        `${s.firstname} ${s.lastname} ${s.phone}`.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    if (selectedRegionalManager || selectedGovernorate || selectedDelegation || selectedAgent) {
+      // Apply additional filters only if necessary
+      const applyAdditionalFilters = async () => {
+        const promises: Promise<User[]>[] = [];
+        if (selectedRegionalManager) promises.push(getSupervisorsByRegionalManager(selectedRegionalManager));
+        if (selectedGovernorate) promises.push(getUsersByGovernorate(selectedGovernorate).then(users => users.filter(u => u.Roles?.some(r => r.name === ROLES.SUPERVISOR))));
+        if (selectedDelegation) promises.push(getUsersByDelegation(selectedDelegation).then(users => users.filter(u => u.Roles?.some(r => r.name === ROLES.SUPERVISOR))));
+        if (selectedAgent) promises.push(getAgentById(selectedAgent).then(agent => agent?.supervisorID ? [allSupervisors.find(u => u.userID === agent.supervisorID)!].filter(u => u) : []));
+        if (promises.length > 0) {
+          try {
+            const results = await Promise.all(promises);
+            filteredSupervisors = results.reduce((acc, curr) => acc.filter(a => curr.some(c => c.userID === a.userID)), filteredSupervisors);
+          } catch (err) {
+            setError(t("timesheetForm.errors.loadSupervisors"));
+          }
+        }
+        setSupervisors(filteredSupervisors);
+        if (filteredSupervisors.length === 1) {
+          setSelectedSupervisor(filteredSupervisors[0].userID);
+        } else if (!filteredSupervisors.some(s => s.userID === selectedSupervisor)) {
+          setSelectedSupervisor("");
+        }
+      };
+      applyAdditionalFilters();
+    } else {
+      setSupervisors(filteredSupervisors);
+      if (filteredSupervisors.length === 1) {
+        setSelectedSupervisor(filteredSupervisors[0].userID);
+      } else if (!filteredSupervisors.some(s => s.userID === selectedSupervisor)) {
+        setSelectedSupervisor("");
+      }
+    }
+  };
 
   // Utility function to calculate week number from date
   const getWeekNumber = (dateStr: string): number => {
@@ -211,12 +280,30 @@ const TimesheetForm: React.FC = () => {
       setAgentLoading(true);
       try {
         const agent = await getAgentByPhone(phone);
-        setAgents([agent!]);
-        setSelectedAgent(agent!.agentID);
+        if (agent) {
+          setAgents([agent]);
+          setSelectedAgent(agent.agentID);
+          if (agent.delegationID) {
+            const locationDetails = await getLocationDetailsById(agent.delegationID);
+            if (locationDetails.success && locationDetails.address) {
+              setAgentLocation(locationDetails.address);
+            } else {
+              setAgentLocation("");
+            }
+          }
+        } else {
+          setAgents([]);
+          setSelectedAgent("");
+          setAgentPhone("");
+          setAgentLocation("");
+          setError(t("timesheetForm.errors.agentNotFound"));
+        }
       } catch (err) {
-        setError(t("timesheetForm.errors.agentNotFound"));
         setAgents([]);
         setSelectedAgent("");
+        setAgentPhone("");
+        setAgentLocation("");
+        setError(t("timesheetForm.errors.agentNotFound"));
       } finally {
         setAgentLoading(false);
       }
@@ -263,21 +350,28 @@ const TimesheetForm: React.FC = () => {
     }
   };
 
-  // Fetch initial data (regions, reasons, checklists)
+  // Fetch initial data (regions, reasons, checklists, regional managers, supervisors)
   useEffect(() => {
     const fetchInitialData = async () => {
       setLoading(true);
       try {
-        const [regionsData, reasonsData, checkpointsData] = await Promise.all([
+        const [regionsData, reasonsData, checkpointsData, regionalManagersData, supervisorsData] = await Promise.all([
           getAllRegions(),
           getAllReasons(),
           getAllChecklists(),
+          getUsersByRole(ROLES.REGIONAL_MANAGER),
+          getUsersByRole(ROLES.SUPERVISOR),
         ]);
         setRegions(regionsData);
         setReasons(reasonsData);
+        setFilteredReasons(reasonsData);
         setChecklists(checkpointsData);
+        setFilteredChecklists(checkpointsData);
+        setAllRegionalManagers(regionalManagersData);
+        setRegionalManagers(regionalManagersData);
+        setAllSupervisors(supervisorsData);
+        setSupervisors(supervisorsData);
 
-        // Handle query parameters
         const agentId = searchParams.get('agentId');
         const dateParam = searchParams.get('date');
         const timeParam = searchParams.get('time');
@@ -292,13 +386,18 @@ const TimesheetForm: React.FC = () => {
               setAgents([agent]);
               setSelectedAgent(agent.agentID);
               setAgentPhone(agent.phone);
-
-              // Optionally set supervisor and location based on agent
+              if (agent.delegationID) {
+                const locationDetails = await getLocationDetailsById(agent.delegationID);
+                if (locationDetails.success && locationDetails.address) {
+                  setAgentLocation(locationDetails.address);
+                }
+              }
               if (agent.supervisorID) {
                 setSelectedSupervisor(agent.supervisorID);
-                const supervisor = await getUserById(agent.supervisorID);
-                setSupervisors([supervisor]);
-                setSupervisorPhone(supervisor.phone);
+                const supervisor = supervisorsData.find(s => s.userID === agent.supervisorID);
+                if (supervisor) {
+                  setSupervisors([supervisor]);
+                }
               }
             }
           } catch (err) {
@@ -321,72 +420,48 @@ const TimesheetForm: React.FC = () => {
     fetchInitialData();
   }, [setError, t, isRecruitmentVisit, searchParams]);
 
-  // Fetch regional managers based on role and filters
+  // Filter regional managers based on search and filters
   useEffect(() => {
-    const fetchRegionalManagers = async () => {
-      if (!(isSuperAdmin || isDirector)) return;
-      let rmList: User[] = [];
+    const filterRegionalManagers = async () => {
+      if (!(isSuperAdmin || isDirector)) {
+        setRegionalManagers([]);
+        return;
+      }
       try {
+        let rmList = [...allRegionalManagers];
         if (selectedSupervisor && selectedRegion) {
           const [supervisorRM, regionRM] = await Promise.all([
             getRegionalManagerBySupervisor(selectedSupervisor),
             getUsersByRegion(selectedRegion).then(users => users.filter(u => u.Roles?.some(r => r.name === ROLES.REGIONAL_MANAGER))),
           ]);
-          rmList = supervisorRM.filter(rm => regionRM.some(rrm => rrm.userID === rm.userID));
+          rmList = rmList.filter(rm =>
+            supervisorRM.some(srm => srm.userID === rm.userID) &&
+            regionRM.some(rrm => rrm.userID === rm.userID)
+          );
         } else if (selectedSupervisor) {
-          rmList = await getRegionalManagerBySupervisor(selectedSupervisor);
+          const supervisorRM = await getRegionalManagerBySupervisor(selectedSupervisor);
+          rmList = rmList.filter(rm => supervisorRM.some(srm => srm.userID === rm.userID));
         } else if (selectedRegion) {
-          rmList = await getUsersByRegion(selectedRegion).then(users => users.filter(u => u.Roles?.some(r => r.name === ROLES.REGIONAL_MANAGER)));
-        } else {
-          rmList = await getUsersByRole(ROLES.REGIONAL_MANAGER);
+          const regionRM = await getUsersByRegion(selectedRegion).then(users => users.filter(u => u.Roles?.some(r => r.name === ROLES.REGIONAL_MANAGER)));
+          rmList = rmList.filter(rm => regionRM.some(rrm => rrm.userID === rm.userID));
         }
         if (regionalManagerSearch) {
-          rmList = rmList.filter(rm => `${rm.firstname} ${rm.lastname} ${rm.phone}`.toLowerCase().includes(regionalManagerSearch.toLowerCase()));
+          rmList = rmList.filter(rm =>
+            `${rm.firstname} ${rm.lastname} ${rm.phone}`.toLowerCase().includes(regionalManagerSearch.toLowerCase())
+          );
         }
         setRegionalManagers(rmList);
         if (rmList.length === 1) {
           setSelectedRegionalManager(rmList[0].userID);
+        } else if (!rmList.some(rm => rm.userID === selectedRegionalManager)) {
+          setSelectedRegionalManager("");
         }
       } catch (err) {
         setError(t("timesheetForm.errors.loadRegionalManagers"));
       }
     };
-    fetchRegionalManagers();
-  }, [isSuperAdmin, isDirector, selectedSupervisor, selectedRegion, regionalManagerSearch, setError, t]);
-
-  // Fetch supervisors based on role and filters
-  useEffect(() => {
-    const fetchSupervisors = async () => {
-      if (!(isSuperAdmin || isDirector || isRegionalManager)) return;
-      let supList: User[] = [];
-      try {
-        if (selectedRegionalManager || selectedGovernorate || selectedDelegation || selectedAgent) {
-          const promises: Promise<User[]>[] = [];
-          if (selectedRegionalManager) promises.push(getSupervisorsByRegionalManager(selectedRegionalManager));
-          if (selectedGovernorate) promises.push(getUsersByGovernorate(selectedGovernorate).then(users => users.filter(u => u.Roles?.some(r => r.name === ROLES.SUPERVISOR))));
-          if (selectedDelegation) promises.push(getUsersByDelegation(selectedDelegation).then(users => users.filter(u => u.Roles?.some(r => r.name === ROLES.SUPERVISOR))));
-          if (selectedAgent) promises.push(getAgentById(selectedAgent).then(agent => getUsersByRole(ROLES.SUPERVISOR).then(users => users.filter(u => u.userID === agent?.supervisorID))));
-          const results = await Promise.all(promises);
-          supList = results.reduce((acc, curr) => acc.filter(a => curr.some(c => c.userID === a.userID)), results[0] || []);
-        } else {
-          supList = await getUsersByRole(ROLES.SUPERVISOR);
-        }
-        if (supervisorSearch) {
-          supList = supList.filter(s => `${s.firstname} ${s.lastname}`.toLowerCase().includes(supervisorSearch.toLowerCase()));
-        }
-        if (supervisorPhone && supervisorPhone.length === 8) {
-          supList = supList.filter(s => s.phone === supervisorPhone);
-        }
-        setSupervisors(supList);
-        if (supList.length === 1) {
-          setSelectedSupervisor(supList[0].userID);
-        }
-      } catch (err) {
-        setError(t("timesheetForm.errors.loadSupervisors"));
-      }
-    };
-    fetchSupervisors();
-  }, [isSuperAdmin, isDirector, isRegionalManager, selectedRegionalManager, selectedGovernorate, selectedDelegation, selectedAgent, supervisorSearch, supervisorPhone, setError, t]);
+    filterRegionalManagers();
+  }, [isSuperAdmin, isDirector, selectedSupervisor, selectedRegion, regionalManagerSearch, allRegionalManagers, setError, t]);
 
   // Fetch regions based on selected regional manager
   useEffect(() => {
@@ -485,17 +560,31 @@ const TimesheetForm: React.FC = () => {
         setAgents(agentList);
         if (agentList.length === 1) {
           setSelectedAgent(agentList[0].agentID);
+          if (agentList[0].delegationID) {
+            const locationDetails = await getLocationDetailsById(agentList[0].delegationID);
+            if (locationDetails.success && locationDetails.address) {
+              setAgentLocation(locationDetails.address);
+            } else {
+              setAgentLocation("");
+            }
+          }
         }
       } catch (err) {
         setError(t("timesheetForm.errors.loadAgents"));
       }
     };
     if (!agentPhone) fetchAgents();
-  }, [selectedDelegation, selectedSupervisor, setError, t]);
+  }, [selectedDelegation, selectedSupervisor, setError, t, agentPhone]);
 
   // Fetch agent by phone number
   useEffect(() => {
-    if (agentPhone) fetchAgentByPhone(agentPhone);
+    if (agentPhone && agentPhone.length === 8) {
+      fetchAgentByPhone(agentPhone);
+    } else {
+      setAgents([]);
+      setSelectedAgent("");
+      setAgentLocation("");
+    }
   }, [agentPhone, fetchAgentByPhone]);
 
   // Render loading state if permissions or user data are not loaded
@@ -545,14 +634,8 @@ const TimesheetForm: React.FC = () => {
                 <input
                   type="text"
                   value={supervisorSearch}
-                  onChange={(e) => setSupervisorSearch(e.target.value)}
+                  onChange={handleSupervisorSearchChange}
                   placeholder={t("timesheetForm.form.placeholders.supervisorSearch")}
-                />
-                <input
-                  type="tel"
-                  value={supervisorPhone}
-                  onChange={handleSupervisorPhoneChange}
-                  placeholder={t("timesheetForm.form.placeholders.supervisorPhone")}
                 />
                 <select id="supervisor" value={selectedSupervisor} onChange={handleSupervisorChange}>
                   <option value="">{t("timesheetForm.form.placeholders.supervisorSelect")}</option>
@@ -639,6 +722,7 @@ const TimesheetForm: React.FC = () => {
                     value={agentPhone}
                     onChange={handleAgentPhoneChange}
                     placeholder={t("timesheetForm.form.placeholders.agentPhone")}
+                    maxLength={8}
                   />
                 </div>
                 <div className="form-group">
@@ -655,9 +739,9 @@ const TimesheetForm: React.FC = () => {
                       <option key={a.agentID} value={a.agentID}>{`${a.name} ${a.lastname} (${a.phone})`}</option>
                     ))}
                   </select>
-                  {selectedAgent && (
+                  {selectedAgent && agentLocation && (
                     <div className="agent-location">
-                      {t("timesheetForm.form.agentLocation")}: {agents.find(a => a.agentID === selectedAgent)?.Delegation?.name}, {agents.find(a => a.agentID === selectedAgent)?.Delegation?.Governorate?.name}
+                      {t("timesheetForm.form.agentLocation")}: {agentLocation}
                     </div>
                   )}
                 </div>
@@ -666,13 +750,19 @@ const TimesheetForm: React.FC = () => {
             <hr />
             <div className="form-group" style={{ marginBottom: "0 !important" }}>
               <label>{t("timesheetForm.form.reasons")}</label>
+              <input
+                type="text"
+                value={reasonSearch}
+                onChange={handleReasonSearchChange}
+                placeholder={t("timesheetForm.form.placeholders.reasonSearch")}
+              />
               <select
                 value=""
                 onChange={(e) => handleReasonSelect(reasons.find(r => r.reasonID === e.target.value)!)}
                 disabled={isRecruitmentVisit && selectedReasons.some(r => r.id === reasons.find(r => r.item.toLowerCase() === "recruitment")?.reasonID)}
               >
                 <option value="">{t("timesheetForm.form.placeholders.reasonSelect")}</option>
-                {reasons.map(r => (
+                {filteredReasons.map(r => (
                   <option key={r.reasonID} value={r.reasonID}>{r.item}</option>
                 ))}
               </select>
@@ -690,12 +780,18 @@ const TimesheetForm: React.FC = () => {
             </div>
             <div className="form-group">
               <label>{t("timesheetForm.form.checklists")}</label>
+              <input
+                type="text"
+                value={checklistSearch}
+                onChange={handleChecklistSearchChange}
+                placeholder={t("timesheetForm.form.placeholders.checklistSearch")}
+              />
               <select
                 value=""
                 onChange={(e) => handleChecklistSelect(checklists.find(c => c.checklistID === e.target.value)!)}
               >
                 <option value="">{t("timesheetForm.form.placeholders.checklistSelect")}</option>
-                {checklists.map(c => (
+                {filteredChecklists.map(c => (
                   <option key={c.checklistID} value={c.checklistID}>{c.item}</option>
                 ))}
               </select>

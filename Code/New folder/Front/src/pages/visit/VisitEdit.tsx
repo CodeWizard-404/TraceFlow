@@ -106,12 +106,12 @@ const VisitEdit: React.FC = () => {
   const [disableRegionalManagerInput, setDisableRegionalManagerInput] = useState<boolean>(false);
   const [fetchMode, setFetchMode] = useState<"none" | "supervisor" | "agent">("none");
   const [isCameraActive, setIsCameraActive] = useState<boolean>(false);
-  const [newPhotos, setNewPhotos] = useState<File[]>([]);
   const [flashEffect, setFlashEffect] = useState<boolean>(false);
   const [agentLoading, setAgentLoading] = useState<boolean>(false);
   const [supervisorLoading, setSupervisorLoading] = useState<boolean>(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [newPhotos, setNewPhotos] = useState<File[]>([]);
 
   const [editTracking, setEditTracking] = useState<EditTracking>({
     startTime: null,
@@ -390,6 +390,11 @@ const VisitEdit: React.FC = () => {
     if (permissionsLoaded) fetchVisitData();
   }, [fetchVisitData, permissionsLoaded]);
 
+  useEffect(() => {
+    console.log("newPhotos updated:", newPhotos);
+  }, [newPhotos]);
+
+
   // Camera handling
   const startCamera = async () => {
     try {
@@ -399,9 +404,26 @@ const VisitEdit: React.FC = () => {
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         setIsCameraActive(true);
+        await new Promise<void>((resolve, reject) => {
+          if (videoRef.current) {
+            videoRef.current.oncanplay = () => resolve();
+            videoRef.current.onerror = () => reject(new Error("Video failed to play"));
+            videoRef.current.play();
+          } else {
+            reject(new Error("Video ref is null"));
+          }
+        });
+      } else {
+        throw new Error("Video ref is null");
       }
-    } catch (err) {
-      setError(t("visitDetails.error.cameraAccess"));
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error
+          ? err.name === "NotReadableError"
+            ? t("visitDetails.error.cameraInUse")
+            : t("visitDetails.error.cameraAccess")
+          : t("visitDetails.error.unknown");
+      setError(errorMessage);
       console.error("Camera access error:", err);
     }
   };
@@ -409,9 +431,13 @@ const VisitEdit: React.FC = () => {
   const stopCamera = () => {
     if (videoRef.current && videoRef.current.srcObject) {
       const stream = videoRef.current.srcObject as MediaStream;
-      stream.getTracks().forEach((track) => track.stop());
+      stream.getTracks().forEach((track) => {
+        track.stop();
+        console.log("Camera track stopped:", track);
+      });
       videoRef.current.srcObject = null;
       setIsCameraActive(false);
+      console.log("Camera stopped");
     }
   };
 
@@ -425,27 +451,58 @@ const VisitEdit: React.FC = () => {
   }, [isCameraActive, t]);
 
   const capturePhoto = () => {
-    if (videoRef.current && canvasRef.current) {
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const context = canvas.getContext("2d");
-      if (context) {
-        context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        canvas.toBlob((blob) => {
+    if (!videoRef.current || !canvasRef.current) {
+      console.error("Video or canvas ref is null");
+      setError(t("visitDetails.error.videoNotFound"));
+      return;
+    }
+
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+
+    if (video.videoWidth === 0 || video.videoHeight === 0) {
+      console.error("Video stream is not ready");
+      setError(t("visitDetails.error.videoNotReady"));
+      return;
+    }
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const context = canvas.getContext("2d");
+
+    if (!context) {
+      console.error("Failed to get 2D context from canvas");
+      setError(t("visitDetails.error.canvasContextFailed"));
+      return;
+    }
+
+    try {
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(
+        (blob) => {
           if (blob) {
             const file = new File([blob], `photo-${Date.now()}.jpg`, {
               type: "image/jpeg",
             });
-            setNewPhotos((prev) => [...prev, file]);
+            console.log("Captured photo:", file);
+            setNewPhotos((prev) => {
+              const updatedPhotos = [...prev, file];
+              console.log("Updated newPhotos:", updatedPhotos);
+              return updatedPhotos;
+            });
             setFlashEffect(true);
             setTimeout(() => setFlashEffect(false), 300);
           } else {
-            console.error("Failed to create blob from canvas.");
+            console.error("Failed to create blob from canvas");
+            setError(t("visitDetails.error.blobCreationFailed"));
           }
-        }, "image/jpeg");
-      }
+        },
+        "image/jpeg",
+        0.95
+      );
+    } catch (err) {
+      console.error("Error capturing photo:", err);
+      setError(t("visitDetails.error.captureFailed"));
     }
   };
 

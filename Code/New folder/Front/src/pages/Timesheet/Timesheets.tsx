@@ -27,6 +27,7 @@ import { useTranslation } from "react-i18next";
 import CalendarSyncButton from "../../components/Google/CalendarSyncButton";
 import TimesheetSuggestionsModal from "../Timesheet/TimesheetSuggestionsModal";
 import { io } from "socket.io-client";
+import VisitMapModal from '../../components/Google/VisitMapsView';
 
 const PERMISSIONS = {
     ACCESS_TIMESHEETS: import.meta.env.VITE_PERMISSIONS_ACCESS_TIMESHEETS,
@@ -449,6 +450,7 @@ const Timesheets: React.FC = React.memo(() => {
     const [supervisorSearchInput, setSupervisorSearchInput] = useState<string>("");
     const [visitReasonSearchInput, setVisitReasonSearchInput] = useState<string>("");
     const [hasCalendarAccess, setHasCalendarAccess] = useState<boolean>(false);
+    const [isMapModalOpen, setIsMapModalOpen] = useState(false);
 
     const userPermissions = useMemo(
         () => ({
@@ -706,6 +708,13 @@ const Timesheets: React.FC = React.memo(() => {
         const formattedHours = hours % 12 || 12;
         return `${formattedHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} ${period}`;
     };
+
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    const todayVisits = useMemo(() => {
+        const allVisits = timesheets.flatMap(ts => ts.Visits || []);
+        return allVisits.filter(v => v.date.split("T")[0] === todayStr);
+    }, [timesheets]);
 
     useEffect(() => {
         const fetchLocations = async () => {
@@ -1691,6 +1700,11 @@ const Timesheets: React.FC = React.memo(() => {
                 {viewMode === "day" && (
                     <section className="day-view">
                         <div className="day-header">
+                            {isSupervisor && (
+                                <button onClick={() => setIsMapModalOpen(true)}>
+                                    View Today's Visits on Map
+                                </button>
+                            )}
                             <button
                                 className="nav-btn"
                                 onClick={() =>
@@ -1763,7 +1777,19 @@ const Timesheets: React.FC = React.memo(() => {
                 year={currentYear}
                 onSuggestionsGenerated={handleSuggestionsGenerated}
             />
+            {isMapModalOpen && (
+                <VisitMapModal
+                    visits={todayVisits
+                        .filter(v => typeof v.location === 'string' && v.location !== undefined && v.location !== null)
+                        .map(v => ({
+                            ...v,
+                            location: v.location as string
+                        }))}
+                    onClose={() => setIsMapModalOpen(false)}
+                />
+            )}
         </motion.div>
+
     );
 });
 

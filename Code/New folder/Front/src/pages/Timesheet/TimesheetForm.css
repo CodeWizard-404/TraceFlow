@@ -38,9 +38,7 @@
     transition: transform 0.3s ease;
 }
 
-.form-card:hover {
-    transform: translateY(-0.3125rem);
-}
+
 
 
 

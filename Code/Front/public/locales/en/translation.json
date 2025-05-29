@@ -1955,5 +1955,43 @@
     "agentDetailsError": "Failed to retrieve agent details",
     "confirm": "Confirm",
     "cancel": "Cancel"
+  },
+  "reports": {
+    "title": "Reports",
+    "generateReport": "Generate Report",
+    "scheduleReport": "Schedule Report",
+    "availableReports": "Available Reports",
+    "reportType": "Report Type",
+    "selectReportType": "Select a report type",
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "supervisor": "Supervisor",
+    "allSupervisors": "All Supervisors",
+    "format": "Format",
+    "frequency": {
+      "label": "Frequency",
+      "weekly": "Weekly",
+      "monthly": "Monthly"
+    },
+    "generateReportButton": "Generate Report",
+    "scheduleReportButton": "Schedule Report",
+    "generating": "Generating...",
+    "scheduling": "Scheduling...",
+    "reportName": "Report Name",
+    "generatedDate": "Generated Date",
+    "download": "Download",
+    "downloadButton": "Download",
+    "noReports": "No reports available",
+    "success": {
+      "reportGenerated": "Report generated: {{path}}",
+      "reportScheduled": "Report scheduled: {{id}}"
+    },
+    "errors": {
+      "fetchSupervisors": "Failed to fetch supervisors",
+      "fetchReports": "Failed to fetch reports list",
+      "generateReport": "Failed to generate report",
+      "scheduleReport": "Failed to schedule report",
+      "downloadReport": "Failed to download report"
+    }
   }
 }

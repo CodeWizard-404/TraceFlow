@@ -1,3 +1,4 @@
+// routes/reports.js
 const express = require('express');
 const router = express.Router();
 const ReportController = require('../controllers/reportController');
@@ -33,6 +34,31 @@ router.get('/download', requirePermission('download_report'), ReportController.d
  * @access Private (requires 'download_report' permission)
  * @param {string} file - Filename of the report (query parameter)
  * @returns {file} - The report file
+ */
+
+router.get('/schedules', requirePermission('view_report_schedules'), ReportController.listSchedules);
+/**
+ * @route GET /api/reports/schedules
+ * @desc List all scheduled reports
+ * @access Private (requires 'view_report_schedules' permission)
+ * @returns {array} - List of report schedules
+ */
+
+router.get('/generated', requirePermission('view_generated_reports'), ReportController.listGeneratedReports);
+/**
+ * @route GET /api/reports/generated
+ * @desc List all generated reports
+ * @access Private (requires 'view_generated_reports' permission)
+ * @returns {array} - List of generated reports
+ */
+
+router.delete('/schedules/:scheduleID', requirePermission('delete_report_schedule'), ReportController.deleteSchedule);
+/**
+ * @route DELETE /api/reports/schedules/:scheduleID
+ * @desc Delete a scheduled report
+ * @access Private (requires 'delete_report_schedule' permission)
+ * @param {string} scheduleID - ID of the schedule to delete
+ * @returns {object} - { message: string }
  */
 
 module.exports = router;

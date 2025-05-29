@@ -71,8 +71,21 @@ class UserController {
         }
         try {
             const user = await UserService.getUserByPhoneNumber(phone);
+            if (!user) {
+                logger.warn('Get user failed: User not found', {
+                    route: 'user/phone',
+                    method: req.method,
+                    url: req.originalUrl,
+                    status: 404,
+                    ip: req.ip,
+                    traceId: req.traceId,
+                    userId: actorID,
+                    metadata: { phone }
+                });
+                return res.status(404).json({ error: 'User not found' });
+            }
             logger.info('Successfully fetched user by phone number', {
-                route: 'users',
+                route: 'user/phone',
                 method: req.method,
                 url: req.originalUrl,
                 status: 200,

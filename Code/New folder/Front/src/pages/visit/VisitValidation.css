@@ -494,8 +494,8 @@ body.dark .camera-preview {
   justify-content: center;
   padding: 0;
   position: absolute;
-  right: -8px;
-  top: -8px;
+  right: -3px;
+  top: 3px;
   transition: background 0.3s ease;
   width: 20px;
 }

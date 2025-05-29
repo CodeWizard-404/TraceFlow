@@ -292,3 +292,10 @@ export type LoggerHealthResponse = {
     transports: string[];
 };
 
+
+
+
+// Report API response types
+export type GenerateReportResponse = { reportPath: string };
+export type ScheduleReportResponse = { message: string; scheduleID: string };
+export type DownloadReportResponse = ArrayBuffer;

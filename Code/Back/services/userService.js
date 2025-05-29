@@ -606,7 +606,7 @@ class UserService {
                 ],
             });
             if (!user) {
-                return null;
+                return;
             }
             return user;
         } catch (error) {

@@ -21,10 +21,10 @@ async function initializeSMTP() {
     }
 }
 
-// Load and render an email template from the emailTemplates directory
+// Load and render an email template from the Templates directory
 async function loadEmailTemplate(templateName, replacements = {}) {
     try {
-        const templatePath = path.join(__dirname, '..', 'emailTemplates', `${templateName}.html`);
+        const templatePath = path.join(__dirname, '..', 'Templates', `${templateName}.html`);
         let templateContent = await fs.readFile(templatePath, 'utf-8');
 
         // Replace placeholders in the template
@@ -58,13 +58,13 @@ async function sendEmail({ to, subject, templateName, replacements = {}, textFal
             {
                 key: 'logoUrl',
                 cid: 'logo',
-                primary: path.join(__dirname, '..', 'emailTemplates', 'logo', 'Banner-wd.png'),
+                primary: path.join(__dirname, '..', 'Templates', 'logo', 'Banner-wd.png'),
                 fallback: path.join(__dirname, '..', '..', 'Front', 'public', 'Banner-wd.png'),
             },
             {
                 key: 'signatureLogoUrl',
                 cid: 'signature',
-                primary: path.join(__dirname, '..', 'emailTemplates', 'logo', 'Banner-bd.png'),
+                primary: path.join(__dirname, '..', 'Templates', 'logo', 'Banner-bd.png'),
                 fallback: path.join(__dirname, '..', '..', 'Front', 'public', 'Banner-bd.png'),
             },
         ];

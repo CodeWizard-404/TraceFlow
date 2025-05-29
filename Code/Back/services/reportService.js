@@ -1,5 +1,5 @@
 const PDFDocument = require('pdfkit');
-const xlsx = require('xlsx');
+const ExcelJS = require('exceljs');
 const fs = require('fs');
 const path = require('path');
 const {
@@ -15,11 +15,9 @@ const {
     Delegation,
     Governorate,
     ReceiptBookType,
-    ReceiptBookTransfer,
     Reason
 } = require('../models');
 const { Op } = require('sequelize');
-const logger = require('../utils/logger');
 
 class ReportService {
     static async generateVisitSummaryReport(filters) {
@@ -51,7 +49,7 @@ class ReportService {
                             },
                         ],
                     },
-                    { model: Timesheet, include: [{ model: User }], required: false }, // Removed 'as: Supervisor'
+                    { model: Timesheet, include: [{ model: User }], required: false },
                 ],
             });
 
@@ -83,7 +81,6 @@ class ReportService {
                 })),
             };
         } catch (error) {
-            logger.error(`Failed to generate VisitSummary report: ${error.message}`, { error });
             throw error;
         }
     }
@@ -102,7 +99,7 @@ class ReportService {
                 where,
                 include: [
                     {
-                        model: User, // Removed 'as: Supervisor'
+                        model: User,
                         where: userWhere,
                         required: false,
                     },
@@ -134,7 +131,6 @@ class ReportService {
                 })),
             };
         } catch (error) {
-            logger.error(`Failed to generate Timesheet report: ${error.message}`, { error });
             throw error;
         }
     }
@@ -189,7 +185,6 @@ class ReportService {
                 })),
             };
         } catch (error) {
-            logger.error(`Failed to generate ReceiptBookInventory report: ${error.message}`, { error });
             throw error;
         }
     }
@@ -222,7 +217,7 @@ class ReportService {
 
             return {
                 summary: {
-                    status: stubs.length,
+                    total: stubs.length,
                     collected: stubs.filter((s) => s.status === 'collected').length,
                     transmitted: stubs.filter((t) => t.status === 'transmitted').length,
                     archived: stubs.filter((s) => s.status === 'archived').length,
@@ -240,7 +235,6 @@ class ReportService {
                 })),
             };
         } catch (error) {
-            logger.error(`Failed to generate StubCollection report: ${error.message}`, { error });
             throw error;
         }
     }
@@ -254,26 +248,20 @@ class ReportService {
         if (roleID) roleWhere.roleID = roleID;
 
         try {
-            // Fetch logs without including User
             const logs = await Log.findAll({ where });
-
-            // Get unique user IDs from logs
             const userIds = [...new Set(logs.map((l) => l.userId).filter((id) => id))];
-
-            // Fetch users and their roles
             const users = await User.findAll({
                 where: { userID: { [Op.in]: userIds } },
                 include: [
                     {
                         model: Role,
                         where: roleWhere,
-                        required: !!roleID, // Only require Role if roleID is provided
-                        through: { attributes: [] }, // Exclude join table attributes
+                        required: !!roleID,
+                        through: { attributes: [] },
                     },
                 ],
             });
 
-            // Create a user lookup map
             const userMap = users.reduce((map, user) => {
                 map[user.userID] = {
                     firstname: user.firstname,
@@ -303,7 +291,6 @@ class ReportService {
                 })),
             };
         } catch (error) {
-            logger.error(`Failed to generate UserActivity report: ${error.message}`, { error });
             throw error;
         }
     }
@@ -317,26 +304,20 @@ class ReportService {
         if (roleID) roleWhere.roleID = roleID;
 
         try {
-            // Fetch logs without including User
             const logs = await Log.findAll({ where });
-
-            // Get unique user IDs from logs
             const userIds = [...new Set(logs.map((l) => l.userId).filter((id) => id))];
-
-            // Fetch users and their roles
             const users = await User.findAll({
                 where: { userID: { [Op.in]: userIds } },
                 include: [
                     {
                         model: Role,
                         where: roleWhere,
-                        required: !!roleID, // Only require Role if roleID is provided
-                        through: { attributes: [] }, // Exclude join table attributes
+                        required: !!roleID,
+                        through: { attributes: [] },
                     },
                 ],
             });
 
-            // Create a user lookup map
             const userMap = users.reduce((map, user) => {
                 map[user.userID] = {
                     firstname: user.firstname,
@@ -364,7 +345,6 @@ class ReportService {
                 })),
             };
         } catch (error) {
-            logger.error(`Failed to generate AIAnomaly report: ${error.message}`, { error });
             throw error;
         }
     }
@@ -425,7 +405,6 @@ class ReportService {
                 })),
             };
         } catch (error) {
-            logger.error(`Failed to generate AgentPerformance report: ${error.message}`, { error });
             throw error;
         }
     }
@@ -551,7 +530,6 @@ class ReportService {
                 })),
             };
         } catch (error) {
-            logger.error(`Failed to generate RegionPerformance report: ${error.message}`, { error });
             throw error;
         }
     }
@@ -594,7 +572,6 @@ class ReportService {
                 regionPerformance,
             };
         } catch (error) {
-            logger.error(`Failed to generate Full report: ${error.message}`, { error });
             throw error;
         }
     }
@@ -616,73 +593,149 @@ class ReportService {
 
             return filePath;
         } catch (error) {
-            logger.error(`Failed to export report: ${error.message}`, { error });
             throw error;
         }
     }
 
     static async generatePDF(data, reportType, filePath) {
-        const doc = new PDFDocument({ size: 'A4', margin: 50 });
+        const doc = new PDFDocument({
+            size: 'A4',
+            margin: 40,
+            bufferPages: true
+        });
         doc.pipe(fs.createWriteStream(filePath));
 
-        const logoPath = path.join(__dirname, '../emailTemplates/logo/Logo.png');
+        // Register modern font (Roboto)
+        doc.registerFont('Roboto', path.join(__dirname, '../Templates/fonts/Roboto-Regular.ttf'));
+        doc.registerFont('Roboto-Bold', path.join(__dirname, '../Templates/fonts/Roboto-Bold.ttf'));
+
+        // Header with logo and title
+        const logoPath = path.join(__dirname, '../Templates/logo/Logo.png');
         if (fs.existsSync(logoPath)) {
-            doc.image(logoPath, 50, 50, { width: 100 });
+            doc.image(logoPath, 40, 30, { width: 80 });
         }
 
-        doc.fontSize(20).text(`TraceFlow ${reportType} Report`, 200, 60, { align: 'center' });
-        doc.moveDown();
+        doc.font('Roboto-Bold')
+            .fontSize(24)
+            .fillColor('#1A3C5A')
+            .text(`TraceFlow ${reportType} Report`, 0, 40, { align: 'center' });
+        doc.font('Roboto')
+            .fontSize(10)
+            .fillColor('#666')
+            .text(`Generated on ${new Date().toLocaleString()}`, 0, 70, { align: 'center' });
+
+        // Add a subtle header line
+        doc.moveTo(40, 90).lineTo(555, 90).strokeColor('#E5E7EB').lineWidth(1).stroke();
+        doc.moveDown(2);
 
         if (reportType === 'Full') {
             for (const [section, sectionData] of Object.entries(data)) {
                 doc.addPage();
-                doc.fontSize(16).text(section.replace(/([A-Z])/g, ' $1').trim(), { underline: true });
+                // Section title
+                doc.font('Roboto-Bold')
+                    .fontSize(18)
+                    .fillColor('#1A3C5A')
+                    .text(section.replace(/([A-Z])/g, ' $1').trim(), 40, 40, { underline: true });
                 doc.moveDown();
 
-                doc.fontSize(14).text('Summary', { underline: true });
-                doc.fontSize(12);
+                // Summary section
+                doc.font('Roboto-Bold')
+                    .fontSize(14)
+                    .fillColor('#2D6B9B')
+                    .text('Summary', 40, doc.y, { underline: true });
+                doc.moveDown(0.5);
+                doc.font('Roboto')
+                    .fontSize(11)
+                    .fillColor('#333');
                 for (const [key, value] of Object.entries(sectionData.summary)) {
-                    doc.text(`${key.replace(/([A-Z])/g, ' $1').trim()}: ${value}`);
+                    doc.text(`${key.replace(/([A-Z])/g, ' $1').trim()}: ${value}`, 50, doc.y, { continued: false });
+                    doc.moveDown(0.3);
                 }
                 doc.moveDown();
 
                 if (sectionData.details && sectionData.details.length) {
-                    doc.fontSize(14).text('Details', { underline: true });
+                    // Details section
+                    doc.font('Roboto-Bold')
+                        .fontSize(14)
+                        .fillColor('#2D6B9B')
+                        .text('Details', 40, doc.y, { underline: true });
                     const headers = Object.keys(sectionData.details[0]).map(h => h.replace(/([A-Z])/g, ' $1').trim());
-                    const colWidths = headers.map(() => 500 / headers.length); // Equal widths for simplicity
-                    const tableTop = doc.y + 10;
+                    const colWidths = headers.map(() => 515 / headers.length);
+                    const tableTop = doc.y + 15;
                     let y = this.drawTable(doc, headers, sectionData.details, tableTop, colWidths);
-                    // Add signature
-                    if (y + 50 > doc.page.height - 50) {
+
+                    // Signature block
+                    if (y + 80 > doc.page.height - 40) {
                         doc.addPage();
-                        y = 50;
+                        y = 40;
                     }
-                    doc.fontSize(10).text(`Report generated on ${new Date().toLocaleString()}`, 50, y + 20);
-                    doc.text('Authorized by TraceFlow', 50, y + 40);
+                    doc.font('Roboto')
+                        .fontSize(10)
+                        .fillColor('#666')
+                        .text('Digitally Authorized by TraceFlow', 40, y + 20);
+                    doc.fontSize(8)
+                        .text(`Generated: ${new Date().toLocaleString()}`, 40, y + 35);
+                    doc.moveTo(40, y + 50)
+                        .lineTo(200, y + 50)
+                        .strokeColor('#2D6B9B')
+                        .lineWidth(1)
+                        .stroke();
                 }
             }
         } else {
-            doc.fontSize(14).text('Summary', { underline: true });
-            doc.fontSize(12);
+            // Summary section
+            doc.font('Roboto-Bold')
+                .fontSize(14)
+                .fillColor('#2D6B9B')
+                .text('Summary', 40, doc.y, { underline: true });
+            doc.moveDown(0.5);
+            doc.font('Roboto')
+                .fontSize(11)
+                .fillColor('#333');
             for (const [key, value] of Object.entries(data.summary)) {
-                doc.text(`${key.replace(/([A-Z])/g, ' $1').trim()}: ${value}`);
+                doc.text(`${key.replace(/([A-Z])/g, ' $1').trim()}: ${value}`, 50, doc.y, { continued: false });
+                doc.moveDown(0.3);
             }
             doc.moveDown();
 
             if (data.details && data.details.length) {
-                doc.fontSize(14).text('Details', { underline: true });
+                // Details section
+                doc.font('Roboto-Bold')
+                    .fontSize(14)
+                    .fillColor('#2D6B9B')
+                    .text('Details', 40, doc.y, { underline: true });
                 const headers = Object.keys(data.details[0]).map(h => h.replace(/([A-Z])/g, ' $1').trim());
-                const colWidths = headers.map(() => 500 / headers.length);
-                const tableTop = doc.y + 10;
+                const colWidths = headers.map(() => 515 / headers.length);
+                const tableTop = doc.y + 15;
                 let y = this.drawTable(doc, headers, data.details, tableTop, colWidths);
-                // Add signature
-                if (y + 50 > doc.page.height - 50) {
+
+                // Signature block
+                if (y + 80 > doc.page.height - 40) {
                     doc.addPage();
-                    y = 50;
+                    y = 40;
                 }
-                doc.fontSize(10).text(`Report generated on ${new Date().toLocaleString()}`, 50, y + 20);
-                doc.text('Authorized by TraceFlow', 50, y + 40);
+                doc.font('Roboto')
+                    .fontSize(10)
+                    .fillColor('#666')
+                    .text('Digitally Authorized by TraceFlow', 40, y + 20);
+                doc.fontSize(8)
+                    .text(`Generated: ${new Date().toLocaleString()}`, 40, y + 35);
+                doc.moveTo(40, y + 50)
+                    .lineTo(200, y + 50)
+                    .strokeColor('#2D6B9B')
+                    .lineWidth(1)
+                    .stroke();
             }
+        }
+
+        // Add page numbers
+        const pageCount = doc.bufferedPageRange().count;
+        for (let i = 0; i < pageCount; i++) {
+            doc.switchToPage(i);
+            doc.font('Roboto')
+                .fontSize(8)
+                .fillColor('#666')
+                .text(`Page ${i + 1} of ${pageCount}`, 0, doc.page.height - 30, { align: 'center' });
         }
 
         doc.end();
@@ -691,95 +744,265 @@ class ReportService {
     static drawTable(doc, headers, data, startY, colWidths) {
         let y = startY;
 
-        // Draw headers
-        doc.fontSize(10).font('Helvetica-Bold');
-        headers.forEach((header, i) => {
-            doc.text(header, 50 + i * colWidths[i], y, { width: colWidths[i] - 10, align: 'left' });
-        });
-        y += 20; // Header height
+        // Draw table header background
+        doc.rect(40, y - 5, 515, 25)
+            .fillColor('#F3F4F6')
+            .fill();
 
-        // Draw rows
-        doc.font('Helvetica');
-        data.forEach((row) => {
+        // Draw headers
+        doc.font('Roboto-Bold')
+            .fontSize(10)
+            .fillColor('#1A3C5A');
+        headers.forEach((header, i) => {
+            doc.text(header, 45 + i * colWidths[i], y, { width: colWidths[i] - 10, align: 'left' });
+        });
+        y += 25;
+
+        // Draw table grid and rows
+        doc.font('Roboto')
+            .fontSize(9);
+        data.forEach((row, rowIndex) => {
             const cellHeights = headers.map((header, i) => {
-                const text = String(row[header] || 'N/A');
+                const text = String(row[header.toLowerCase().replace(/\s/g, '')] || 'N/A');
                 return doc.heightOfString(text, { width: colWidths[i] - 10 });
             });
-            const rowHeight = Math.max(...cellHeights) + 10; // Add padding
+            const rowHeight = Math.max(...cellHeights) + 12;
 
-            // Check if we need a new page
-            if (y + rowHeight > doc.page.height - 50) {
+            // Check for page break
+            if (y + rowHeight > doc.page.height - 40) {
                 doc.addPage();
-                y = 50;
+                y = 40;
+                // Redraw header background
+                doc.rect(40, y - 5, 515, 25)
+                    .fillColor('#F3F4F6')
+                    .fill();
                 // Redraw headers
-                doc.fontSize(10).font('Helvetica-Bold');
+                doc.font('Roboto-Bold')
+                    .fontSize(10)
+                    .fillColor('#1A3C5A');
                 headers.forEach((header, i) => {
-                    doc.text(header, 50 + i * colWidths[i], y, { width: colWidths[i] - 10, align: 'left' });
+                    doc.text(header, 45 + i * colWidths[i], y, { width: colWidths[i] - 10, align: 'left' });
                 });
-                y += 20;
-                doc.font('Helvetica');
+                y += 25;
+                doc.font('Roboto')
+                    .fontSize(9);
             }
 
-            // Draw each cell
+            // Draw row background (alternate colors)
+            if (rowIndex % 2 === 0) {
+                doc.rect(40, y - 5, 515, rowHeight)
+                    .fillColor('#F9FAFB')
+                    .fill();
+            }
+
+            // Draw cells with explicit text color
+            doc.fillColor('#000000'); // Changed to black for maximum contrast
             headers.forEach((header, i) => {
-                const text = String(row[header] || 'N/A');
-                doc.text(text, 50 + i * colWidths[i], y, { width: colWidths[i] - 10, align: 'left' });
+                const text = String(row[header.toLowerCase().replace(/\s/g, '')] || 'N/A');
+                doc.text(text, 45 + i * colWidths[i], y, { width: colWidths[i] - 10, align: 'left' });
             });
+
+            // Draw row border
+            doc.moveTo(40, y + rowHeight - 5)
+                .lineTo(555, y + rowHeight - 5)
+                .strokeColor('#E5E7EB')
+                .lineWidth(0.5)
+                .stroke();
+
             y += rowHeight;
         });
+
+        // Draw vertical lines
+        let x = 40;
+        colWidths.forEach((width) => {
+            doc.moveTo(x, startY - 5)
+                .lineTo(x, y - 5)
+                .strokeColor('#E5E7EB')
+                .lineWidth(0.5)
+                .stroke();
+            x += width;
+        });
+        doc.moveTo(555, startY - 5)
+            .lineTo(555, y - 5)
+            .stroke();
 
         return y;
     }
 
     static async generateExcel(data, reportType, filePath) {
-        const workbook = xlsx.utils.book_new();
+        const workbook = new ExcelJS.Workbook();
+        workbook.created = new Date();
+        workbook.modified = new Date();
+
+        // Define styles
+        const headerStyle = {
+            font: { name: 'Roboto', size: 12, bold: true, color: { argb: '1A3C5A' } },
+            fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F3F4F6' } },
+            alignment: { horizontal: 'left', vertical: 'middle', wrapText: true },
+            border: {
+                top: { style: 'thin', color: { argb: 'E5E7EB' } },
+                bottom: { style: 'thin', color: { argb: 'E5E7EB' } },
+                left: { style: 'thin', color: { argb: 'E5E7EB' } },
+                right: { style: 'thin', color: { argb: 'E5E7EB' } },
+            },
+        };
+        const cellStyle = {
+            font: { name: 'Roboto', size: 10, color: { argb: '333333' } },
+            alignment: { horizontal: 'left', vertical: 'middle', wrapText: true },
+            border: {
+                top: { style: 'thin', color: { argb: 'E5E7EB' } },
+                bottom: { style: 'thin', color: { argb: 'E5E7EB' } },
+                left: { style: 'thin', color: { argb: 'E5E7EB' } },
+                right: { style: 'thin', color: { argb: 'E5E7EB' } },
+            },
+        };
+        const titleStyle = {
+            font: { name: 'Roboto', size: 14, bold: true, color: { argb: '2D6B9B' } },
+            alignment: { horizontal: 'center', vertical: 'middle' },
+        };
+        const footerStyle = {
+            font: { name: 'Roboto', size: 8, color: { argb: '666666' } },
+            alignment: { horizontal: 'left', vertical: 'middle' },
+        };
 
         if (reportType === 'Full') {
             for (const [section, sectionData] of Object.entries(data)) {
                 // Summary sheet
                 const summaryTitle = `${section.replace(/([A-Z])/g, ' $1').trim()} Summary`;
-                const summarySheetData = this.buildSummarySheetData(summaryTitle, sectionData.summary);
-                const summaryWs = xlsx.utils.aoa_to_sheet(summarySheetData);
-                summaryWs['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 1 } }];
-                xlsx.utils.book_append_sheet(workbook, summaryWs, `${section}_Summary`.slice(0, 31));
+                const summaryWs = workbook.addWorksheet(`${section}_Summary`.slice(0, 31));
+                const summaryData = this.buildSummarySheetData(summaryTitle, sectionData.summary);
+
+                // Write summary data
+                summaryData.forEach((row, rowIndex) => {
+                    const wsRow = summaryWs.getRow(rowIndex + 1);
+                    row.forEach((cell, cellIndex) => {
+                        wsRow.getCell(cellIndex + 1).value = cell;
+                        if (rowIndex === 0) {
+                            wsRow.getCell(cellIndex + 1).style = titleStyle;
+                            wsRow.getCell(cellIndex + 1).merge(summaryWs.getRow(rowIndex + 1).getCell(cellIndex + 2));
+                        } else if (rowIndex === summaryData.length - 1) {
+                            wsRow.getCell(cellIndex + 1).style = footerStyle;
+                        } else {
+                            wsRow.getCell(cellIndex + 1).style = cellStyle;
+                        }
+                    });
+                });
+
+                // Set column widths
+                summaryWs.columns = [{ width: 30 }, { width: 20 }];
 
                 if (sectionData.details && sectionData.details.length) {
                     // Details sheet
                     const detailsTitle = `${section.replace(/([A-Z])/g, ' $1').trim()} Details`;
+                    const detailsWs = workbook.addWorksheet(`${section}_Details`.slice(0, 31));
                     const headers = Object.keys(sectionData.details[0]);
-                    const detailsSheetData = this.buildSheetData(detailsTitle, headers, sectionData.details);
-                    const detailsWs = xlsx.utils.aoa_to_sheet(detailsSheetData);
-                    detailsWs['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: headers.length - 1 } }];
-                    xlsx.utils.book_append_sheet(workbook, detailsWs, `${section}_Details`.slice(0, 31));
+                    const detailsData = this.buildSheetData(detailsTitle, headers, sectionData.details);
+
+                    // Write details data
+                    detailsData.forEach((row, rowIndex) => {
+                        const wsRow = detailsWs.getRow(rowIndex + 1);
+                        row.forEach((cell, cellIndex) => {
+                            wsRow.getCell(cellIndex + 1).value = cell;
+                            if (rowIndex === 0) {
+                                wsRow.getCell(cellIndex + 1).style = titleStyle;
+                                if (cellIndex === 0) {
+                                    wsRow.getCell(cellIndex + 1).merge(detailsWs.getRow(rowIndex + 1).getCell(headers.length));
+                                }
+                            } else if (rowIndex === 1) {
+                                wsRow.getCell(cellIndex + 1).style = headerStyle;
+                            } else if (rowIndex === detailsData.length - 1) {
+                                wsRow.getCell(cellIndex + 1).style = footerStyle;
+                            } else {
+                                wsRow.getCell(cellIndex + 1).style = cellStyle;
+                                // Conditional formatting for status column
+                                if (cellIndex === headers.indexOf('status') && cell === 'validated') {
+                                    wsRow.getCell(cellIndex + 1).fill = {
+                                        type: 'pattern',
+                                        pattern: 'solid',
+                                        fgColor: { argb: 'E6F3E6' },
+                                    };
+                                }
+                            }
+                        });
+                    });
+
+                    // Set column widths
+                    detailsWs.columns = headers.map(() => ({ width: 20 }));
                 }
             }
         } else {
             // Summary sheet
             const summaryTitle = 'Summary';
-            const summarySheetData = this.buildSummarySheetData(summaryTitle, data.summary);
-            const summaryWs = xlsx.utils.aoa_to_sheet(summarySheetData);
-            summaryWs['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 1 } }];
-            xlsx.utils.book_append_sheet(workbook, summaryWs, 'Summary');
+            const summaryWs = workbook.addWorksheet('Summary');
+            const summaryData = this.buildSummarySheetData(summaryTitle, data.summary);
+
+            // Write summary data
+            summaryData.forEach((row, rowIndex) => {
+                const wsRow = summaryWs.getRow(rowIndex + 1);
+                row.forEach((cell, cellIndex) => {
+                    wsRow.getCell(cellIndex + 1).value = cell;
+                    if (rowIndex === 0) {
+                        wsRow.getCell(cellIndex + 1).style = titleStyle;
+                        wsRow.getCell(cellIndex + 1).merge(summaryWs.getRow(rowIndex + 1).getCell(cellIndex + 2));
+                    } else if (rowIndex === summaryData.length - 1) {
+                        wsRow.getCell(cellIndex + 1).style = footerStyle;
+                    } else {
+                        wsRow.getCell(cellIndex + 1).style = cellStyle;
+                    }
+                });
+            });
+
+            // Set column widths
+            summaryWs.columns = [{ width: 30 }, { width: 20 }];
 
             if (data.details && data.details.length) {
                 // Details sheet
                 const detailsTitle = 'Details';
+                const detailsWs = workbook.addWorksheet('Details');
                 const headers = Object.keys(data.details[0]);
-                const detailsSheetData = this.buildSheetData(detailsTitle, headers, data.details);
-                const detailsWs = xlsx.utils.aoa_to_sheet(detailsSheetData);
-                detailsWs['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: headers.length - 1 } }];
-                xlsx.utils.book_append_sheet(workbook, detailsWs, 'Details');
+                const detailsData = this.buildSheetData(detailsTitle, headers, data.details);
+
+                // Write details data
+                detailsData.forEach((row, rowIndex) => {
+                    const wsRow = detailsWs.getRow(rowIndex + 1);
+                    row.forEach((cell, cellIndex) => {
+                        wsRow.getCell(cellIndex + 1).value = cell;
+                        if (rowIndex === 0) {
+                            wsRow.getCell(cellIndex + 1).style = titleStyle;
+                            if (cellIndex === 0) {
+                                wsRow.getCell(cellIndex + 1).merge(detailsWs.getRow(rowIndex + 1).getCell(headers.length));
+                            }
+                        } else if (rowIndex === 1) {
+                            wsRow.getCell(cellIndex + 1).style = headerStyle;
+                        } else if (rowIndex === detailsData.length - 1) {
+                            wsRow.getCell(cellIndex + 1).style = footerStyle;
+                        } else {
+                            wsRow.getCell(cellIndex + 1).style = cellStyle;
+                            // Conditional formatting for status column
+                            if (cellIndex === headers.indexOf('status') && cell === 'validated') {
+                                wsRow.getCell(cellIndex + 1).fill = {
+                                    type: 'pattern',
+                                    pattern: 'solid',
+                                    fgColor: { argb: 'E6F3E6' },
+                                };
+                            }
+                        }
+                    });
+                });
+
+                // Set column widths
+                detailsWs.columns = headers.map(() => ({ width: 20 }));
             }
         }
 
-        xlsx.writeFile(workbook, filePath);
+        await workbook.xlsx.writeFile(filePath);
     }
 
     static buildSheetData(title, headers, data) {
         const titleRow = [title];
         const headerRow = headers.map(h => h.replace(/([A-Z])/g, ' $1').trim());
         const dataRows = data.map(row => headers.map(h => row[h] || 'N/A'));
-        const footerRow = ['Generated on ' + new Date().toLocaleString()];
+        const footerRow = [`Digitally Authorized by TraceFlow | Generated on ${new Date().toLocaleString()}`];
         return [titleRow, headerRow, ...dataRows, footerRow];
     }
 
@@ -789,7 +1012,7 @@ class ReportService {
             key.replace(/([A-Z])/g, ' $1').trim(),
             value,
         ]);
-        const footerRow = ['Generated on ' + new Date().toLocaleString()];
+        const footerRow = [`Digitally Authorized by TraceFlow | Generated on ${new Date().toLocaleString()}`];
         return [titleRow, ...summaryRows, footerRow];
     }
 }

@@ -1,7 +1,6 @@
 const vault = require('node-vault');
 require('dotenv').config();
 const axios = require('axios');
-const logger = require('../utils/logger');
 const { google } = require('googleapis');
 const { User } = require('../models');
 
@@ -43,19 +42,19 @@ class VaultService {
                 await this.clearTokens(userId);
                 throw new Error('Missing access_token or refresh_token in Vault');
             }
-            // Check if access token is expired
             if (Date.now() >= expires_at) {
                 return await this.refreshAccessToken(userId, refresh_token);
             }
-            // Validate access token
             const isValid = await this.validateAccessToken(userId, access_token);
             if (!isValid) {
                 return await this.refreshAccessToken(userId, refresh_token);
             }
             return access_token;
         } catch (error) {
-
             await this.clearTokens(userId);
+            if (error.response?.status === 404) {
+                throw new Error('No Google Calendar tokens found for this user in Vault');
+            }
             throw new Error(`Failed to get access token from Vault: ${error.message}`);
         }
     }

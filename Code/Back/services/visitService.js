@@ -8,7 +8,6 @@ const { sendSMS } = require('../config/sms');
 const { Op } = require('sequelize');
 const path = require('path');
 const fs = require('fs');
-const logger = require('../utils/logger');
 const retry = require('async-retry');
 
 class VisitService {
@@ -161,22 +160,24 @@ class VisitService {
             const reloadedVisit = await visit.reload({ include: [Reason, Checklist, Agent], transaction });
 
             let warning = null;
-            try {
-                const userId = targetTimesheet.User.userID;
-                if (typeof userId !== 'string') {
-                    throw new Error(`Invalid userId: ${userId}`);
+            const user = await User.findByPk(targetTimesheet.User.userID, { transaction });
+            if (user.hasCalendarAccess) {
+                try {
+                    const userId = targetTimesheet.User.userID;
+                    if (typeof userId !== 'string') {
+                        throw new Error(`Invalid userId: ${userId}`);
+                    }
+                    const event = await GoogleCalendarService.createCalendarEvent(userId, visit.visitID, { transaction });
+                    visit.calendarEventId = event.id;
+                    await visit.save({ transaction });
+                    await GoogleCalendarService.notifyCalendarUpdate(userId, {
+                        visitId: visit.visitID,
+                        calendarEventId: event.id,
+                        action: 'created',
+                    });
+                } catch (error) {
+                    warning = `Visit ${visit.visitID} created successfully for user ${targetTimesheet.User.userID}, but Google Calendar event creation failed: ${error.message}`;
                 }
-                const event = await GoogleCalendarService.createCalendarEvent(userId, visit.visitID, { transaction });
-                visit.calendarEventId = event.id;
-                await visit.save({ transaction });
-                await GoogleCalendarService.notifyCalendarUpdate(userId, {
-                    visitId: visit.visitID,
-                    calendarEventId: event.id,
-                    action: 'created',
-                });
-            } catch (error) {
-                warning = `Visit created successfully, but Google Calendar event creation failed: ${error.message}`;
-                logger.warn(warning);
             }
 
             if (isLocalTransaction) await transaction.commit();
@@ -187,30 +188,6 @@ class VisitService {
         } catch (error) {
             if (isLocalTransaction) await transaction.rollback();
             const err = new Error('Failed to create visit: ' + error.message);
-            err.status = error.status || 500;
-            throw err;
-        }
-    }
-
-    static async validateVisitOTP(visitId, otpCode, actorID) {
-        const transaction = await sequelize.transaction();
-        try {
-            const visit = await Visit.findByPk(visitId, { transaction });
-            if (!visit) {
-                const error = new Error('Visit not found');
-                error.status = 404;
-                throw error;
-            }
-            if (!visit.agentID) {
-                await transaction.commit();
-                return { valid: true, message: 'OTP validation skipped for recruitment visit' };
-            }
-            await OTPService.validateOTP(visit.agentID, otpCode, 'agent');
-            await transaction.commit();
-            return { valid: true, message: 'OTP validated successfully' };
-        } catch (error) {
-            await transaction.rollback();
-            const err = new Error('Failed to validate OTP: ' + error.message);
             err.status = error.status || 500;
             throw err;
         }
@@ -237,6 +214,11 @@ class VisitService {
             if (!visit) {
                 const error = new Error('Visit not found');
                 error.status = 404;
+                throw error;
+            }
+            if (!visit.Timesheet || !visit.Timesheet.User) {
+                const error = new Error('Timesheet or associated user not found');
+                error.status = 500;
                 throw error;
             }
 
@@ -276,11 +258,11 @@ class VisitService {
             const oldTime = visit.time.replace(/:/g, '-');
             const supervisorName = `${visit.Timesheet.User.firstname.toLowerCase()}_${visit.Timesheet.User.lastname.toLowerCase()}`;
             const oldFolderName = `${oldDate}_${oldTime}_${supervisorName}`;
-            const oldFolderPath = path.join(__dirname, '../Uploads/photos', oldFolderName);
+            const oldFolderPath = path.join(__dirname, '../uploads/photos', oldFolderName);
 
             const newTimeForFolder = newTime.replace(/:/g, '-');
             const newFolderName = `${newDate}_${newTimeForFolder}_${supervisorName}`;
-            const newFolderPath = path.join(__dirname, '../Uploads/photos', newFolderName);
+            const newFolderPath = path.join(__dirname, '../uploads/photos', newFolderName);
 
             let photoPaths = visit.photos ? [...visit.photos] : [];
 
@@ -297,7 +279,7 @@ class VisitService {
                         if (fs.existsSync(oldPhotoPath)) {
                             fs.renameSync(oldPhotoPath, newPhotoPath);
                         }
-                        updatedPhotoPaths.push(`/Uploads/photos/${newFolderName}/${filename}`);
+                        updatedPhotoPaths.push(`/uploads/photos/${newFolderName}/${filename}`);
                     }
                     photoPaths = updatedPhotoPaths;
                 }
@@ -312,7 +294,7 @@ class VisitService {
             const newPhotoPaths = files.map((file) => {
                 const destPath = path.join(newFolderPath, file.filename);
                 fs.renameSync(file.path, destPath);
-                return `/Uploads/photos/${newFolderName}/${file.filename}`;
+                return `/uploads/photos/${newFolderName}/${file.filename}`;
             });
             photoPaths = [...photoPaths, ...newPhotoPaths];
 
@@ -344,20 +326,22 @@ class VisitService {
             const reloadedVisit = await visit.reload({ include: [Reason, Checklist, Agent], transaction });
 
             let warning = null;
-            try {
-                const userId = visit.Timesheet.User.userID;
-                if (typeof userId !== 'string') {
-                    throw new Error(`Invalid userId: ${userId}`);
+            const user = await User.findByPk(visit.Timesheet.User.userID, { transaction });
+            if (user.hasCalendarAccess) {
+                try {
+                    const userId = visit.Timesheet.User.userID;
+                    if (typeof userId !== 'string') {
+                        throw new Error(`Invalid userId: ${userId}`);
+                    }
+                    const event = await GoogleCalendarService.updateCalendarEvent(userId, visitID, { transaction });
+                    await GoogleCalendarService.notifyCalendarUpdate(userId, {
+                        visitId: visitID,
+                        calendarEventId: event.id,
+                        action: 'updated',
+                    });
+                } catch (error) {
+                    warning = `Visit ${visitID} logged successfully for user ${visit.Timesheet.User.userID}, but Google Calendar event update failed: ${error.message}`;
                 }
-                const event = await GoogleCalendarService.updateCalendarEvent(userId, visitID, { transaction });
-                await GoogleCalendarService.notifyCalendarUpdate(userId, {
-                    visitId: visitID,
-                    calendarEventId: event.id,
-                    action: 'updated',
-                });
-            } catch (error) {
-                warning = `Visit logged successfully, but Google Calendar event update failed: ${error.message}`;
-                logger.warn(warning);
             }
 
             await transaction.commit();
@@ -371,75 +355,6 @@ class VisitService {
             err.status = error.status || 500;
             throw err;
         }
-    }
-
-    static async verifyQRCode(qrData, visitId, actorID) {
-        if (!qrData || !visitId) {
-            const error = new Error('Missing required parameters');
-            error.status = 400;
-            throw error;
-        }
-        try {
-            const visit = await Visit.findByPk(visitId);
-            if (!visit) {
-                const error = new Error('Visit not found');
-                error.status = 404;
-                throw error;
-            }
-            if (!visit.agentID) {
-                return { valid: true, message: 'Verification skipped for recruitment visit' };
-            }
-            const parsedQR = parseTLV(qrData);
-            let agentPhoneFromQR = parsedQR['29']?.['03'] || parsedQR['02'];
-            if (typeof agentPhoneFromQR === 'object' && agentPhoneFromQR !== null) {
-                agentPhoneFromQR = Object.values(agentPhoneFromQR).join('').replace(/[^0-9+]/g, '');
-            } else {
-                agentPhoneFromQR = agentPhoneFromQR?.replace(/[^0-9+]/g, '');
-            }
-            if (!agentPhoneFromQR) {
-                const error = new Error('Invalid QR code - missing agent phone number');
-                error.status = 400;
-                throw error;
-            }
-            const agent = await Agent.findByPk(visit.agentID);
-            if (agent.phone !== agentPhoneFromQR) {
-                const error = new Error(`Phone mismatch:\nQR: ${agentPhoneFromQR}\nVisit: ${agent.phone}`);
-                error.status = 400;
-                throw error;
-            }
-
-            const otp = await OTPService.generateOTP(visit.agentID, 'agent');
-            await sendSMS(agent.phone, `Your OTP for visit ${visitId} verification is ${otp.code}`);
-
-            return { valid: true, message: 'Verification successful, OTP sent to agent' };
-        } catch (error) {
-            const err = new Error(error.message);
-            err.status = error.status || 500;
-            throw err;
-        }
-    }
-
-    static async getFormattedLocation(agentID, providedLocation, options = {}) {
-        if (agentID) {
-            const agent = await Agent.findByPk(agentID, {
-                include: [
-                    {
-                        model: Delegation,
-                        include: [
-                            {
-                                model: Governorate,
-                                include: [Region],
-                            },
-                        ],
-                    },
-                ],
-                transaction: options.transaction
-            });
-            if (agent && agent.Delegation && agent.Delegation.Governorate && agent.Delegation.Governorate.Region) {
-                return `${agent.Delegation.Governorate.Region.name}, ${agent.Delegation.Governorate.name}, ${agent.Delegation.name}`;
-            }
-        }
-        return providedLocation || null;
     }
 
     static async updateVisit(visitID, data, files = [], actorID, options = {}) {
@@ -458,19 +373,16 @@ class VisitService {
                     transaction
                 });
                 if (!v) {
-                    logger.error(`Visit not found for visitID: ${visitID}`);
                     const error = new Error('Visit not found');
                     error.status = 404;
                     throw error;
                 }
                 if (!v.Timesheet) {
-                    logger.error(`Timesheet not found for visit ${visitID}, timesheetID: ${v.timesheetID}`);
                     const error = new Error('Timesheet not found');
                     error.status = 404;
                     throw error;
                 }
                 if (!v.Timesheet.User) {
-                    logger.error(`User not found for timesheet ${v.timesheetID}, supervisorID: ${v.Timesheet.supervisorID}`);
                     const error = new Error('Supervisor not found');
                     error.status = 500;
                     throw error;
@@ -487,7 +399,7 @@ class VisitService {
             const oldTime = visit.time.replace(/:/g, '-');
             const supervisorName = `${visit.Timesheet.User.firstname.toLowerCase()}_${visit.Timesheet.User.lastname.toLowerCase()}`;
             const folderName = `${oldDate}_${oldTime}_${supervisorName}`;
-            const folderPath = path.join(__dirname, '../Uploads/photos', folderName);
+            const folderPath = path.join(__dirname, '../uploads/photos', folderName);
 
             let photoPaths = visit.photos ? [...visit.photos] : [];
 
@@ -517,10 +429,11 @@ class VisitService {
                 files.forEach((file) => {
                     const destPath = path.join(folderPath, file.filename);
                     fs.renameSync(file.path, destPath);
-                    const newPhotoPath = `/Uploads/photos/${folderName}/${file.filename}`;
+                    const newPhotoPath = `/uploads/photos/${folderName}/${file.filename}`;
                     photoPaths.push(newPhotoPath);
                 });
             }
+
 
             const newDate = date || visit.date;
             const newDateObj = new Date(newDate);
@@ -629,20 +542,22 @@ class VisitService {
             await visit.save({ transaction });
 
             let warning = null;
-            try {
-                const userId = visit.Timesheet.User.userID;
-                if (typeof userId !== 'string') {
-                    throw new Error(`Invalid userId: ${userId}`);
+            const user = await User.findByPk(visit.Timesheet.User.userID, { transaction });
+            if (user.hasCalendarAccess) {
+                try {
+                    const userId = visit.Timesheet.User.userID;
+                    if (typeof userId !== 'string') {
+                        throw new Error(`Invalid userId: ${userId}`);
+                    }
+                    const event = await GoogleCalendarService.updateCalendarEvent(userId, visitID, { transaction });
+                    await GoogleCalendarService.notifyCalendarUpdate(userId, {
+                        visitId: visitID,
+                        calendarEventId: event.id,
+                        action: 'updated',
+                    });
+                } catch (error) {
+                    warning = `Visit ${visitID} updated successfully for user ${visit.Timesheet.User.userID}, but Google Calendar event update failed: ${error.message}`;
                 }
-                const event = await GoogleCalendarService.updateCalendarEvent(userId, visitID, { transaction });
-                await GoogleCalendarService.notifyCalendarUpdate(userId, {
-                    visitId: visitID,
-                    calendarEventId: event.id,
-                    action: 'updated',
-                });
-            } catch (error) {
-                warning = `Visit updated successfully, but Google Calendar event update failed: ${error.message}`;
-                logger.warn(warning);
             }
 
             const reloadedVisit = await visit.reload({ include: [Checklist, Reason, Agent], transaction });
@@ -659,14 +574,6 @@ class VisitService {
         }
     }
 
-    static getISOWeekNumber(date) {
-        const tempDate = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
-        tempDate.setUTCDate(tempDate.getUTCDate() + 4 - (tempDate.getUTCDay() || 7));
-        const yearStart = new Date(Date.UTC(tempDate.getUTCFullYear(), 0, 1));
-        const weekNumber = Math.ceil(((tempDate - yearStart) / 86400000 + 1) / 7);
-        return weekNumber;
-    }
-
     static async deleteVisit(visitID, actorID) {
         const transaction = await sequelize.transaction();
         try {
@@ -679,30 +586,38 @@ class VisitService {
                 error.status = 404;
                 throw error;
             }
+            if (!visit.Timesheet || !visit.Timesheet.User) {
+                const error = new Error('Timesheet or associated user not found');
+                error.status = 500;
+                throw error;
+            }
+
             const date = visit.date;
             const time = visit.time.replace(/:/g, '-');
             const supervisorName = `${visit.Timesheet.User.firstname.toLowerCase()}_${visit.Timesheet.User.lastname.toLowerCase()}`;
             const folderName = `${date}_${time}_${supervisorName}`;
-            const folderPath = path.join(__dirname, '../Uploads/photos', folderName);
+            const folderPath = path.join(__dirname, '../uploads/photos', folderName);
 
             if (fs.existsSync(folderPath)) {
                 fs.rmSync(folderPath, { recursive: true, force: true });
             }
 
             let warning = null;
-            try {
-                const userId = visit.Timesheet.User.userID;
-                if (typeof userId !== 'string') {
-                    throw new Error(`Invalid userId: ${userId}`);
+            const user = await User.findByPk(visit.Timesheet.User.userID, { transaction });
+            if (user.hasCalendarAccess) {
+                try {
+                    const userId = visit.Timesheet.User.userID;
+                    if (typeof userId !== 'string') {
+                        throw new Error(`Invalid userId: ${userId}`);
+                    }
+                    await GoogleCalendarService.deleteCalendarEvent(userId, visitID);
+                    await GoogleCalendarService.notifyCalendarUpdate(userId, {
+                        visitId: visitID,
+                        action: 'deleted',
+                    });
+                } catch (error) {
+                    warning = `Visit ${visitID} deleted successfully for user ${visit.Timesheet.User.userID}, but Google Calendar event deletion failed: ${error.message}`;
                 }
-                await GoogleCalendarService.deleteCalendarEvent(userId, visitID);
-                await GoogleCalendarService.notifyCalendarUpdate(userId, {
-                    visitId: visitID,
-                    action: 'deleted',
-                });
-            } catch (error) {
-                warning = `Visit deleted successfully, but Google Calendar event deletion failed: ${error.message}`;
-                logger.warn(warning);
             }
 
             await visit.destroy({ transaction });
@@ -719,6 +634,107 @@ class VisitService {
         }
     }
 
+    static async validateVisitOTP(visitId, otpCode, actorID) {
+        const transaction = await sequelize.transaction();
+        try {
+            const visit = await Visit.findByPk(visitId, { transaction });
+            if (!visit) {
+                const error = new Error('Visit not found');
+                error.status = 404;
+                throw error;
+            }
+            if (!visit.agentID) {
+                await transaction.commit();
+                return { valid: true, message: 'OTP validation skipped for recruitment visit' };
+            }
+            await OTPService.validateOTP(visit.agentID, otpCode, 'agent');
+            await transaction.commit();
+            return { valid: true, message: 'OTP validated successfully' };
+        } catch (error) {
+            await transaction.rollback();
+            const err = new Error('Failed to validate OTP: ' + error.message);
+            err.status = error.status || 500;
+            throw err;
+        }
+    }
+
+    static async verifyQRCode(qrData, visitId, actorID) {
+        if (!qrData || !visitId) {
+            const error = new Error('Missing required parameters');
+            error.status = 400;
+            throw error;
+        }
+        try {
+            const visit = await Visit.findByPk(visitId);
+            if (!visit) {
+                const error = new Error('Visit not found');
+                error.status = 404;
+                throw error;
+            }
+            if (!visit.agentID) {
+                return { valid: true, message: 'Verification skipped for recruitment visit' };
+            }
+            const parsedQR = parseTLV(qrData);
+            let agentPhoneFromQR = parsedQR['29']?.['03'] || parsedQR['02'];
+            if (typeof agentPhoneFromQR === 'object' && agentPhoneFromQR !== null) {
+                agentPhoneFromQR = Object.values(agentPhoneFromQR).join('').replace(/[^0-9+]/g, '');
+            } else {
+                agentPhoneFromQR = agentPhoneFromQR?.replace(/[^0-9+]/g, '');
+            }
+            if (!agentPhoneFromQR) {
+                const error = new Error('Invalid QR code - missing agent phone number');
+                error.status = 400;
+                throw error;
+            }
+            const agent = await Agent.findByPk(visit.agentID);
+            if (agent.phone !== agentPhoneFromQR) {
+                const error = new Error(`Phone mismatch:\nQR: ${agentPhoneFromQR}\nVisit: ${agent.phone}`);
+                error.status = 400;
+                throw error;
+            }
+
+            const otp = await OTPService.generateOTP(visit.agentID, 'agent');
+            await sendSMS(agent.phone, `Your OTP for visit ${visitId} verification is ${otp.code}`);
+
+            return { valid: true, message: 'Verification successful, OTP sent to agent' };
+        } catch (error) {
+            const err = new Error(error.message);
+            err.status = error.status || 500;
+            throw err;
+        }
+    }
+
+    static async getFormattedLocation(agentID, providedLocation, options = {}) {
+        if (agentID) {
+            const agent = await Agent.findByPk(agentID, {
+                include: [
+                    {
+                        model: Delegation,
+                        include: [
+                            {
+                                model: Governorate,
+                                include: [Region],
+                            },
+                        ],
+                    },
+                ],
+                transaction: options.transaction
+            });
+            if (agent && agent.Delegation && agent.Delegation.Governorate && agent.Delegation.Governorate.Region) {
+                return `${agent.Delegation.Governorate.Region.name}, ${agent.Delegation.Governorate.name}, ${agent.Delegation.name}`;
+            }
+        }
+        return providedLocation || null;
+    }
+
+    static getISOWeekNumber(date) {
+        const tempDate = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+        tempDate.setUTCDate(tempDate.getUTCDate() + 4 - (tempDate.getUTCDay() || 7));
+        const yearStart = new Date(Date.UTC(tempDate.getUTCFullYear(), 0, 1));
+        const weekNumber = Math.ceil(((tempDate - yearStart) / 86400000 + 1) / 7);
+        return weekNumber;
+    }
+
     static async getVisitByID(visitID) {
         try {
             const visit = await Visit.findByPk(visitID, { include: [Checklist, Reason, Agent] });
@@ -727,6 +743,7 @@ class VisitService {
                 error.status = 404;
                 throw error;
             }
+
             return visit;
         } catch (error) {
             const err = new Error('Failed to fetch visit: ' + error.message);

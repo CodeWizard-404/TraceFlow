@@ -19,7 +19,7 @@ function setupMiddleware(app) {
 
     app.get('/api/uploads/photos/:folder/:filename', async (req, res, next) => {
         const { folder, filename } = req.params;
-        const filePath = path.join(__dirname, '../uploads/photos', folder, filename);
+        const filePath = path.join(__dirname, '../Uploads/photos', folder, filename);
 
         try {
             // Check if the file exists
@@ -28,9 +28,7 @@ function setupMiddleware(app) {
             // Serve the file
             res.sendFile(filePath, (err) => {
                 if (err) {
-                    next(err);
-                } else {
-                    throw new Error('File not found');
+                    res.status(404).json({ error: 'File not found' });
                 }
             });
         } catch (error) {
@@ -97,7 +95,7 @@ function setupMiddleware(app) {
             // Serve the file
             res.sendFile(fileData.filePath, (err) => {
                 if (err) {
-                    next(err);
+                    return res.status(404).json({ error: 'File not found' });
                 }
             });
 

@@ -1,4 +1,5 @@
-import React, { Dispatch, RefObject, SetStateAction, useEffect, useState } from "react";
+/* eslint-disable react-hooks/exhaustive-deps */
+import React, { Dispatch, RefObject, SetStateAction } from "react";
 import { FaCamera, FaTimes } from "react-icons/fa";
 import VisitStatus from "../../models/Enum/VisitStatus";
 import Visit from "../../models/Visit";
@@ -37,12 +38,12 @@ export interface EditFormState {
     delegationSearch: string;
     reasonSearch: string;
     checklistSearch: string;
-    checklists: Array<{ id: string; checked: boolean }>;
-    reasons: Array<{ id: string }>;
-    photosToRemove: string[];
     regionalManagerSearch: string;
     supervisorSearch: string;
     duration: number | null;
+    checklists: Array<{ id: string; checked: boolean }>;
+    reasons: Array<{ id: string }>;
+    photosToRemove: string[];
     original: {
         date: string;
         time: string;
@@ -81,27 +82,27 @@ interface VisitEditFormProps {
     regionalManagers: User[];
     selectedRegionalManager: string;
     setSelectedRegionalManager: Dispatch<SetStateAction<string>>;
+    regionalManagerSearch: string;
+    setRegionalManagerSearch: Dispatch<SetStateAction<string>>;
     supervisors: User[];
     selectedSupervisor: string;
     setSelectedSupervisor: Dispatch<SetStateAction<string>>;
-    supervisorPhone: string;
-    setSupervisorPhone: Dispatch<SetStateAction<string>>;
+    supervisorSearch: string;
+    setSupervisorSearch: Dispatch<SetStateAction<string>>;
+    agentPhone: string;
+    setAgentPhone: Dispatch<SetStateAction<string>>;
+    agentLocation: string;
     regions: Region[];
     governorates: Governorate[];
     delegations: Delegation[];
     agents: Agent[];
     reasons: Reason[];
+    filteredReasons: Reason[];
+    setFilteredReasons: Dispatch<SetStateAction<Reason[]>>;
     checklists: Checklist[];
-    disableLocationInputs: boolean;
-    setDisableLocationInputs: Dispatch<SetStateAction<boolean>>;
-    disableSupervisorInput: boolean;
-    setDisableSupervisorInput: Dispatch<SetStateAction<boolean>>;
-    disableRegionalManagerInput: boolean;
-    setDisableRegionalManagerInput: Dispatch<SetStateAction<boolean>>;
+    filteredChecklists: Checklist[];
+    setFilteredChecklists: Dispatch<SetStateAction<Checklist[]>>;
     agentLoading: boolean;
-    supervisorLoading: boolean;
-    fetchMode: "none" | "supervisor" | "agent";
-    setFetchMode: Dispatch<SetStateAction<"none" | "supervisor" | "agent">>;
     isCameraActive: boolean;
     setIsCameraActive: Dispatch<SetStateAction<boolean>>;
     newPhotos: File[];
@@ -126,6 +127,8 @@ interface VisitEditFormProps {
     setError: Dispatch<SetStateAction<string | null>>;
     t: (key: string, options?: any) => string;
     navigate: (path: string) => void;
+    isRecruitmentVisit: boolean;
+    setIsRecruitmentVisit: Dispatch<SetStateAction<boolean>>;
 }
 
 const VisitEditForm: React.FC<VisitEditFormProps> = ({
@@ -140,29 +143,35 @@ const VisitEditForm: React.FC<VisitEditFormProps> = ({
     regionalManagers,
     selectedRegionalManager,
     setSelectedRegionalManager,
+    regionalManagerSearch,
+    setRegionalManagerSearch,
     supervisors,
     selectedSupervisor,
     setSelectedSupervisor,
-    supervisorPhone,
-    setSupervisorPhone,
+    supervisorSearch,
+    setSupervisorSearch,
+    agentPhone,
+    setAgentPhone,
+    agentLocation,
     regions,
     governorates,
     delegations,
     agents,
     reasons,
+    filteredReasons,
+    setFilteredReasons,
     checklists,
-    disableLocationInputs,
-    setDisableLocationInputs,
-    disableSupervisorInput,
-    disableRegionalManagerInput,
+    filteredChecklists,
+    setFilteredChecklists,
     agentLoading,
-    supervisorLoading,
-    setFetchMode,
     isCameraActive,
-    setNewPhotos,
+    setIsCameraActive,
     newPhotos,
+    setNewPhotos,
     flashEffect,
+    setFlashEffect,
     videoRef,
+    canvasRef,
     editTracking,
     setEditTracking,
     selectedImage,
@@ -171,53 +180,169 @@ const VisitEditForm: React.FC<VisitEditFormProps> = ({
     stopCamera,
     capturePhoto,
     removeNewPhoto,
+    canEditField,
     idVisit,
     setVisit,
     setError,
     t,
     navigate,
+    isRecruitmentVisit,
+    setIsRecruitmentVisit,
 }) => {
     const currentDate = new Date().toISOString().split("T")[0];
     const currentTime = new Date().toTimeString().slice(0, 5);
     const minTime = editForm.date === currentDate ? currentTime : undefined;
     const isVisited = visit.status === VisitStatus.VISITED;
-    const [isRecruitmentVisit, setIsRecruitmentVisit] = useState<boolean>(!visit.agentID);
 
-    // Form Completion Check aligned with TimesheetForm
+    // Form Completion Check
     const isFormComplete = isVisited
         ? editForm.checklists.length > 0
         : editForm.date &&
-        editForm.time &&
-        (isRecruitmentVisit || editForm.agentID) &&
-        editForm.reasons.length > 0 &&
-        editForm.checklists.length > 0 &&
-        (isSupervisor || selectedSupervisor);
+          editForm.time &&
+          (isRecruitmentVisit || editForm.agentID) &&
+          editForm.reasons.length > 0 &&
+          editForm.checklists.length > 0 &&
+          (isSupervisor || selectedSupervisor);
 
-    // Initialize edit tracking for supervisors when editing a visited visit
-    useEffect(() => {
-        if (isSupervisor && isVisited && !editTracking.startTime) {
-            const startTime = Date.now();
-            localStorage.setItem(`editStartTime_${visit.visitID}`, startTime.toString());
-            setEditTracking({ startTime, durationAccumulator: visit.duration || 0 });
+    // Handlers
+    const handleRegionalManagerSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setRegionalManagerSearch(e.target.value);
+    };
+
+    const handleSupervisorSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setSupervisorSearch(e.target.value);
+    };
+
+    const handleRegionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        setEditForm(prev => ({
+            ...prev,
+            regionID: e.target.value,
+            governorateID: "",
+            delegationID: "",
+            agentID: "",
+            agentSearch: ""
+        }));
+    };
+
+    const handleGovernorateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        setEditForm(prev => ({
+            ...prev,
+            governorateID: e.target.value,
+            delegationID: "",
+            agentID: "",
+            agentSearch: ""
+        }));
+    };
+
+    const handleDelegationChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        setEditForm(prev => ({
+            ...prev,
+            delegationID: e.target.value,
+            agentID: "",
+            agentSearch: ""
+        }));
+    };
+
+    const handleAgentChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        setEditForm(prev => ({
+            ...prev,
+            agentID: e.target.value,
+            agentSearch: agents.find(a => a.agentID === e.target.value)?.name || ""
+        }));
+    };
+
+    const handleAgentPhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setAgentPhone(e.target.value);
+        setEditForm(prev => ({ ...prev, agentPhone: e.target.value }));
+    };
+
+    const handleRegionalManagerChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        setSelectedRegionalManager(e.target.value);
+    };
+
+    const handleSupervisorChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        setSelectedSupervisor(e.target.value);
+    };
+
+    const handleReasonSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const searchTerm = e.target.value;
+        setEditForm(prev => ({ ...prev, reasonSearch: searchTerm }));
+        if (searchTerm) {
+            setFilteredReasons(reasons.filter(r =>
+                r.item.toLowerCase().includes(searchTerm.toLowerCase())
+            ));
+        } else {
+            setFilteredReasons(reasons);
         }
-    }, [isSupervisor, isVisited, visit.visitID, visit.duration, editTracking.startTime, setEditTracking]);
+    };
 
-    // Handle recruitment visit toggle
-    useEffect(() => {
-        if (isRecruitmentVisit && !isVisited) {
-            setEditForm(prev => ({ ...prev, agentID: "", agentPhone: "", agentSearch: "" }));
-            setFetchMode("none");
-            setDisableLocationInputs(false);
-            // Pre-select "Recruitment" reason if available
-            const recruitmentReason = reasons.find(r => r.item.toLowerCase() === "recruitment");
-            if (recruitmentReason && !editForm.reasons.some(r => r.id === recruitmentReason.reasonID)) {
-                setEditForm(prev => ({ ...prev, reasons: [{ id: recruitmentReason.reasonID }] }));
-            }
+    const handleChecklistSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const searchTerm = e.target.value;
+        setEditForm(prev => ({ ...prev, checklistSearch: searchTerm }));
+        if (searchTerm) {
+            setFilteredChecklists(checklists.filter(c =>
+                c.item.toLowerCase().includes(searchTerm.toLowerCase())
+            ));
+        } else {
+            setFilteredChecklists(checklists);
         }
-    }, [isRecruitmentVisit, isVisited, setEditForm, setFetchMode, setDisableLocationInputs, reasons]);
+    };
 
-    // Construct location string
-    const location = [regions.find(r => r.regionID === editForm.regionID)?.name, governorates.find(g => g.governorateID === editForm.governorateID)?.name, delegations.find(d => d.delegationID === editForm.delegationID)?.name].filter(Boolean).join(", ") || null;
+    const handleReasonSelect = (reason: Reason) => {
+        if (!editForm.reasons.some(r => r.id === reason.reasonID) && !isVisited) {
+            setEditForm(prev => ({
+                ...prev,
+                reasons: [...prev.reasons, { id: reason.reasonID }],
+                reasonSearch: ""
+            }));
+        }
+    };
+
+    const handleChecklistSelect = (checklist: Checklist) => {
+        if (!editForm.checklists.some(c => c.id === checklist.checklistID)) {
+            setEditForm(prev => ({
+                ...prev,
+                checklists: [...prev.checklists, { id: checklist.checklistID, checked: false }],
+                checklistSearch: ""
+            }));
+        }
+    };
+
+    const handleRemoveReason = (index: number) => {
+        if (!isVisited) {
+            setEditForm(prev => ({
+                ...prev,
+                reasons: prev.reasons.filter((_, i) => i !== index)
+            }));
+        }
+    };
+
+    const handleRemoveChecklist = (index: number) => {
+        if (!isVisited) {
+            setEditForm(prev => ({
+                ...prev,
+                checklists: prev.checklists.filter((_, i) => i !== index)
+            }));
+        }
+    };
+
+    const handleChecklistChange = (id: string, checked: boolean) => {
+        if (isVisited) {
+            setEditForm(prev => ({
+                ...prev,
+                checklists: prev.checklists.map(c => c.id === id ? { ...c, checked } : c)
+            }));
+        }
+    };
+
+    const handleRemovePhoto = (photoUrl: string) => {
+        if (isVisited) {
+            setEditForm(prev => ({
+                ...prev,
+                photosToRemove: [...prev.photosToRemove, photoUrl]
+            }));
+        }
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -227,7 +352,9 @@ const VisitEditForm: React.FC<VisitEditFormProps> = ({
         }
 
         let newStatus = visit.status;
-        let updatedDuration: number | undefined = isSuperAdmin && isVisited ? editForm.duration || undefined : visit.duration || undefined;
+        let updatedDuration: number | undefined = isSuperAdmin && isVisited
+            ? editForm.duration || undefined
+            : visit.duration || undefined;
 
         if (isVisited) {
             newStatus = VisitStatus.VISITED;
@@ -243,6 +370,12 @@ const VisitEditForm: React.FC<VisitEditFormProps> = ({
                 newStatus = VisitStatus.VALIDATED;
             }
         }
+
+        const location = [
+            regions.find(r => r.regionID === editForm.regionID)?.name,
+            governorates.find(g => g.governorateID === editForm.governorateID)?.name,
+            delegations.find(d => d.delegationID === editForm.delegationID)?.name
+        ].filter(Boolean).join(", ") || null;
 
         const updateData: any = {
             status: newStatus,
@@ -275,50 +408,10 @@ const VisitEditForm: React.FC<VisitEditFormProps> = ({
         } catch (err: unknown) {
             const errorMessage = err instanceof Error ? err.message : t("visitDetails.error.updateFailed");
             setError(errorMessage);
-            console.error(err);
         }
     };
 
     const handleCancel = () => navigate(`/visit/${idVisit}`);
-
-    const handleReasonSelect = (reason: Reason) => {
-        if (!editForm.reasons.some(r => r.id === reason.reasonID) && !isVisited) {
-            setEditForm(prev => ({ ...prev, reasons: [...prev.reasons, { id: reason.reasonID }], reasonSearch: "" }));
-        }
-    };
-
-    const handleChecklistSelect = (checklist: Checklist) => {
-        if (!editForm.checklists.some(c => c.id === checklist.checklistID)) {
-            setEditForm(prev => ({ ...prev, checklists: [...prev.checklists, { id: checklist.checklistID, checked: false }], checklistSearch: "" }));
-        }
-    };
-
-    const handleRemoveReason = (index: number) => {
-        if (!isVisited) {
-            setEditForm(prev => ({ ...prev, reasons: prev.reasons.filter((_, i) => i !== index) }));
-        }
-    };
-
-    const handleRemoveChecklist = (index: number) => {
-        if (!isVisited) {
-            setEditForm(prev => ({ ...prev, checklists: prev.checklists.filter((_, i) => i !== index) }));
-        }
-    };
-
-    const handleChecklistChange = (id: string, checked: boolean) => {
-        if (isVisited) {
-            setEditForm(prev => ({
-                ...prev,
-                checklists: prev.checklists.map(c => c.id === id ? { ...c, checked } : c),
-            }));
-        }
-    };
-
-    const handleRemovePhoto = (photoUrl: string) => {
-        if (isVisited) {
-            setEditForm(prev => ({ ...prev, photosToRemove: [...prev.photosToRemove, photoUrl] }));
-        }
-    };
 
     const handleDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (isSuperAdmin && isVisited) {
@@ -335,8 +428,44 @@ const VisitEditForm: React.FC<VisitEditFormProps> = ({
     };
 
     const formPhotosCount = t("visitDetails.form.photos.count", {
-        count: (visit.photos?.filter(p => !editForm.photosToRemove.includes(p)).length || 0) + newPhotos.length,
+        count: (visit.photos?.filter(p => !editForm.photosToRemove.includes(p)).length || 0) + newPhotos.length
     }) || `(${(visit.photos?.filter(p => !editForm.photosToRemove.includes(p)).length || 0) + newPhotos.length} photos)`;
+
+    React.useEffect(() => {
+        if (isSupervisor && isVisited && !editTracking.startTime) {
+            const startTime = Date.now();
+            localStorage.setItem(`editStartTime_${visit.visitID}`, startTime.toString());
+            setEditTracking({
+                startTime,
+                durationAccumulator: visit.duration || 0
+            });
+        }
+    }, [isSupervisor, isVisited, visit.visitID, visit.duration, editTracking.startTime, setEditTracking]);
+
+    React.useEffect(() => {
+        if (isRecruitmentVisit && !isVisited) {
+            setEditForm(prev => ({
+                ...prev,
+                agentID: "",
+                agentPhone: "",
+                agentSearch: ""
+            }));
+            setAgentPhone("");
+            const recruitmentReason = reasons.find(r => r.item.toLowerCase() === "recruitment");
+            if (recruitmentReason && !editForm.reasons.some(r => r.id === recruitmentReason.reasonID)) {
+                setEditForm(prev => ({
+                    ...prev,
+                    reasons: [{ id: recruitmentReason.reasonID }]
+                }));
+            }
+        }
+    }, [isRecruitmentVisit, isVisited, reasons]);
+
+    React.useEffect(() => {
+        return () => {
+            newPhotos.forEach(photo => URL.revokeObjectURL(URL.createObjectURL(photo)));
+        };
+    }, [newPhotos]);
 
     return (
         <div className="timesheet-form-container">
@@ -349,19 +478,22 @@ const VisitEditForm: React.FC<VisitEditFormProps> = ({
                         <label htmlFor="regionalManager">{t("timesheetForm.form.regionalManager")}</label>
                         <input
                             type="text"
-                            value={editForm.regionalManagerSearch}
-                            onChange={(e) => setEditForm(prev => ({ ...prev, regionalManagerSearch: e.target.value }))}
+                            value={regionalManagerSearch}
+                            onChange={handleRegionalManagerSearchChange}
                             placeholder={t("timesheetForm.form.placeholders.regionalManagerSearch")}
+                            disabled={!canEditField("supervisor")}
                         />
                         <select
                             id="regionalManager"
                             value={selectedRegionalManager}
-                            onChange={(e) => setSelectedRegionalManager(e.target.value)}
-                            disabled={disableRegionalManagerInput}
+                            onChange={handleRegionalManagerChange}
+                            disabled={!canEditField("supervisor")}
                         >
                             <option value="">{t("timesheetForm.form.placeholders.regionalManagerSelect")}</option>
                             {regionalManagers.map(rm => (
-                                <option key={rm.userID} value={rm.userID}>{`${rm.firstname} ${rm.lastname} (${rm.phone})`}</option>
+                                <option key={rm.userID} value={rm.userID}>
+                                    {`${rm.firstname} ${rm.lastname} (${rm.phone})`}
+                                </option>
                             ))}
                         </select>
                     </div>
@@ -371,27 +503,22 @@ const VisitEditForm: React.FC<VisitEditFormProps> = ({
                         <label htmlFor="supervisor">{t("timesheetForm.form.supervisor")}</label>
                         <input
                             type="text"
-                            value={editForm.supervisorSearch}
-                            onChange={(e) => setEditForm(prev => ({ ...prev, supervisorSearch: e.target.value }))}
+                            value={supervisorSearch}
+                            onChange={handleSupervisorSearchChange}
                             placeholder={t("timesheetForm.form.placeholders.supervisorSearch")}
-                            disabled={supervisorLoading}
-                        />
-                        <input
-                            type="tel"
-                            value={supervisorPhone}
-                            onChange={(e) => setSupervisorPhone(e.target.value)}
-                            placeholder={t("timesheetForm.form.placeholders.supervisorPhone")}
-                            disabled={supervisorLoading}
+                            disabled={!canEditField("supervisor")}
                         />
                         <select
                             id="supervisor"
                             value={selectedSupervisor}
-                            onChange={(e) => setSelectedSupervisor(e.target.value)}
-                            disabled={supervisorLoading || disableSupervisorInput}
+                            onChange={handleSupervisorChange}
+                            disabled={!canEditField("supervisor")}
                         >
                             <option value="">{t("timesheetForm.form.placeholders.supervisorSelect")}</option>
                             {supervisors.map(s => (
-                                <option key={s.userID} value={s.userID}>{`${s.firstname} ${s.lastname} (${s.phone})`}</option>
+                                <option key={s.userID} value={s.userID}>
+                                    {`${s.firstname} ${s.lastname} (${s.phone})`}
+                                </option>
                             ))}
                         </select>
                     </div>
@@ -405,9 +532,10 @@ const VisitEditForm: React.FC<VisitEditFormProps> = ({
                                 type="date"
                                 id="date"
                                 value={editForm.date}
-                                onChange={(e) => setEditForm(prev => ({ ...prev, date: e.target.value }))}
+                                onChange={e => setEditForm(prev => ({ ...prev, date: e.target.value }))}
                                 min={currentDate}
                                 required
+                                disabled={!canEditField("dateTime")}
                             />
                         </div>
                         <div className="form-group">
@@ -416,8 +544,8 @@ const VisitEditForm: React.FC<VisitEditFormProps> = ({
                                 type="time"
                                 id="time"
                                 value={editForm.time}
-                                onChange={(e) => setEditForm(prev => ({ ...prev, time: e.target.value }))}
-                                disabled={!editForm.date}
+                                onChange={e => setEditForm(prev => ({ ...prev, time: e.target.value }))}
+                                disabled={!editForm.date || !canEditField("dateTime")}
                                 min={minTime}
                                 required
                             />
@@ -432,8 +560,9 @@ const VisitEditForm: React.FC<VisitEditFormProps> = ({
                                 type="checkbox"
                                 id="recruitmentVisit"
                                 checked={isRecruitmentVisit}
-                                onChange={(e) => setIsRecruitmentVisit(e.target.checked)}
+                                onChange={e => setIsRecruitmentVisit(e.target.checked)}
                                 className="custom-checkbox-input"
+                                disabled={!canEditField("agentID")}
                             />
                             <span className="custom-checkbox">
                                 <i className="fas fa-check check-icon"></i>
@@ -450,8 +579,8 @@ const VisitEditForm: React.FC<VisitEditFormProps> = ({
                             <select
                                 id="region"
                                 value={editForm.regionID}
-                                onChange={(e) => setEditForm(prev => ({ ...prev, regionID: e.target.value, governorateID: "", delegationID: "" }))}
-                                disabled={disableLocationInputs}
+                                onChange={handleRegionChange}
+                                disabled={!canEditField("regionID")}
                                 required
                             >
                                 <option value="">{t("timesheetForm.form.placeholders.regionSelect")}</option>
@@ -465,8 +594,8 @@ const VisitEditForm: React.FC<VisitEditFormProps> = ({
                             <select
                                 id="governorate"
                                 value={editForm.governorateID}
-                                onChange={(e) => setEditForm(prev => ({ ...prev, governorateID: e.target.value, delegationID: "" }))}
-                                disabled={!editForm.regionID || disableLocationInputs}
+                                onChange={handleGovernorateChange}
+                                disabled={!editForm.regionID || !canEditField("governorateID")}
                                 required
                             >
                                 <option value="">{t("timesheetForm.form.placeholders.governorateSelect")}</option>
@@ -480,8 +609,8 @@ const VisitEditForm: React.FC<VisitEditFormProps> = ({
                             <select
                                 id="delegation"
                                 value={editForm.delegationID}
-                                onChange={(e) => setEditForm(prev => ({ ...prev, delegationID: e.target.value }))}
-                                disabled={!editForm.governorateID || disableLocationInputs}
+                                onChange={handleDelegationChange}
+                                disabled={!editForm.governorateID || !canEditField("delegationID")}
                                 required
                             >
                                 <option value="">{t("timesheetForm.form.placeholders.delegationSelect")}</option>
@@ -499,9 +628,11 @@ const VisitEditForm: React.FC<VisitEditFormProps> = ({
                             <input
                                 type="tel"
                                 id="agentPhone"
-                                value={editForm.agentPhone}
-                                onChange={(e) => setEditForm(prev => ({ ...prev, agentPhone: e.target.value }))}
+                                value={agentPhone}
+                                onChange={handleAgentPhoneChange}
                                 placeholder={t("timesheetForm.form.placeholders.agentPhone")}
+                                maxLength={8}
+                                disabled={!canEditField("agentID")}
                             />
                         </div>
                         <div className="form-group">
@@ -510,15 +641,22 @@ const VisitEditForm: React.FC<VisitEditFormProps> = ({
                             <select
                                 id="agent"
                                 value={editForm.agentID}
-                                onChange={(e) => setEditForm(prev => ({ ...prev, agentID: e.target.value }))}
-                                disabled={!(editForm.agentPhone || editForm.delegationID)}
+                                onChange={handleAgentChange}
+                                disabled={!(agentPhone || editForm.delegationID) || !canEditField("agentID")}
                                 required
                             >
                                 <option value="">{t("timesheetForm.form.placeholders.agentSelect")}</option>
                                 {agents.map(a => (
-                                    <option key={a.agentID} value={a.agentID}>{`${a.name} ${a.lastname} (${a.phone})`}</option>
+                                    <option key={a.agentID} value={a.agentID}>
+                                        {`${a.name} ${a.lastname} (${a.phone})`}
+                                    </option>
                                 ))}
                             </select>
+                            {editForm.agentID && agentLocation && (
+                                <div className="agent-location">
+                                    {t("timesheetForm.form.agentLocation")}: {agentLocation}
+                                </div>
+                            )}
                         </div>
                     </>
                 )}
@@ -526,16 +664,33 @@ const VisitEditForm: React.FC<VisitEditFormProps> = ({
                 <div className="form-group" style={{ marginBottom: "0 !important" }}>
                     <label>{t("timesheetForm.form.reasons")}</label>
                     {!isVisited && (
-                        <select
-                            value=""
-                            onChange={(e) => handleReasonSelect(reasons.find(r => r.reasonID === e.target.value)!)}
-                            disabled={isRecruitmentVisit && editForm.reasons.some(r => r.id === reasons.find(r => r.item.toLowerCase() === "recruitment")?.reasonID)}
-                        >
-                            <option value="">{t("timesheetForm.form.placeholders.reasonSelect")}</option>
-                            {reasons.map(r => (
-                                <option key={r.reasonID} value={r.reasonID}>{r.item}</option>
-                            ))}
-                        </select>
+                        <>
+                            <input
+                                type="text"
+                                value={editForm.reasonSearch}
+                                onChange={handleReasonSearchChange}
+                                placeholder={t("timesheetForm.form.placeholders.reasonSearch")}
+                                disabled={
+                                    isRecruitmentVisit &&
+                                    editForm.reasons.some(r => r.id === reasons.find(r => r.item.toLowerCase() === "recruitment")?.reasonID) ||
+                                    !canEditField("reasons")
+                                }
+                            />
+                            <select
+                                value=""
+                                onChange={e => handleReasonSelect(reasons.find(r => r.reasonID === e.target.value)!)}
+                                disabled={
+                                    isRecruitmentVisit &&
+                                    editForm.reasons.some(r => r.id === reasons.find(r => r.item.toLowerCase() === "recruitment")?.reasonID) ||
+                                    !canEditField("reasons")
+                                }
+                            >
+                                <option value="">{t("timesheetForm.form.placeholders.reasonSelect")}</option>
+                                {filteredReasons.map(r => (
+                                    <option key={r.reasonID} value={r.reasonID}>{r.item}</option>
+                                ))}
+                            </select>
+                        </>
                     )}
                     <div className="selected-items">
                         {editForm.reasons.map((r, i) => (
@@ -552,15 +707,25 @@ const VisitEditForm: React.FC<VisitEditFormProps> = ({
                 <div className="form-group">
                     <label>{t("timesheetForm.form.checklists")}</label>
                     {!isVisited && (
-                        <select
-                            value=""
-                            onChange={(e) => handleChecklistSelect(checklists.find(c => c.checklistID === e.target.value)!)}
-                        >
-                            <option value="">{t("timesheetForm.form.placeholders.checklistSelect")}</option>
-                            {checklists.map(c => (
-                                <option key={c.checklistID} value={c.checklistID}>{c.item}</option>
-                            ))}
-                        </select>
+                        <>
+                            <input
+                                type="text"
+                                value={editForm.checklistSearch}
+                                onChange={handleChecklistSearchChange}
+                                placeholder={t("timesheetForm.form.placeholders.checklistSearch")}
+                                disabled={!canEditField("checklists")}
+                            />
+                            <select
+                                value=""
+                                onChange={e => handleChecklistSelect(checklists.find(c => c.checklistID === e.target.value)!)}
+                                disabled={!canEditField("checklists")}
+                            >
+                                <option value="">{t("timesheetForm.form.placeholders.checklistSelect")}</option>
+                                {filteredChecklists.map(c => (
+                                    <option key={c.checklistID} value={c.checklistID}>{c.item}</option>
+                                ))}
+                            </select>
+                        </>
                     )}
                     <div className="selected-items">
                         {editForm.checklists.map((c, i) => (
@@ -569,15 +734,13 @@ const VisitEditForm: React.FC<VisitEditFormProps> = ({
                                     <input
                                         type="checkbox"
                                         checked={c.checked}
-                                        onChange={(e) => handleChecklistChange(c.id, e.target.checked)}
+                                        onChange={e => handleChecklistChange(c.id, e.target.checked)}
+                                        disabled={!canEditField("checklists")}
                                     />
                                 )}
                                 <span>{checklists.find(ch => ch.checklistID === c.id)?.item}</span>
                                 {!isVisited && (
-                                    <span
-                                        className="remove-item"
-                                        onClick={() => handleRemoveChecklist(i)}
-                                    >
+                                    <span className="remove-item" onClick={() => handleRemoveChecklist(i)}>
                                         ×
                                     </span>
                                 )}
@@ -613,13 +776,14 @@ const VisitEditForm: React.FC<VisitEditFormProps> = ({
                                     type="button"
                                     className="camera-btn"
                                     onClick={startCamera}
-                                    disabled={isCameraActive}
+                                    disabled={isCameraActive || !canEditField("photos")}
                                 >
                                     <FaCamera /> {t("visitDetails.form.photos.startCamera")}
                                 </button>
                                 <div className={`camera-container ${isCameraActive ? "active" : ""}`}>
                                     <div className="camera-frame">
                                         <video ref={videoRef} className="camera-preview" muted playsInline />
+                                        <canvas ref={canvasRef} style={{ display: "none" }} />
                                         <div className={`flash-overlay ${flashEffect ? "active" : ""}`}></div>
                                         <div className="photo-counter">
                                             <FaCamera /> {newPhotos.length}
@@ -635,70 +799,86 @@ const VisitEditForm: React.FC<VisitEditFormProps> = ({
                                     </div>
                                     {isCameraActive && (
                                         <>
-                                            <button
-                                                type="button"
-                                                className="stop-camera-btn"
-                                                onClick={stopCamera}
-                                            >
-                                                <FaTimes /> {t("visitDetails.actions.stopCamera")}
+                                            <button type="button" className="stop-camera-btn" onClick={stopCamera}>
+                                                <FaTimes />
                                             </button>
-                                            <button
-                                                type="button"
-                                                className="capture-btn"
-                                                onClick={capturePhoto}
-                                            >
-                                                <FaCamera /> {t("visitDetails.actions.capturePhoto")}
+                                            <button type="button" className="capture-btn" onClick={capturePhoto}>
+                                                <FaCamera />
                                             </button>
                                         </>
                                     )}
                                 </div>
                             </div>
-                            {(visit.photos?.length || newPhotos.length) && (
+                            {(visit.photos?.length! > 0 || newPhotos.length > 0) && (
                                 <div className="photo-previews">
-                                    {visit.photos?.filter(p => !editForm.photosToRemove.includes(p)).map((photo, index) => (
-                                        <div key={`existing-${index}`} className="photo-container">
-                                            <img
-                                                src={`${BASE_URL}${photo}`}
-                                                alt={t("visitDetails.form.photos.existingAlt", { index: index + 1 })}
-                                                className="photo-preview"
-                                                onClick={() => setSelectedImage(`${BASE_URL}${photo}`)}
-                                            />
-                                            <button
-                                                type="button"
-                                                className="remove-photo-btn"
-                                                onClick={() => handleRemovePhoto(photo)}
-                                            >
-                                                <FaTimes />
-                                            </button>
-                                        </div>
-                                    ))}
-                                    {newPhotos.map((photo, index) => (
-                                        <div key={`new-${index}`} className="photo-container">
-                                            <img
-                                                src={URL.createObjectURL(photo)}
-                                                alt={t("visitDetails.form.photos.newAlt", { index: index + 1 })}
-                                                className="photo-preview"
-                                                onClick={() => setSelectedImage(URL.createObjectURL(photo))}
-                                            />
-                                            <button
-                                                type="button"
-                                                className="remove-photo-btn"
-                                                onClick={() => removeNewPhoto(index)}
-                                            >
-                                                <FaTimes />
-                                            </button>
-                                        </div>
-                                    ))}
+                                    {visit.photos
+                                        ?.filter(photo => !editForm.photosToRemove.includes(photo))
+                                        .map((photo, index) => {
+                                            const previewPhotoAria = t("visitDetails.form.photos.previewPhoto", { index: index + 1 });
+                                            const removePhotoAria = t("visitDetails.form.photos.removePhoto", { index: index + 1 });
+                                            const capturedAlt = t("visitDetails.form.photos.capturedAlt", { index: index + 1 });
+                                            return (
+                                                <div key={`existing-${index}`} className="photo-container">
+                                                    <img
+                                                        src={`${BASE_URL}${photo}`}
+                                                        alt={capturedAlt}
+                                                        className="photo-preview"
+                                                        onClick={() => setSelectedImage(`${BASE_URL}${photo}`)}
+                                                        aria-label={previewPhotoAria}
+                                                    />
+                                                    <button
+                                                        className="remove-photo-btn"
+                                                        onClick={() => handleRemovePhoto(`${photo}`)}
+                                                        aria-label={removePhotoAria}
+                                                        disabled={!canEditField("photos")}
+                                                    >
+                                                        <FaTimes />
+                                                    </button>
+                                                </div>
+                                            );
+                                        })}
+                                    {newPhotos.map((photo, index) => {
+                                        const previewPhotoAria = t("visitDetails.form.photos.previewPhoto", {
+                                            index: (visit.photos?.length || 0) - editForm.photosToRemove.length + index + 1
+                                        });
+                                        const removePhotoAria = t("visitDetails.form.photos.removePhoto", {
+                                            index: (visit.photos?.length || 0) - editForm.photosToRemove.length + index + 1
+                                        });
+                                        const capturedAlt = t("visitDetails.form.photos.capturedAlt", {
+                                            index: (visit.photos?.length || 0) - editForm.photosToRemove.length + index + 1
+                                        });
+                                        return (
+                                            <div key={`new-${index}`} className="photo-container">
+                                                <img
+                                                    src={URL.createObjectURL(photo)}
+                                                    alt={capturedAlt}
+                                                    className="photo-preview"
+                                                    onClick={() => setSelectedImage(URL.createObjectURL(photo))}
+                                                    aria-label={previewPhotoAria}
+                                                />
+                                                <button
+                                                    className="remove-photo-btn"
+                                                    onClick={() => removeNewPhoto(index)}
+                                                    aria-label={removePhotoAria}
+                                                    disabled={!canEditField("photos")}
+                                                >
+                                                    <FaTimes />
+                                                </button>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             )}
+                            <p className="photo-note">{t("visitDetails.form.photos.note")}</p>
                         </div>
                         <div className="form-group">
                             <label htmlFor="comment">{t("visitDetails.form.comment.label")}</label>
                             <textarea
                                 id="comment"
                                 value={editForm.comment}
-                                onChange={(e) => setEditForm(prev => ({ ...prev, comment: e.target.value }))}
+                                onChange={e => setEditForm(prev => ({ ...prev, comment: e.target.value }))}
                                 placeholder={t("visitDetails.form.comment.placeholder")}
+                                disabled={!canEditField("comment")}
                             />
                         </div>
                     </>
@@ -713,21 +893,15 @@ const VisitEditForm: React.FC<VisitEditFormProps> = ({
                 </div>
             </form>
             {selectedImage && (
-                <div className="fullscreen-image-modal">
-                    <div className="fullscreen-image-content">
-                        <button
-                            className="close-fullscreen-btn"
-                            onClick={() => setSelectedImage(null)}
-                            aria-label={t("visitDetails.actions.closeImage")}
-                        >
-                            <FaTimes />
-                        </button>
-                        <img
-                            src={selectedImage}
-                            alt={t("visitDetails.form.photos.fullscreenAlt")}
-                            className="fullscreen-image"
-                        />
-                    </div>
+                <div className="photo-fullscreen-preview">
+                    <img src={selectedImage} alt={t("visitDetails.form.photos.fullscreenAlt")} className="fullscreen-image" />
+                    <button
+                        className="close-preview-btn"
+                        onClick={() => setSelectedImage(null)}
+                        aria-label={t("visitDetails.actions.closeImage")}
+                    >
+                        <FaTimes />
+                    </button>
                 </div>
             )}
         </div>

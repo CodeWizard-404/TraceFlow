@@ -65,7 +65,8 @@
       "admin": "Admin",
       "timesheets": "Timesheets",
       "receiptBooks": "Receipt Books",
-      "agents": "Agents"
+      "agents": "Agents",
+      "reports": "Reports"
     },
     "profile": "Profile"
   },

@@ -2,7 +2,6 @@ const axios = require('axios');
 const { User, Role, Permission } = require('../models');
 const VaultService = require('./vaultService');
 require('dotenv').config();
-const logger = require('../utils/logger');
 
 const ERROR_MESSAGES = {
     GOOGLE_LOGIN_FAILED: 'Google login failed. Ensure your account is registered.',

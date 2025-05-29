@@ -1,41 +1,151 @@
-export type ReportType =
-    | 'VisitSummary'
-    | 'Timesheet'
-    | 'ReceiptBookInventory'
-    | 'StubCollection'
-    | 'UserActivity'
-    | 'AIAnomaly'
-    | 'AgentPerformance'
-    | 'RegionPerformance'
-    | 'Full';
-
-// Interface for date range filter
-export interface DateRange {
-    start: string;
-    end: string;
+// types/reports.ts
+interface VisitSummaryReport {
+    summary: {
+        totalVisits: number;
+        validatedVisits: number;
+        pendingVisits: number;
+        averageDuration: string;
+    };
+    details: Array<{
+        id: string;
+        date: string;
+        location: string;
+        status: string;
+        agent: string;
+        supervisor: string;
+        region: string;
+    }>;
 }
 
-// Interface for report filters, dynamically typed based on report type
-export interface ReportFilters {
-    supervisorID?: string;
-    regionalManagerID?: string;
-    dateRange?: DateRange;
-    regionID?: string;
-    agentID?: string;
-    status?: string;
-    bookType?: string;
-    roleID?: string;
-    activityType?: string;
-    anomalyType?: string;
-    filterBy?: 'supervisor' | 'regionalManager';
+interface TimesheetReport {
+    summary: {
+        totalTimesheets: number;
+        totalHours: number;
+        validatedTimesheets: number;
+    };
+    details: Array<{
+        id: string;
+        supervisor: string;
+        week: string;
+        status: string;
+        totalHours: string;
+        visitReasons: string[];
+    }>;
 }
 
-// Interface for a scheduled report
-export interface ReportSchedule {
-    scheduleID: string;
-    reportType: ReportType;
-    filters: ReportFilters;
-    format: 'pdf' | 'excel';
-    cronExpression: string;
-    createdBy: string;
+interface ReceiptBookInventoryReport {
+    summary: {
+        totalBooks: number;
+        inStock: number;
+        withAgents: number;
+        archived: number;
+    };
+    details: Array<{
+        id: string;
+        number: string;
+        status: string;
+        type: string;
+        region: string;
+        currentHolder: string;
+    }>;
 }
+
+interface StubCollectionReport {
+    summary: {
+        total: number;
+        collected: number;
+        transmitted: number;
+        archived: number;
+    };
+    details: Array<{
+        id: string;
+        bookNumber: string;
+        status: string;
+        agent: string;
+        currentHolder: string;
+    }>;
+}
+
+interface UserActivityReport {
+    summary: {
+        totalActivities: number;
+        uniqueUsers: number;
+        lastActivity: string;
+    };
+    details: Array<{
+        user: string;
+        role: string;
+        activity: string;
+        timestamp: string;
+        status: string;
+        suspicious: string;
+    }>;
+}
+
+interface AIAnomalyReport {
+    summary: {
+        totalAnomalies: number;
+    };
+    details: Array<{
+        id: string;
+        user: string;
+        role: string;
+        anomaly: string;
+        affected: string;
+        timestamp: string;
+    }>;
+}
+
+interface AgentPerformanceReport {
+    summary: {
+        totalAgents: number;
+        totalVisits: number;
+        totalStubsCollected: number;
+    };
+    details: Array<{
+        id: string;
+        name: string;
+        visitsCompleted: number;
+        stubsCollected: number;
+        region: string;
+        performanceScore: string;
+    }>;
+}
+
+interface RegionPerformanceReport {
+    summary: {
+        totalRegions: number;
+        totalVisits: number;
+        totalStubs: number;
+    };
+    details: Array<{
+        id: string;
+        name: string;
+        visitsCompleted: number;
+        stubsCollected: number;
+        performanceScore: string;
+    }>;
+}
+
+interface FullReport {
+    visitSummary: VisitSummaryReport;
+    timesheet: TimesheetReport;
+    receiptBookInventory: ReceiptBookInventoryReport;
+    stubCollection: StubCollectionReport;
+    userActivity: UserActivityReport;
+    aiAnomaly: AIAnomalyReport;
+    agentPerformance: AgentPerformanceReport;
+    regionPerformance: RegionPerformanceReport;
+}
+
+export type {
+    VisitSummaryReport,
+    TimesheetReport,
+    ReceiptBookInventoryReport,
+    StubCollectionReport,
+    UserActivityReport,
+    AIAnomalyReport,
+    AgentPerformanceReport,
+    RegionPerformanceReport,
+    FullReport,
+};

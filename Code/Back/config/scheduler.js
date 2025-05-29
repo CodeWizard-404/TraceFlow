@@ -1,6 +1,7 @@
+// utils/cron.js
 const cron = require('node-cron');
 const otpService = require('../services/otpService');
-const { Visit } = require('../models');
+const { Visit, GeneratedReport } = require('../models');
 const { Op } = require('sequelize');
 const fs = require('fs').promises;
 const path = require('path');
@@ -8,6 +9,7 @@ const logger = require('../utils/logger');
 const { getRedisClient } = require('./redis');
 const ReportService = require('../services/reportService');
 const { ReportSchedule } = require('../models');
+const NotificationService = require('../services/notificationService');
 
 function setupCron() {
     // Schedule hourly OTP cleanup
@@ -39,7 +41,7 @@ function setupCron() {
 
     // Clean up supplier files with downloadCount >= 1 and older than 7 days
     cron.schedule('0 0 * * *', async () => {
-        const supplierFilesDir = path.join(__dirname, '../Uploads/supplier_files');
+        const supplierFilesDir = path.join(__dirname, '../uploads/supplier_files');
         try {
             const files = await fs.readdir(supplierFilesDir);
             const redisClient = getRedisClient();
@@ -89,6 +91,14 @@ function setupCron() {
         schedules.forEach(schedule => {
             cron.schedule(schedule.cronExpression, async () => {
                 try {
+                    const currentSchedule = await ReportSchedule.findByPk(schedule.scheduleID);
+                    if (!currentSchedule) {
+                        logger.info(`Schedule ${schedule.scheduleID} no longer exists, skipping report generation`, {
+                            route: 'reports',
+                            service: 'cron',
+                        });
+                        return;
+                    }
                     let data;
                     switch (schedule.reportType) {
                         case 'VisitSummary':
@@ -119,7 +129,19 @@ function setupCron() {
                             data = await ReportService.generateFullReport(schedule.filters);
                             break;
                     }
-                    await ReportService.exportReport(schedule.reportType, data, schedule.format);
+                    const filePath = await ReportService.exportReport(schedule.reportType, data, schedule.format);
+                    await GeneratedReport.create({
+                        reportType: schedule.reportType,
+                        format: schedule.format,
+                        filePath,
+                        generatedBy: null,
+                        scheduleID: schedule.scheduleID,
+                    });
+                    await NotificationService.triggerNotification({
+                        event: 'report:generated',
+                        data: { reportType: schedule.reportType, format: schedule.format, filePath: path.basename(filePath) },
+                        metadata: { scheduleID: schedule.scheduleID },
+                    });
                     logger.info(`Scheduled ${schedule.reportType} report generated`, {
                         route: 'reports',
                         service: 'cron',
@@ -142,6 +164,30 @@ function setupCron() {
         status: 500,
         metadata: { error: error.message },
     }));
+
+    // Clean up old report files
+    cron.schedule('0 0 * * *', async () => {
+        const reportsDir = path.join(__dirname, '../reports');
+        try {
+            const files = await fs.readdir(reportsDir);
+            const now = Date.now();
+            const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+
+            for (const file of files) {
+                const filePath = path.join(reportsDir, file);
+                const stats = await fs.stat(filePath);
+                if (now - stats.mtimeMs > thirtyDays) {
+                    await fs.unlink(filePath);
+                    logger.info('Deleted old report file', { file, service: 'cron' });
+                }
+            }
+        } catch (error) {
+            logger.error('Failed to clean up report files', {
+                error: error.message,
+                service: 'cron',
+            });
+        }
+    });
 }
 
 module.exports = { setupCron };

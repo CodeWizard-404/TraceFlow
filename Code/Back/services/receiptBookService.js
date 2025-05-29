@@ -611,7 +611,7 @@ class ReceiptBookService {
                 });
 
                 // Ensure the upload directory exists
-                const uploadDir = path.join(__dirname, '..', 'Uploads', 'supplier_files');
+                const uploadDir = path.join(__dirname, '..', 'uploads', 'supplier_files');
                 await fs.mkdir(uploadDir, { recursive: true });
 
                 // Save CSV and ZIP files

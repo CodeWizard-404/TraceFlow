@@ -6,7 +6,6 @@ const GoogleCalendarService = require('./googleCalendarService');
 const GoogleMapsService = require('./googleMapsService');
 const { Op } = require('sequelize');
 const { nanoid } = require('nanoid');
-const logger = require('../utils/logger');
 
 const ERROR_MESSAGES = {
     INVALID_SUPERVISOR: 'Invalid supervisor ID.',
@@ -211,23 +210,25 @@ class TimesheetService {
                     },
                     { model: User },
                 ],
+                transaction,
             });
 
             let warning = null;
-            try {
-                const userId = supervisor.userID;
-                if (typeof userId !== 'string') {
-                    throw new Error(`Invalid userId: ${userId}`);
+            if (supervisor.hasCalendarAccess) {
+                try {
+                    const userId = supervisor.userID;
+                    if (typeof userId !== 'string') {
+                        throw new Error(`Invalid userId: ${userId}`);
+                    }
+                    const syncResults = await GoogleCalendarService.syncTimesheetToCalendar(userId, timesheet.timesheetID);
+                    await GoogleCalendarService.notifyCalendarUpdate(userId, {
+                        timesheetId: timesheet.timesheetID,
+                        syncedVisits: syncResults,
+                        action: 'synced',
+                    });
+                } catch (error) {
+                    warning = `Timesheet ${timesheet.timesheetID} created successfully for user ${supervisor.userID}, but Google Calendar sync failed: ${error.message}`;
                 }
-                const syncResults = await GoogleCalendarService.syncTimesheetToCalendar(userId, timesheet.timesheetID);
-                await GoogleCalendarService.notifyCalendarUpdate(userId, {
-                    timesheetId: timesheet.timesheetID,
-                    syncedVisits: syncResults,
-                    action: 'synced',
-                });
-            } catch (error) {
-                warning = `Timesheet created successfully, but Google Calendar sync failed: ${error.message}`;
-                logger.warn(warning); // Log the warning for debugging
             }
 
             await transaction.commit();
@@ -264,6 +265,11 @@ class TimesheetService {
                 error.status = 404;
                 throw error;
             }
+            if (!timesheet.User) {
+                const error = new Error('Supervisor not found for timesheet');
+                error.status = 500;
+                throw error;
+            }
             if (!['pending', 'visited', 'rejected', 'validated'].includes(status)) {
                 const error = new Error('Invalid status');
                 error.status = 400;
@@ -288,20 +294,21 @@ class TimesheetService {
             await timesheet.save({ transaction });
 
             let warning = null;
-            try {
-                const userId = timesheet.User.userID;
-                if (typeof userId !== 'string') {
-                    throw new Error(`Invalid userId: ${userId}`);
+            if (timesheet.User.hasCalendarAccess) {
+                try {
+                    const userId = timesheet.User.userID;
+                    if (typeof userId !== 'string') {
+                        throw new Error(`Invalid userId: ${userId}`);
+                    }
+                    const syncResults = await GoogleCalendarService.syncTimesheetToCalendar(userId, id);
+                    await GoogleCalendarService.notifyCalendarUpdate(userId, {
+                        timesheetId: id,
+                        syncedVisits: syncResults,
+                        action: 'synced',
+                    });
+                } catch (error) {
+                    warning = `Timesheet ${id} validated successfully for user ${timesheet.User.userID}, but Google Calendar sync failed: ${error.message}`;
                 }
-                const syncResults = await GoogleCalendarService.syncTimesheetToCalendar(userId, id);
-                await GoogleCalendarService.notifyCalendarUpdate(userId, {
-                    timesheetId: id,
-                    syncedVisits: syncResults,
-                    action: 'synced',
-                });
-            } catch (error) {
-                warning = `Timesheet validated successfully, but Google Calendar sync failed: ${error.message}`;
-                logger.warn(warning); // Log the warning for debugging
             }
 
             await transaction.commit();

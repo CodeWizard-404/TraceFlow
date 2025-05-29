@@ -40,14 +40,6 @@ class VisitController {
             const visit = await VisitService.logVisit(id, { duration, checklistUpdates, comment, date, time, status }, files, req.user.userID);
             try {
                 const timesheet = await Timesheet.findByPk(visit.timesheetID, { include: [{ model: User }] });
-                if (!timesheet) {
-                    logger.error(`Timesheet not found for visit ${id}, timesheetID: ${visit.timesheetID}`);
-                    throw new Error('Timesheet not found');
-                }
-                if (!timesheet.User) {
-                    logger.error(`User not found for timesheet ${visit.timesheetID}, supervisorID: ${timesheet.supervisorID}`);
-                    throw new Error('Supervisor not found');
-                }
                 const userId = timesheet.User.userID;
                 if (typeof userId !== 'string') {
                     throw new Error(`Invalid userId: ${userId}`);

@@ -3,7 +3,6 @@ const { User, Visit, Reason, Checklist, Timesheet, Agent } = require('../models'
 const GoogleMapsService = require('./googleMapsService');
 const VaultService = require('./vaultService');
 const RedisUtils = require('../utils/redisUtils');
-const logger = require('../utils/logger');
 require('dotenv').config();
 
 function isValidDateTime(dateStr, timeStr) {
@@ -193,15 +192,12 @@ class GoogleCalendarService {
                 transaction: options.transaction
             });
             if (!visit || !visit.calendarEventId) {
-                logger.error(`Visit not found or no calendar event associated for visitId: ${visitId}`);
                 throw new Error('Visit not found or no calendar event associated');
             }
             if (!visit.Timesheet) {
-                logger.error(`Timesheet not found for visit ${visitId}, timesheetID: ${visit.timesheetID}`);
                 throw new Error('Timesheet not found');
             }
             if (!visit.Timesheet.User) {
-                logger.error(`User not found for timesheet ${visit.timesheetID}, supervisorID: ${visit.Timesheet.supervisorID}`);
                 throw new Error('Supervisor not found');
             }
 

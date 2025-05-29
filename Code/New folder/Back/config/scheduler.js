@@ -39,7 +39,7 @@ function setupCron() {
 
     // Clean up supplier files with downloadCount >= 1 and older than 7 days
     cron.schedule('0 0 * * *', async () => {
-        const supplierFilesDir = path.join(__dirname, '../Uploads/supplier_files');
+        const supplierFilesDir = path.join(__dirname, '../uploads/supplier_files');
         try {
             const files = await fs.readdir(supplierFilesDir);
             const redisClient = getRedisClient();

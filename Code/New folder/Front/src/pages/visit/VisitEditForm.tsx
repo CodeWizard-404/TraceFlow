@@ -163,6 +163,7 @@ const VisitEditForm: React.FC<VisitEditFormProps> = ({
     newPhotos,
     flashEffect,
     videoRef,
+    canvasRef,
     editTracking,
     setEditTracking,
     selectedImage,
@@ -320,6 +321,12 @@ const VisitEditForm: React.FC<VisitEditFormProps> = ({
         }
     };
 
+    useEffect(() => {
+        return () => {
+            newPhotos.forEach((photo) => URL.revokeObjectURL(URL.createObjectURL(photo)));
+        };
+    }, [newPhotos]);
+
     const handleDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (isSuperAdmin && isVisited) {
             const value = e.target.value;
@@ -335,8 +342,9 @@ const VisitEditForm: React.FC<VisitEditFormProps> = ({
     };
 
     const formPhotosCount = t("visitDetails.form.photos.count", {
-        count: (visit.photos?.filter(p => !editForm.photosToRemove.includes(p)).length || 0) + newPhotos.length,
-    }) || `(${(visit.photos?.filter(p => !editForm.photosToRemove.includes(p)).length || 0) + newPhotos.length} photos)`;
+        count:
+            (visit.photos?.filter((p) => !editForm.photosToRemove.includes(p)).length || 0) + newPhotos.length,
+    }) || `(${(visit.photos?.filter((p) => !editForm.photosToRemove.includes(p)).length || 0) + newPhotos.length} photos)`;
 
     return (
         <div className="timesheet-form-container">
@@ -620,6 +628,7 @@ const VisitEditForm: React.FC<VisitEditFormProps> = ({
                                 <div className={`camera-container ${isCameraActive ? "active" : ""}`}>
                                     <div className="camera-frame">
                                         <video ref={videoRef} className="camera-preview" muted playsInline />
+                                        <canvas ref={canvasRef} style={{ display: "none" }} />
                                         <div className={`flash-overlay ${flashEffect ? "active" : ""}`}></div>
                                         <div className="photo-counter">
                                             <FaCamera /> {newPhotos.length}
@@ -640,57 +649,84 @@ const VisitEditForm: React.FC<VisitEditFormProps> = ({
                                                 className="stop-camera-btn"
                                                 onClick={stopCamera}
                                             >
-                                                <FaTimes /> {t("visitDetails.actions.stopCamera")}
+                                                <FaTimes />
                                             </button>
                                             <button
                                                 type="button"
                                                 className="capture-btn"
                                                 onClick={capturePhoto}
                                             >
-                                                <FaCamera /> {t("visitDetails.actions.capturePhoto")}
+                                                <FaCamera />
                                             </button>
                                         </>
                                     )}
                                 </div>
                             </div>
-                            {(visit.photos?.length || newPhotos.length) && (
+                            {(visit.photos?.length! > 0 || newPhotos.length > 0) && (
                                 <div className="photo-previews">
-                                    {visit.photos?.filter(p => !editForm.photosToRemove.includes(p)).map((photo, index) => (
-                                        <div key={`existing-${index}`} className="photo-container">
-                                            <img
-                                                src={`${BASE_URL}${photo}`}
-                                                alt={t("visitDetails.form.photos.existingAlt", { index: index + 1 })}
-                                                className="photo-preview"
-                                                onClick={() => setSelectedImage(`${BASE_URL}${photo}`)}
-                                            />
-                                            <button
-                                                type="button"
-                                                className="remove-photo-btn"
-                                                onClick={() => handleRemovePhoto(photo)}
-                                            >
-                                                <FaTimes />
-                                            </button>
-                                        </div>
-                                    ))}
-                                    {newPhotos.map((photo, index) => (
-                                        <div key={`new-${index}`} className="photo-container">
-                                            <img
-                                                src={URL.createObjectURL(photo)}
-                                                alt={t("visitDetails.form.photos.newAlt", { index: index + 1 })}
-                                                className="photo-preview"
-                                                onClick={() => setSelectedImage(URL.createObjectURL(photo))}
-                                            />
-                                            <button
-                                                type="button"
-                                                className="remove-photo-btn"
-                                                onClick={() => removeNewPhoto(index)}
-                                            >
-                                                <FaTimes />
-                                            </button>
-                                        </div>
-                                    ))}
+                                    {visit.photos
+                                        ?.filter((photo) => !editForm.photosToRemove.includes(photo))
+                                        .map((photo, index) => {
+                                            const previewPhotoAria = t("visitDetails.form.photos.previewPhoto", {
+                                                index: index + 1,
+                                            });
+                                            const removePhotoAria = t("visitDetails.form.photos.removePhoto", {
+                                                index: index + 1,
+                                            });
+                                            const capturedAlt = t("visitDetails.form.photos.capturedAlt", {
+                                                index: index + 1,
+                                            });
+                                            return (
+                                                <div key={`existing-${index}`} className="photo-container">
+                                                    <img
+                                                        src={`${BASE_URL}${photo}`}
+                                                        alt={capturedAlt}
+                                                        className="photo-preview"
+                                                        onClick={() => setSelectedImage(`${BASE_URL}${photo}`)}
+                                                        aria-label={previewPhotoAria}
+                                                    />
+                                                    <button
+                                                        className="remove-photo-btn"
+                                                        onClick={() => handleRemovePhoto(`${photo}`)}
+                                                        aria-label={removePhotoAria}
+                                                    >
+                                                        <FaTimes />
+                                                    </button>
+                                                </div>
+                                            );
+                                        })}
+                                    {newPhotos.map((photo, index) => {
+                                        const previewPhotoAria = t("visitDetails.form.photos.previewPhoto", {
+                                            index: (visit.photos?.length || 0) - editForm.photosToRemove.length + index + 1,
+                                        });
+                                        const removePhotoAria = t("visitDetails.form.photos.removePhoto", {
+                                            index: (visit.photos?.length || 0) - editForm.photosToRemove.length + index + 1,
+                                        });
+                                        const capturedAlt = t("visitDetails.form.photos.capturedAlt", {
+                                            index: (visit.photos?.length || 0) - editForm.photosToRemove.length + index + 1,
+                                        });
+                                        return (
+                                            <div key={`new-${index}`} className="photo-container">
+                                                <img
+                                                    src={URL.createObjectURL(photo)}
+                                                    alt={capturedAlt}
+                                                    className="photo-preview"
+                                                    onClick={() => setSelectedImage(URL.createObjectURL(photo))}
+                                                    aria-label={previewPhotoAria}
+                                                />
+                                                <button
+                                                    className="remove-photo-btn"
+                                                    onClick={() => removeNewPhoto(index)}
+                                                    aria-label={removePhotoAria}
+                                                >
+                                                    <FaTimes />
+                                                </button>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             )}
+                            <p className="photo-note">{t("visitDetails.form.photos.note")}</p>
                         </div>
                         <div className="form-group">
                             <label htmlFor="comment">{t("visitDetails.form.comment.label")}</label>
@@ -713,21 +749,19 @@ const VisitEditForm: React.FC<VisitEditFormProps> = ({
                 </div>
             </form>
             {selectedImage && (
-                <div className="fullscreen-image-modal">
-                    <div className="fullscreen-image-content">
-                        <button
-                            className="close-fullscreen-btn"
-                            onClick={() => setSelectedImage(null)}
-                            aria-label={t("visitDetails.actions.closeImage")}
-                        >
-                            <FaTimes />
-                        </button>
-                        <img
-                            src={selectedImage}
-                            alt={t("visitDetails.form.photos.fullscreenAlt")}
-                            className="fullscreen-image"
-                        />
-                    </div>
+                <div className="photo-fullscreen-preview">
+                    <img
+                        src={selectedImage}
+                        alt={t("visitDetails.form.photos.fullscreenAlt")}
+                        className="fullscreen-image"
+                    />
+                    <button
+                        className="close-preview-btn"
+                        onClick={() => setSelectedImage(null)}
+                        aria-label={t("visitDetails.actions.closeImage")}
+                    >
+                        <FaTimes />
+                    </button>
                 </div>
             )}
         </div>

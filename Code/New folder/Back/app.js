@@ -95,7 +95,7 @@ ensureRedisInitialized().then(() => {
         },
     });
 
-    app.use('/logo', express.static(path.join(__dirname, 'emailTemplates/logo')));
+    app.use('/logo', express.static(path.join(__dirname, 'Templates/logo')));
 
     setupRoutes(app);
 
@@ -113,8 +113,9 @@ ensureRedisInitialized().then(() => {
     });
 
     app.use((err, req, res, next) => {
+        logger.error(`Unhandled error: ${err.message}, stack: ${err.stack}, user: ${req.user?.userID || 'unknown'}, IP: ${req.ip}`);
         res.status(err.status || 500).json({
-            error: err.message || 'Something went wrong!',
+            error: err.message || 'Internal server error',
         });
     });
 
@@ -311,5 +312,4 @@ ensureRedisInitialized().then(() => {
         stack: error.stack,
         service: 'redis',
     });
-    process.exit(1);
 });
