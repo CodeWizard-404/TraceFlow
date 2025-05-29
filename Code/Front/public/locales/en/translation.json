@@ -1958,40 +1958,32 @@
   },
   "reports": {
     "title": "Reports",
-    "generateReport": "Generate Report",
-    "scheduleReport": "Schedule Report",
-    "availableReports": "Available Reports",
-    "reportType": "Report Type",
-    "selectReportType": "Select a report type",
-    "startDate": "Start Date",
-    "endDate": "End Date",
-    "supervisor": "Supervisor",
-    "allSupervisors": "All Supervisors",
-    "format": "Format",
-    "frequency": {
-      "label": "Frequency",
-      "weekly": "Weekly",
-      "monthly": "Monthly"
+    "tabs": {
+      "generate": "Generate Reports",
+      "scheduled": "Scheduled Reports",
+      "generated": "Generated Reports",
+      "anomalies": "Anomalies"
     },
-    "generateReportButton": "Generate Report",
-    "scheduleReportButton": "Schedule Report",
-    "generating": "Generating...",
-    "scheduling": "Scheduling...",
-    "reportName": "Report Name",
-    "generatedDate": "Generated Date",
-    "download": "Download",
-    "downloadButton": "Download",
-    "noReports": "No reports available",
-    "success": {
-      "reportGenerated": "Report generated: {{path}}",
-      "reportScheduled": "Report scheduled: {{id}}"
+    "loading": "Loading...",
+    "generate": {
+      "reportType": "Report Type",
+      "format": "Format"
     },
-    "errors": {
-      "fetchSupervisors": "Failed to fetch supervisors",
-      "fetchReports": "Failed to fetch reports list",
-      "generateReport": "Failed to generate report",
-      "scheduleReport": "Failed to schedule report",
-      "downloadReport": "Failed to download report"
+    "actions": {
+      "generate": "Generate Report",
+      "schedule": "Schedule Report"
+    },
+    "schedule": {
+      "title": "Schedule Report",
+      "reportType": "Report Type",
+      "filters": "Filters",
+      "format": "Format",
+      "cronExpression": "Cron Expression"
+    },
+    "anomalies": {
+      "title": "Anomalies",
+      "realtime": "Real-time Anomaly Detection"
     }
+  
   }
 }
