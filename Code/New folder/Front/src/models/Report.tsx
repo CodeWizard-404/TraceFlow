@@ -1,3 +1,4 @@
+// types/reports.ts
 interface VisitSummaryReport {
     summary: {
         totalVisits: number;
@@ -137,28 +138,6 @@ interface FullReport {
     regionPerformance: RegionPerformanceReport;
 }
 
-interface ReportSchedule {
-    scheduleID: string;
-    reportType: string;
-    filters: Record<string, any>;
-    format: 'pdf' | 'excel';
-    cronExpression: string;
-    createdBy: string;
-}
-
-interface GenerateReportResponse {
-    reportPath: string;
-}
-
-interface ScheduleReportResponse {
-    message: string;
-    scheduleID: string;
-}
-
-interface DownloadReportResponse {
-    [key: string]: any;
-}
-
 export type {
     VisitSummaryReport,
     TimesheetReport,
@@ -169,8 +148,4 @@ export type {
     AgentPerformanceReport,
     RegionPerformanceReport,
     FullReport,
-    ReportSchedule,
-    GenerateReportResponse,
-    ScheduleReportResponse,
-    DownloadReportResponse,
 };

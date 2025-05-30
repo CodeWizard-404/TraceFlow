@@ -352,6 +352,7 @@ body.dark .table-head .table-row {
     background: #63b3edb7 !important;
     color: #e5e7eb;
     color: #272727 !important;
+
 }
 
 .table-row {
@@ -359,6 +360,7 @@ body.dark .table-head .table-row {
     grid-template-columns: 0.7fr 1fr 0.75fr 0.5fr 1fr;
     padding: 0 1rem;
     align-items: center;
+    border-radius: 0.75rem;
 }
 
 .table-body .table-row {
@@ -1582,7 +1584,6 @@ body.dark .permissions-category select:focus {
     /* Subtle border */
     border-radius: 16px;
     /* Smooth, futuristic corners */
-    overflow: hidden;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -1593,7 +1594,6 @@ body.dark .dropdown-unit {
 }
 
 .dropdown-unit:hover {
-    transform: translateY(-4px);
     /* Lift effect */
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
     /* Bold shadow */
@@ -1659,6 +1659,7 @@ body.dark .dropdown-unit:hover {
     background: transparent;
     /* Glass carries through */
     animation: expand 0.25s ease-out;
+    overflow: visible;
 }
 
 @keyframes expand {
@@ -6059,4 +6060,21 @@ body.dark .search-input {
 
 .search-input {
     border: none !important;
+}
+
+.react-select__control, .css-13cymwt-control {
+    background: transparent !important;
+}
+
+.react-select__menu, .css-1nmdiq5-meny {
+    background-color: #fff;
+}
+
+.react-select__menu, .css-1nmdiq5-meny {
+    background-color: #fff !important;
+}
+
+body.dark .react-select__menu, body.dark .css-1nmdiq5-meny {
+    background-color: #333 !important;
+
 }

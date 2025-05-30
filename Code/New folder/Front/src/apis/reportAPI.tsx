@@ -1,6 +1,45 @@
+// api/reports.ts
 import { AxiosError } from "axios";
 import api from "./axiosConfig";
-import { AxiosErrorResponse, GenerateReportResponse, ScheduleReportResponse, DownloadReportResponse } from ".";
+import { AxiosErrorResponse } from ".";
+
+// Report API response types
+export type GenerateReportResponse = { reportPath: string };
+export type ScheduleReportResponse = { message: string; scheduleID: string };
+export type DownloadReportResponse = ArrayBuffer;
+export type ReportSchedule = {
+    scheduleID: string;
+    reportType: string;
+    format: 'pdf' | 'excel';
+    cronExpression: string;
+    createdBy: string;
+    createdAt: string;
+    creator?: {
+        userID: string;
+        firstname: string;
+        lastname: string;
+    };
+};
+export type GeneratedReport = {
+    generatedReportID: string;
+    reportType: string;
+    format: 'pdf' | 'excel';
+    filePath: string;
+    generatedAt: string;
+    generatedBy: string | null;
+    scheduleID: string | null;
+    generator?: {
+        userID: string;
+        firstname: string;
+        lastname: string;
+    };
+    schedule?: {
+        scheduleID: string;
+        reportType: string;
+        format: 'pdf' | 'excel';
+        cronExpression: string;
+    };
+};
 
 // Generic error handler
 const handleApiError = (error: unknown, defaultMessage: string): string => {
@@ -106,5 +145,38 @@ export const downloadReport = async (file: string): Promise<DownloadReportRespon
         return response.data;
     } catch (error: unknown) {
         throw new Error(handleApiError(error, "Unable to download report."));
+    }
+};
+
+// List all scheduled reports
+export const listSchedules = async (): Promise<ReportSchedule[]> => {
+    try {
+        const response = await api.get<ReportSchedule[]>("/reports/schedules");
+        return response.data;
+    } catch (error: unknown) {
+        throw new Error(handleApiError(error, "Unable to list report schedules."));
+    }
+};
+
+// List all generated reports
+export const listGeneratedReports = async (): Promise<GeneratedReport[]> => {
+    try {
+        const response = await api.get<GeneratedReport[]>("/reports/generated");
+        return response.data;
+    } catch (error: unknown) {
+        throw new Error(handleApiError(error, "Unable to list generated reports."));
+    }
+};
+
+// Delete a scheduled report
+export const deleteSchedule = async (scheduleID: string): Promise<{ message: string }> => {
+    try {
+        if (!scheduleID) {
+            throw new Error("Schedule ID is required.");
+        }
+        const response = await api.delete<{ message: string }>(`/reports/schedules/${scheduleID}`);
+        return response.data;
+    } catch (error: unknown) {
+        throw new Error(handleApiError(error, "Unable to delete report schedule."));
     }
 };

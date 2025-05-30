@@ -204,7 +204,7 @@ export type GovernoratesByDelegationResponse = Governorate[];
 export type RegionsByUserResponse = Region[];
 export type GovernoratesByUserResponse = Governorate[];
 export type DelegationsByUserResponse = Delegation[];
-export interface LocationDetailsResponse { success: boolean; address?: string; idInfo?: string; message?: string; }
+export interface LocationDetailsResponse { success: boolean; address?: string; idInfo?: string; message?: string; addressInfo?: { region: string; governorate: string; delegation: string; regionID: string; governorateID: string; delegationID: string } }
 
 // Google Maps API response types
 export type GeocodeResponse = { geometry: { location: { lat: number; lng: number } }; formattedAddress: string; latitude: number; longitude: number; mock?: boolean };
@@ -295,7 +295,3 @@ export type LoggerHealthResponse = {
 
 
 
-// Report API response types
-export type GenerateReportResponse = { reportPath: string };
-export type ScheduleReportResponse = { message: string; scheduleID: string };
-export type DownloadReportResponse = ArrayBuffer;

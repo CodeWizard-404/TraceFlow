@@ -15,7 +15,6 @@ const {
     Delegation,
     Governorate,
     ReceiptBookType,
-    ReceiptBookTransfer,
     Reason
 } = require('../models');
 const { Op } = require('sequelize');

@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/rules-of-hooks */
 /* eslint-disable react-hooks/exhaustive-deps */
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { debounce } from "lodash";
 import { toast } from "react-toastify";
@@ -23,7 +23,6 @@ import {
   getUsersByGovernorate,
   getUsersByDelegation,
   getUsersByRole,
-  getUserById,
 } from "../../apis/userAPI";
 import {
   getGovernoratesByUser,
@@ -106,6 +105,9 @@ const TimesheetForm: React.FC = () => {
   const [selectedChecklists, setSelectedChecklists] = useState<Array<{ id?: string }>>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [agentLoading, setAgentLoading] = useState<boolean>(false);
+
+  // Track previous selectedSupervisor to detect changes
+  const prevSelectedSupervisor = useRef<string>("");
 
   // Current date and time for input validation
   const currentDate = new Date().toISOString().split("T")[0];
@@ -230,39 +232,37 @@ const TimesheetForm: React.FC = () => {
         `${s.firstname} ${s.lastname} ${s.phone}`.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
-    if (selectedRegionalManager || selectedGovernorate || selectedDelegation || selectedAgent) {
-      // Apply additional filters only if necessary
-      const applyAdditionalFilters = async () => {
-        const promises: Promise<User[]>[] = [];
-        if (selectedRegionalManager) promises.push(getSupervisorsByRegionalManager(selectedRegionalManager));
-        if (selectedGovernorate) promises.push(getUsersByGovernorate(selectedGovernorate).then(users => users.filter(u => u.Roles?.some(r => r.name === ROLES.SUPERVISOR))));
-        if (selectedDelegation) promises.push(getUsersByDelegation(selectedDelegation).then(users => users.filter(u => u.Roles?.some(r => r.name === ROLES.SUPERVISOR))));
-        if (selectedAgent) promises.push(getAgentById(selectedAgent).then(agent => agent?.supervisorID ? [allSupervisors.find(u => u.userID === agent.supervisorID)!].filter(u => u) : []));
-        if (promises.length > 0) {
-          try {
-            const results = await Promise.all(promises);
-            filteredSupervisors = results.reduce((acc, curr) => acc.filter(a => curr.some(c => c.userID === a.userID)), filteredSupervisors);
-          } catch (err) {
-            setError(t("timesheetForm.errors.loadSupervisors"));
-          }
+    const applyAdditionalFilters = async () => {
+      const promises: Promise<User[]>[] = [];
+      // Only apply regional manager filter if selectedSupervisor changed and regional manager is selected
+      if (selectedRegionalManager && prevSelectedSupervisor.current !== selectedSupervisor) {
+        promises.push(getSupervisorsByRegionalManager(selectedRegionalManager));
+      }
+      if (selectedGovernorate) promises.push(getUsersByGovernorate(selectedGovernorate).then(users => users.filter(u => u.Roles?.some(r => r.name === ROLES.SUPERVISOR))));
+      if (selectedDelegation) promises.push(getUsersByDelegation(selectedDelegation).then(users => users.filter(u => u.Roles?.some(r => r.name === ROLES.SUPERVISOR))));
+      if (selectedAgent) promises.push(getAgentById(selectedAgent).then(agent => agent?.supervisorID ? [allSupervisors.find(u => u.userID === agent.supervisorID)!].filter(u => u) : []));
+      if (promises.length > 0) {
+        try {
+          const results = await Promise.all(promises);
+          filteredSupervisors = results.reduce((acc, curr) => acc.filter(a => curr.some(c => c.userID === a.userID)), filteredSupervisors);
+        } catch (err) {
+          setError(t("timesheetForm.errors.loadSupervisors"));
         }
-        setSupervisors(filteredSupervisors);
-        if (filteredSupervisors.length === 1) {
-          setSelectedSupervisor(filteredSupervisors[0].userID);
-        } else if (!filteredSupervisors.some(s => s.userID === selectedSupervisor)) {
-          setSelectedSupervisor("");
-        }
-      };
-      applyAdditionalFilters();
-    } else {
+      }
       setSupervisors(filteredSupervisors);
       if (filteredSupervisors.length === 1) {
         setSelectedSupervisor(filteredSupervisors[0].userID);
       } else if (!filteredSupervisors.some(s => s.userID === selectedSupervisor)) {
         setSelectedSupervisor("");
       }
-    }
+    };
+    applyAdditionalFilters();
   };
+
+  // Update prevSelectedSupervisor when selectedSupervisor changes
+  useEffect(() => {
+    prevSelectedSupervisor.current = selectedSupervisor;
+  }, [selectedSupervisor]);
 
   // Utility function to calculate week number from date
   const getWeekNumber = (dateStr: string): number => {

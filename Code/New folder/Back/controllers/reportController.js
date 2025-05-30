@@ -1,6 +1,7 @@
+// controllers/reportController.js
 const ReportService = require('../services/reportService');
 const NotificationService = require('../services/notificationService');
-const { ReportSchedule } = require('../models');
+const { ReportSchedule, GeneratedReport, User } = require('../models');
 const cron = require('node-cron');
 const fs = require('fs').promises;
 const path = require('path');
@@ -91,6 +92,14 @@ class ReportController {
             }
 
             const filePath = await ReportService.exportReport(reportType, data, format);
+
+            await GeneratedReport.create({
+                reportType,
+                format,
+                filePath,
+                generatedBy: req.user.userID,
+                scheduleID: null,
+            });
 
             await NotificationService.triggerNotification({
                 event: 'report:generated',
@@ -197,6 +206,14 @@ class ReportController {
 
             cron.schedule(cronExpression, async () => {
                 try {
+                    const currentSchedule = await ReportSchedule.findByPk(schedule.scheduleID);
+                    if (!currentSchedule) {
+                        logger.info(`Schedule ${schedule.scheduleID} no longer exists, skipping report generation`, {
+                            route: 'reports',
+                            service: 'cron',
+                        });
+                        return;
+                    }
                     let data;
                     switch (reportType) {
                         case 'VisitSummary':
@@ -228,8 +245,15 @@ class ReportController {
                             break;
                     }
                     const filePath = await ReportService.exportReport(reportType, data, format);
+                    await GeneratedReport.create({
+                        reportType,
+                        format,
+                        filePath,
+                        generatedBy: null,
+                        scheduleID: schedule.scheduleID,
+                    });
                     await NotificationService.triggerNotification({
-                        event: 'report:scheduled',
+                        event: 'report:generated',
                         data: { reportType, format, filePath: path.basename(filePath) },
                         metadata: { scheduleID: schedule.scheduleID },
                     });
@@ -332,14 +356,6 @@ class ReportController {
                         metadata: { error: err.message, file },
                     });
                 } else {
-                    fs.unlink(filePath).catch((err) =>
-                        logger.error(`Failed to delete report file: ${err.message}`, {
-                            route: 'reports',
-                            service: 'api',
-                            status: 500,
-                            metadata: { error: err.message, file },
-                        })
-                    );
                     logger.info(`Downloaded report ${file}`, {
                         traceId: req.traceId,
                         route: 'reports',
@@ -366,6 +382,95 @@ class ReportController {
                 metadata: { error: error.message, stack: error.stack },
             });
             return res.status(error.status || 500).json({ error: error.message || 'Failed to download report' });
+        }
+    }
+
+    static async listSchedules(req, res) {
+        try {
+            const schedules = await ReportSchedule.findAll({
+                attributes: ['scheduleID', 'reportType', 'format', 'cronExpression', 'createdBy', 'createdAt'],
+                include: [
+                    {
+                        model: User,
+                        attributes: ['userID', 'firstname', 'lastname'],
+                        as: 'Creator',
+                    },
+                ],
+            });
+            return res.status(200).json(schedules);
+        } catch (error) {
+            logger.error(`Failed to list report schedules: ${error.message}`, {
+                traceId: req.traceId,
+                route: 'reports',
+                service: 'api',
+                status: error.status || 500,
+                method: req.method,
+                url: req.originalUrl,
+                ip: req.ip,
+                userId: req.user.userID,
+                metadata: { error: error.message, stack: error.stack },
+            });
+            return res.status(error.status || 500).json({ error: error.message || 'Failed to list report schedules' });
+        }
+    }
+
+    static async listGeneratedReports(req, res) {
+        try {
+            const generatedReports = await GeneratedReport.findAll({
+                attributes: ['generatedReportID', 'reportType', 'format', 'filePath', 'generatedAt', 'generatedBy', 'scheduleID'],
+                include: [
+                    {
+                        model: User,
+                        attributes: ['userID', 'firstname', 'lastname'],
+                        as: 'Generator',
+                    },
+                    {
+                        model: ReportSchedule,
+                        attributes: ['scheduleID', 'reportType', 'format', 'cronExpression'],
+                        as: 'Schedule',
+                    },
+                ],
+                order: [['generatedAt', 'DESC']],
+            });
+            return res.status(200).json(generatedReports);
+        } catch (error) {
+            logger.error(`Failed to list generated reports: ${error.message}`, {
+                traceId: req.traceId,
+                route: 'reports',
+                service: 'api',
+                status: error.status || 500,
+                method: req.method,
+                url: req.originalUrl,
+                ip: req.ip,
+                userId: req.user.userID,
+                metadata: { error: error.message, stack: error.stack },
+            });
+            return res.status(error.status || 500).json({ error: error.message || 'Failed to list generated reports' });
+        }
+    }
+
+    static async deleteSchedule(req, res) {
+        try {
+            const { scheduleID } = req.params;
+            const schedule = await ReportSchedule.findByPk(scheduleID);
+            if (!schedule) {
+                return res.status(404).json({ error: 'Schedule not found' });
+            }
+            await schedule.destroy();
+            return res.status(200).json({ message: 'Schedule deleted successfully' });
+        } catch (error) {
+            logger.error(`Failed to delete report schedule: ${error.message}`, {
+                traceId: req.traceId,
+                route: 'reports',
+                service: 'api',
+                status: error.status || 500,
+                method: req.method,
+                url: req.originalUrl,
+                ip: req.ip,
+                userId: req.user.userID,
+                metadata: { error: error.message, stack: error.stack },
+            });
+            return res.status(error.status || 500).json({ error: error.message || 'Failed to delete report schedule' });
         }
     }
 }

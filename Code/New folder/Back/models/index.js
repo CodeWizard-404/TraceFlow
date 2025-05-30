@@ -1,3 +1,4 @@
+// models/index.js
 const { sequelize } = require("../config/db");
 const DataTypes = require("sequelize").DataTypes;
 
@@ -26,7 +27,8 @@ const Governorate = require('./location/governorate')(sequelize, DataTypes);
 const Delegation = require('./location/delegation')(sequelize, DataTypes);
 const CsvHeader = require('./CsvHeader')(sequelize, DataTypes);
 const AIConfig = require('./aiConfig')(sequelize, DataTypes);
-const ReportSchedule = require('./reportSchedule')(sequelize, DataTypes);
+const ReportSchedule = require('./report/reportSchedule')(sequelize, DataTypes);
+const GeneratedReport = require('./report/generatedReport')(sequelize, DataTypes);
 
 // Define model associations
 const setupAssociations = () => {
@@ -149,6 +151,13 @@ const setupAssociations = () => {
     // AIConfig - User
     AIConfig.belongsTo(User, { foreignKey: 'supervisorId', as: 'Supervisor' });
     User.hasMany(AIConfig, { foreignKey: 'supervisorId', as: 'AIConfigs' });
+
+    // ReportSchedule - User
+    ReportSchedule.belongsTo(User, { foreignKey: 'createdBy', as: 'Creator' });
+
+    // GeneratedReport - User and ReportSchedule
+    GeneratedReport.belongsTo(User, { foreignKey: 'generatedBy', as: 'Generator' });
+    GeneratedReport.belongsTo(ReportSchedule, { foreignKey: 'scheduleID', as: 'Schedule' });
 };
 
 // Export models and setup function
@@ -179,5 +188,6 @@ module.exports = {
     CsvHeader,
     AIConfig,
     ReportSchedule,
+    GeneratedReport,
     setupAssociations,
 };

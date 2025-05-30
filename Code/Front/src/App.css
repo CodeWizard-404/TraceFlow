@@ -562,3 +562,16 @@ body.dark .loading-container p {
     transform: rotate(360deg);
   }
 }
+
+.react-select__control, .css-13cymwt-control {
+  background: transparent !important;
+}
+
+.react-select__menu, .css-1nmdiq5-meny {
+  background-color: #fff !important;
+}
+
+body.dark .react-select__menu, body.dark .css-1nmdiq5-meny {
+  background-color: #333 !important;
+
+}

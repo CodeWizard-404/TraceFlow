@@ -1955,5 +1955,35 @@
     "agentDetailsError": "Failed to retrieve agent details",
     "confirm": "Confirm",
     "cancel": "Cancel"
+  },
+  "reports": {
+    "title": "Reports",
+    "tabs": {
+      "generate": "Generate Reports",
+      "scheduled": "Scheduled Reports",
+      "generated": "Generated Reports",
+      "anomalies": "Anomalies"
+    },
+    "loading": "Loading...",
+    "generate": {
+      "reportType": "Report Type",
+      "format": "Format"
+    },
+    "actions": {
+      "generate": "Generate Report",
+      "schedule": "Schedule Report"
+    },
+    "schedule": {
+      "title": "Schedule Report",
+      "reportType": "Report Type",
+      "filters": "Filters",
+      "format": "Format",
+      "cronExpression": "Cron Expression"
+    },
+    "anomalies": {
+      "title": "Anomalies",
+      "realtime": "Real-time Anomaly Detection"
+    }
+  
   }
 }

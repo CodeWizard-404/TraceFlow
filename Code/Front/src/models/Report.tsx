@@ -1,9 +1,11 @@
 // types/reports.ts
-interface VisitSummaryReport {
+export interface VisitSummaryReport {
     summary: {
         totalVisits: number;
         validatedVisits: number;
         pendingVisits: number;
+        visitedVisits: number;
+        rejectedVisits: number;
         averageDuration: string;
     };
     details: Array<{
@@ -14,14 +16,18 @@ interface VisitSummaryReport {
         agent: string;
         supervisor: string;
         region: string;
+        reasons: string;
+        checklistCompleted: boolean;
     }>;
 }
 
-interface TimesheetReport {
+export interface TimesheetReport {
     summary: {
         totalTimesheets: number;
         totalHours: number;
         validatedTimesheets: number;
+        pendingTimesheets: number;
+        rejectedTimesheets: number;
     };
     details: Array<{
         id: string;
@@ -29,15 +35,18 @@ interface TimesheetReport {
         week: string;
         status: string;
         totalHours: string;
-        visitReasons: string[];
+        visitReasons: string;
+        numberOfVisits: number;
+        checklistCompleted: boolean;
     }>;
 }
 
-interface ReceiptBookInventoryReport {
+export interface ReceiptBookInventoryReport {
     summary: {
         totalBooks: number;
         inStock: number;
         withAgents: number;
+        withSupervisors: number;
         archived: number;
     };
     details: Array<{
@@ -47,44 +56,55 @@ interface ReceiptBookInventoryReport {
         type: string;
         region: string;
         currentHolder: string;
+        assignedToAgent: boolean;
     }>;
 }
 
-interface StubCollectionReport {
+export interface StubCollectionReport {
     summary: {
-        total: number;
+        totalStubs: number;
         collected: number;
         transmitted: number;
         archived: number;
+        pending: number;
     };
     details: Array<{
         id: string;
+        stubNumber: string;
         bookNumber: string;
         status: string;
         agent: string;
         currentHolder: string;
+        region: string;
     }>;
 }
 
-interface UserActivityReport {
+export interface UserActivityReport {
     summary: {
         totalActivities: number;
         uniqueUsers: number;
+        suspiciousActivities: number;
         lastActivity: string;
     };
     details: Array<{
+        id: string;
         user: string;
         role: string;
         activity: string;
         timestamp: string;
         status: string;
         suspicious: string;
+        ipAddress: string;
+        deviceType: string;
     }>;
 }
 
-interface AIAnomalyReport {
+export interface AIAnomalyReport {
     summary: {
         totalAnomalies: number;
+        warningAnomalies: number;
+        errorAnomalies: number;
+        uniqueUsers: number;
     };
     details: Array<{
         id: string;
@@ -92,60 +112,118 @@ interface AIAnomalyReport {
         role: string;
         anomaly: string;
         affected: string;
+        severity: string;
         timestamp: string;
+        route: string;
     }>;
 }
 
-interface AgentPerformanceReport {
+export interface AgentPerformanceReport {
     summary: {
         totalAgents: number;
         totalVisits: number;
         totalStubsCollected: number;
+        totalReceiptBooksAssigned: number;
+        averagePerformanceScore: string;
     };
     details: Array<{
         id: string;
         name: string;
-        visitsCompleted: number;
+        visitsReceived: number;
+        completedVisits: number;
         stubsCollected: number;
+        receiptBooksAssigned: number;
         region: string;
+        supervisor: string;
         performanceScore: string;
+        locationUpdated: boolean;
     }>;
 }
 
-interface RegionPerformanceReport {
+export interface RegionPerformanceReport {
     summary: {
         totalRegions: number;
         totalVisits: number;
-        totalStubs: number;
+        totalStubsCollected: number;
+        averagePerformanceScore: string;
     };
     details: Array<{
         id: string;
         name: string;
+        visits: number;
         visitsCompleted: number;
         stubsCollected: number;
         performanceScore: string;
+        regionalManager: string;
     }>;
 }
 
-interface FullReport {
-    visitSummary: VisitSummaryReport;
-    timesheet: TimesheetReport;
-    receiptBookInventory: ReceiptBookInventoryReport;
-    stubCollection: StubCollectionReport;
-    userActivity: UserActivityReport;
-    aiAnomaly: AIAnomalyReport;
-    agentPerformance: AgentPerformanceReport;
-    regionPerformance: RegionPerformanceReport;
+export interface FullReport {
+    visitSummaryReport: VisitSummaryReport;
+    timesheetReport: TimesheetReport;
+    receiptBookInventoryReport: ReceiptBookInventoryReport;
+    stubCollectionReport: StubCollectionReport;
+    userActivityReport: UserActivityReport;
+    aiAnomalyReport: AIAnomalyReport;
+    agentPerformanceReport: AgentPerformanceReport;
+    regionPerformanceReport: RegionPerformanceReport;
 }
 
-export type {
-    VisitSummaryReport,
-    TimesheetReport,
-    ReceiptBookInventoryReport,
-    StubCollectionReport,
-    UserActivityReport,
-    AIAnomalyReport,
-    AgentPerformanceReport,
-    RegionPerformanceReport,
-    FullReport,
-};
+
+
+
+
+
+export interface ReportSchedule {
+    scheduleID: string;
+    reportType:
+    | "VisitSummary"
+    | "Timesheet"
+    | "ReceiptBookInventory"
+    | "StubCollection"
+    | "UserActivity"
+    | "AIAnomaly"
+    | "AgentPerformance"
+    | "RegionPerformance"
+    | "Full";
+    format: "pdf" | "excel";
+    cronExpression: string;
+    createdBy: string;
+    createdAt: string;
+    Creator?: {
+        userID: string;
+        firstname: string;
+        lastname: string;
+    };
+    filters: Record<string, any>;
+}
+
+export interface GeneratedReport {
+    generatedReportID: string;
+    reportType:
+    | "VisitSummary"
+    | "Timesheet"
+    | "ReceiptBookInventory"
+    | "StubCollection"
+    | "UserActivity"
+    | "AIAnomaly"
+    | "AgentPerformance"
+    | "RegionPerformance"
+    | "Full";
+    format: "pdf" | "excel";
+    filePath: string;
+    generatedAt: string;
+    generatedBy: string | null;
+    scheduleID: string | null;
+    Generator?: {
+        userID: string;
+        firstname: string;
+        lastname: string;
+    };
+    Schedule?: {
+        scheduleID: string;
+        reportType: string;
+        format: "pdf" | "excel";
+        cronExpression: string;
+    };
+}
