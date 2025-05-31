@@ -1,5 +1,4 @@
 const { Client } = require('@googlemaps/google-maps-services-js');
-const AIService = require('./aiService');
 const { Agent, User, Region, Delegation, Governorate } = require('../models');
 const { initializeRedis } = require('../config/redis');
 const logger = require('../utils/logger');
@@ -62,10 +61,11 @@ class GoogleMapsService {
             let optimizedPoints = [];
             let params;
 
+            let AIService;
             if (optimizeWaypoints && allPoints.length > 0) {
                 const allLocations = [origin, ...allPoints];
                 const distanceMatrix = await this.getDistanceMatrix(allLocations, allLocations, mode);
-
+                if (!AIService) AIService = require('./aiService');
                 const aiOptimization = await AIService.optimizeRoute(origin, allPoints, mode, trafficModel, distanceMatrix);
                 waypointOrder = aiOptimization.waypointOrder;
 

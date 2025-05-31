@@ -137,7 +137,6 @@ class LocationService {
             return { success: false, message: 'Location not found.' };
 
         } catch (error) {
-            console.error(error);
             return { success: false, message: 'Error fetching location.' };
         }
     }

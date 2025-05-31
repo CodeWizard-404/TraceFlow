@@ -1,5 +1,4 @@
 const { Op } = require('sequelize');
-const logger = require('../utils/logger');
 const CryptoJS = require('crypto-js');
 
 // Configuration
@@ -74,31 +73,15 @@ class SystemService {
                 if (log.metadata) {
                     Object.keys(log.metadata).forEach(key => {
                         if (log.metadata[`${key}Encrypted`]) {
-                            try {
-                                const bytes = CryptoJS.AES.decrypt(log.metadata[key], config.encryptionKey);
-                                log.metadata[key] = bytes.toString(CryptoJS.enc.Utf8);
-                            } catch (error) {
-                                logger.error('Failed to decrypt metadata field', {
-                                    traceId: log.traceId,
-                                    field: key,
-                                    error: error.message,
-                                });
-                            }
+                            const bytes = CryptoJS.AES.decrypt(log.metadata[key], config.encryptionKey);
+                            log.metadata[key] = bytes.toString(CryptoJS.enc.Utf8);
+
                         }
                     });
                 }
                 return log;
             });
 
-            logger.info('Fetched logs', {
-                count,
-                page,
-                pageSize,
-                route,
-                service,
-                level,
-                status,
-            });
 
             return {
                 data: decryptedRows,
@@ -108,7 +91,6 @@ class SystemService {
                 totalPages: Math.ceil(count / pageSize),
             };
         } catch (error) {
-            logger.error('Error fetching logs', { error: error.message });
             throw error;
         }
     }
@@ -146,10 +128,8 @@ class SystemService {
                 order: [[this.Log.sequelize.literal('count'), 'DESC']],
             });
 
-            logger.info(`Fetched logs grouped by ${category}`, { category, count: results.length });
             return results.map(row => row.toJSON());
         } catch (error) {
-            logger.error(`Error fetching logs by ${category}`, { error: error.message });
             throw error;
         }
     }
@@ -177,17 +157,8 @@ class SystemService {
 
             const deletedCount = await this.Log.destroy({ where });
 
-            logger.info('Deleted logs', {
-                deletedCount,
-                level,
-                route,
-                service,
-                status,
-            });
-
             return deletedCount;
         } catch (error) {
-            logger.error('Error deleting logs', { error: error.message });
             throw error;
         }
     }
@@ -208,10 +179,8 @@ class SystemService {
                 },
             });
 
-            logger.info('Archived logs', { deletedCount, retentionDays });
             return deletedCount;
         } catch (error) {
-            logger.error('Error archiving logs', { error: error.message });
             throw error;
         }
     }
@@ -269,7 +238,6 @@ class SystemService {
                 }),
             ]);
 
-            logger.info('Fetched log statistics', { total, route, service, level });
             return {
                 total,
                 byLevel: byLevel.map(row => row.toJSON()),
@@ -278,7 +246,6 @@ class SystemService {
                 byStatus: byStatus.map(row => row.toJSON()),
             };
         } catch (error) {
-            logger.error('Error fetching log statistics', { error: error.message });
             throw error;
         }
     }
@@ -307,26 +274,17 @@ class SystemService {
                 if (logData.metadata) {
                     Object.keys(logData.metadata).forEach(key => {
                         if (logData.metadata[`${key}Encrypted`]) {
-                            try {
-                                const bytes = CryptoJS.AES.decrypt(logData.metadata[key], config.encryptionKey);
-                                logData.metadata[key] = bytes.toString(CryptoJS.enc.Utf8);
-                            } catch (error) {
-                                logger.error('Failed to decrypt metadata field for export', {
-                                    traceId: logData.traceId,
-                                    field: key,
-                                    error: error.message,
-                                });
-                            }
+                            const bytes = CryptoJS.AES.decrypt(logData.metadata[key], config.encryptionKey);
+                            logData.metadata[key] = bytes.toString(CryptoJS.enc.Utf8);
+
                         }
                     });
                 }
                 return logData;
             });
 
-            logger.info('Exported logs', { count: decryptedLogs.length, route, service, level });
             return decryptedLogs;
         } catch (error) {
-            logger.error('Error exporting logs', { error: error.message });
             throw error;
         }
     }
@@ -339,10 +297,8 @@ class SystemService {
         try {
             const deletedCount = await this.Log.destroy({ where: {}, truncate: true });
 
-            logger.info('Cleared all logs', { deletedCount });
             return deletedCount;
         } catch (error) {
-            logger.error('Error clearing all logs', { error: error.message });
             throw error;
         }
     }
@@ -364,10 +320,8 @@ class SystemService {
                 where: { [field]: { [Op.ne]: null } },
             });
 
-            logger.info(`Fetched unique values for ${field}`, { count: results.length });
             return results.map(row => row[field]);
         } catch (error) {
-            logger.error(`Error fetching unique values for ${field}`, { error: error.message });
             throw error;
         }
     }

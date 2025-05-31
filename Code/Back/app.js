@@ -199,7 +199,7 @@ ensureRedisInitialized().then(() => {
         {
             name: 'AI Configuration Seeding',
             key: 'aiConfig',
-            condition: process.env.INIT_AI === 'true',
+            condition: process.env.INIT_AI_CONFG === 'true',
             fn: seedAiConfig,
         },
         {

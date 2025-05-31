@@ -13,7 +13,7 @@ class ReportController {
         'ReceiptBookInventory',
         'StubCollection',
         'UserActivity',
-        'AIAnomaly',
+        'Anomaly',
         'AgentPerformance',
         'RegionPerformance',
         'Full'
@@ -57,7 +57,7 @@ class ReportController {
                 'ReceiptBookInventory': ReportService.generateReceiptBookInventoryReport,
                 'StubCollection': ReportService.generateStubCollectionReport,
                 'UserActivity': ReportService.generateUserActivityReport,
-                'AIAnomaly': ReportService.generateAIAnomalyReport,
+                'Anomaly': ReportService.generateAnomalyReport,
                 'AgentPerformance': ReportService.generateAgentPerformanceReport,
                 'RegionPerformance': ReportService.generateRegionPerformanceReport,
                 'Full': ReportService.generateFullReport
@@ -139,7 +139,7 @@ class ReportController {
                         'ReceiptBookInventory': ReportService.generateReceiptBookInventoryReport,
                         'StubCollection': ReportService.generateStubCollectionReport,
                         'UserActivity': ReportService.generateUserActivityReport,
-                        'AIAnomaly': ReportService.generateAIAnomalyReport,
+                        'AIAnomaly': ReportService.generateAnomalyReport,
                         'AgentPerformance': ReportService.generateAgentPerformanceReport,
                         'RegionPerformance': ReportService.generateRegionPerformanceReport,
                         'Full': ReportService.generateFullReport
@@ -387,6 +387,23 @@ class ReportController {
                     metadata: { userId }
                 });
                 return res.status(404).json({ error: 'Generated report not found' });
+            }
+
+            // Attempt to delete the physical file
+            if (report.filePath) {
+                const filePath = path.join(__dirname, '../reports', path.basename(report.filePath));
+                try {
+                    await fs.unlink(filePath);
+                    logger.info(`Deleted file ${filePath} for report ${reportID}`, {
+                        traceId, route: 'reports', service: 'api', status: 200,
+                        metadata: { userId, reportID, filePath }
+                    });
+                } catch (fileErr) {
+                    logger.warn(`File ${filePath} for report ${reportID} not found or could not be deleted: ${fileErr.message}`, {
+                        traceId, route: 'reports', service: 'api', status: 404,
+                        metadata: { userId, reportID, filePath, error: fileErr.message }
+                    });
+                }
             }
 
             await report.destroy();

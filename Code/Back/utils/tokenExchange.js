@@ -1,7 +1,6 @@
 // utils/tokenExchange.js
 const axios = require('axios');
 require('dotenv').config();
-const logger = require('./logger');
 
 const KEYCLOAK_URL = process.env.KEYCLOAK_URL || 'http://localhost:8080';
 const REALM = process.env.REALM || 'TraceFlow';

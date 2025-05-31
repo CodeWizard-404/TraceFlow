@@ -16,6 +16,7 @@ import {
 import ReceiptBook from "../models/ReceiptBook";
 import ReceiptBookType from "models/ReceiptBookType";
 import { v4 as uuidv4 } from 'uuid';
+import User from "models/User";
 
 // Error response type for Axios errors
 interface AxiosErrorResponse {
@@ -329,5 +330,19 @@ export const uploadReceiptBooks = async (
         return response.data;
     } catch (error) {
         throw new Error(handleApiError(error, 'Unable to upload receipt books CSV.'));
+    }
+};
+
+
+/**
+ * Fetch all unique receipt book holders with their roles.
+ * @returns {Promise<User[]>} Array of users with their roles.
+ */
+export const getReceiptBookHolders = async (): Promise<User[]> => {
+    try {
+        const response = await api.get('/receipt-books/holders');
+        return response.data;
+    } catch (error) {
+        throw new Error(handleApiError(error, 'Failed to fetch receipt book holders.'));
     }
 };

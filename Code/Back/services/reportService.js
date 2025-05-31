@@ -1,12 +1,13 @@
 const PDFDocument = require('pdfkit');
 const ExcelJS = require('exceljs');
+const AIService = require('./aiService')
 const fs = require('fs').promises;
 const path = require('path');
 const {
     Visit, Role, Timesheet, ReceiptBook, ReceiptStub, User, Log, Agent, Region,
     Delegation, Governorate, ReceiptBookType, Reason, Checklist, VisitChecklist
 } = require('../models');
-const { Op, Sequelize } = require('sequelize');
+const { Op } = require('sequelize');
 const logger = require('../utils/logger');
 
 class ReportService {
@@ -21,33 +22,941 @@ class ReportService {
         return validated;
     }
 
+
+
+
+
+
+
+
+    // static async generateVisitSummaryReport(filters) {
+    //     const allowedFilters = [
+    //         'supervisorID', 'dateRange', 'regionID', 'agentID', 'status', 'visitReasons',
+    //         'checklistCompleted', 'visitDuration', 'governorateID', 'delegationID',
+    //         'visitType', 'Anomalies', 'dayOfWeek'
+    //     ];
+    //     const {
+    //         supervisorID, dateRange, regionID, agentID, status = [], visitReasons = [],
+    //         checklistCompleted, visitDuration, governorateID, delegationID, visitType,
+    //         Anomalies
+    //     } = ReportService.validateFilters(filters, allowedFilters);
+
+    //     const where = {};
+    //     const userWhere = {};
+    //     const agentWhere = {};
+    //     const delegationWhere = {};
+    //     const governorateWhere = {};
+
+    //     if (dateRange) {
+    //         if (!dateRange.start || !dateRange.end) {
+    //             throw new Error('Invalid date range: both start and end dates are required');
+    //         }
+    //         where.date = { [Op.between]: [new Date(dateRange.start), new Date(dateRange.end)] };
+    //     }
+    //     if (agentID) where.agentID = agentID;
+    //     if (status.length) where.status = { [Op.in]: status };
+    //     if (supervisorID) userWhere.userID = supervisorID;
+    //     if (regionID) governorateWhere.regionID = regionID;
+    //     if (governorateID) delegationWhere.governorateID = governorateID;
+    //     if (delegationID) agentWhere.delegationID = delegationID;
+    //     if (visitDuration) where.duration = { [Op.between]: visitDuration };
+    //     if (visitType) where.agentID = visitType === 'recrutementVisits' ? null : { [Op.ne]: null };
+
+    //     try {
+    //         const visits = await Visit.findAll({
+    //             where,
+    //             include: [
+    //                 {
+    //                     model: Agent,
+    //                     where: agentWhere,
+    //                     required: false,
+    //                     include: [{
+    //                         model: Delegation,
+    //                         where: delegationWhere,
+    //                         required: !!delegationID,
+    //                         include: [{
+    //                             model: Governorate,
+    //                             where: governorateWhere,
+    //                             required: !!governorateID || !!regionID,
+    //                             include: [{
+    //                                 model: Region,
+    //                                 required: !!regionID
+    //                             }]
+    //                         }]
+    //                     }]
+    //                 },
+    //                 {
+    //                     model: Timesheet,
+    //                     include: [{
+    //                         model: User,
+    //                         where: userWhere,
+    //                         required: true
+    //                     }],
+    //                     required: true
+    //                 },
+    //                 { model: Reason, through: { attributes: [] } },
+    //                 {
+    //                     model: Checklist,
+    //                     through: { model: VisitChecklist, attributes: ['checked'] }
+    //                 }
+    //             ]
+    //         });
+
+    //         let filteredVisits = visits;
+    //         if (visitReasons.length) {
+    //             filteredVisits = filteredVisits.filter(v =>
+    //                 v.Reasons.some(r => visitReasons.includes(r.item))
+    //             );
+    //         }
+    //         if (checklistCompleted !== undefined) {
+    //             filteredVisits = filteredVisits.filter(v => {
+    //                 const completed = v.Checklists.every(c => c.VisitChecklist?.checked === true);
+    //                 return checklistCompleted ? completed : !completed;
+    //             });
+    //         }
+    //         if (Anomalies) {
+    //             const anomalyLogs = await Log.findAll({
+    //                 where: {
+    //                     level: ['warn', 'error'],
+    //                     route: { [Op.iLike]: '%visit%' }
+    //                 }
+    //             });
+    //             const anomalyVisitIds = anomalyLogs.map(log => log.metadata?.visitID).filter(id => id);
+    //             filteredVisits = filteredVisits.filter(v => anomalyVisitIds.includes(v.visitID));
+    //         }
+
+    //         const totalVisits = filteredVisits.length;
+    //         const validatedVisits = filteredVisits.filter(v => v.status === 'validated').length;
+    //         const pendingVisits = filteredVisits.filter(v => v.status === 'pending').length;
+    //         const visitedVisits = filteredVisits.filter(v => v.status === 'visited').length;
+    //         const rejectedVisits = filteredVisits.filter(v => v.status === 'rejected').length;
+    //         const averageDuration = totalVisits > 0
+    //             ? filteredVisits.reduce((sum, v) => sum + (v.duration || 0), 0) / totalVisits / 60
+    //             : 0;
+
+    //         return {
+    //             summary: {
+    //                 totalVisits,
+    //                 validatedVisits,
+    //                 pendingVisits,
+    //                 visitedVisits,
+    //                 rejectedVisits,
+    //                 averageDuration: averageDuration.toFixed(2)
+    //             },
+    //             details: filteredVisits.map(v => ({
+    //                 id: v.visitID,
+    //                 date: v.date instanceof Date && !isNaN(v.date) ? v.date.toISOString().split('T')[0] : 'N/A',
+    //                 location: v.location || 'N/A',
+    //                 status: v.status || 'N/A',
+    //                 agent: v.Agent ? `${v.Agent.name} ${v.Agent.lastname}` : 'No Agent',
+    //                 supervisor: v.Timesheet?.User ? `${v.Timesheet.User.firstname} ${v.Timesheet.User.lastname}` : 'N/A',
+    //                 region: v.Agent?.Delegation?.Governorate?.Region?.name || 'N/A',
+    //                 reasons: v.Reasons.map(r => r.item).join(', ') || 'N/A',
+    //                 checklistCompleted: v.Checklists.every(c => c.VisitChecklist?.checked === true)
+    //             }))
+    //         };
+    //     } catch (error) {
+    //         throw new Error(`Failed to generate VisitSummary report: ${error.message}`);
+    //     }
+    // }
+
+    // static async generateTimesheetReport(filters) {
+    //     const allowedFilters = [
+    //         'supervisorID', 'regionalManagerID', 'directorID', 'dateRange', 'status', 'numberOfVisits',
+    //         'totalHours', 'aiSuggestions', 'anomaliesDetected', 'visitStatus', 'weekNumber',
+    //         'directorName', 'checklistCompleted'];
+    //     const {
+    //         supervisorID, regionalManagerID, directorID, dateRange, status = [], numberOfVisits,
+    //         totalHours, aiSuggestions, anomaliesDetected, visitStatus = [], weekNumber, checklistCompleted
+    //     } = ReportService.validateFilters(filters, allowedFilters);
+
+    //     const where = {};
+    //     const userWhere = {};
+    //     if (supervisorID) where.supervisorID = supervisorID;
+    //     if (regionalManagerID) userWhere.regionalManagerID = regionalManagerID;
+    //     if (directorID) userWhere.directorID = directorID;
+
+    //     if (dateRange) {
+    //         if (!dateRange.start || !dateRange.end) {
+    //             throw new Error('Invalid date range: both start and end dates are required');
+    //         }
+    //         where.createdAt = { [Op.between]: [new Date(dateRange.start), new Date(dateRange.end)] };
+    //     }
+    //     if (status.length) where.status = { [Op.in]: status };
+    //     if (weekNumber) where.weekNumber = weekNumber;
+
+
+    //     try {
+    //         const timesheets = await Timesheet.findAll({
+    //             where,
+    //             include: [
+    //                 {
+    //                     model: User,
+    //                     where: userWhere,
+    //                     required: true
+    //                 },
+    //                 {
+    //                     model: Visit,
+    //                     where: visitStatus.length ? { status: { [Op.in]: visitStatus } } : {},
+    //                     required: false,
+    //                     include: [
+    //                         { model: Agent },
+    //                         { model: Reason, through: { attributes: [] } },
+    //                         { model: Checklist, through: { model: VisitChecklist, attributes: ['checked'] } }
+    //                     ]
+    //                 }
+    //             ]
+    //         });
+
+    //         let filteredTimesheets = timesheets;
+    //         if (numberOfVisits) filteredTimesheets = filteredTimesheets.filter(t => t.Visits.length >= numberOfVisits[0] && t.Visits.length <= numberOfVisits[1]);
+    //         if (totalHours) {
+    //             filteredTimesheets = filteredTimesheets.filter(t => {
+    //                 const hours = t.Visits.reduce((sum, v) => sum + (v.duration || 0), 0) / 60;
+    //                 return hours >= totalHours[0] && hours <= totalHours[1];
+    //             });
+    //         }
+    //         if (visitStatus.length) filteredTimesheets = filteredTimesheets.filter(t => t.Visits.every(v => visitStatus.includes(v.status)));
+    //         if (checklistCompleted !== undefined) {
+    //             filteredTimesheets = filteredTimesheets.filter(t => {
+    //                 const completed = t.Visits.every(v => v.Checklists.every(c => c.VisitChecklist?.checked === true));
+    //                 return checklistCompleted ? completed : !completed;
+    //             });
+    //         }
+    //         if (aiSuggestions) {
+    //             const aiLogs = await Log.findAll({ where: { route: { [Op.iLike]: '%timesheet%' }, message: { [Op.iLike]: '%suggestion%' } } });
+    //             const suggestionIds = aiLogs.map(log => log.metadata?.timesheetID).filter(id => id);
+    //             filteredTimesheets = filteredTimesheets.filter(t => suggestionIds.includes(t.timesheetID));
+    //         }
+    //         if (anomaliesDetected) {
+    //             const anomalyLogs = await Log.findAll({ where: { level: ['warn', 'error'], route: { [Op.iLike]: '%timesheet%' } } });
+    //             const anomalyIds = anomalyLogs.map(log => log.metadata?.timesheetID).filter(id => id);
+    //             filteredTimesheets = filteredTimesheets.filter(t => anomalyIds.includes(t.timesheetID));
+    //         }
+
+    //         return {
+    //             summary: {
+    //                 totalTimesheets: filteredTimesheets.length,
+    //                 totalHours: filteredTimesheets.reduce((sum, t) => sum + t.Visits.reduce((s, v) => s + (v.duration || 0), 0), 0) / 60,
+    //                 validatedTimesheets: filteredTimesheets.filter(t => t.status === 'validated').length,
+    //                 pendingTimesheets: filteredTimesheets.filter(t => t.status === 'pending').length,
+    //                 rejectedTimesheets: filteredTimesheets.filter(t => t.status === 'rejected').length
+    //             },
+    //             details: filteredTimesheets.map(t => ({
+    //                 id: t.timesheetID,
+    //                 supervisor: t.User ? `${t.User.firstname} ${t.User.lastname}` : 'N/A',
+    //                 week: `${t.weekNumber}/${t.year}`,
+    //                 status: t.status || 'N/A',
+    //                 totalHours: (t.Visits.reduce((sum, v) => sum + (v.duration || 0), 0) / 60).toFixed(2),
+    //                 visitReasons: t.Visits.map(v => v.Reasons?.map(r => r.item).join(', ') || 'N/A').join('; '),
+    //                 numberOfVisits: t.Visits.length,
+    //                 checklistCompleted: t.Visits.every(v => v.Checklists.every(c => c.VisitChecklist?.checked === true))
+    //             }))
+    //         };
+    //     } catch (error) {
+    //         throw new Error(`Failed to generate Timesheet report: ${error.message}`);
+    //     }
+    // }
+
+    // static async generateReceiptBookInventoryReport(filters) {
+    //     const allowedFilters = [
+    //         'dateRange', 'regionID', 'bookType', 'status', 'agentID', 'governorateID', 'delegationID',
+    //         'currentHolderName', 'agentName', 'assignmentStatus'
+    //     ];
+    //     const {
+    //         dateRange, regionID, bookType, status = [], governorateID, delegationID,
+    //         currentHolderName, agentName, assignmentStatus
+    //     } = ReportService.validateFilters(filters, allowedFilters);
+
+    //     const where = {};
+    //     const agentWhere = {};
+    //     const userWhere = {};
+    //     const delegationWhere = {};
+    //     const governorateWhere = {};
+
+    //     if (regionID) governorateWhere.regionID = regionID;
+    //     if (governorateID) delegationWhere.governorateID = governorateID;
+    //     if (delegationID) agentWhere.delegationID = delegationID;
+    //     if (bookType) where.typeID = bookType;
+    //     if (status.length) where.status = { [Op.in]: status };
+    //     if (currentHolderName) userWhere[Op.or] = [
+    //         { firstname: { [Op.iLike]: `%${currentHolderName}%` } },
+    //         { lastname: { [Op.iLike]: `%${currentHolderName}%` } }
+    //     ];
+    //     if (agentName) agentWhere[Op.or] = [
+    //         { name: { [Op.iLike]: `%${agentName}%` } },
+    //         { lastname: { [Op.iLike]: `%${agentName}%` } }
+    //     ];
+    //     if (assignmentStatus) where.agentID = assignmentStatus === 'assigned' ? { [Op.ne]: null } : null;
+
+    //     // If dateRange is provided, filter ReceiptBooks based on related Visits or Transfers
+    //     if (dateRange) {
+    //         if (!dateRange.start || !dateRange.end) {
+    //             throw new Error('Invalid date range: both start and end dates are required');
+    //         }
+    //         // Find agents involved in visits within the date range
+    //         const visitsInRange = await Visit.findAll({
+    //             where: {
+    //                 date: { [Op.between]: [new Date(dateRange.start), new Date(dateRange.end)] },
+    //                 agentID: { [Op.ne]: null } // Only include visits with agents
+    //             },
+    //             attributes: ['agentID'],
+    //             include: [{
+    //                 model: Agent,
+    //                 attributes: [],
+    //                 include: [{
+    //                     model: Delegation,
+    //                     where: delegationWhere,
+    //                     required: !!delegationID,
+    //                     include: [{
+    //                         model: Governorate,
+    //                         where: governorateWhere,
+    //                         required: !!governorateID || !!regionID
+    //                     }]
+    //                 }]
+    //             }]
+    //         });
+    //         const agentIDs = [...new Set(visitsInRange.map(v => v.agentID).filter(id => id))];
+
+    //         // Include ReceiptBooks assigned to these agents
+    //         if (agentIDs.length > 0) {
+    //             agentWhere.agentID = { [Op.in]: agentIDs };
+    //         } else {
+    //             // If no agents are found, return no ReceiptBooks (or adjust logic as needed)
+    //             where.agentID = null;
+    //         }
+    //     }
+
+    //     try {
+    //         const receiptBooks = await ReceiptBook.findAll({
+    //             where,
+    //             include: [
+    //                 {
+    //                     model: Agent,
+    //                     where: agentWhere,
+    //                     required: false,
+    //                     include: [{
+    //                         model: Delegation,
+    //                         where: delegationWhere,
+    //                         required: !!delegationID,
+    //                         include: [{
+    //                             model: Governorate,
+    //                             where: governorateWhere,
+    //                             required: !!governorateID || !!regionID,
+    //                             include: [{ model: Region, required: !!regionID }]
+    //                         }]
+    //                     }]
+    //                 },
+    //                 { model: ReceiptBookType, required: false },
+    //                 {
+    //                     model: User,
+    //                     as: 'CurrentHolder',
+    //                     where: userWhere,
+    //                     required: false
+    //                 },
+    //                 { model: ReceiptStub, required: false } // Include ReceiptStub to respect one-to-one
+    //             ]
+    //         });
+
+    //         return {
+    //             summary: {
+    //                 totalBooks: receiptBooks.length,
+    //                 inStock: receiptBooks.filter(b => b.status === 'In Stock').length,
+    //                 withAgents: receiptBooks.filter(b => b.status === 'Assigned to Agent').length,
+    //                 withSupervisors: receiptBooks.filter(b => b.status === 'With Supervisor').length,
+    //                 archived: receiptBooks.filter(b => b.status === 'Archived').length
+    //             },
+    //             details: receiptBooks.map(b => ({
+    //                 id: b.bookID,
+    //                 number: b.number || 'N/A',
+    //                 status: b.status || 'N/A',
+    //                 type: b.ReceiptBookType?.name || 'N/A',
+    //                 region: b.Agent?.Delegation?.Governorate?.Region?.name || 'N/A',
+    //                 currentHolder: b.CurrentHolder
+    //                     ? `${b.CurrentHolder.firstname} ${b.CurrentHolder.lastname}`
+    //                     : b.Agent
+    //                         ? `${b.Agent.name} ${b.Agent.lastname}`
+    //                         : 'N/A',
+    //                 assignedToAgent: !!b.agentID,
+    //                 stubStatus: b.ReceiptStub?.status || 'N/A'
+    //             }))
+    //         };
+    //     } catch (error) {
+    //         throw new Error(`Failed to generate ReceiptBookInventory report: ${error.message}`);
+    //     }
+    // }
+
+    // static async generateStubCollectionReport(filters) {
+    //     const allowedFilters = [
+    //         'agentID', 'supervisorID', 'regionalManagerID', 'dateRange', 'status',
+    //         'agentName', 'currentHolderName'
+    //     ];
+    //     const {
+    //         agentID, supervisorID, regionalManagerID, dateRange, status = [],
+    //         agentName, currentHolderName
+    //     } = ReportService.validateFilters(filters, allowedFilters);
+
+    //     const where = {};
+    //     const bookWhere = {};
+    //     const userWhere = {};
+    //     const agentWhere = {};
+
+    //     if (agentID) bookWhere.agentID = agentID;
+    //     if (supervisorID) bookWhere.currentHolderID = supervisorID;
+    //     if (regionalManagerID) userWhere.regionalManagerID = regionalManagerID;
+    //     if (dateRange) {
+    //         if (!dateRange.start || !dateRange.end) {
+    //             throw new Error('Invalid date range: both start and end dates are required');
+    //         }
+    //         where.updatedAt = { [Op.between]: [new Date(dateRange.start), new Date(dateRange.end)] };
+    //     }
+    //     if (status.length) where.status = { [Op.in]: status };
+    //     if (agentName) agentWhere[Op.or] = [
+    //         { name: { [Op.iLike]: `%${agentName}%` } },
+    //         { lastname: { [Op.iLike]: `%${agentName}%` } }
+    //     ];
+    //     if (currentHolderName) userWhere[Op.or] = [
+    //         { firstname: { [Op.iLike]: `%${currentHolderName}%` } },
+    //         { lastname: { [Op.iLike]: `%${currentHolderName}%` } }
+    //     ];
+
+    //     try {
+    //         const stubs = await ReceiptStub.findAll({
+    //             where,
+    //             include: [
+    //                 {
+    //                     model: ReceiptBook,
+    //                     where: bookWhere,
+    //                     include: [
+    //                         { model: User, as: 'CurrentHolder', where: userWhere, required: false },
+    //                         {
+    //                             model: Agent,
+    //                             where: agentWhere,
+    //                             required: false,
+    //                             include: [{
+    //                                 model: Delegation,
+    //                                 include: [{ model: Governorate, include: [{ model: Region }] }]
+    //                             }]
+    //                         }
+    //                     ]
+    //                 }
+    //             ]
+    //         });
+
+    //         return {
+    //             summary: {
+    //                 totalStubs: stubs.length,
+    //                 collected: stubs.filter(s => s.status === 'collected').length,
+    //                 transmitted: stubs.filter(s => s.status === 'transmitted').length,
+    //                 archived: stubs.filter(s => s.status === 'archived').length,
+    //                 pending: stubs.filter(s => s.status === 'pending').length
+    //             },
+    //             details: stubs.map(s => ({
+    //                 id: s.stubID,
+    //                 stubNumber: s.number || 'N/A',
+    //                 bookNumber: s.ReceiptBook?.number || 'N/A',
+    //                 status: s.status || 'N/A',
+    //                 agent: s.ReceiptBook?.Agent
+    //                     ? `${s.ReceiptBook.Agent.name} ${s.ReceiptBook.Agent.lastname}`
+    //                     : 'N/A',
+    //                 currentHolder: s.ReceiptBook?.CurrentHolder
+    //                     ? `${s.ReceiptBook.CurrentHolder.firstname} ${s.ReceiptBook.CurrentHolder.lastname}`
+    //                     : 'N/A',
+    //                 region: s.ReceiptBook?.Agent?.Delegation?.Governorate?.Region?.name || 'N/A'
+    //             }))
+    //         };
+    //     } catch (error) {
+    //         throw new Error(`Failed to generate StubCollection report: ${error.message}`);
+    //     }
+    // }
+
+    // static async generateUserActivityReport(filters) {
+    //     const allowedFilters = [
+    //         'roleID', 'dateRange', 'activityType', 'userID', 'status',
+    //         'suspiciousActivity', 'ipAddress'
+    //     ];
+    //     const {
+    //         roleID, dateRange, activityType, userID, status, suspiciousActivity,
+    //         ipAddress
+    //     } = ReportService.validateFilters(filters, allowedFilters);
+
+    //     const where = {};
+    //     const roleWhere = {};
+    //     const userWhere = {};
+    //     if (dateRange) {
+    //         if (!dateRange.start || !dateRange.end) {
+    //             throw new Error('Invalid date range: both start and end dates are required');
+    //         }
+    //         where.timestamp = { [Op.between]: [new Date(dateRange.start), new Date(dateRange.end)] };
+    //     }
+    //     if (activityType) where.route = { [Op.iLike]: `%${activityType}%` };
+    //     if (userID) where.userId = userID;
+    //     if (status) where.status = status;
+    //     if (ipAddress) where.ip = { [Op.iLike]: `%${ipAddress}%` };
+    //     if (roleID) roleWhere.roleID = roleID;
+
+    //     try {
+    //         const logs = await Log.findAll({ where });
+    //         const userIds = [...new Set(logs.map(l => l.userId).filter(id => id))];
+    //         const users = await User.findAll({
+    //             where: { userID: { [Op.in]: userIds }, ...userWhere },
+    //             include: [{
+    //                 model: Role,
+    //                 where: roleWhere,
+    //                 required: !!roleID,
+    //                 through: { attributes: [] }
+    //             }]
+    //         });
+
+    //         const userMap = users.reduce((map, user) => {
+    //             map[user.userID] = {
+    //                 firstname: user.firstname,
+    //                 lastname: user.lastname,
+    //                 role: user.Roles?.[0]?.name || 'N/A'
+    //             };
+    //             return map;
+    //         }, {});
+
+    //         let filteredLogs = logs;
+    //         if (suspiciousActivity) {
+    //             filteredLogs = filteredLogs.filter(l => ['warn', 'error'].includes(l.level));
+    //         }
+
+    //         return {
+    //             summary: {
+    //                 totalActivities: filteredLogs.length,
+    //                 uniqueUsers: [...new Set(filteredLogs.map(l => l.userId).filter(id => id))].length,
+    //                 suspiciousActivities: filteredLogs.filter(l => ['warn', 'error'].includes(l.level)).length,
+    //                 lastActivity: filteredLogs.length
+    //                     ? new Date(Math.max(...filteredLogs.map(l => new Date(l.timestamp).getTime()))).toISOString()
+    //                     : 'N/A'
+    //             },
+    //             details: filteredLogs.map(l => ({
+    //                 id: l.logID,
+    //                 user: l.userId && userMap[l.userId]
+    //                     ? `${userMap[l.userId].firstname} ${userMap[l.userId].lastname}`
+    //                     : 'N/A',
+    //                 role: l.userId && userMap[l.userId] ? userMap[l.userId].role : 'N/A',
+    //                 activity: l.route,
+    //                 timestamp: l.timestamp ? l.timestamp.toISOString() : 'N/A',
+    //                 status: l.status || 'N/A',
+    //                 suspicious: ['warn', 'error'].includes(l.level) ? 'Yes' : 'No',
+    //                 ipAddress: l.ip || 'N/A',
+    //             }))
+    //         };
+    //     } catch (error) {
+    //         throw new Error(`Failed to generate UserActivity report: ${error.message}`);
+    //     }
+    // }
+
+    // static async generateAnomalyReport(filters) {
+    //     const allowedFilters = [
+    //         'dateRange', 'roleID', 'userID', 'affectedEntity',
+    //         'severity', 'route'
+    //     ];
+    //     const {
+    //         dateRange, roleID, userID, affectedEntity, severity = ['warn', 'error'], route
+    //     } = ReportService.validateFilters(filters, allowedFilters);
+
+    //     const where = { level: { [Op.in]: severity } };
+    //     const roleWhere = {};
+    //     const userWhere = {};
+    //     if (dateRange) {
+    //         if (!dateRange.start || !dateRange.end) {
+    //             throw new Error('Invalid date range: both start and end dates are required');
+    //         }
+    //         where.timestamp = { [Op.between]: [new Date(dateRange.start), new Date(dateRange.end)] };
+    //     }
+    //     if (userID) where.userId = userID;
+    //     if (route) where.route = { [Op.iLike]: `%${route}%` };
+    //     if (roleID) roleWhere.roleID = roleID;
+    //     if (affectedEntity) where.route = { [Op.iLike]: `%${affectedEntity}%` };
+
+    //     try {
+    //         const logs = await Log.findAll({ where });
+    //         const userIds = [...new Set(logs.map(l => l.userId).filter(id => id))];
+    //         const users = await User.findAll({
+    //             where: { userID: { [Op.in]: userIds }, ...userWhere },
+    //             include: [{
+    //                 model: Role,
+    //                 where: roleWhere,
+    //                 required: !!roleID,
+    //                 through: { attributes: [] }
+    //             }]
+    //         });
+
+    //         const userMap = users.reduce((map, user) => {
+    //             map[user.userID] = {
+    //                 firstname: user.firstname,
+    //                 lastname: user.lastname,
+    //                 role: user.Roles?.[0]?.name || 'N/A'
+    //             };
+    //             return map;
+    //         }, {});
+
+    //         return {
+    //             summary: {
+    //                 totalAnomalies: logs.length,
+    //                 warningAnomalies: logs.filter(l => l.level === 'warn').length,
+    //                 errorAnomalies: logs.filter(l => l.level === 'error').length,
+    //                 uniqueUsers: userIds.length
+    //             },
+    //             details: logs.map(l => ({
+    //                 id: l.logID,
+    //                 user: l.userId && userMap[l.userId]
+    //                     ? `${userMap[l.userId].firstname} ${userMap[l.userId].lastname}`
+    //                     : 'N/A',
+    //                 role: l.userId && userMap[l.userId] ? userMap[l.userId].role : 'N/A',
+    //                 anomaly: l.message || 'N/A',
+    //                 affected: l.route.includes('timesheet') ? 'Timesheet'
+    //                     : l.route.includes('visit') ? 'Visit'
+    //                         : l.route.includes('receipt') ? 'Receipt'
+    //                             : 'Other',
+    //                 severity: l.level,
+    //                 timestamp: l.timestamp ? l.timestamp.toISOString() : 'N/A',
+    //                 route: l.route || 'N/A'
+    //             }))
+    //         };
+    //     } catch (error) {
+    //         throw new Error(`Failed to generate Anomaly report: ${error.message}`);
+    //     }
+    // }
+
+    // static async generateAgentPerformanceReport(filters) {
+    //     const allowedFilters = [
+    //         'supervisorID', 'regionalManagerID', 'dateRange', 'agentID', 'performanceScore',
+    //         'numberOfVisits', 'stubsCollected', 'receiptBooksAssigned', 'regionID', 'governorateID',
+    //         'delegationID', 'visitCompletionRate', 'locationUpdated'
+    //     ];
+    //     const {
+    //         supervisorID, regionalManagerID, dateRange, agentID, performanceScore,
+    //         numberOfVisits, stubsCollected, receiptBooksAssigned, regionID, governorateID,
+    //         delegationID, visitCompletionRate, locationUpdated
+    //     } = ReportService.validateFilters(filters, allowedFilters);
+
+    //     const where = {};
+    //     const visitWhere = {};
+    //     const delegationWhere = {};
+    //     const governorateWhere = {};
+    //     const userWhere = {};
+
+    //     if (supervisorID) where.supervisorID = supervisorID;
+    //     if (regionalManagerID) userWhere.regionalManagerID = regionalManagerID;
+    //     if (dateRange) {
+    //         if (!dateRange.start || !dateRange.end) {
+    //             throw new Error('Invalid date range: both start and end dates are required');
+    //         }
+    //         visitWhere.date = { [Op.between]: [new Date(dateRange.start), new Date(dateRange.end)] };
+    //     }
+    //     if (agentID) where.agentID = agentID;
+    //     if (regionID) governorateWhere.regionID = regionID;
+    //     if (governorateID) delegationWhere.governorateID = governorateID;
+    //     if (delegationID) delegationWhere.delegationID = delegationID;
+
+    //     try {
+    //         const agents = await Agent.findAll({
+    //             where,
+    //             include: [
+    //                 { model: Visit, where: visitWhere, required: false },
+    //                 { model: ReceiptBook, include: [{ model: ReceiptStub, required: false }], required: false },
+    //                 {
+    //                     model: Delegation,
+    //                     where: delegationWhere,
+    //                     include: [{
+    //                         model: Governorate,
+    //                         where: governorateWhere,
+    //                         required: !!governorateID || !!regionID,
+    //                         include: [{ model: Region, required: !!regionID }]
+    //                     }],
+    //                     required: !!delegationID
+    //                 },
+    //                 { model: User, as: 'Supervisor', where: userWhere, required: !!regionalManagerID }
+    //             ]
+    //         });
+
+    //         let filteredAgents = agents;
+    //         if (numberOfVisits) filteredAgents = filteredAgents.filter(a => a.Visits.length >= numberOfVisits[0] && a.Visits.length <= numberOfVisits[1]);
+    //         if (stubsCollected) filteredAgents = filteredAgents.filter(a => {
+    //             const collected = a.ReceiptBooks.reduce((sum, b) => sum + (b.ReceiptStub?.status === 'collected' ? 1 : 0), 0);
+    //             return collected >= stubsCollected[0] && collected <= stubsCollected[1];
+    //         });
+    //         if (receiptBooksAssigned) filteredAgents = filteredAgents.filter(a => a.ReceiptBooks.length >= receiptBooksAssigned[0] && a.ReceiptBooks.length <= receiptBooksAssigned[1]);
+    //         if (visitCompletionRate) {
+    //             filteredAgents = filteredAgents.filter(a => {
+    //                 const rate = a.Visits.length ? (a.Visits.filter(v => v.status === 'completed').length / a.Visits.length) * 100 : 0;
+    //                 return rate >= visitCompletionRate[0] && rate <= visitCompletionRate[1];
+    //             });
+    //         }
+    //         if (performanceScore) {
+    //             filteredAgents = filteredAgents.filter(a => {
+    //                 const score = a.Visits.length ? (a.Visits.filter(v => v.status === 'completed').length / a.Visits.length) * 100 : 0;
+    //                 return score >= performanceScore[0] && score <= performanceScore[1];
+    //             });
+    //         }
+    //         if (locationUpdated !== undefined) filteredAgents = filteredAgents.filter(a => (a.latitude && a.longitude) === locationUpdated);
+
+    //         return {
+    //             summary: {
+    //                 totalAgents: filteredAgents.length,
+    //                 totalVisits: filteredAgents.reduce((sum, a) => sum + a.Visits.length, 0),
+    //                 totalStubsCollected: filteredAgents.reduce((sum, a) => sum + (a.ReceiptBooks?.reduce((s, b) => s + (b.ReceiptStub?.status === 'collected' ? 1 : 0), 0) || 0), 0),
+    //                 totalReceiptBooksAssigned: filteredAgents.reduce((sum, a) => sum + a.ReceiptBooks.length, 0),
+    //                 averagePerformanceScore: filteredAgents.length
+    //                     ? (filteredAgents.reduce((sum, a) => {
+    //                         const score = a.Visits.length ? (a.Visits.filter(v => v.status === 'completed').length / a.Visits.length) * 100 : 0;
+    //                         return sum + score;
+    //                     }, 0) / filteredAgents.length).toFixed(1)
+    //                     : '0.0'
+    //             },
+    //             details: filteredAgents.map(a => ({
+    //                 id: a.agentID,
+    //                 name: `${a.name || 'N/A'} ${a.lastname || ''}`,
+    //                 visitsReceived: a.Visits.length,
+    //                 completedVisits: a.Visits.filter(v => v.status === 'completed').length,
+    //                 stubsCollected: a.ReceiptBooks.reduce((sum, b) => sum + (b.ReceiptStub?.status === 'collected' ? 1 : 0), 0),
+    //                 receiptBooksAssigned: a.ReceiptBooks.length,
+    //                 region: a.Delegation?.Governorate?.Region?.name || 'N/A',
+    //                 supervisor: a.Supervisor ? `${a.Supervisor.firstname} ${a.Supervisor.lastname}` : 'N/A',
+    //                 performanceScore: a.Visits.length ? ((a.Visits.filter(v => v.status === 'completed').length / a.Visits.length) * 100).toFixed(1) : '0.0',
+    //                 locationUpdated: !!(a.latitude && a.longitude)
+    //             }))
+    //         };
+    //     } catch (error) {
+
+    //         throw new Error(`Failed to generate AgentPerformance report: ${error.message}`);
+    //     }
+    // }
+
+    // static async generateRegionPerformance(filters) {
+    //     const allowedFilters = [
+    //         'regionalManagerID', 'dateRange', 'regionID', 'governorateID', 'delegationID',
+    //         'performanceScore', 'numberOfVisits', 'stubsCollected'
+    //     ];
+    //     const {
+    //         regionalManagerID, dateRange, regionID, governorateID, delegationID,
+    //         performanceScore, numberOfVisits, stubsCollected
+    //     } = ReportService.validateFilters(filters, allowedFilters);
+
+    //     const where = {};
+    //     const visitWhere = {};
+    //     const governorateWhere = {};
+    //     const delegationWhere = {};
+    //     const userRegionWhere = {};
+
+    //     if (regionalManagerID) userRegionWhere.userID = regionalManagerID;
+    //     if (dateRange) {
+    //         if (!dateRange.start || !dateRange.end) {
+    //             throw new Error('Invalid date range: both start and end are required');
+    //         }
+    //         visitWhere.date = { [Op.between]: [new Date(dateRange.start), new Date(dateRange.end)] };
+    //     }
+    //     if (regionID) where.regionID = regionID;
+    //     if (governorateID) governorateWhere.governorateID = governorateID;
+    //     if (delegationID) delegationWhere.delegationID = delegationID;
+
+    //     try {
+    //         const regions = await Region.findAll({
+    //             where,
+    //             include: [
+    //                 {
+    //                     model: Governorate,
+    //                     where: governorateWhere,
+    //                     required: !!governorateID,
+    //                     include: [
+    //                         {
+    //                             model: Delegation,
+    //                             where: delegationWhere,
+    //                             required: !!delegationID,
+    //                             include: [
+    //                                 {
+    //                                     model: Agent,
+    //                                     include: [
+    //                                         { model: Visit, where: visitWhere, required: false },
+    //                                         { model: ReceiptBook, include: [{ model: ReceiptStub, required: false }], required: false }
+    //                                     ],
+    //                                     required: false
+    //                                 }
+    //                             ]
+    //                         }
+    //                     ]
+    //                 },
+    //                 {
+    //                     model: User,
+    //                     through: { model: 'UserRegions', where: userRegionWhere },
+    //                     required: !!regionalManagerID
+    //                 }
+    //             ]
+    //         });
+
+    //         let filteredRegions = regions;
+    //         if (numberOfVisits) {
+    //             filteredRegions = filteredRegions.filter(r => {
+    //                 const visits = r.Governorates.reduce((sum, g) =>
+    //                     sum + g.Delegations.reduce((s, d) => s + (d.Agent?.Visits?.length || 0), 0), 0);
+    //                 return visits >= numberOfVisits[0] && visits <= numberOfVisits[1];
+    //             });
+    //         }
+    //         if (stubsCollected) {
+    //             filteredRegions = filteredRegions.filter(r => {
+    //                 const stubs = r.Governorates.reduce((sum, g) =>
+    //                     sum + g.Delegations.reduce((s, d) =>
+    //                         s + (d.Agent?.ReceiptBooks?.reduce((t, b) =>
+    //                             t + (b.ReceiptStub?.status === 'collected' ? 1 : 0), 0) || 0), 0), 0);
+    //                 return stubs >= stubsCollected[0] && stubs <= stubsCollected[1];
+    //             });
+    //         }
+    //         if (performanceScore) {
+    //             filteredRegions = filteredRegions.filter(r => {
+    //                 const totalVisits = r.Governorates.reduce((sum, g) =>
+    //                     sum + g.Delegations.reduce((s, d) => s + (d.Agent?.Visits?.length || 0), 0), 0);
+    //                 const completedVisits = r.Governorates.reduce((sum, g) =>
+    //                     sum + g.Delegations.reduce((s, d) =>
+    //                         s + (d.Agent?.Visits?.filter(v => v.status === 'completed').length || 0), 0), 0);
+    //                 const score = totalVisits ? (completedVisits / totalVisits) * 100 : 0;
+    //                 return score >= performanceScore[0] && score <= performanceScore[1];
+    //             });
+    //         }
+
+    //         return {
+    //             summary: {
+    //                 totalRegions: filteredRegions.length,
+    //                 totalVisits: filteredRegions.reduce((sum, r) =>
+    //                     sum + r.Governorates.reduce((a, g) =>
+    //                         a + g.Delegations.reduce((s, d) => s + (d.Agent?.Visits?.length || 0), 0), 0), 0),
+    //                 totalStubsCollected: filteredRegions.reduce((sum, r) =>
+    //                     sum + r.Governorates.reduce((a, g) =>
+    //                         a + g.Delegations.reduce((s, d) =>
+    //                             s + (d.Agent?.ReceiptBooks?.reduce((t, b) =>
+    //                                 t + (b.ReceiptStub?.status === 'collected' ? 1 : 0), 0) || 0), 0), 0), 0),
+    //                 averagePerformanceScore: filteredRegions.length
+    //                     ? (filteredRegions.reduce((sum, r) => {
+    //                         const totalVisits = r.Governorates.reduce((sum, g) =>
+    //                             sum + g.Delegations.reduce((s, d) => s + (d.Agent?.Visits?.length || 0), 0), 0);
+    //                         const completedVisits = r.Governorates.reduce((sum, g) =>
+    //                             sum + g.Delegations.reduce((s, d) =>
+    //                                 s + (d.Agent?.Visits?.filter(v => v.status === 'completed').length || 0), 0), 0);
+    //                         return sum + (totalVisits ? (completedVisits / totalVisits) * 100 : 0);
+    //                     }, 0) / filteredRegions.length).toFixed(1)
+    //                     : '0.0'
+    //             },
+    //             details: await Promise.all(filteredRegions.map(async r => {
+    //                 let regionalManagerName = 'N/A';
+    //                 if (r.regionalManagerID) {
+    //                     const user = await User.findByPk(r.regionalManagerID);
+    //                     if (user) {
+    //                         regionalManagerName = `${user.firstname} ${user.lastname}`;
+    //                     }
+    //                 }
+    //                 return {
+    //                     id: r.regionID,
+    //                     name: r.name || 'N/A',
+    //                     visits: r.Governorates.reduce((sum, g) =>
+    //                         sum + g.Delegations.reduce((s, d) => s + (d.Agent?.Visits?.length || 0), 0), 0),
+    //                     visitsCompleted: r.Governorates.reduce((sum, g) =>
+    //                         sum + g.Delegations.reduce((s, d) =>
+    //                             s + (d.Agent?.Visits?.filter(v => v.status === 'completed').length || 0), 0), 0),
+    //                     stubsCollected: r.Governorates.reduce((sum, g) =>
+    //                         sum + g.Delegations.reduce((s, d) =>
+    //                             s + (d.Agent?.ReceiptBooks?.reduce((t, b) =>
+    //                                 t + (b.ReceiptStub?.status === 'collected' ? 1 : 0), 0) || 0), 0), 0),
+    //                     performanceScore: ((r.Governorates.reduce((sum, g) =>
+    //                         sum + g.Delegations.reduce((s, d) =>
+    //                             s + (d.Agent?.Visits?.filter(v => v.status === 'completed').length || 0), 0), 0) /
+    //                         (r.Governorates.reduce((sum, g) =>
+    //                             sum + g.Delegations.reduce((s, d) => s + (d.Agent?.Visits?.length || 0), 0), 0) || 1)) *
+    //                         100).toFixed(1) || '0.0',
+    //                     regionalManager: regionalManagerName
+    //                 };
+    //             }))
+    //         };
+    //     } catch (error) {
+    //         throw new Error(`Failed to generate RegionPerformance report: ${error.message}`);
+    //     }
+    // }
+
+    // static async generateFullReport(filters) {
+    //     const allowedFilters = [
+    //         'supervisorID', 'regionalManagerID', 'dateRange', 'regionID', 'agentID', 'status',
+    //         'visitReasons'
+    //     ];
+    //     const {
+    //         supervisorID, regionalManagerID, dateRange, regionID, agentID, status,
+    //         visitReasons,
+    //     } = ReportService.validateFilters(filters, allowedFilters);
+
+    //     if (!supervisorID && !regionalManagerID) {
+    //         throw new Error('Either supervisorID or regionalManagerID is required');
+    //     }
+
+    //     try {
+    //         const [
+    //             visitSummaryReport,
+    //             timesheetReport,
+    //             receiptBookInventoryReport,
+    //             stubCollectionReport,
+    //             userActivityReport,
+    //             AnomalyReport,
+    //             agentPerformanceReport,
+    //             regionPerformanceReport
+    //         ] = await Promise.all([
+    //             ReportService.generateVisitSummaryReport({ supervisorID, dateRange, regionID, status, visitReasons, agentID }),
+    //             ReportService.generateTimesheetReport({ supervisorID, regionalManagerID, dateRange, status }),
+    //             ReportService.generateReceiptBookInventoryReport({ dateRange, regionID }),
+    //             ReportService.generateStubCollectionReport({ agentID, supervisorID, regionalManagerID, dateRange, status }),
+    //             ReportService.generateUserActivityReport({ dateRange }),
+    //             ReportService.generateAnomalyReport({ dateRange }),
+    //             ReportService.generateAgentPerformanceReport({ supervisorID, regionalManagerID, dateRange, agentID, regionID }),
+    //             ReportService.generateRegionPerformance({ regionalManagerID, dateRange, regionID })
+    //         ]);
+
+    //         return {
+    //             visitSummaryReport,
+    //             timesheetReport,
+    //             receiptBookInventoryReport,
+    //             stubCollectionReport,
+    //             userActivityReport,
+    //             AnomalyReport,
+    //             agentPerformanceReport,
+    //             regionPerformanceReport
+    //         };
+    //     } catch (error) {
+    //         throw new Error(`Failed to generate Full report: ${error.message}`);
+    //     }
+    // }
+
+
+
+
     static async generateVisitSummaryReport(filters) {
+        console.log(filters)
         const allowedFilters = [
             'supervisorID', 'dateRange', 'regionID', 'agentID', 'status', 'visitReasons',
             'checklistCompleted', 'visitDuration', 'governorateID', 'delegationID',
-            'visitType', 'aiAnomalies', 'dayOfWeek'
+            'visitType', 'Anomalies', 'dayOfWeek'
         ];
         const {
             supervisorID, dateRange, regionID, agentID, status = [], visitReasons = [],
             checklistCompleted, visitDuration, governorateID, delegationID, visitType,
-            aiAnomalies, dayOfWeek
+            Anomalies
         } = ReportService.validateFilters(filters, allowedFilters);
 
         const where = {};
         const userWhere = {};
         const agentWhere = {};
+        const delegationWhere = {};
+        const governorateWhere = {};
 
         if (dateRange) {
             if (!dateRange.start || !dateRange.end) {
                 throw new Error('Invalid date range: both start and end dates are required');
             }
-            where.date = { [Op.between]: [new Date(dateRange.start), new Date(dateRange.end)] };
+            where.date = { [Op.between]: [dateRange.start, dateRange.end] };
         }
         if (agentID) where.agentID = agentID;
         if (status.length) where.status = { [Op.in]: status };
         if (supervisorID) userWhere.userID = supervisorID;
-        if (regionID) agentWhere['$Delegation.Governorate.regionID$'] = regionID;
-        if (governorateID) agentWhere['$Delegation.governorateID$'] = governorateID;
+        if (regionID) governorateWhere.regionID = regionID;
+        if (governorateID) delegationWhere.governorateID = governorateID;
         if (delegationID) agentWhere.delegationID = delegationID;
         if (visitDuration) where.duration = { [Op.between]: visitDuration };
         if (visitType) where.agentID = visitType === 'recrutementVisits' ? null : { [Op.ne]: null };
@@ -60,49 +969,49 @@ class ReportService {
                         model: Agent,
                         where: agentWhere,
                         required: false,
-                        include: [{
-                            model: Delegation,
-                            include: [{
-                                model: Governorate,
-                                include: [{ model: Region }]
-                            }]
-                        }]
+                        include: [
+                            {
+                                model: Delegation,
+                                where: delegationWhere,
+                                required: false,
+                                include: [
+                                    {
+                                        model: Governorate,
+                                        where: governorateWhere,
+                                        required: false,
+                                        include: [{ model: Region, required: false }],
+                                    },
+                                ],
+                            },
+                        ],
                     },
                     {
                         model: Timesheet,
-                        include: [{
-                            model: User,
-                            where: userWhere,
-                            required: true
-                        }],
-                        required: true
+                        include: [{ model: User, where: userWhere, required: false }],
+                        required: false,
                     },
-                    { model: Reason, through: { attributes: [] } },
+                    { model: Reason, through: { attributes: [] }, required: false },
                     {
                         model: Checklist,
-                        through: { model: VisitChecklist, attributes: ['checked'] }
-                    }
-                ]
+                        through: { model: VisitChecklist, attributes: ['checked'] },
+                        required: false,
+                    },
+                ],
             });
 
             let filteredVisits = visits;
             if (visitReasons.length) {
-                filteredVisits = filteredVisits.filter(v =>
-                    v.Reasons.some(r => visitReasons.includes(r.item))
-                );
+                filteredVisits = filteredVisits.filter(v => v.Reasons.some(r => visitReasons.includes(r.item)));
             }
             if (checklistCompleted !== undefined) {
                 filteredVisits = filteredVisits.filter(v => {
-                    const completed = v.Checklists.every(c => c.VisitChecklist?.checked === true);
+                    const completed = v.Checklists.length > 0 && v.Checklists.some(c => c.VisitChecklist?.checked);
                     return checklistCompleted ? completed : !completed;
                 });
             }
-            if (aiAnomalies) {
+            if (Anomalies) {
                 const anomalyLogs = await Log.findAll({
-                    where: {
-                        level: ['warn', 'error'],
-                        route: { [Op.iLike]: '%visit%' }
-                    }
+                    where: { level: ['warn', 'error'], route: { [Op.iLike]: '%visit%' } },
                 });
                 const anomalyVisitIds = anomalyLogs.map(log => log.metadata?.visitID).filter(id => id);
                 filteredVisits = filteredVisits.filter(v => anomalyVisitIds.includes(v.visitID));
@@ -117,31 +1026,44 @@ class ReportService {
                 ? filteredVisits.reduce((sum, v) => sum + (v.duration || 0), 0) / totalVisits / 60
                 : 0;
 
-            return {
+            const reportData = {
                 summary: {
                     totalVisits,
                     validatedVisits,
                     pendingVisits,
                     visitedVisits,
                     rejectedVisits,
-                    averageDuration: averageDuration.toFixed(2)
+                    averageDuration: averageDuration.toFixed(2),
                 },
-                details: filteredVisits.map(v => ({
-                    id: v.visitID,
-                    date: v.date instanceof Date && !isNaN(v.date) ? v.date.toISOString().split('T')[0] : 'N/A',
-                    location: v.location || 'N/A',
-                    status: v.status || 'N/A',
-                    agent: v.Agent ? `${v.Agent.name} ${v.Agent.lastname}` : 'No Agent',
-                    supervisor: v.Timesheet?.User ? `${v.Timesheet.User.firstname} ${v.Timesheet.User.lastname}` : 'N/A',
-                    region: v.Agent?.Delegation?.Governorate?.Region?.name || 'N/A',
-                    reasons: v.Reasons.map(r => r.item).join(', ') || 'N/A',
-                    checklistCompleted: v.Checklists.every(c => c.VisitChecklist?.checked === true)
-                }))
+                details: filteredVisits.map(v => {
+                    const detail = {
+                        date: v.date || 'N/A',
+                        location: v.location || 'N/A',
+                        status: v.status || 'N/A',
+                        agent: v.Agent ? `${v.Agent.name || ''} ${v.Agent.lastname || ''}`.trim() || 'No Agent' : 'No Agent',
+                        supervisor: v.Timesheet?.User ? `${v.Timesheet.User.firstname || ''} ${v.Timesheet.User.lastname || ''}`.trim() : 'N/A',
+                        duration: v.duration != null ? (v.duration / 60).toFixed(2) : 'N/A',
+                        reasons: v.Reasons.map(r => r.item).join(', ') || 'N/A',
+                        checklistCompleted: v.Checklists.length > 0 ? v.Checklists.some(c => c.VisitChecklist?.checked) : false,
+                    };
+                    return detail;
+                }),
             };
+
+            try {
+                const aiSummary = await AIService.generateReport(
+                    { ...filters, reportType: 'VisitSummary', data: reportData },
+                    'json',
+                    new AbortController()
+                );
+                reportData.aiSummary = aiSummary.summary || 'No AI summary available';
+            } catch (error) {
+                logger.warn('AI summary generation failed for VisitSummary report:', error.message);
+                reportData.aiSummary = 'AI summary unavailable';
+            }
+
+            return reportData;
         } catch (error) {
-            logger.error(`Failed to generate VisitSummary report: ${error.message}`, {
-                route: 'reports', service: 'api', metadata: { filters }
-            });
             throw new Error(`Failed to generate VisitSummary report: ${error.message}`);
         }
     }
@@ -150,7 +1072,8 @@ class ReportService {
         const allowedFilters = [
             'supervisorID', 'regionalManagerID', 'directorID', 'dateRange', 'status', 'numberOfVisits',
             'totalHours', 'aiSuggestions', 'anomaliesDetected', 'visitStatus', 'weekNumber',
-            'directorName', 'checklistCompleted'];
+            'directorName', 'checklistCompleted'
+        ];
         const {
             supervisorID, regionalManagerID, directorID, dateRange, status = [], numberOfVisits,
             totalHours, aiSuggestions, anomaliesDetected, visitStatus = [], weekNumber, checklistCompleted
@@ -171,7 +1094,6 @@ class ReportService {
         if (status.length) where.status = { [Op.in]: status };
         if (weekNumber) where.weekNumber = weekNumber;
 
-
         try {
             const timesheets = await Timesheet.findAll({
                 where,
@@ -183,6 +1105,7 @@ class ReportService {
                     },
                     {
                         model: Visit,
+                        where: visitStatus.length ? { status: { [Op.in]: visitStatus } } : {},
                         required: false,
                         include: [
                             { model: Agent },
@@ -219,7 +1142,7 @@ class ReportService {
                 filteredTimesheets = filteredTimesheets.filter(t => anomalyIds.includes(t.timesheetID));
             }
 
-            return {
+            const reportData = {
                 summary: {
                     totalTimesheets: filteredTimesheets.length,
                     totalHours: filteredTimesheets.reduce((sum, t) => sum + t.Visits.reduce((s, v) => s + (v.duration || 0), 0), 0) / 60,
@@ -228,7 +1151,6 @@ class ReportService {
                     rejectedTimesheets: filteredTimesheets.filter(t => t.status === 'rejected').length
                 },
                 details: filteredTimesheets.map(t => ({
-                    id: t.timesheetID,
                     supervisor: t.User ? `${t.User.firstname} ${t.User.lastname}` : 'N/A',
                     week: `${t.weekNumber}/${t.year}`,
                     status: t.status || 'N/A',
@@ -238,17 +1160,28 @@ class ReportService {
                     checklistCompleted: t.Visits.every(v => v.Checklists.every(c => c.VisitChecklist?.checked === true))
                 }))
             };
+
+            // Generate AI summary
+            try {
+                const aiSummary = await AIService.generateReport(
+                    { ...filters, reportType: 'Timesheet', data: reportData },
+                    'json',
+                    new AbortController()
+                );
+                reportData.aiSummary = aiSummary.summary || 'No AI summary available';
+            } catch (error) {
+                console.warn('AI summary generation failed for Timesheet report:', error.message);
+                reportData.aiSummary = 'AI summary unavailable';
+            }
+            return reportData;
         } catch (error) {
-            logger.error(`Failed to generate Timesheet report: ${error.message}`, {
-                route: 'reports', service: 'api', metadata: { filters }
-            });
             throw new Error(`Failed to generate Timesheet report: ${error.message}`);
         }
     }
 
     static async generateReceiptBookInventoryReport(filters) {
         const allowedFilters = [
-            'dateRange', 'regionID', 'bookType', 'status', 'governorateID', 'delegationID',
+            'dateRange', 'regionID', 'bookType', 'status', 'agentID', 'governorateID', 'delegationID',
             'currentHolderName', 'agentName', 'assignmentStatus'
         ];
         const {
@@ -259,25 +1192,11 @@ class ReportService {
         const where = {};
         const agentWhere = {};
         const userWhere = {};
-        if (dateRange) {
-            if (!dateRange.start || !dateRange.end) {
-                throw new Error('Invalid date range: both start and end dates are required');
-            }
-            const visitsInRange = await Visit.findAll({
-                where: {
-                    date: { [Op.between]: [new Date(dateRange.start), new Date(dateRange.end)] }
-                },
-                attributes: ['timesheetID']
-            });
-            const timesheetIDs = [...new Set(visitsInRange.map(v => v.timesheetID).filter(id => id))];
-            if (timesheetIDs.length === 0) {
-                where.timesheetID = null;
-            } else {
-                where.timesheetID = { [Op.in]: timesheetIDs };
-            }
-        }
-        if (regionID) agentWhere['$Delegation.Governorate.regionID$'] = regionID;
-        if (governorateID) agentWhere['$Delegation.governorateID$'] = governorateID;
+        const delegationWhere = {};
+        const governorateWhere = {};
+
+        if (regionID) governorateWhere.regionID = regionID;
+        if (governorateID) delegationWhere.governorateID = governorateID;
         if (delegationID) agentWhere.delegationID = delegationID;
         if (bookType) where.typeID = bookType;
         if (status.length) where.status = { [Op.in]: status };
@@ -291,6 +1210,40 @@ class ReportService {
         ];
         if (assignmentStatus) where.agentID = assignmentStatus === 'assigned' ? { [Op.ne]: null } : null;
 
+        if (dateRange) {
+            if (!dateRange.start || !dateRange.end) {
+                throw new Error('Invalid date range: both start and end dates are required');
+            }
+            const visitsInRange = await Visit.findAll({
+                where: {
+                    date: { [Op.between]: [new Date(dateRange.start), new Date(dateRange.end)] },
+                    agentID: { [Op.ne]: null }
+                },
+                attributes: ['agentID'],
+                include: [{
+                    model: Agent,
+                    attributes: [],
+                    include: [{
+                        model: Delegation,
+                        where: delegationWhere,
+                        required: !!delegationID,
+                        include: [{
+                            model: Governorate,
+                            where: governorateWhere,
+                            required: !!governorateID || !!regionID
+                        }]
+                    }]
+                }]
+            });
+            const agentIDs = [...new Set(visitsInRange.map(v => v.agentID).filter(id => id))];
+
+            if (agentIDs.length > 0) {
+                agentWhere.agentID = { [Op.in]: agentIDs };
+            } else {
+                where.agentID = null;
+            }
+        }
+
         try {
             const receiptBooks = await ReceiptBook.findAll({
                 where,
@@ -301,7 +1254,14 @@ class ReportService {
                         required: false,
                         include: [{
                             model: Delegation,
-                            include: [{ model: Governorate, include: [{ model: Region }] }]
+                            where: delegationWhere,
+                            required: !!delegationID,
+                            include: [{
+                                model: Governorate,
+                                where: governorateWhere,
+                                required: !!governorateID || !!regionID,
+                                include: [{ model: Region, required: !!regionID }]
+                            }]
                         }]
                     },
                     { model: ReceiptBookType, required: false },
@@ -310,11 +1270,12 @@ class ReportService {
                         as: 'CurrentHolder',
                         where: userWhere,
                         required: false
-                    }
+                    },
+                    { model: ReceiptStub, required: false }
                 ]
             });
 
-            return {
+            const reportData = {
                 summary: {
                     totalBooks: receiptBooks.length,
                     inStock: receiptBooks.filter(b => b.status === 'In Stock').length,
@@ -323,23 +1284,34 @@ class ReportService {
                     archived: receiptBooks.filter(b => b.status === 'Archived').length
                 },
                 details: receiptBooks.map(b => ({
-                    id: b.bookID,
                     number: b.number || 'N/A',
                     status: b.status || 'N/A',
                     type: b.ReceiptBookType?.name || 'N/A',
-                    region: b.Agent?.Delegation?.Governorate?.Region?.name || 'N/A',
                     currentHolder: b.CurrentHolder
                         ? `${b.CurrentHolder.firstname} ${b.CurrentHolder.lastname}`
                         : b.Agent
                             ? `${b.Agent.name} ${b.Agent.lastname}`
                             : 'N/A',
-                    assignedToAgent: !!b.agentID
+                    assignedToAgent: !!b.agentID,
+                    stubStatus: b.ReceiptStub?.status || 'N/A'
                 }))
             };
+
+            // Generate AI summary
+            try {
+                const aiSummary = await AIService.generateReport(
+                    { ...filters, reportType: 'ReceiptBookInventory', data: reportData },
+                    'json',
+                    new AbortController()
+                );
+                reportData.aiSummary = aiSummary.summary || 'No AI summary available';
+            } catch (error) {
+                console.warn('AI summary generation failed for ReceiptBookInventory report:', error.message);
+                reportData.aiSummary = 'AI summary unavailable';
+            }
+
+            return reportData;
         } catch (error) {
-            logger.error(`Failed to generate ReceiptBookInventory report: ${error.message}`, {
-                route: 'reports', service: 'api', metadata: { filters }
-            });
             throw new Error(`Failed to generate ReceiptBookInventory report: ${error.message}`);
         }
     }
@@ -347,7 +1319,8 @@ class ReportService {
     static async generateStubCollectionReport(filters) {
         const allowedFilters = [
             'agentID', 'supervisorID', 'regionalManagerID', 'dateRange', 'status',
-            'agentName', 'currentHolderName'];
+            'agentName', 'currentHolderName'
+        ];
         const {
             agentID, supervisorID, regionalManagerID, dateRange, status = [],
             agentName, currentHolderName
@@ -356,6 +1329,8 @@ class ReportService {
         const where = {};
         const bookWhere = {};
         const userWhere = {};
+        const agentWhere = {};
+
         if (agentID) bookWhere.agentID = agentID;
         if (supervisorID) bookWhere.currentHolderID = supervisorID;
         if (regionalManagerID) userWhere.regionalManagerID = regionalManagerID;
@@ -366,9 +1341,9 @@ class ReportService {
             where.updatedAt = { [Op.between]: [new Date(dateRange.start), new Date(dateRange.end)] };
         }
         if (status.length) where.status = { [Op.in]: status };
-        if (agentName) bookWhere[Op.or] = [
-            { '$Agent.name$': { [Op.iLike]: `%${agentName}%` } },
-            { '$Agent.lastname$': { [Op.iLike]: `%${agentName}%` } }
+        if (agentName) agentWhere[Op.or] = [
+            { name: { [Op.iLike]: `%${agentName}%` } },
+            { lastname: { [Op.iLike]: `%${agentName}%` } }
         ];
         if (currentHolderName) userWhere[Op.or] = [
             { firstname: { [Op.iLike]: `%${currentHolderName}%` } },
@@ -386,6 +1361,7 @@ class ReportService {
                             { model: User, as: 'CurrentHolder', where: userWhere, required: false },
                             {
                                 model: Agent,
+                                where: agentWhere,
                                 required: false,
                                 include: [{
                                     model: Delegation,
@@ -397,7 +1373,7 @@ class ReportService {
                 ]
             });
 
-            return {
+            const reportData = {
                 summary: {
                     totalStubs: stubs.length,
                     collected: stubs.filter(s => s.status === 'collected').length,
@@ -406,8 +1382,6 @@ class ReportService {
                     pending: stubs.filter(s => s.status === 'pending').length
                 },
                 details: stubs.map(s => ({
-                    id: s.stubID,
-                    stubNumber: s.number || 'N/A',
                     bookNumber: s.ReceiptBook?.number || 'N/A',
                     status: s.status || 'N/A',
                     agent: s.ReceiptBook?.Agent
@@ -416,13 +1390,24 @@ class ReportService {
                     currentHolder: s.ReceiptBook?.CurrentHolder
                         ? `${s.ReceiptBook.CurrentHolder.firstname} ${s.ReceiptBook.CurrentHolder.lastname}`
                         : 'N/A',
-                    region: s.ReceiptBook?.Agent?.Delegation?.Governorate?.Region?.name || 'N/A'
                 }))
             };
+
+            // Generate AI summary
+            try {
+                const aiSummary = await AIService.generateReport(
+                    { ...filters, reportType: 'StubCollection', data: reportData },
+                    'json',
+                    new AbortController()
+                );
+                reportData.aiSummary = aiSummary.summary || 'No AI summary available';
+            } catch (error) {
+                console.warn('AI summary generation failed for StubCollection report:', error.message);
+                reportData.aiSummary = 'AI summary unavailable';
+            }
+
+            return reportData;
         } catch (error) {
-            logger.error(`Failed to generate StubCollection report: ${error.message}`, {
-                route: 'reports', service: 'api', metadata: { filters }
-            });
             throw new Error(`Failed to generate StubCollection report: ${error.message}`);
         }
     }
@@ -479,7 +1464,7 @@ class ReportService {
                 filteredLogs = filteredLogs.filter(l => ['warn', 'error'].includes(l.level));
             }
 
-            return {
+            const reportData = {
                 summary: {
                     totalActivities: filteredLogs.length,
                     uniqueUsers: [...new Set(filteredLogs.map(l => l.userId).filter(id => id))].length,
@@ -489,7 +1474,6 @@ class ReportService {
                         : 'N/A'
                 },
                 details: filteredLogs.map(l => ({
-                    id: l.logID,
                     user: l.userId && userMap[l.userId]
                         ? `${userMap[l.userId].firstname} ${userMap[l.userId].lastname}`
                         : 'N/A',
@@ -501,22 +1485,42 @@ class ReportService {
                     ipAddress: l.ip || 'N/A',
                 }))
             };
+
+            // Generate AI summary
+            try {
+                const aiSummary = await AIService.generateReport(
+                    { ...filters, reportType: 'UserActivity', data: reportData },
+                    'json',
+                    new AbortController()
+                );
+                reportData.aiSummary = aiSummary.summary || 'No AI summary available';
+            } catch (error) {
+                console.warn('AI summary generation failed for UserActivity report:', error.message);
+                reportData.aiSummary = 'AI summary unavailable';
+            }
+
+            return reportData;
         } catch (error) {
-            logger.error(`Failed to generate UserActivity report: ${error.message}`, {
-                route: 'reports', service: 'api', metadata: { filters }
-            });
             throw new Error(`Failed to generate UserActivity report: ${error.message}`);
         }
     }
 
-    static async generateAIAnomalyReport(filters) {
+    static async generateAnomalyReport(filters) {
         const allowedFilters = [
             'dateRange', 'roleID', 'userID', 'affectedEntity',
             'severity', 'route'
         ];
-        const {
+        let {
             dateRange, roleID, userID, affectedEntity, severity = ['warn', 'error'], route
         } = ReportService.validateFilters(filters, allowedFilters);
+
+        // Ensure severity is an array
+        if (typeof severity === 'string') {
+            severity = [severity];
+        } else if (!Array.isArray(severity)) {
+            logger.warn('Invalid severity filter, defaulting to ["warn", "error"]', { severity });
+            severity = ['warn', 'error'];
+        }
 
         const where = { level: { [Op.in]: severity } };
         const roleWhere = {};
@@ -534,7 +1538,15 @@ class ReportService {
 
         try {
             const logs = await Log.findAll({ where });
+            if (!Array.isArray(logs)) {
+                logger.error('Log.findAll did not return an array', { logs });
+                throw new Error('Invalid log data returned from database');
+            }
+            logger.debug('Logs retrieved for Anomaly report', { count: logs.length, filters });
+
             const userIds = [...new Set(logs.map(l => l.userId).filter(id => id))];
+            logger.debug('Unique user IDs', { userIds });
+
             const users = await User.findAll({
                 where: { userID: { [Op.in]: userIds }, ...userWhere },
                 include: [{
@@ -544,17 +1556,22 @@ class ReportService {
                     through: { attributes: [] }
                 }]
             });
+            if (!Array.isArray(users)) {
+                logger.error('User.findAll did not return an array', { users });
+                throw new Error('Invalid user data returned from database');
+            }
+            logger.debug('Users retrieved for Anomaly report', { count: users.length });
 
             const userMap = users.reduce((map, user) => {
                 map[user.userID] = {
-                    firstname: user.firstname,
-                    lastname: user.lastname,
+                    firstname: user.firstname || 'N/A',
+                    lastname: user.lastname || 'N/A',
                     role: user.Roles?.[0]?.name || 'N/A'
                 };
                 return map;
             }, {});
 
-            return {
+            const reportData = {
                 summary: {
                     totalAnomalies: logs.length,
                     warningAnomalies: logs.filter(l => l.level === 'warn').length,
@@ -562,48 +1579,63 @@ class ReportService {
                     uniqueUsers: userIds.length
                 },
                 details: logs.map(l => ({
-                    id: l.logID,
                     user: l.userId && userMap[l.userId]
                         ? `${userMap[l.userId].firstname} ${userMap[l.userId].lastname}`
                         : 'N/A',
                     role: l.userId && userMap[l.userId] ? userMap[l.userId].role : 'N/A',
                     anomaly: l.message || 'N/A',
-                    affected: l.route.includes('timesheet') ? 'Timesheet'
-                        : l.route.includes('visit') ? 'Visit'
-                            : l.route.includes('receipt') ? 'Receipt'
+                    affected: l.route?.includes('timesheet') ? 'Timesheet'
+                        : l.route?.includes('visit') ? 'Visit'
+                            : l.route?.includes('receipt') ? 'Receipt'
                                 : 'Other',
                     severity: l.level,
                     timestamp: l.timestamp ? l.timestamp.toISOString() : 'N/A',
                     route: l.route || 'N/A'
                 }))
             };
+
+            try {
+                const aiSummary = await AIService.generateReport(
+                    { ...filters, reportType: 'Anomaly', data: reportData },
+                    'json',
+                    new AbortController()
+                );
+                logger.debug('AI summary response', { aiSummary });
+                reportData.aiSummary = typeof aiSummary?.summary === 'string'
+                    ? aiSummary.summary
+                    : 'No AI summary available';
+            } catch (error) {
+                logger.warn('AI summary generation failed for Anomaly report', { error: error.message });
+                reportData.aiSummary = 'AI summary unavailable';
+            }
+
+            return reportData;
         } catch (error) {
-            logger.error(`Failed to generate AIAnomaly report: ${error.message}`, {
-                route: 'reports', service: 'api', metadata: { filters }
-            });
-            throw new Error(`Failed to generate AIAnomaly report: ${error.message}`);
+            logger.error('Error in generateAnomalyReport', { error: error.message, stack: error.stack, filters });
+            throw new Error(`Failed to generate Anomaly report: ${error.message}`);
         }
     }
 
     static async generateAgentPerformanceReport(filters) {
         const allowedFilters = [
-            'supervisorID', 'regionalManagerID', 'dateRange', 'agentID', 'performanceScore',
+            'supervisorID', 'regionalManagerID', 'dateRange', 'agentID',
             'numberOfVisits', 'stubsCollected', 'receiptBooksAssigned', 'regionID', 'governorateID',
-            'delegationID', 'visitCompletionRate',
-            'locationUpdated'
+            'delegationID', 'locationUpdated'
         ];
         const {
-            supervisorID, regionalManagerID, dateRange, agentID, performanceScore,
+            supervisorID, regionalManagerID, dateRange, agentID, 
             numberOfVisits, stubsCollected, receiptBooksAssigned, regionID, governorateID,
-            delegationID, visitCompletionRate,
-            locationUpdated
+            delegationID, locationUpdated
         } = ReportService.validateFilters(filters, allowedFilters);
 
         const where = {};
         const visitWhere = {};
         const delegationWhere = {};
+        const governorateWhere = {};
+        const userWhere = {};
+
         if (supervisorID) where.supervisorID = supervisorID;
-        if (regionalManagerID) delegationWhere['$Governorate.Region.regionalManagerID$'] = regionalManagerID;
+        if (regionalManagerID) userWhere.regionalManagerID = regionalManagerID;
         if (dateRange) {
             if (!dateRange.start || !dateRange.end) {
                 throw new Error('Invalid date range: both start and end dates are required');
@@ -611,10 +1643,9 @@ class ReportService {
             visitWhere.date = { [Op.between]: [new Date(dateRange.start), new Date(dateRange.end)] };
         }
         if (agentID) where.agentID = agentID;
-        if (regionID) delegationWhere['$Governorate.regionID$'] = regionID;
+        if (regionID) governorateWhere.regionID = regionID;
         if (governorateID) delegationWhere.governorateID = governorateID;
         if (delegationID) delegationWhere.delegationID = delegationID;
-
 
         try {
             const agents = await Agent.findAll({
@@ -625,39 +1656,32 @@ class ReportService {
                     {
                         model: Delegation,
                         where: delegationWhere,
-                        include: [{ model: Governorate, include: [{ model: Region }] }],
-                        required: false
+                        include: [{
+                            model: Governorate,
+                            where: governorateWhere,
+                            required: !!governorateID || !!regionID,
+                            include: [{ model: Region, required: !!regionID }]
+                        }],
+                        required: !!delegationID
                     },
-                    { model: User, as: 'Supervisor' }
+                    { model: User, as: 'Supervisor', where: userWhere, required: !!regionalManagerID }
                 ]
             });
 
             let filteredAgents = agents;
             if (numberOfVisits) filteredAgents = filteredAgents.filter(a => a.Visits.length >= numberOfVisits[0] && a.Visits.length <= numberOfVisits[1]);
             if (stubsCollected) filteredAgents = filteredAgents.filter(a => {
-                const collected = a.ReceiptBooks.reduce((sum, b) => sum + (b.ReceiptStubs?.filter(s => s?.status === 'collected').length || 0), 0);
+                const collected = a.ReceiptBooks.reduce((sum, b) => sum + (b.ReceiptStub?.status === 'collected' ? 1 : 0), 0);
                 return collected >= stubsCollected[0] && collected <= stubsCollected[1];
             });
             if (receiptBooksAssigned) filteredAgents = filteredAgents.filter(a => a.ReceiptBooks.length >= receiptBooksAssigned[0] && a.ReceiptBooks.length <= receiptBooksAssigned[1]);
-            if (visitCompletionRate) {
-                filteredAgents = filteredAgents.filter(a => {
-                    const rate = a.Visits.length ? (a.Visits.filter(v => v.status === 'completed').length / a.Visits.length) * 100 : 0;
-                    return rate >= visitCompletionRate[0] && rate <= visitCompletionRate[1];
-                });
-            }
-            if (performanceScore) {
-                filteredAgents = filteredAgents.filter(a => {
-                    const score = a.Visits.length ? (a.Visits.filter(v => v.status === 'completed').length / a.Visits.length) * 100 : 0;
-                    return score >= performanceScore[0] && score <= performanceScore[1];
-                });
-            }
             if (locationUpdated !== undefined) filteredAgents = filteredAgents.filter(a => (a.latitude && a.longitude) === locationUpdated);
 
-            return {
+            const reportData = {
                 summary: {
                     totalAgents: filteredAgents.length,
                     totalVisits: filteredAgents.reduce((sum, a) => sum + a.Visits.length, 0),
-                    totalStubsCollected: filteredAgents.reduce((sum, a) => sum + (a.ReceiptBooks?.reduce((s, b) => s + (b.ReceiptStubs?.filter(st => st?.status === 'collected').length || 0), 0) || 0), 0),
+                    totalStubsCollected: filteredAgents.reduce((sum, a) => sum + (a.ReceiptBooks?.reduce((s, b) => s + (b.ReceiptStub?.status === 'collected' ? 1 : 0), 0) || 0), 0),
                     totalReceiptBooksAssigned: filteredAgents.reduce((sum, a) => sum + a.ReceiptBooks.length, 0),
                     averagePerformanceScore: filteredAgents.length
                         ? (filteredAgents.reduce((sum, a) => {
@@ -667,22 +1691,31 @@ class ReportService {
                         : '0.0'
                 },
                 details: filteredAgents.map(a => ({
-                    id: a.agentID,
                     name: `${a.name || 'N/A'} ${a.lastname || ''}`,
                     visitsReceived: a.Visits.length,
-                    completedVisits: a.Visits.filter(v => v.status === 'completed').length,
-                    stubsCollected: a.ReceiptBooks.reduce((sum, b) => sum + (b.ReceiptStubs?.filter(s => s?.status === 'collected').length || 0), 0),
+                    stubsCollected: a.ReceiptBooks.reduce((sum, b) => sum + (b.ReceiptStub?.status === 'collected' ? 1 : 0), 0),
                     receiptBooksAssigned: a.ReceiptBooks.length,
                     region: a.Delegation?.Governorate?.Region?.name || 'N/A',
                     supervisor: a.Supervisor ? `${a.Supervisor.firstname} ${a.Supervisor.lastname}` : 'N/A',
-                    performanceScore: a.Visits.length ? ((a.Visits.filter(v => v.status === 'completed').length / a.Visits.length) * 100).toFixed(1) : '0.0',
                     locationUpdated: !!(a.latitude && a.longitude)
                 }))
             };
+
+            // Generate AI summary
+            try {
+                const aiSummary = await AIService.generateReport(
+                    { ...filters, reportType: 'AgentPerformance', data: reportData },
+                    'json',
+                    new AbortController()
+                );
+                reportData.aiSummary = aiSummary.summary || 'No AI summary available';
+            } catch (error) {
+                console.warn('AI summary generation failed for AgentPerformance report:', error.message);
+                reportData.aiSummary = 'AI summary unavailable';
+            }
+
+            return reportData;
         } catch (error) {
-            logger.error(`Failed to generate AgentPerformance report: ${error.message}`, {
-                route: 'reports', service: 'api', metadata: { filters }
-            });
             throw new Error(`Failed to generate AgentPerformance report: ${error.message}`);
         }
     }
@@ -701,7 +1734,9 @@ class ReportService {
         const visitWhere = {};
         const governorateWhere = {};
         const delegationWhere = {};
-        if (regionalManagerID) where.regionalManagerID = regionalManagerID;
+        const userRegionWhere = {};
+
+        if (regionalManagerID) userRegionWhere.userID = regionalManagerID;
         if (dateRange) {
             if (!dateRange.start || !dateRange.end) {
                 throw new Error('Invalid date range: both start and end are required');
@@ -736,7 +1771,11 @@ class ReportService {
                                     }
                                 ]
                             }
-                        ]
+                        ],
+
+                        model: User,
+                        through: { model: 'UserRegions', where: userRegionWhere },
+                        required: !!regionalManagerID
                     }
                 ]
             });
@@ -754,7 +1793,7 @@ class ReportService {
                     const stubs = r.Governorates.reduce((sum, g) =>
                         sum + g.Delegations.reduce((s, d) =>
                             s + (d.Agent?.ReceiptBooks?.reduce((t, b) =>
-                                t + (b.ReceiptStubs?.filter(st => st?.status === 'collected').length || 0), 0) || 0), 0), 0);
+                                t + (b.ReceiptStub?.status === 'collected' ? 1 : 0), 0) || 0), 0), 0);
                     return stubs >= stubsCollected[0] && stubs <= stubsCollected[1];
                 });
             }
@@ -770,7 +1809,7 @@ class ReportService {
                 });
             }
 
-            return {
+            const reportData = {
                 summary: {
                     totalRegions: filteredRegions.length,
                     totalVisits: filteredRegions.reduce((sum, r) =>
@@ -780,7 +1819,7 @@ class ReportService {
                         sum + r.Governorates.reduce((a, g) =>
                             a + g.Delegations.reduce((s, d) =>
                                 s + (d.Agent?.ReceiptBooks?.reduce((t, b) =>
-                                    t + (b.ReceiptStubs?.filter(st => st?.status === 'collected').length || 0), 0) || 0), 0), 0), 0),
+                                    t + (b.ReceiptStub?.status === 'collected' ? 1 : 0), 0) || 0), 0), 0), 0),
                     averagePerformanceScore: filteredRegions.length
                         ? (filteredRegions.reduce((sum, r) => {
                             const totalVisits = r.Governorates.reduce((sum, g) =>
@@ -801,7 +1840,6 @@ class ReportService {
                         }
                     }
                     return {
-                        id: r.regionID,
                         name: r.name || 'N/A',
                         visits: r.Governorates.reduce((sum, g) =>
                             sum + g.Delegations.reduce((s, d) => s + (d.Agent?.Visits?.length || 0), 0), 0),
@@ -811,7 +1849,7 @@ class ReportService {
                         stubsCollected: r.Governorates.reduce((sum, g) =>
                             sum + g.Delegations.reduce((s, d) =>
                                 s + (d.Agent?.ReceiptBooks?.reduce((t, b) =>
-                                    t + (b.ReceiptStubs?.filter(st => st?.status === 'collected').length || 0), 0) || 0), 0), 0),
+                                    t + (b.ReceiptStub?.status === 'collected' ? 1 : 0), 0) || 0), 0), 0),
                         performanceScore: ((r.Governorates.reduce((sum, g) =>
                             sum + g.Delegations.reduce((s, d) =>
                                 s + (d.Agent?.Visits?.filter(v => v.status === 'completed').length || 0), 0), 0) /
@@ -822,10 +1860,22 @@ class ReportService {
                     };
                 }))
             };
+
+            // Generate AI summary
+            try {
+                const aiSummary = await AIService.generateReport(
+                    { ...filters, reportType: 'RegionPerformance', data: reportData },
+                    'json',
+                    new AbortController()
+                );
+                reportData.aiSummary = aiSummary.summary || 'No AI summary available';
+            } catch (error) {
+                console.warn('AI summary generation failed for RegionPerformance report:', error.message);
+                reportData.aiSummary = 'AI summary unavailable';
+            }
+
+            return reportData;
         } catch (error) {
-            logger.error(`Failed to generate RegionPerformance report: ${error.message}`, {
-                route: 'reports', service: 'api', metadata: { filters }
-            });
             throw new Error(`Failed to generate RegionPerformance report: ${error.message}`);
         }
     }
@@ -837,7 +1887,7 @@ class ReportService {
         ];
         const {
             supervisorID, regionalManagerID, dateRange, regionID, agentID, status,
-            visitReasons,
+            visitReasons
         } = ReportService.validateFilters(filters, allowedFilters);
 
         if (!supervisorID && !regionalManagerID) {
@@ -851,7 +1901,7 @@ class ReportService {
                 receiptBookInventoryReport,
                 stubCollectionReport,
                 userActivityReport,
-                aiAnomalyReport,
+                AnomalyReport,
                 agentPerformanceReport,
                 regionPerformanceReport
             ] = await Promise.all([
@@ -860,28 +1910,47 @@ class ReportService {
                 ReportService.generateReceiptBookInventoryReport({ dateRange, regionID }),
                 ReportService.generateStubCollectionReport({ agentID, supervisorID, regionalManagerID, dateRange, status }),
                 ReportService.generateUserActivityReport({ dateRange }),
-                ReportService.generateAIAnomalyReport({ dateRange }),
+                ReportService.generateAnomalyReport({ dateRange }),
                 ReportService.generateAgentPerformanceReport({ supervisorID, regionalManagerID, dateRange, agentID, regionID }),
                 ReportService.generateRegionPerformance({ regionalManagerID, dateRange, regionID })
             ]);
 
-            return {
+            const reportData = {
                 visitSummaryReport,
                 timesheetReport,
                 receiptBookInventoryReport,
                 stubCollectionReport,
                 userActivityReport,
-                aiAnomalyReport,
+                AnomalyReport,
                 agentPerformanceReport,
                 regionPerformanceReport
             };
+
+            // Generate AI summary for Full report
+            try {
+                const aiSummary = await AIService.generateReport(
+                    { ...filters, reportType: 'Full', data: reportData },
+                    'json',
+                    new AbortController()
+                );
+                reportData.aiSummary = aiSummary.summary || 'No AI summary available';
+            } catch (error) {
+                console.warn('AI summary generation failed for Full report:', error.message);
+                reportData.aiSummary = 'AI summary unavailable';
+            }
+
+            return reportData;
         } catch (error) {
-            logger.error(`Failed to generate Full report: ${error.message}`, {
-                route: 'reports', service: 'api', metadata: { filters }
-            });
             throw new Error(`Failed to generate Full report: ${error.message}`);
         }
     }
+
+
+
+
+
+
+
 
     static async exportReport(reportType, data, format) {
         const reportName = `${reportType}_${Date.now()}`;
@@ -909,15 +1978,9 @@ class ReportService {
                 throw new Error(`Failed to create report file: ${filePath}`);
             });
 
-            logger.info(`Successfully exported ${reportType} report to ${filePath}`, {
-                route: 'reports', service: 'api', metadata: { reportType, format }
-            });
 
             return filePath;
         } catch (error) {
-            logger.error(`Failed to export ${reportType} report: ${error.message}`, {
-                route: 'reports', service: 'api', metadata: { reportType, format, filePath }
-            });
             throw new Error(`Failed to export ${reportType}: ${error.message}`);
         }
     }
@@ -933,41 +1996,21 @@ class ReportService {
             const writeStream = require('fs').createWriteStream(filePath);
             doc.pipe(writeStream);
 
-            // Handle stream errors
             writeStream.on('error', (err) => {
-                logger.error(`Failed to write PDF to ${filePath}: ${err.message}`, {
-                    route: 'reports', service: 'api', metadata: { reportType, filePath }
-                });
                 reject(err);
             });
 
-            // Resolve when stream finishes
             writeStream.on('finish', () => {
-                logger.debug(`Successfully wrote PDF to ${filePath}`, {
-                    route: 'reports', service: 'api', metadata: { reportType }
-                });
                 resolve();
             });
 
             try {
-                // Register fonts
-                try {
-                    doc.registerFont('Roboto-Regular', path.join(__dirname, '../Templates/fonts/Roboto-Regular.ttf'));
-                    doc.registerFont('Roboto-Bold', path.join(__dirname, '../Templates/fonts/Roboto-Bold.ttf'));
-                } catch (fontError) {
-                    logger.warn(`Failed to load fonts, using default: ${fontError.message}`, {
-                        route: 'reports', service: 'api', metadata: { reportType }
-                    });
-                }
+                doc.registerFont('Roboto-Regular', path.join(__dirname, '../Templates/fonts/Roboto-Regular.ttf'));
+                doc.registerFont('Roboto-Bold', path.join(__dirname, '../Templates/fonts/Roboto-Bold.ttf'));
 
-                // Header
                 const logoPath = path.join(__dirname, '../Templates/logo/Logo.png');
-                try {
-                    await fs.access(logoPath);
-                    doc.image(logoPath, 40, 30, { width: 50 });
-                } catch (e) {
-                    logger.warn(`Logo not found at ${logoPath}`, { route: 'reports', service: 'api', metadata: 'api' });
-                }
+                await fs.access(logoPath);
+                doc.image(logoPath, 40, 30, { width: 50 });
 
                 doc.font('Roboto-Bold')
                     .fontSize(24)
@@ -978,7 +2021,6 @@ class ReportService {
                     .fillColor('#666666')
                     .text(`Generated on ${new Date().toLocaleString()}`, 0, 70, { align: 'center' });
 
-                // Separator line
                 doc.moveTo(20, 90).lineTo(575, 90).strokeColor('#CCCCCC').lineWidth(1).stroke();
                 doc.moveDown(2);
 
@@ -991,7 +2033,6 @@ class ReportService {
                             .text(section.replace(/([A-Z])/g, ' $1').trim(), 20, 30, { underline: true });
                         doc.moveDown(1);
 
-                        // Summary section
                         doc.font('Roboto-Bold')
                             .fontSize(14)
                             .fillColor('#005566')
@@ -1006,21 +2047,27 @@ class ReportService {
                         }
                         doc.moveDown(1);
 
-                        // Details section
+                        doc.font('Roboto-Bold')
+                            .fontSize(14)
+                            .fillColor('#005566')
+                            .text('AI-Generated Summary', 20, doc.y, { underline: true });
+                        doc.moveDown(0.5);
+                        doc.font('Roboto-Regular')
+                            .fontSize(11)
+                            .fillColor('#333333')
+                            .text(data.aiSummary || 'No AI summary available', 30, doc.y, { width: 520, align: 'left' });
+                        doc.moveDown(1);
+
                         if (sectionData.details && sectionData.details.length) {
+                            doc.addPage(); // Start table on new page
                             doc.font('Roboto-Bold')
                                 .fontSize(14)
                                 .fillColor('#005566')
-                                .text('Details', 20, doc.y, { underline: true });
+                                .text('Details', 20, 30, { underline: true });
                             const headers = Object.keys(sectionData.details[0]).map(h => h.replace(/([A-Z])/g, ' $1').trim());
-                            const colWidths = headers.map(() => 555 / headers.length);
                             const tableTop = doc.y + 10;
-                            let y = this._drawTable(doc, headers, sectionData.details, tableTop, colWidths);
+                            let y = this._drawTable(doc, headers, sectionData.details, tableTop);
 
-                            if (y + 80 > doc.page.height - 40) {
-                                doc.addPage();
-                                y = 30;
-                            }
                             doc.font('Roboto-Regular')
                                 .fontSize(10)
                                 .fillColor('#666666')
@@ -1035,7 +2082,6 @@ class ReportService {
                         }
                     }
                 } else {
-                    // Summary section for single report
                     doc.font('Roboto-Bold')
                         .fontSize(14)
                         .fillColor('#005566')
@@ -1048,18 +2094,28 @@ class ReportService {
                         doc.text(`${key.replace(/([A-Z])/g, ' $1').trim()}: ${value}`, 30, doc.y, { continued: false });
                         doc.moveDown(0.3);
                     }
+
+                    doc.moveDown(1);
+                    doc.font('Roboto-Bold')
+                        .fontSize(14)
+                        .fillColor('#005566')
+                        .text('AI-Generated Summary', 20, doc.y, { underline: true });
+                    doc.moveDown(0.5);
+                    doc.font('Roboto-Regular')
+                        .fontSize(11)
+                        .fillColor('#333333')
+                        .text(data.aiSummary || 'No AI summary available', 30, doc.y, { width: 520, align: 'left' });
                     doc.moveDown(1);
 
-                    // Details section
                     if (data.details && data.details.length) {
+                        doc.addPage(); // Start table on new page
                         doc.font('Roboto-Bold')
                             .fontSize(14)
                             .fillColor('#005566')
-                            .text('Details', 20, doc.y, { underline: true });
+                            .text('Details', 20, 30, { underline: true });
                         const headers = Object.keys(data.details[0]).map(h => h.replace(/([A-Z])/g, ' $1').trim());
-                        const colWidths = headers.map(() => 555 / headers.length);
                         const tableTop = doc.y + 10;
-                        let y = this._drawTable(doc, headers, data.details, tableTop, colWidths);
+                        let y = this._drawTable(doc, headers, data.details, tableTop);
 
                         doc.font('Roboto-Regular')
                             .fontSize(10)
@@ -1075,99 +2131,200 @@ class ReportService {
                     }
                 }
 
-                // Page numbering
+                // Page numbering on content pages
                 const pageCount = doc.bufferedPageRange().count;
                 for (let i = 0; i < pageCount; i++) {
                     doc.switchToPage(i);
                     doc.font('Roboto-Regular')
                         .fontSize(8)
                         .fillColor('#999999')
-                        .text(`Page ${i + 1} of ${pageCount}`, 0, doc.page.height - 30, { align: 'center' });
+                        .text(`Page ${i + 1} of ${pageCount}`, 20, doc.page.height - 50, { align: 'left' });
                 }
 
                 doc.end();
             } catch (error) {
-                logger.error(`Error generating PDF: ${error.message}`, {
-                    route: 'reports', service: 'api', metadata: { reportType, filePath }
-                });
                 reject(error);
             }
         });
     }
 
-    static _drawTable(doc, headers, data, startY, colWidths) {
+    static _drawTable(doc, headers, data, startY) {
         let y = startY;
+        const pageWidth = 555; // Total table width
+        const margin = 12; // Margin for text spacing
+        const minColWidth = 50; // Minimum column width
+        const maxColWidth = 150; // Max column width
+        const fontSize = 8; // Fixed font size for all text
+        const lineHeight = 1.3; // Line height for readability
+        const headerPadding = 10; // Padding for header height
 
-        // Header background
-        doc.rect(20, y - 5, 555, 25)
-            .fill('#F0F0F0');
+        // Custom word wrapping function to prevent mid-word breaks
+        const wrapText = (text, maxWidth, font) => {
+            doc.font(font).fontSize(fontSize);
+            const words = String(text).split(' ');
+            let lines = [];
+            let currentLine = '';
+            for (const word of words) {
+                const testLine = currentLine ? `${currentLine} ${word}` : word;
+                const width = doc.widthOfString(testLine);
+                if (width <= maxWidth - 2 * margin) {
+                    currentLine = testLine;
+                } else {
+                    if (currentLine) lines.push(currentLine);
+                    currentLine = word;
+                    // Handle very long words (e.g., IDs)
+                    if (doc.widthOfString(word) > maxWidth - 2 * margin) {
+                        // Truncate long words with ellipsis
+                        let truncated = word;
+                        while (doc.widthOfString(truncated + '...') > maxWidth - 2 * margin && truncated.length > 1) {
+                            truncated = truncated.slice(0, -1);
+                        }
+                        lines.push(truncated + (truncated.length < word.length ? '...' : ''));
+                        currentLine = '';
+                    }
+                }
+            }
+            if (currentLine) lines.push(currentLine);
+            return lines;
+        };
+
+        // Calculate column widths based on longest word, with special handling for "Checklist Completed"
+        const calculatedWidths = headers.map((header, i) => {
+            const headerKey = header.toLowerCase().replace(/\s/g, '');
+            let maxWidth;
+            if (headerKey === 'checklistcompleted') {
+                // For "Checklist Completed", use width of longest word ("Completed")
+                const headerWords = header.split(' ');
+                maxWidth = Math.max(
+                    ...headerWords.map(word => doc.widthOfString(word, { font: 'Roboto-Bold', fontSize }) + 2 * margin),
+                    minColWidth
+                );
+            } else {
+                // Other headers: use longest word in header
+                const headerWords = header.split(' ');
+                maxWidth = Math.max(
+                    ...headerWords.map(word => doc.widthOfString(word, { font: 'Roboto-Bold', fontSize }) + 2 * margin),
+                    minColWidth
+                );
+            }
+            // Check data for longest word
+            data.forEach(row => {
+                const key = headerKey === 'checklistcompleted' ? 'checklistCompleted' : headerKey;
+                const value = key === 'checklistCompleted' ? (row[key] ? 'Yes' : 'No') : String(row[key] || 'N/A');
+                const words = String(value).split(' ');
+                words.forEach(word => {
+                    const wordWidth = doc.widthOfString(word, { font: 'Roboto-Regular', fontSize }) + 2 * margin;
+                    maxWidth = Math.max(maxWidth, wordWidth);
+                });
+            });
+            return Math.min(maxWidth, maxColWidth);
+        });
+
+        // Normalize widths to fit page
+        const totalCalculatedWidth = calculatedWidths.reduce((sum, w) => sum + w, 0);
+        const adjustedWidths = totalCalculatedWidth > pageWidth
+            ? calculatedWidths.map(w => (w / totalCalculatedWidth) * pageWidth)
+            : calculatedWidths.map((w, i) => {
+                // Constrain "Checklist Completed" to fit "Yes"/"No" with buffer
+                if (headers[i].toLowerCase().replace(/\s/g, '') === 'checklistcompleted') {
+                    const yesNoWidth = doc.widthOfString('Yes', { font: 'Roboto-Regular', fontSize }) + 2 * margin;
+                    return Math.min(w, yesNoWidth * 1.2); // 20% buffer for readability
+                }
+                return w;
+            });
+
+        // Calculate header height based on max number of wrapped lines
+        const headerLines = headers.map((header, i) => wrapText(header, adjustedWidths[i], 'Roboto-Bold').length);
+        const maxHeaderLines = Math.max(...headerLines, 1);
+        const headerHeight = maxHeaderLines * fontSize * lineHeight + headerPadding;
+
+        // Draw header background
+        doc.rect(20, y - 8, pageWidth, headerHeight).fill('#F1F5F9').fillColor('#333333');
 
         // Draw headers
-        doc.font('Roboto-Bold')
-            .fontSize(10)
-            .fillColor('#333333');
+        doc.font('Roboto-Bold').fontSize(fontSize);
         headers.forEach((header, i) => {
-            doc.text(header, 25 + (i * colWidths[i]), y, { width: colWidths[i] - 10, align: 'left' });
+            const x = 20 + adjustedWidths.slice(0, i).reduce((sum, w) => sum + w, 0);
+            const lines = wrapText(header, adjustedWidths[i], 'Roboto-Bold');
+            let lineY = y + 4;
+            lines.forEach(line => {
+                doc.text(line, x + margin, lineY, {
+                    width: adjustedWidths[i] - 2 * margin,
+                    align: 'left'
+                });
+                lineY += fontSize * lineHeight;
+            });
         });
-        y += 25;
+        y += headerHeight;
 
         // Draw data rows
         data.forEach((row, rowIndex) => {
-            const rowHeight = Math.max(...headers.map((_, i) => {
-                const text = String(row[headers[i].toLowerCase().replace(/\s/g, '')] || 'N/A');
-                return doc.heightOfString(text, { width: colWidths[i] - 10 });
-            }), 20) + 10;
+            const rowHeight = Math.max(
+                ...headers.map((_, i) => {
+                    const headerKey = headers[i].toLowerCase().replace(/\s/g, '');
+                    const key = headerKey === 'checklistcompleted' ? 'checklistCompleted' : headerKey;
+                    const value = key === 'checklistCompleted' ? (row[key] ? 'Yes' : 'No') : String(row[key] || 'N/A');
+                    const lines = wrapText(value, adjustedWidths[i], 'Roboto-Regular');
+                    return lines.length * fontSize * lineHeight + 10;
+                }),
+                20 // Minimum row height
+            );
 
-            // Page break check
-            if (y + rowHeight > doc.page.height - 50) {
+            if (y + rowHeight > doc.page.height - 60) {
                 doc.addPage();
                 y = 30;
-                doc.rect(20, y - 5, 555, 25)
-                    .fill('#F0F0F0');
-                doc.font('Roboto-Bold')
-                    .fontSize(10)
-                    .fillColor('#333333');
+                doc.rect(20, y - 8, pageWidth, headerHeight).fill('#F1F5F9').fillColor('#333333');
+                doc.font('Roboto-Bold').fontSize(fontSize);
                 headers.forEach((header, i) => {
-                    doc.text(header, 25 + (i * colWidths[i]), y, { width: colWidths[i] - 10, align: 'left' });
+                    const x = 20 + adjustedWidths.slice(0, i).reduce((sum, w) => sum + w, 0);
+                    const lines = wrapText(header, adjustedWidths[i], 'Roboto-Bold');
+                    let lineY = y + 4;
+                    lines.forEach(line => {
+                        doc.text(line, x + margin, lineY, {
+                            width: adjustedWidths[i] - 2 * margin,
+                            align: 'left'
+                        });
+                        lineY += fontSize * lineHeight;
+                    });
                 });
-                y += 25;
+                y += headerHeight;
             }
 
-            // Row background
             if (rowIndex % 2 === 0) {
-                doc.rect(20, y - 5, 555, rowHeight)
-                    .fill('#F9F9F9');
+                doc.rect(20, y - 5, pageWidth, rowHeight).fill('#F8FAFC').fillColor('#333333');
             }
 
-            // Row data
-            doc.font('Roboto-Regular')
-                .fontSize(8)
-                .fillColor('#333333');
+            doc.font('Roboto-Regular').fontSize(fontSize);
             headers.forEach((header, i) => {
-                const text = String(row[header.toLowerCase().replace(/\s/g, '')] || 'N/A');
-                doc.text(text, 25 + (i * colWidths[i]), y, { width: colWidths[i] - 10, align: 'left' });
+                const headerKey = header.toLowerCase().replace(/\s/g, '');
+                const key = headerKey === 'checklistcompleted' ? 'checklistCompleted' : headerKey;
+                const text = key === 'checklistCompleted' ? (row[key] ? 'Yes' : 'No') : String(row[key] || 'N/A');
+                const x = 20 + adjustedWidths.slice(0, i).reduce((sum, w) => sum + w, 0);
+                const lines = wrapText(text, adjustedWidths[i], 'Roboto-Regular');
+                let lineY = y + 4;
+                lines.forEach(line => {
+                    doc.text(line, x + margin, lineY, {
+                        width: adjustedWidths[i] - 2 * margin,
+                        align: 'left'
+                    });
+                    lineY += fontSize * lineHeight;
+                });
             });
-
-            // Row separator
-            doc.moveTo(20, y + rowHeight)
-                .lineTo(575, y + rowHeight)
-                .strokeColor('#CCCCCC')
-                .lineWidth(0.5)
-                .stroke();
 
             y += rowHeight;
         });
 
-        // Vertical lines
-        let x = 20;
-        colWidths.forEach((width) => {
-            doc.moveTo(x, startY - 5)
-                .lineTo(x, y)
-                .strokeColor('#CCCCCC')
-                .lineWidth(0.5)
-                .stroke();
-            x += width;
-        });
+        // Draw table boundaries
+        doc.moveTo(20, startY - 8)
+            .lineTo(20 + pageWidth, startY - 8)
+            .strokeColor('#E2E8F0')
+            .lineWidth(0.5)
+            .stroke();
+        doc.moveTo(20, y)
+            .lineTo(20 + pageWidth, y)
+            .strokeColor('#E2E8F0')
+            .lineWidth(0.5)
+            .stroke();
 
         return y;
     }
@@ -1181,37 +2338,40 @@ class ReportService {
         // Styles
         const headerStyle = {
             font: { name: 'Arial', size: 12, bold: true, color: { argb: '333333' } },
-            fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F0F0F0' } },
+            fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'E8ECEF' } },
             alignment: { horizontal: 'left', vertical: 'middle', wrapText: true },
             border: {
-                top: { style: 'thin', color: { argb: 'CCCCCC' } },
-                bottom: { style: 'thin', color: { argb: 'CCCCCC' } },
-                left: { style: 'thin', color: { argb: 'CCCCCC' } },
-                right: { style: 'thin', color: { argb: 'CCCCCC' } }
-            }
+                top: { style: 'thin', color: { argb: 'E2E8F0' } },
+                bottom: { style: 'thin', color: { argb: 'E2E8F0' } },
+                left: { style: 'thin', color: { argb: 'E2E8F0' } },
+                right: { style: 'thin', color: { argb: 'E2E8F0' } },
+            },
         };
         const cellStyle = {
             font: { name: 'Arial', size: 10, color: { argb: '333333' } },
             alignment: { horizontal: 'left', vertical: 'middle', wrapText: true },
             border: {
-                top: { style: 'thin', color: { argb: 'CCCCCC' } },
-                bottom: { style: 'thin', color: { argb: 'CCCCCC' } },
-                left: { style: 'thin', color: { argb: 'CCCCCC' } },
-                right: { style: 'thin', color: { argb: 'CCCCCC' } }
-            }
+                top: { style: 'thin', color: { argb: 'E2E8F0' } },
+                bottom: { style: 'thin', color: { argb: 'E2E8F0' } },
+                left: { style: 'thin', color: { argb: 'E2E8F0' } },
+                right: { style: 'thin', color: { argb: 'E2E8F0' } },
+            },
         };
         const titleStyle = {
             font: { name: 'Arial', size: 14, bold: true, color: { argb: '333333' } },
-            alignment: { horizontal: 'center', vertical: 'middle' }
+            alignment: { horizontal: 'center', vertical: 'middle' },
         };
         const footerStyle = {
             font: { name: 'Arial', size: 8, color: { argb: '666666' } },
-            alignment: { horizontal: 'left', vertical: 'middle' }
+            alignment: { horizontal: 'left', vertical: 'middle' },
         };
 
         try {
             if (reportType === 'Full') {
                 for (const [section, sectionData] of Object.entries(data)) {
+                    // Skip aiSummary for sheet generation
+                    if (section === 'aiSummary') continue;
+
                     // Summary sheet
                     const summarySheet = workbook.addWorksheet(`${section} Summary`.slice(0, 31));
                     summarySheet.getRow(1).getCell(1).value = `${section.replace(/([A-Z])/g, ' $1').trim()} Summary`;
@@ -1230,11 +2390,14 @@ class ReportService {
                     summarySheet.getRow(rowIndex + 1).getCell(1).value = `Generated at: ${new Date().toLocaleString()}`;
                     summarySheet.getRow(rowIndex + 1).getCell(1).style = footerStyle;
 
-                    // Auto-size columns
-                    summarySheet.columns = [
-                        { width: 30 },
-                        { width: 20 }
-                    ];
+                    const aiSummaryRow = summarySheet.getRow(rowIndex + 1);
+                    aiSummaryRow.getCell(1).value = 'AI-Generated Summary';
+                    aiSummaryRow.getCell(1).style = headerStyle;
+                    aiSummaryRow.getCell(2).value = sectionData.aiSummary || 'No AI summary available';
+                    aiSummaryRow.getCell(2).style = cellStyle;
+                    rowIndex += 2;
+
+                    summarySheet.columns = [{ width: 30 }, { width: 50 }];
 
                     // Details sheet
                     if (sectionData.details && sectionData.details.length) {
@@ -1253,7 +2416,10 @@ class ReportService {
                         sectionData.details.forEach((rowData, i) => {
                             const row = detailSheet.getRow(i + 4);
                             headers.forEach((header, j) => {
-                                row.getCell(j + 1).value = rowData[header.toLowerCase().replace(/\s/g, '')] || 'N/A';
+                                const headerKey = header.toLowerCase().replace(/\s/g, '');
+                                const key = headerKey === 'checklistcompleted' ? 'checklistCompleted' : headerKey;
+                                const value = key === 'checklistCompleted' ? (rowData[key] ? 'Yes' : 'No') : String(rowData[key] || 'N/A');
+                                row.getCell(j + 1).value = value;
                                 row.getCell(j + 1).style = cellStyle;
                             });
                         });
@@ -1261,7 +2427,17 @@ class ReportService {
                         detailSheet.getRow(sectionData.details.length + 5).getCell(1).value = `Generated at: ${new Date().toLocaleString()}`;
                         detailSheet.getRow(sectionData.details.length + 5).getCell(1).style = footerStyle;
 
-                        detailSheet.columns = headers.map(() => ({ width: 20 }));
+                        // Set dynamic column widths based on content
+                        detailSheet.columns = headers.map((header, i) => {
+                            let maxWidth = header.length;
+                            sectionData.details.forEach(row => {
+                                const headerKey = header.toLowerCase().replace(/\s/g, '');
+                                const key = headerKey === 'checklistcompleted' ? 'checklistCompleted' : headerKey;
+                                const value = key === 'checklistCompleted' ? (row[key] ? 'Yes' : 'No') : String(row[key] || 'N/A');
+                                maxWidth = Math.max(maxWidth, value.length);
+                            });
+                            return { width: Math.min(Math.max(maxWidth, 10), 50) };
+                        });
                     }
                 }
             } else {
@@ -1283,10 +2459,14 @@ class ReportService {
                 summarySheet.getRow(rowIndex + 1).getCell(1).value = `Generated at: ${new Date().toLocaleString()}`;
                 summarySheet.getRow(rowIndex + 1).getCell(1).style = footerStyle;
 
-                summarySheet.columns = [
-                    { width: 30 },
-                    { width: 20 }
-                ];
+                const aiSummaryRow = summarySheet.getRow(rowIndex + 1);
+                aiSummaryRow.getCell(1).value = 'AI-Generated Summary';
+                aiSummaryRow.getCell(1).style = headerStyle;
+                aiSummaryRow.getCell(2).value = data.aiSummary || 'No AI summary available';
+                aiSummaryRow.getCell(2).style = cellStyle;
+                rowIndex += 2;
+
+                summarySheet.columns = [{ width: 30 }, { width: 50 }];
 
                 // Details sheet
                 if (data.details && data.details.length) {
@@ -1305,7 +2485,10 @@ class ReportService {
                     data.details.forEach((rowData, i) => {
                         const row = detailSheet.getRow(i + 4);
                         headers.forEach((header, j) => {
-                            row.getCell(j + 1).value = rowData[header.toLowerCase().replace(/\s/g, '')] || 'N/A';
+                            const headerKey = header.toLowerCase().replace(/\s/g, '');
+                            const key = headerKey === 'checklistcompleted' ? 'checklistCompleted' : headerKey;
+                            const value = key === 'checklistCompleted' ? (rowData[key] ? 'Yes' : 'No') : String(rowData[key] || 'N/A');
+                            row.getCell(j + 1).value = value;
                             row.getCell(j + 1).style = cellStyle;
                         });
                     });
@@ -1313,21 +2496,27 @@ class ReportService {
                     detailSheet.getRow(data.details.length + 5).getCell(1).value = `Generated at: ${new Date().toLocaleString()}`;
                     detailSheet.getRow(data.details.length + 5).getCell(1).style = footerStyle;
 
-                    detailSheet.columns = headers.map(() => ({ width: 20 }));
+                    // Set dynamic column widths based on content
+                    detailSheet.columns = headers.map((header, i) => {
+                        let maxWidth = header.length;
+                        data.details.forEach(row => {
+                            const headerKey = header.toLowerCase().replace(/\s/g, '');
+                            const key = headerKey === 'checklistcompleted' ? 'checklistCompleted' : headerKey;
+                            const value = key === 'checklistCompleted' ? (row[key] ? 'Yes' : 'No') : String(row[key] || 'N/A');
+                            maxWidth = Math.max(maxWidth, value.length);
+                        });
+                        return { width: Math.min(Math.max(maxWidth, 10), 50) };
+                    });
                 }
             }
 
             await workbook.xlsx.writeFile(filePath);
-            logger.info(`Excel report generated at ${filePath}`, {
-                route: 'reports', service: 'api', metadata: { reportType }
-            });
         } catch (error) {
-            logger.error(`Failed to generate Excel report: ${error.message}`, {
-                route: 'reports', service: 'api', metadata: { reportType, filePath }
-            });
             throw new Error(`Failed to generate Excel report: ${error.message}`);
         }
     }
+
+
 }
 
 module.exports = ReportService;

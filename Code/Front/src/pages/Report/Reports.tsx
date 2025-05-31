@@ -54,7 +54,7 @@ import Role from "../../models/Role";
 // Constants for report types and formats
 const reportTypes = [
   "VisitSummary", "Timesheet", "ReceiptBookInventory", "StubCollection",
-  "UserActivity", "AIAnomaly", "AgentPerformance", "RegionPerformance", "Full"
+  "UserActivity", "Anomaly", "AgentPerformance", "RegionPerformance", "Full"
 ];
 const formats = ["pdf", "excel"];
 const visitStatusOptions = ["Pending", "Visited", "Validated", "Rejected"];
@@ -81,7 +81,7 @@ const allowedFilters: Record<string, string[]> = {
   VisitSummary: [
     "supervisorID", "agentID", "dateRange", "regionID", "governorateID",
     "delegationID", "visitType", "status", "visitReasons", "checklistCompleted",
-    "visitDuration", "aiAnomalies"
+    "visitDuration", "Anomalies"
   ],
   Timesheet: [
     "supervisorID", "regionalManagerID", "directorID", "dateRange", "status",
@@ -99,19 +99,19 @@ const allowedFilters: Record<string, string[]> = {
     "roleID", "dateRange", "activityType", "userID", "status",
     "suspiciousActivity", "ipAddress"
   ],
-  AIAnomaly: [
+  Anomaly: [
     "dateRange", "roleID", "userID", "affectedEntity",
     "severity", "route"
   ],
   AgentPerformance: [
     "supervisorID", "regionalManagerID", "agentID", "dateRange", "regionID",
-    "governorateID", "delegationID", "performanceScore", "numberOfVisits",
-    "stubsCollected", "receiptBooksAssigned", "visitCompletionRate",
+    "governorateID", "delegationID", "numberOfVisits",
+    "stubsCollected", "receiptBooksAssigned",
     "locationUpdated"
   ],
   RegionPerformance: [
     "regionalManagerID", "dateRange", "regionID", "governorateID",
-    "delegationID", "performanceScore", "numberOfVisits", "stubsCollected"
+    "delegationID", "numberOfVisits", "stubsCollected"
   ],
   Full: [
     "supervisorID", "regionalManagerID", "dateRange", "regionID", "agentID",
@@ -164,7 +164,7 @@ const ReportingPage: React.FC = () => {
   const [schedules, setSchedules] = useState<ReportSchedule[]>([]);
   const [generatedReports, setGeneratedReports] = useState<GeneratedReport[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [, setError] = useState<string | null>(null);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   // Filter states for list view
@@ -192,7 +192,7 @@ const ReportingPage: React.FC = () => {
   const [delegations, setDelegations] = useState<Delegation[]>([]);
   const [reasons, setReasons] = useState<Reason[]>([]);
   const [holders, setHolders] = useState<User[]>([]);
-  const [receiptBooks, setReceiptBooks] = useState<ReceiptBook[]>([]);
+  const [, setReceiptBooks] = useState<ReceiptBook[]>([]);
   const [receiptBookTypes, setReceiptBookTypes] = useState<ReceiptBookType[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [activityTypes, setActivityTypes] = useState<string[]>([]);
@@ -201,6 +201,8 @@ const ReportingPage: React.FC = () => {
   const [severities, setSeverities] = useState<string[]>([]);
   const [routes, setRoutes] = useState<string[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalReport, setModalReport] = useState<GeneratedReport | null>(null);
 
   // Track which selectors have been opened
   const [openedSelectors, setOpenedSelectors] = useState<Set<string>>(new Set());
@@ -264,6 +266,37 @@ const ReportingPage: React.FC = () => {
       return t("reports.schedule.custom");
     }
   };
+
+
+
+  const ReportActionModal: React.FC<{
+    report: GeneratedReport;
+    onDownload: () => void;
+    onDelete: () => void;
+    onKeep: () => void;
+  }> = ({ report, onDownload, onDelete, onKeep }) => {
+    return (
+      <div className="modal-overlay">
+        <div className="rep-modal-content">
+          <h3>{t("reports.modal.title")}</h3>
+          <p>{t("reports.modal.message", { reportType: t(`reports.types.${report.reportType.toLowerCase()}`) })}</p>
+          <div className="modal-actions">
+            <button className="modal-btn download" onClick={onDownload}>
+              <FaDownload /> {t("reports.modal.download")}
+            </button>
+            <button className="modal-btn delete" onClick={onDelete}>
+              <FaTrash /> {t("reports.modal.delete")}
+            </button>
+            <button className="modal-btn keep" onClick={onKeep}>
+              {t("reports.modal.keep")}
+            </button>
+
+          </div>
+        </div>
+      </div>
+    );
+  };
+
 
 
   // Handle selector click to fetch data lazily
@@ -534,71 +567,26 @@ const ReportingPage: React.FC = () => {
         format: selectedFormat,
       });
 
-      // Get the report path from the response
-      let filePath = response.reportPath;
-      // Normalize filePath (try both raw filename and prefixed path)
-      const possiblePaths = [
-        filePath,
-        `reports/${filePath}`,
-        filePath.split("/").pop() || filePath, // Ensure we try just the filename
-      ];
-
-      // Retry download with exponential backoff
-      const maxAttempts = 5;
-      const initialDelay = 1000; // 1 second
-      let fileData = null;
-      let lastError = null;
-
-      for (const path of possiblePaths) {
-        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-          try {
-            console.debug(`Attempting download: path=${path}, attempt=${attempt}`);
-            fileData = await downloadReport(path);
-            console.debug(`Download succeeded: path=${path}`);
-            filePath = path; // Update filePath to the successful one
-            break; // Success, exit retry loop
-          } catch (err: any) {
-            lastError = err;
-            if (err.status === 404 && attempt < maxAttempts) {
-              // File not found, wait and retry
-              const delay = initialDelay * Math.pow(2, attempt - 1); // 1s, 2s, 4s, 8s, 16s
-              console.debug(`404 error, retrying after ${delay}ms: path=${path}`);
-              await new Promise(resolve => setTimeout(resolve, delay));
-              continue;
-            }
-            console.error(`Download failed: path=${path}, error=${err.message}`);
-            break; // Non-404 error or max attempts, try next path
-          }
-        }
-        if (fileData) break; // Exit if download succeeded
-      }
-
-      if (!fileData) {
-        console.error(`All download attempts failed: last error=${lastError?.message}`);
-        // Refresh the generated reports list and inform user
-        const reports = await listGeneratedReports();
-        setGeneratedReports(reports);
-        setError(t("reports.errors.downloadReportRetryFailed"));
-        return; // Exit without throwing to allow manual download
-      }
-
-      // Create and trigger download
-      const blob = new Blob([fileData], {
-        type: selectedFormat === "pdf" ? "application/pdf" : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      const fileName = filePath.split("/").pop() || `report_${selectedReportType}_${Date.now()}.${selectedFormat}`;
-      link.href = url;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-
       // Refresh the generated reports list
       const reports = await listGeneratedReports();
       setGeneratedReports(reports);
+
+      // Log response and reports for debugging
+      console.log("Generate report response:", response);
+      console.log("Fetched reports:", reports);
+
+      // Find the newest report (assuming reports are sorted by generatedAt descending)
+      const newReport = reports.sort((a, b) => new Date(b.generatedAt).getTime() - new Date(a.generatedAt).getTime())[0];
+
+      if (newReport) {
+        console.log("New report found:", newReport);
+        setModalReport(newReport);
+        setIsModalOpen(true);
+      } else {
+        console.error("No reports found after generation");
+        setError(t("reports.errors.findReport"));
+      }
+
       setError(null);
     } catch (err: any) {
       console.error(`Generate report failed: ${err.message}`);
@@ -607,6 +595,47 @@ const ReportingPage: React.FC = () => {
       setLoading(false);
     }
   };
+
+
+  const handleModalDownload = async () => {
+    if (!modalReport) return;
+    await handleDownloadReport(modalReport.filePath);
+    setIsModalOpen(false);
+    setModalReport(null);
+    setLoading(true);
+    try {
+      const reports = await listGeneratedReports();
+      setGeneratedReports(reports);
+      setError(null);
+    } catch (err: any) {
+      setError(err.message || t("reports.errors.fetchData"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleModalDelete = async () => {
+    if (!modalReport) return;
+    await handleDeleteGeneratedReport(modalReport.generatedReportID);
+    setIsModalOpen(false);
+    setModalReport(null);
+  };
+
+  const handleModalKeep = async () => {
+    setIsModalOpen(false);
+    setModalReport(null);
+    setLoading(true);
+    try {
+      const reports = await listGeneratedReports();
+      setGeneratedReports(reports);
+      setError(null);
+    } catch (err: any) {
+      setError(err.message || t("reports.errors.fetchData"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
 
 
   const handleScheduleReport = async () => {
@@ -1146,8 +1175,8 @@ const ReportingPage: React.FC = () => {
                           return renderBooleanToggle(filter, t("reports.filters.checklistCompleted"));
                         case "visitDuration":
                           return renderRangeInput(filter, t("reports.filters.visitDuration"));
-                        case "aiAnomalies":
-                          return renderBooleanToggle(filter, t("reports.filters.aiAnomalies"));
+                        case "Anomalies":
+                          return renderBooleanToggle(filter, t("reports.filters.Anomalies"));
                         case "numberOfVisits":
                           return renderRangeInput(filter, t("reports.filters.numberOfVisits"));
                         case "totalHours":
@@ -1408,14 +1437,10 @@ const ReportingPage: React.FC = () => {
                               />
                             </div>
                           );
-                        case "performanceScore":
-                          return renderRangeInput(filter, t("reports.filters.performanceScore"));
                         case "stubsCollected":
                           return renderRangeInput(filter, t("reports.filters.stubsCollected"));
                         case "receiptBooksAssigned":
                           return renderRangeInput(filter, t("reports.filters.receiptBooksAssigned"));
-                        case "visitCompletionRate":
-                          return renderRangeInput(filter, t("reports.filters.visitCompletionRate"));
                         case "locationUpdated":
                           return renderBooleanToggle(filter, t("reports.filters.locationUpdated"));
                         default:
@@ -1907,8 +1932,8 @@ const ReportingPage: React.FC = () => {
                           return renderBooleanToggle(filter, t("reports.filters.checklistCompleted"));
                         case "visitDuration":
                           return renderRangeInput(filter, t("reports.filters.visitDuration"));
-                        case "aiAnomalies":
-                          return renderBooleanToggle(filter, t("reports.filters.aiAnomalies"));
+                        case "Anomalies":
+                          return renderBooleanToggle(filter, t("reports.filters.Anomalies"));
                         case "numberOfVisits":
                           return renderRangeInput(filter, t("reports.filters.numberOfVisits"));
                         case "totalHours":
@@ -2169,14 +2194,10 @@ const ReportingPage: React.FC = () => {
                               />
                             </div>
                           );
-                        case "performanceScore":
-                          return renderRangeInput(filter, t("reports.filters.performanceScore"));
                         case "stubsCollected":
                           return renderRangeInput(filter, t("reports.filters.stubsCollected"));
                         case "receiptBooksAssigned":
                           return renderRangeInput(filter, t("reports.filters.receiptBooksAssigned"));
-                        case "visitCompletionRate":
-                          return renderRangeInput(filter, t("reports.filters.visitCompletionRate"));
                         case "locationUpdated":
                           return renderBooleanToggle(filter, t("reports.filters.locationUpdated"));
                         default:
@@ -2399,7 +2420,16 @@ const ReportingPage: React.FC = () => {
           {view === "schedule" && renderScheduleForm()}
         </main>
       </section>
+      {isModalOpen && modalReport && (
+        <ReportActionModal
+          report={modalReport}
+          onDownload={handleModalDownload}
+          onDelete={handleModalDelete}
+          onKeep={handleModalKeep}
+        />
+      )}
     </div>
+
   );
 };
 

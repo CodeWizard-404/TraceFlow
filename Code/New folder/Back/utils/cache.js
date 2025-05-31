@@ -25,7 +25,6 @@ class Cache {
             await this.client.sadd(`tag:${tag}`, cacheKey); // Track keys by tag
             return data;
         } catch (error) {
-            console.error(`Cache error for ${key}`, { error: error.message });
             return await fetchFn(); // Fallback
         }
     }
@@ -45,7 +44,6 @@ class Cache {
             await this.client.sadd(`tag:${tag}`, cacheKey);
             return data;
         } catch (error) {
-            console.error(`Hash cache error for ${key}`, { error: error.message });
             return await fetchFn();
         }
     }

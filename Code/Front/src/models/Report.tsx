@@ -99,7 +99,7 @@ export interface UserActivityReport {
     }>;
 }
 
-export interface AIAnomalyReport {
+export interface AnomalyReport {
     summary: {
         totalAnomalies: number;
         warningAnomalies: number;
@@ -164,7 +164,7 @@ export interface FullReport {
     receiptBookInventoryReport: ReceiptBookInventoryReport;
     stubCollectionReport: StubCollectionReport;
     userActivityReport: UserActivityReport;
-    aiAnomalyReport: AIAnomalyReport;
+    AnomalyReport: AnomalyReport;
     agentPerformanceReport: AgentPerformanceReport;
     regionPerformanceReport: RegionPerformanceReport;
 }
@@ -182,7 +182,7 @@ export interface ReportSchedule {
     | "ReceiptBookInventory"
     | "StubCollection"
     | "UserActivity"
-    | "AIAnomaly"
+    | "Anomaly"
     | "AgentPerformance"
     | "RegionPerformance"
     | "Full";
@@ -206,7 +206,7 @@ export interface GeneratedReport {
     | "ReceiptBookInventory"
     | "StubCollection"
     | "UserActivity"
-    | "AIAnomaly"
+    | "Anomaly"
     | "AgentPerformance"
     | "RegionPerformance"
     | "Full";

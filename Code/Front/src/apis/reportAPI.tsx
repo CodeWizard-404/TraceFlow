@@ -42,7 +42,7 @@ const validReportTypes = [
     "ReceiptBookInventory",
     "StubCollection",
     "UserActivity",
-    "AIAnomaly",
+    "Anomaly",
     "AgentPerformance",
     "RegionPerformance",
     "Full",
@@ -65,7 +65,7 @@ const allowedFilters: Record<string, string[]> = {
         "governorateID",
         "delegationID",
         "visitType",
-        "aiAnomalies",
+        "Anomalies",
     ],
     Timesheet: [
         "supervisorID",
@@ -108,7 +108,7 @@ const allowedFilters: Record<string, string[]> = {
         "suspiciousActivity",
         "ipAddress",
     ],
-    AIAnomaly: [
+    Anomaly: [
         "dateRange",
         "roleID",
         "userID",
@@ -121,14 +121,12 @@ const allowedFilters: Record<string, string[]> = {
         "regionalManagerID",
         "dateRange",
         "agentID",
-        "performanceScore",
         "numberOfVisits",
         "stubsCollected",
         "receiptBooksAssigned",
         "regionID",
         "governorateID",
         "delegationID",
-        "visitCompletionRate",
         "locationUpdated",
     ],
     RegionPerformance: [

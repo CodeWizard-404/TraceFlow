@@ -292,7 +292,6 @@ class TimesheetController {
     }
 
     static async suggestTimesheet(req, res) {
-        console.log(req.body)
         const actorID = req.user?.userID || 'unknown';
         try {
             const errors = validationResult(req);

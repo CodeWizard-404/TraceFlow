@@ -1,274 +1,175 @@
-// controllers/reportController.js
 const ReportService = require('../services/reportService');
 const NotificationService = require('../services/notificationService');
 const { ReportSchedule, GeneratedReport, User } = require('../models');
 const cron = require('node-cron');
-const fs = require('fs').promises;
 const path = require('path');
+const fs = require('fs').promises;
 const logger = require('../utils/logger');
 
 class ReportController {
+    static validReportTypes = [
+        'VisitSummary',
+        'Timesheet',
+        'ReceiptBookInventory',
+        'StubCollection',
+        'UserActivity',
+        'AIAnomaly',
+        'AgentPerformance',
+        'RegionPerformance',
+        'Full'
+    ];
+
+    static validFormats = ['pdf', 'excel'];
+
+    static validateInput(reportType, format, cronExpression) {
+        if (!this.validReportTypes.includes(reportType)) {
+            throw new Error('Invalid report type');
+        }
+        if (!this.validFormats.includes(format)) {
+            throw new Error('Invalid format. Use "pdf" or "excel"');
+        }
+        if (cronExpression && !cron.validate(cronExpression)) {
+            throw new Error('Invalid cron expression');
+        }
+    }
+
     static async generateReport(req, res) {
+        const { reportType, filters = {}, format } = req.body;
+        const traceId = req.traceId || 'unknown';
+        const userId = req.user?.userID;
+
+        if (!userId) {
+            logger.error('User ID is missing in request', { traceId, route: 'reports', service: 'api', status: 401 });
+            return res.status(401).json({ error: 'Unauthorized: User ID missing' });
+        }
+
         try {
-            const { reportType, filters = {}, format } = req.body;
+            ReportController.validateInput(reportType, format);
 
-            if (!['pdf', 'excel'].includes(format)) {
-                logger.error('Invalid format specified', {
-                    traceId: req.traceId,
-                    route: 'reports',
-                    service: 'api',
-                    status: 400,
-                    method: req.method,
-                    url: req.originalUrl,
-                    ip: req.ip,
-                    userId: req.user.userID,
-                    metadata: { error: 'Invalid format', format },
-                });
-                return res.status(400).json({ error: 'Invalid format. Use "pdf" or "excel"' });
-            }
-
-            const validReportTypes = [
-                'VisitSummary',
-                'Timesheet',
-                'ReceiptBookInventory',
-                'StubCollection',
-                'UserActivity',
-                'AIAnomaly',
-                'AgentPerformance',
-                'RegionPerformance',
-                'Full',
-            ];
-            if (!validReportTypes.includes(reportType)) {
-                logger.error('Invalid report type', {
-                    traceId: req.traceId,
-                    route: 'reports',
-                    service: 'api',
-                    status: 400,
-                    method: req.method,
-                    url: req.originalUrl,
-                    ip: req.ip,
-                    userId: req.user.userID,
-                    metadata: { error: 'Invalid report type', reportType },
-                });
-                return res.status(400).json({ error: 'Invalid report type' });
-            }
-
-            logger.debug(`Generating ${reportType} report with filters`, {
-                traceId: req.traceId,
-                route: 'reports',
-                service: 'api',
-                metadata: { filters, userId: req.user.userID },
+            logger.debug(`Generating ${reportType} report`, {
+                traceId, route: 'reports', service: 'api',
+                metadata: { filters, userId }
             });
 
-            let data;
-            switch (reportType) {
-                case 'VisitSummary':
-                    data = await ReportService.generateVisitSummaryReport(filters);
-                    break;
-                case 'Timesheet':
-                    data = await ReportService.generateTimesheetReport(filters);
-                    break;
-                case 'ReceiptBookInventory':
-                    data = await ReportService.generateReceiptBookInventoryReport(filters);
-                    break;
-                case 'StubCollection':
-                    data = await ReportService.generateStubCollectionReport(filters);
-                    break;
-                case 'UserActivity':
-                    data = await ReportService.generateUserActivityReport(filters);
-                    break;
-                case 'AIAnomaly':
-                    data = await ReportService.generateAIAnomalyReport(filters);
-                    break;
-                case 'AgentPerformance':
-                    data = await ReportService.generateAgentPerformanceReport(filters);
-                    break;
-                case 'RegionPerformance':
-                    data = await ReportService.generateRegionPerformanceReport(filters);
-                    break;
-                case 'Full':
-                    data = await ReportService.generateFullReport(filters);
-                    break;
+            const reportMethod = {
+                'VisitSummary': ReportService.generateVisitSummaryReport,
+                'Timesheet': ReportService.generateTimesheetReport,
+                'ReceiptBookInventory': ReportService.generateReceiptBookInventoryReport,
+                'StubCollection': ReportService.generateStubCollectionReport,
+                'UserActivity': ReportService.generateUserActivityReport,
+                'AIAnomaly': ReportService.generateAIAnomalyReport,
+                'AgentPerformance': ReportService.generateAgentPerformanceReport,
+                'RegionPerformance': ReportService.generateRegionPerformanceReport,
+                'Full': ReportService.generateFullReport
+            }[reportType];
+
+            if (!reportMethod || typeof reportMethod !== 'function') {
+                throw new Error(`Invalid report method for reportType: ${reportType}`);
             }
 
+            const data = await reportMethod(filters);
             const filePath = await ReportService.exportReport(reportType, data, format);
+            const fileName = path.basename(filePath);
 
             await GeneratedReport.create({
                 reportType,
                 format,
-                filePath,
-                generatedBy: req.user.userID,
-                scheduleID: null,
+                filePath: fileName,
+                generatedBy: userId
             });
 
             await NotificationService.triggerNotification({
                 event: 'report:generated',
                 data: { reportType, format, filters },
-                metadata: { triggeredBy: req.user.email },
+                metadata: { triggeredBy: req.user.email }
             });
 
             logger.info(`Generated ${reportType} report`, {
-                traceId: req.traceId,
-                route: 'reports',
-                service: 'api',
-                status: 200,
-                method: req.method,
-                url: req.originalUrl,
-                ip: req.ip,
-                userId: req.user.userID,
-                metadata: { reportType, format, file: path.basename(filePath), triggeredBy: req.user.email },
+                traceId, route: 'reports', service: 'api', status: 200,
+                metadata: { reportType, format, file: fileName, userId }
             });
 
-            return res.status(200).json({ reportPath: `/api/reports/download?file=${path.basename(filePath)}` });
-        } catch (error) {
-            logger.error(`Failed to generate report: ${error.message}`, {
-                traceId: req.traceId,
-                route: 'reports',
-                service: 'api',
-                status: error.status || 500,
-                method: req.method,
-                url: req.originalUrl,
-                ip: req.ip,
-                userId: req.user.userID,
-                metadata: { error: error.message, stack: error.stack },
+            return res.status(200).json({
+                message: 'Report generated successfully',
+                reportPath: `/api/reports/download?file=${fileName}`
             });
-            return res.status(error.status || 500).json({ error: error.message || 'Failed to generate report' });
+        } catch (error) {
+            logger.error(`Failed to generate ${reportType} report: ${error.message}`, {
+                traceId, route: 'reports', service: 'api', status: 400,
+                metadata: { userId, error: error.message }
+            });
+            return res.status(400).json({ error: error.message });
         }
     }
 
     static async scheduleReport(req, res) {
+        const { reportType, filters = {}, format, cronExpression } = req.body;
+        const traceId = req.traceId || 'unknown';
+        const userId = req.user?.userID;
+
+        if (!userId) {
+            logger.error('User ID is missing in request', { traceId, route: 'reports', service: 'api', status: 401 });
+            return res.status(401).json({ error: 'Unauthorized: User ID missing' });
+        }
+
         try {
-            const { reportType, filters = {}, format, cronExpression } = req.body;
-
-            if (!['pdf', 'excel'].includes(format)) {
-                logger.error('Invalid format specified', {
-                    traceId: req.traceId,
-                    route: 'reports',
-                    service: 'api',
-                    status: 400,
-                    method: req.method,
-                    url: req.originalUrl,
-                    ip: req.ip,
-                    userId: req.user.userID,
-                    metadata: { error: 'Invalid format', format },
-                });
-                return res.status(400).json({ error: 'Invalid format. Use "pdf" or "excel"' });
-            }
-
-            const validReportTypes = [
-                'VisitSummary',
-                'Timesheet',
-                'ReceiptBookInventory',
-                'StubCollection',
-                'UserActivity',
-                'AIAnomaly',
-                'AgentPerformance',
-                'RegionPerformance',
-                'Full',
-            ];
-            if (!validReportTypes.includes(reportType)) {
-                logger.error('Invalid report type', {
-                    traceId: req.traceId,
-                    route: 'reports',
-                    service: 'api',
-                    status: 400,
-                    method: req.method,
-                    url: req.originalUrl,
-                    ip: req.ip,
-                    userId: req.user.userID,
-                    metadata: { error: 'Invalid report type', reportType },
-                });
-                return res.status(400).json({ error: 'Invalid report type' });
-            }
-
-            if (!cron.validate(cronExpression)) {
-                logger.error('Invalid cron expression', {
-                    traceId: req.traceId,
-                    route: 'reports',
-                    service: 'api',
-                    status: 400,
-                    method: req.method,
-                    url: req.originalUrl,
-                    ip: req.ip,
-                    userId: req.user.userID,
-                    metadata: { error: 'Invalid cron expression', cronExpression },
-                });
-                return res.status(400).json({ error: 'Invalid cron expression' });
-            }
+            ReportController.validateInput(reportType, format, cronExpression);
 
             const schedule = await ReportSchedule.create({
                 reportType,
                 filters: JSON.stringify(filters),
                 format,
                 cronExpression,
-                createdBy: req.user.userID,
+                createdBy: userId
             });
 
             cron.schedule(cronExpression, async () => {
                 try {
                     const currentSchedule = await ReportSchedule.findByPk(schedule.scheduleID);
                     if (!currentSchedule) {
-                        logger.info(`Schedule ${schedule.scheduleID} no longer exists, skipping report generation`, {
-                            route: 'reports',
-                            service: 'cron',
+                        logger.info(`Schedule ${schedule.scheduleID} no longer exists`, {
+                            route: 'reports', service: 'cron'
                         });
                         return;
                     }
-                    let data;
-                    switch (reportType) {
-                        case 'VisitSummary':
-                            data = await ReportService.generateVisitSummaryReport(filters);
-                            break;
-                        case 'Timesheet':
-                            data = await ReportService.generateTimesheetReport(filters);
-                            break;
-                        case 'ReceiptBookInventory':
-                            data = await ReportService.generateReceiptBookInventoryReport(filters);
-                            break;
-                        case 'StubCollection':
-                            data = await ReportService.generateStubCollectionReport(filters);
-                            break;
-                        case 'UserActivity':
-                            data = await ReportService.generateUserActivityReport(filters);
-                            break;
-                        case 'AIAnomaly':
-                            data = await ReportService.generateAIAnomalyReport(filters);
-                            break;
-                        case 'AgentPerformance':
-                            data = await ReportService.generateAgentPerformanceReport(filters);
-                            break;
-                        case 'RegionPerformance':
-                            data = await ReportService.generateRegionPerformanceReport(filters);
-                            break;
-                        case 'Full':
-                            data = await ReportService.generateFullReport(filters);
-                            break;
-                    }
+
+                    const reportMethod = {
+                        'VisitSummary': ReportService.generateVisitSummaryReport,
+                        'Timesheet': ReportService.generateTimesheetReport,
+                        'ReceiptBookInventory': ReportService.generateReceiptBookInventoryReport,
+                        'StubCollection': ReportService.generateStubCollectionReport,
+                        'UserActivity': ReportService.generateUserActivityReport,
+                        'AIAnomaly': ReportService.generateAIAnomalyReport,
+                        'AgentPerformance': ReportService.generateAgentPerformanceReport,
+                        'RegionPerformance': ReportService.generateRegionPerformanceReport,
+                        'Full': ReportService.generateFullReport
+                    }[reportType];
+
+                    const data = await reportMethod(filters);
                     const filePath = await ReportService.exportReport(reportType, data, format);
+                    const fileName = path.basename(filePath);
+
                     await GeneratedReport.create({
                         reportType,
                         format,
-                        filePath,
-                        generatedBy: null,
-                        scheduleID: schedule.scheduleID,
+                        filePath: fileName,
+                        scheduleID: schedule.scheduleID
                     });
+
                     await NotificationService.triggerNotification({
                         event: 'report:generated',
-                        data: { reportType, format, filePath: path.basename(filePath) },
+                        data: { reportType, format, fileName },
                         metadata: { scheduleID: schedule.scheduleID },
                     });
+
                     logger.info(`Scheduled ${reportType} report generated`, {
-                        route: 'reports',
-                        service: 'cron',
-                        status: 200,
-                        metadata: { reportType, scheduleID: schedule.scheduleID },
+                        route: 'reports', service: 'cron', status: 200,
+                        metadata: { reportType, scheduleID: schedule.scheduleID }
                     });
                 } catch (error) {
-                    logger.error(`Scheduled report generation failed: ${error.message}`, {
-                        route: 'reports',
-                        service: 'cron',
-                        status: 500,
-                        metadata: { reportType, scheduleID: schedule.scheduleID, error: error.message },
+                    logger.error(`Scheduled ${reportType} report failed: ${error.message}`, {
+                        route: 'reports', service: 'cron', status: 500,
+                        metadata: { reportType, scheduleID: schedule.scheduleID, error: error.message }
                     });
                 }
             });
@@ -276,201 +177,232 @@ class ReportController {
             await NotificationService.triggerNotification({
                 event: 'report:scheduled',
                 data: { reportType, format, cronExpression, scheduleID: schedule.scheduleID },
-                metadata: { triggeredBy: req.user.email },
+                metadata: { triggeredBy: req.user.email }
             });
 
             logger.info(`Scheduled ${reportType} report`, {
-                traceId: req.traceId,
-                route: 'reports',
-                service: 'api',
-                status: 200,
-                method: req.method,
-                url: req.originalUrl,
-                ip: req.ip,
-                userId: req.user.userID,
-                metadata: { reportType, format, scheduleID: schedule.scheduleID, createdBy: req.user.email },
+                traceId, route: 'reports', service: 'api', status: 200,
+                metadata: { userId, scheduleID: schedule.scheduleID }
             });
 
-            return res.status(200).json({ message: 'Report scheduled successfully', scheduleID: schedule.scheduleID });
-        } catch (error) {
-            logger.error(`Failed to schedule report: ${error.message}`, {
-                traceId: req.traceId,
-                route: 'reports',
-                service: 'api',
-                status: error.status || 500,
-                method: req.method,
-                url: req.originalUrl,
-                ip: req.ip,
-                userId: req.user.userID,
-                metadata: { error: error.message, stack: error.stack },
+            return res.status(200).json({
+                message: 'Report scheduled successfully',
+                scheduleID: schedule.scheduleID
             });
-            return res.status(error.status || 500).json({ error: error.message || 'Failed to schedule report' });
+        } catch (error) {
+            logger.error(`Failed to schedule ${reportType} report: ${error.message}`, {
+                traceId, route: 'reports', service: 'api', status: '400',
+                metadata: { userId, error: error.message }
+            });
+            return res.status(400).json({ error: error.message });
         }
     }
 
     static async downloadReport(req, res) {
+        const { file } = req.query;
+        const traceId = req.traceId || 'unknown';
+        const userId = req.user?.userID;
+
+        if (!userId) {
+            logger.error('User ID is missing in request', { traceId, route: 'reports', service: 'api', status: 401 });
+            return res.status(401).json({ error: 'Unauthorized: User ID missing' });
+        }
+
         try {
-            const { file } = req.query;
-            if (!file) {
-                logger.error('File name is required', {
-                    traceId: req.traceId,
-                    route: 'reports',
-                    service: 'api',
-                    status: 400,
-                    method: req.method,
-                    url: req.originalUrl,
-                    ip: req.ip,
-                    userId: req.user.userID,
-                    metadata: { error: 'File name is required' },
-                });
-                return res.status(400).json({ error: 'File name is required' });
+            if (!file || typeof file !== 'string') {
+                throw new Error('Valid file name is required');
             }
 
-            const filePath = path.join(__dirname, '../reports', file);
-            if (!(await fs.access(filePath).then(() => true).catch(() => false))) {
-                logger.error('Report file not found', {
-                    traceId: req.traceId,
-                    route: 'reports',
-                    service: 'api',
-                    status: 404,
-                    method: req.method,
-                    url: req.originalUrl,
-                    ip: req.ip,
-                    userId: req.user.userID,
-                    metadata: { error: 'Report file not found', file },
-                });
-                return res.status(404).json({ error: 'Report not found' });
+            const fileName = path.basename(file);
+            const filePath = path.join(__dirname, '../reports', fileName);
+
+            // Check if file exists
+            try {
+                await fs.access(filePath);
+            } catch {
+                throw new Error('Report file not found');
             }
 
-            res.download(filePath, (err) => {
+            logger.info(`Initiating download for report ${fileName}`, {
+                traceId, route: 'reports', service: 'api', status: 200,
+                metadata: { file: fileName, userId }
+            });
+
+            // Use res.download with an error-handling callback
+            res.download(filePath, fileName, (err) => {
                 if (err) {
-                    logger.error(`Failed to download report: ${err.message}`, {
-                        traceId: req.traceId,
-                        route: 'reports',
-                        service: 'api',
-                        status: 500,
-                        method: req.method,
-                        url: req.originalUrl,
-                        ip: req.ip,
-                        userId: req.user.userID,
-                        metadata: { error: err.message, file },
+                    logger.error(`Failed to download report ${fileName}: ${err.message}`, {
+                        traceId, route: 'reports', service: 'api', status: 500,
+                        metadata: { userId, file: fileName, error: err.message }
                     });
+                    // Avoid sending response if headers are already sent
+                    if (!res.headersSent) {
+                        res.status(500).json({ error: 'Failed to download report' });
+                    }
                 } else {
-                    logger.info(`Downloaded report ${file}`, {
-                        traceId: req.traceId,
-                        route: 'reports',
-                        service: 'api',
-                        status: 200,
-                        method: req.method,
-                        url: req.originalUrl,
-                        ip: req.ip,
-                        userId: req.user.userID,
-                        metadata: { file, downloadedBy: req.user.email },
+                    logger.info(`Successfully downloaded report ${fileName}`, {
+                        traceId, route: 'reports', service: 'api', status: 200,
+                        metadata: { userId, file: fileName }
                     });
                 }
             });
         } catch (error) {
+            const status = error.message.includes('not found') ? 404 : 400;
             logger.error(`Failed to download report: ${error.message}`, {
-                traceId: req.traceId,
-                route: 'reports',
-                service: 'api',
-                status: error.status || 500,
-                method: req.method,
-                url: req.originalUrl,
-                ip: req.ip,
-                userId: req.user.userID,
-                metadata: { error: error.message, stack: error.stack },
+                traceId, route: 'reports', service: 'api', status,
+                metadata: { userId, file, error: error.message }
             });
-            return res.status(error.status || 500).json({ error: error.message || 'Failed to download report' });
+            return res.status(status).json({ error: error.message });
         }
     }
 
     static async listSchedules(req, res) {
+        const traceId = req.traceId || 'unknown';
+        const userId = req.user?.userID;
+
+        if (!userId) {
+            logger.error('User ID is missing in request', { traceId, route: 'reports', service: 'api', status: 401 });
+            return res.status(401).json({ error: 'Unauthorized: User ID missing' });
+        }
+
         try {
             const schedules = await ReportSchedule.findAll({
                 attributes: ['scheduleID', 'reportType', 'format', 'cronExpression', 'createdBy', 'createdAt'],
-                include: [
-                    {
-                        model: User,
-                        attributes: ['userID', 'firstname', 'lastname'],
-                        as: 'Creator',
-                    },
-                ],
+                include: [{
+                    model: User,
+                    attributes: ['userID', 'firstname', 'lastname'],
+                    as: 'Creator'
+                }]
             });
+
+            logger.info('Listed report schedules', {
+                traceId, route: 'reports', service: 'api', status: 200,
+                metadata: { userId, count: schedules.length }
+            });
+
             return res.status(200).json(schedules);
         } catch (error) {
-            logger.error(`Failed to list report schedules: ${error.message}`, {
-                traceId: req.traceId,
-                route: 'reports',
-                service: 'api',
-                status: error.status || 500,
-                method: req.method,
-                url: req.originalUrl,
-                ip: req.ip,
-                userId: req.user.userID,
-                metadata: { error: error.message, stack: error.stack },
+            logger.error(`Failed to list schedules: ${error.message}`, {
+                traceId, route: 'reports', service: 'api', status: 500,
+                metadata: { userId, error: error.message }
             });
-            return res.status(error.status || 500).json({ error: error.message || 'Failed to list report schedules' });
+            return res.status(500).json({ error: 'Failed to list report schedules' });
         }
     }
 
     static async listGeneratedReports(req, res) {
+        const traceId = req.traceId || 'unknown';
+        const userId = req.user?.userID;
+
+        if (!userId) {
+            logger.error('User ID is missing in request', { traceId, route: 'reports', service: 'api', status: 401 });
+            return res.status(401).json({ error: 'Unauthorized: User ID missing' });
+        }
+
         try {
-            const generatedReports = await GeneratedReport.findAll({
+            const reports = await GeneratedReport.findAll({
                 attributes: ['generatedReportID', 'reportType', 'format', 'filePath', 'generatedAt', 'generatedBy', 'scheduleID'],
                 include: [
                     {
                         model: User,
                         attributes: ['userID', 'firstname', 'lastname'],
-                        as: 'Generator',
+                        as: 'Generator'
                     },
                     {
                         model: ReportSchedule,
                         attributes: ['scheduleID', 'reportType', 'format', 'cronExpression'],
-                        as: 'Schedule',
-                    },
+                        as: 'Schedule'
+                    }
                 ],
-                order: [['generatedAt', 'DESC']],
+                order: [['generatedAt', 'DESC']]
             });
-            return res.status(200).json(generatedReports);
+
+            logger.info('Listed generated reports', {
+                traceId, route: 'reports', service: 'api', status: 200,
+                metadata: { userId, count: reports.length }
+            });
+
+            return res.status(200).json(reports);
         } catch (error) {
             logger.error(`Failed to list generated reports: ${error.message}`, {
-                traceId: req.traceId,
-                route: 'reports',
-                service: 'api',
-                status: error.status || 500,
-                method: req.method,
-                url: req.originalUrl,
-                ip: req.ip,
-                userId: req.user.userID,
-                metadata: { error: error.message, stack: error.stack },
+                traceId, route: 'reports', service: 'api', status: 500,
+                metadata: { userId, error: error.message }
             });
-            return res.status(error.status || 500).json({ error: error.message || 'Failed to list generated reports' });
+            return res.status(500).json({ error: 'Failed to list generated reports' });
         }
     }
 
     static async deleteSchedule(req, res) {
+        const { scheduleID } = req.params;
+        const traceId = req.traceId || 'unknown';
+        const userId = req.user?.userID;
+
+        if (!userId) {
+            logger.error('User ID is missing in request', { traceId, route: 'reports', service: 'api', status: 401 });
+            return res.status(401).json({ error: 'Unauthorized: User ID missing' });
+        }
+
         try {
-            const { scheduleID } = req.params;
             const schedule = await ReportSchedule.findByPk(scheduleID);
             if (!schedule) {
+                logger.warn(`Schedule ${scheduleID} not found`, {
+                    traceId, route: 'reports', service: 'api', status: 404,
+                    metadata: { userId }
+                });
                 return res.status(404).json({ error: 'Schedule not found' });
             }
+
             await schedule.destroy();
+
+            logger.info(`Deleted schedule ${scheduleID}`, {
+                traceId, route: 'reports', service: 'api', status: 200,
+                metadata: { userId, scheduleID }
+            });
+
             return res.status(200).json({ message: 'Schedule deleted successfully' });
         } catch (error) {
-            logger.error(`Failed to delete report schedule: ${error.message}`, {
-                traceId: req.traceId,
-                route: 'reports',
-                service: 'api',
-                status: error.status || 500,
-                method: req.method,
-                url: req.originalUrl,
-                ip: req.ip,
-                userId: req.user.userID,
-                metadata: { error: error.message, stack: error.stack },
+            logger.error(`Failed to delete schedule: ${error.message}`, {
+                traceId, route: 'reports', service: 'api', status: 500,
+                metadata: { userId, scheduleID, error: error.message }
             });
-            return res.status(error.status || 500).json({ error: error.message || 'Failed to delete report schedule' });
+            return res.status(500).json({ error: 'Failed to delete schedule' });
+        }
+    }
+
+    static async deleteGeneratedReport(req, res) {
+        const { reportID } = req.params;
+        const traceId = req.traceId || 'unknown';
+        const userId = req.user?.userID;
+
+        if (!userId) {
+            logger.error('User ID is missing in request', { traceId, route: 'reports', service: 'api', status: 401 });
+            return res.status(401).json({ error: 'Unauthorized: User ID missing' });
+        }
+
+        try {
+            const report = await GeneratedReport.findByPk(reportID);
+            if (!report) {
+                logger.warn(`Generated report ${reportID} not found`, {
+                    traceId, route: 'reports', service: 'api', status: 404,
+                    metadata: { userId }
+                });
+                return res.status(404).json({ error: 'Generated report not found' });
+            }
+
+            await report.destroy();
+
+            logger.info(`Deleted generated report ${reportID}`, {
+                traceId, route: 'reports', service: 'api', status: 200,
+                metadata: { userId, reportID }
+            });
+
+            return res.status(200).json({ message: 'Generated report deleted successfully' });
+        } catch (error) {
+            logger.error(`Failed to delete generated report: ${error.message}`, {
+                traceId, route: 'reports', service: 'api', status: 500,
+                metadata: { userId, reportID, error: error.message }
+            });
+            return res.status(500).json({ error: 'Failed to delete generated report' });
         }
     }
 }

@@ -1954,6 +1954,13 @@
     "generate": {
       "title": "Generate Report"
     },
+    "modal": {
+      "title": "Report Generated",
+      "message": "The {{reportType}} report has been generated. What would you like to do?",
+      "download": "Download",
+      "delete": "Delete",
+      "keep": "Keep"
+    },
     "schedule": {
       "title": "Schedule Report",
       "period": "Period",
@@ -2031,7 +2038,7 @@
       "receiptbookinventory": "Receipt Book Inventory",
       "stubcollection": "Stub Collection",
       "useractivity": "User Activity",
-      "aianomaly": "AI Anomaly",
+      "anomaly": "Anomaly",
       "agentperformance": "Agent Performance",
       "regionperformance": "Region Performance",
       "full": "Full Report"
@@ -2069,7 +2076,7 @@
       "visitReasons": "Visit Reasons",
       "checklistCompleted": "Checklist Completed",
       "visitDuration": "Visit Duration (minutes)",
-      "aiAnomalies": "AI Anomalies Detected",
+      "Anomalies": "Anomalies Detected",
       "numberOfVisits": "Number of Visits",
       "totalHours": "Total Hours",
       "aiSuggestions": "AI Suggestions",

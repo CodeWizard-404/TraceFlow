@@ -1,9 +1,13 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { FaTrash, FaDownload, FaChartBar, FaBell } from 'react-icons/fa';
-import { useAuth } from '../../context/AuthContext';
-import { useTranslation } from 'react-i18next';
-import { Chart as ChartJS, BarElement, PieController, ArcElement, CategoryScale, LinearScale, Legend, Tooltip } from 'chart.js';
-import { Chart } from 'react-chartjs-2';
+import React, { useState, useEffect, useMemo } from "react";
+import { motion } from "framer-motion";
+import { FaDownload, FaTrash, FaFilter, FaSort, FaList, FaPlus, FaClock, FaChevronDown } from "react-icons/fa";
+import Select from "react-select";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import {
+  ReportSchedule,
+  GeneratedReport,
+} from "../../models/Report";
 import {
   generateReport,
   scheduleReport,
@@ -11,584 +15,2392 @@ import {
   listSchedules,
   listGeneratedReports,
   deleteSchedule,
-  ReportSchedule,
-  GeneratedReport,
-} from '../../apis/reportAPI';
-import { getUsersByRole } from '../../apis/userAPI';
-import { getAllRegions } from '../../apis/locationApi';
-import { getAllAgents } from '../../apis/agentAPI';
-import { Region } from '../../models/Region';
-import { User } from '../../models/User';
-import Agent from '../../models/Agent';
-import './Reports.css';
+  deleteGeneratedReport,
+} from "../../apis/reportAPI";
+import {
+  getUsersByRole,
+  getAllUsers,
+} from "../../apis/userAPI";
+import {
+  getAllRegions,
+  getAllGovernorates,
+  getGovernoratesByRegion,
+  getAllDelegations,
+  getDelegationsByGovernorate,
+} from "../../apis/locationApi";
+import {
+  getAllAgents,
+  getAgentsByDelegation,
+  getAgentsByUser,
+} from "../../apis/agentAPI";
+import { getAllReasons } from "../../apis/reasonAPI";
+import { getAllReceiptBooks, getAllReceiptBookTypes, getReceiptBookHolders } from "../../apis/receiptBookAPI";
+import { getUniqueValues } from "../../apis/logAPI";
+import "../Receipt/ReceiptBooks.css";
+import "../Admin/AdminDashboard.css";
+import "./Reports.css";
+import Agent from "../../models/Agent";
+import Region from "../../models/Region";
+import User from "../../models/User";
+import Governorate from "../../models/Governorate";
+import Delegation from "../../models/Delegation";
+import { Reason } from "../../models/Reason";
+import ReceiptBook from "../../models/ReceiptBook";
+import ReceiptBookType from "../../models/ReceiptBookType";
+import { useTranslation } from "react-i18next";
+import { getAllRoles } from "../../apis/roleAPI";
+import Role from "../../models/Role";
 
-ChartJS.register(BarElement, PieController, ArcElement, CategoryScale, LinearScale, Legend, Tooltip);
-
+// Constants for report types and formats
 const reportTypes = [
-  'VisitSummary', 'Timesheet', 'ReceiptBookInventory', 'StubCollection',
-  'UserActivity', 'AIAnomaly', 'AgentPerformance', 'RegionPerformance', 'Full',
+  "VisitSummary", "Timesheet", "ReceiptBookInventory", "StubCollection",
+  "UserActivity", "AIAnomaly", "AgentPerformance", "RegionPerformance", "Full"
 ];
+const formats = ["pdf", "excel"];
+const visitStatusOptions = ["Pending", "Visited", "Validated", "Rejected"];
 
-// Dynamic filter configurations
-const filterConfigs: Record<string, Array<{ type: string; label: string; options?: string[] }>> = {
+const reportStatusOptions: { [key: string]: string[] } = {
+  VisitSummary: ["Pending", "Visited", "Validated", "Rejected"],
+  Timesheet: ["Pending", "Visited", "Validated", "Rejected"],
+  ReceiptBookInventory: [
+    "In Stock",
+    "Sent to Supplier",
+    "Collect from Supplier",
+    "With Regional Manager",
+    "With Supervisor",
+    "Assigned to Agent",
+    "Stub Collected",
+    "With Stock Manager",
+    "Archived",
+  ],
+  StubCollection: ["pending", "collected", "archived"],
+};
+
+// Allowed filters for each report type
+const allowedFilters: Record<string, string[]> = {
   VisitSummary: [
-    { type: 'dateRange', label: 'Date Range' },
-    { type: 'select', label: 'Status', options: ['pending', 'validated'] },
-    { type: 'select', label: 'Region', options: [] },
-    { type: 'select', label: 'Supervisor', options: [] },
-    { type: 'select', label: 'Agent', options: [] },
+    "supervisorID", "agentID", "dateRange", "regionID", "governorateID",
+    "delegationID", "visitType", "status", "visitReasons", "checklistCompleted",
+    "visitDuration", "aiAnomalies"
   ],
   Timesheet: [
-    { type: 'dateRange', label: 'Date Range' },
-    { type: 'select', label: 'Supervisor', options: [] },
-    { type: 'select', label: 'Status', options: ['pending', 'validated'] },
+    "supervisorID", "regionalManagerID", "directorID", "dateRange", "status",
+    "numberOfVisits", "totalHours", "aiSuggestions", "anomaliesDetected",
+    "visitStatus", "weekNumber", "checklistCompleted"
   ],
   ReceiptBookInventory: [
-    { type: 'select', label: 'Status', options: ['in_stock', 'assigned', 'archived'] },
-    { type: 'select', label: 'Region', options: [] },
+    "dateRange", "regionID", "governorateID", "delegationID", "bookType",
+    "status", "currentHolderName", "agentName", "assignmentStatus"
   ],
   StubCollection: [
-    { type: 'dateRange', label: 'Date Range' },
-    { type: 'select', label: 'Agent', options: [] },
-    { type: 'select', label: 'Status', options: ['collected', 'transmitted', 'archived'] },
+    "agentID", "supervisorID", "dateRange", "status", "currentHolderName"
   ],
   UserActivity: [
-    { type: 'dateRange', label: 'Date Range' },
-    { type: 'select', label: 'User Role', options: ['supervisor', 'regional_manager', 'director', 'admin'] },
+    "roleID", "dateRange", "activityType", "userID", "status",
+    "suspiciousActivity", "ipAddress"
   ],
   AIAnomaly: [
-    { type: 'dateRange', label: 'Date Range' },
-    { type: 'select', label: 'User Role', options: ['supervisor', 'regional_manager', 'agent'] },
+    "dateRange", "roleID", "userID", "affectedEntity",
+    "severity", "route"
   ],
   AgentPerformance: [
-    { type: 'dateRange', label: 'Date Range' },
-    { type: 'select', label: 'Agent', options: [] },
-    { type: 'select', label: 'Region', options: [] },
+    "supervisorID", "regionalManagerID", "agentID", "dateRange", "regionID",
+    "governorateID", "delegationID", "performanceScore", "numberOfVisits",
+    "stubsCollected", "receiptBooksAssigned", "visitCompletionRate",
+    "locationUpdated"
   ],
   RegionPerformance: [
-    { type: 'dateRange', label: 'Date Range' },
-    { type: 'select', label: 'Region', options: [] },
+    "regionalManagerID", "dateRange", "regionID", "governorateID",
+    "delegationID", "performanceScore", "numberOfVisits", "stubsCollected"
   ],
   Full: [
-    { type: 'dateRange', label: 'Date Range' },
-    { type: 'select', label: 'Region', options: [] },
-    { type: 'select', label: 'Supervisor', options: [] },
-    { type: 'select', label: 'Agent', options: [] },
+    "supervisorID", "regionalManagerID", "dateRange", "regionID", "agentID",
+    "status", "visitReasons"
   ],
 };
 
-// Error handling function
-const handleApiError = (error: unknown, defaultMessage: string): string => {
-  if (error instanceof Error) {
-    return error.message || defaultMessage;
-  }
-  return defaultMessage;
-};
+interface FilterValues {
+  [key: string]: string | boolean | string[] | DateRangeFilter | number[] | RangeFilter | number;
+}
 
-// Table component
-const Table = ({ columns, data }: { columns: any[], data: any[] }) => (
-  <div className="table-container">
-    <div className="table-head">
-      <div className="table-row">
-        {columns.map(col => (
-          <div key={col.key} className="table-cell">{col.label}</div>
-        ))}
+interface DateRangeFilter {
+  start: string;
+  end: string;
+}
+
+interface RangeFilter {
+  min: number;
+  max: number;
+}
+
+// Accordion Component for collapsible sections
+const Accordion: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const { t } = useTranslation();
+
+  return (
+    <div className="dropdown-unit dropdown-unit">
+      <div className="dropdown-bar" onClick={() => setIsOpen(!isOpen)}>
+        <h3>{t(`reports.accordion.${title.toLowerCase().replace(/\s/g, '')}`)}</h3>
+        <FaChevronDown className={`chevron ${isOpen ? 'open' : ''}`} />
       </div>
-    </div>
-    <div className="table-body">
-      {data.length > 0 ? (
-        data.map(row => (
-          <div key={row.id} className="table-row">
-            {columns.map(col => (
-              <div key={col.key} className="table-cell">
-                {col.render ? col.render(row) : row[col.key]}
-              </div>
-            ))}
-          </div>
-        ))
-      ) : (
-        <div className="no-data">No data available</div>
+      {isOpen && (
+        <motion.div
+          className="dropdown-body"
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ height: 'auto', opacity: 1 }}
+          transition={{ duration: 0.3 }}
+        >
+          {children}
+        </motion.div>
       )}
     </div>
-  </div>
-);
-
-// DateRangePicker component
-const DateRangePicker = ({ value, onChange }: { value: { start: string; end: string }; onChange: (value: { start: string; end: string }) => void }) => {
-  const [startDate, setStartDate] = useState(value?.start || '');
-  const [endDate, setEndDate] = useState(value?.end || '');
-
-  useEffect(() => {
-    if (startDate !== value.start || endDate !== value.end) {
-      onChange({ start: startDate, end: endDate });
-    }
-  }, [startDate, endDate, onChange, value.start, value.end]);
-
-  return (
-    <div className="date-range">
-      <input
-        type="date"
-        className="report-input"
-        value={startDate}
-        onChange={e => setStartDate(e.target.value)}
-      />
-      <input
-        type="date"
-        className="report-input"
-        value={endDate}
-        onChange={e => setEndDate(e.target.value)}
-      />
-    </div>
   );
 };
 
-// Modal component
-const Modal = ({ isOpen, onClose, children }: { isOpen: boolean; onClose: () => void; children: React.ReactNode }) => {
-  if (!isOpen) return null;
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={e => e.stopPropagation()}>
-        {children}
-      </div>
-    </div>
-  );
-};
-
-const Reports = () => {
-  const { effectivePermissions, permissionsLoaded } = useAuth();
+const ReportingPage: React.FC = () => {
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState('generate');
-  const [reportType, setReportType] = useState(reportTypes[0]);
-  const [filters, setFilters] = useState<Record<string, any>>({});
-  const [format, setFormat] = useState<'pdf' | 'excel'>('pdf');
+  const [view, setView] = useState<"scheduled" | "generated" | "generate" | "schedule">("scheduled");
   const [schedules, setSchedules] = useState<ReportSchedule[]>([]);
   const [generatedReports, setGeneratedReports] = useState<GeneratedReport[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
-  const [cronExpression, setCronExpression] = useState('');
-  const [regions, setRegions] = useState<Region[]>([]);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+
+  // Filter states for list view
+  const [reportTypeFilter, setReportTypeFilter] = useState("");
+  const [formatFilter, setFormatFilter] = useState("");
+  const [dateStart, setDateStart] = useState("");
+  const [dateEnd, setDateEnd] = useState("");
+  const [scheduleSort, setScheduleSort] = useState<"scheduleID" | "reportType" | "createdAt">("scheduleID");
+  const [scheduleSortOrder, setScheduleSortOrder] = useState<"asc" | "desc">("asc");
+  const [reportSort, setReportSort] = useState<"generatedReportID" | "reportType" | "generatedAt">("generatedReportID");
+  const [reportSortOrder, setReportSortOrder] = useState<"asc" | "desc">("asc");
+
+  // Generate and Schedule view states
+  const [selectedReportType, setSelectedReportType] = useState("");
+  const [selectedFormat, setSelectedFormat] = useState<"pdf" | "excel">("pdf");
+  const [filterValues, setFilterValues] = useState<FilterValues>({});
+
+  // Data for filters
   const [supervisors, setSupervisors] = useState<User[]>([]);
+  const [regionalManagers, setRegionalManagers] = useState<User[]>([]);
+  const [directors, setDirectors] = useState<User[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
-  const [showDashboard, setShowDashboard] = useState(false);
+  const [regions, setRegions] = useState<Region[]>([]);
+  const [governorates, setGovernorates] = useState<Governorate[]>([]);
+  const [delegations, setDelegations] = useState<Delegation[]>([]);
+  const [reasons, setReasons] = useState<Reason[]>([]);
+  const [holders, setHolders] = useState<User[]>([]);
+  const [receiptBooks, setReceiptBooks] = useState<ReceiptBook[]>([]);
+  const [receiptBookTypes, setReceiptBookTypes] = useState<ReceiptBookType[]>([]);
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [activityTypes, setActivityTypes] = useState<string[]>([]);
+  const [logStatuses, setLogStatuses] = useState<string[]>([]);
+  const [affectedEntities, setAffectedEntities] = useState<string[]>([]);
+  const [severities, setSeverities] = useState<string[]>([]);
+  const [routes, setRoutes] = useState<string[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
 
-  // Permissions
-  const canGenerateReports = effectivePermissions?.some(p => p.name === 'generate_report');
-  const canScheduleReports = effectivePermissions?.some(p => p.name === 'schedule_report');
-  const canViewSchedules = effectivePermissions?.some(p => p.name === 'view_schedules');
-  const canViewGenerated = effectivePermissions?.some(p => p.name === 'view_generated_reports');
-  const canDeleteSchedules = effectivePermissions?.some(p => p.name === 'delete_schedule');
-  const canViewAnomalies = effectivePermissions?.some(p => p.name === 'view_anomalies');
+  // Track which selectors have been opened
+  const [openedSelectors, setOpenedSelectors] = useState<Set<string>>(new Set());
 
-  // Memoized handleFilterChange function
-  const handleFilterChange = useCallback((label: string, value: any) => {
-    setFilters(prev => ({ ...prev, [label]: value }));
-  }, []);
+  // State for schedule period
+  const [schedulePeriod, setSchedulePeriod] = useState<"daily" | "weekly" | "monthly" | "yearly" | "custom" | "">("");
+  const [customPeriodValue, setCustomPeriodValue] = useState("");
+  const [customPeriodUnit, setCustomPeriodUnit] = useState<"minutes" | "hours" | "days" | "">("");
 
-  // Fetch dynamic filter options
-  const fetchFilterOptions = useCallback(async () => {
+  // Convert period to cron expression
+  const getCronExpression = () => {
+    switch (schedulePeriod) {
+      case "daily":
+        return "0 0 * * *";
+      case "weekly":
+        return "0 0 * * 0";
+      case "monthly":
+        return "0 0 1 * *";
+      case "yearly":
+        return "0 0 1 1 *";
+      case "custom":
+        if (!customPeriodValue || !customPeriodUnit) return "";
+        const value = parseInt(customPeriodValue);
+        if (isNaN(value) || value <= 0) return "";
+        switch (customPeriodUnit) {
+          case "minutes":
+            return `*/${value} * * * *`;
+          case "hours":
+            return `0 */${value} * * *`;
+          case "days":
+            return `0 0 */${value} * *`;
+          default:
+            return "";
+        }
+      default:
+        return "";
+    }
+  };
+
+  const cronToReadable = (cron: string, t: Function): string => {
+    const parts = cron.split(" ");
+    if (parts.length !== 5) return "Invalid cron";
+    if (parts[0] === "0" && parts[1] === "0" && parts[2] === "*" && parts[3] === "*" && parts[4] === "*") {
+      return t("reports.schedule.daily");
+    } else if (parts[0] === "0" && parts[1] === "0" && parts[2] === "*" && parts[3] === "*" && parts[4] === "0") {
+      return t("reports.schedule.weekly");
+    } else if (parts[0] === "0" && parts[1] === "0" && parts[2] === "1" && parts[3] === "*" && parts[4] === "*") {
+      return t("reports.schedule.monthly");
+    } else if (parts[0] === "0" && parts[1] === "0" && parts[2] === "1" && parts[3] === "1" && parts[4] === "*") {
+      return t("reports.schedule.yearly");
+    } else if (parts[0].startsWith("*/")) {
+      const X = parts[0].slice(2);
+      return `${X} ${t("reports.schedule.minutes")}`;
+    } else if (parts[0] === "0" && parts[1].startsWith("*/")) {
+      const X = parts[1].slice(2);
+      return `${X} ${t("reports.schedule.hours")}`;
+    } else if (parts[0] === "0" && parts[1] === "0" && parts[2].startsWith("*/")) {
+      const X = parts[2].slice(2);
+      return `${X} ${t("reports.schedule.days")}`;
+    } else {
+      return t("reports.schedule.custom");
+    }
+  };
+
+
+  // Handle selector click to fetch data lazily
+  const handleSelectorClick = (filter: string) => {
+    if (!openedSelectors.has(filter)) {
+      setOpenedSelectors(prev => new Set(prev).add(filter));
+    }
+  };
+
+  // Fetch filter data only when selector is opened
+  const fetchFilterData = async (reportType: string) => {
     try {
       setLoading(true);
-      const [regionData, supervisorData, agentData] = await Promise.all([
-        getAllRegions(),
-        getUsersByRole(import.meta.env.VITE_ROLES_SUPERVISOR),
-        getAllAgents().then(res => res.agents),
-      ]);
-      setRegions(regionData);
-      setSupervisors(supervisorData);
-      setAgents(agentData);
+      const promises: Promise<any>[] = [];
 
-      // Update filterConfigs with dynamic options using unique IDs
-      const updatedFilterConfigs = { ...filterConfigs };
-      updatedFilterConfigs.VisitSummary.find(f => f.label === 'Region')!.options = regionData.map(r => r.name);
-      updatedFilterConfigs.VisitSummary.find(f => f.label === 'Supervisor')!.options = supervisorData.map(s => `${s.userID}:${s.firstname} ${s.lastname}`);
-      updatedFilterConfigs.VisitSummary.find(f => f.label === 'Agent')!.options = agentData.map(a => `${a.agentID}:${a.name} ${a.lastname}`);
-      updatedFilterConfigs.Timesheet.find(f => f.label === 'Supervisor')!.options = supervisorData.map(s => `${s.userID}:${s.firstname} ${s.lastname}`);
-      updatedFilterConfigs.ReceiptBookInventory.find(f => f.label === 'Region')!.options = regionData.map(r => r.name);
-      updatedFilterConfigs.StubCollection.find(f => f.label === 'Agent')!.options = agentData.map(a => `${a.agentID}:${a.name} ${a.lastname}`);
-      updatedFilterConfigs.AgentPerformance.find(f => f.label === 'Agent')!.options = agentData.map(a => `${a.agentID}:${a.name} ${a.lastname}`);
-      updatedFilterConfigs.AgentPerformance.find(f => f.label === 'Region')!.options = regionData.map(r => r.name);
-      updatedFilterConfigs.RegionPerformance.find(f => f.label === 'Region')!.options = regionData.map(r => r.name);
-      updatedFilterConfigs.Full.find(f => f.label === 'Region')!.options = regionData.map(r => r.name);
-      updatedFilterConfigs.Full.find(f => f.label === 'Supervisor')!.options = supervisorData.map(s => `${s.userID}:${s.firstname} ${s.lastname}`);
-      updatedFilterConfigs.Full.find(f => f.label === 'Agent')!.options = agentData.map(a => `${a.agentID}:${a.name} ${a.lastname}`);
+      if (allowedFilters[reportType]?.includes("currentHolderName") && openedSelectors.has("currentHolderName")) {
+        promises.push(
+          getReceiptBookHolders().then((data) => {
+            if (Array.isArray(data)) {
+              setHolders(data);
+            } else {
+              console.error("Expected array for holders, got:", data);
+              setHolders([]);
+            }
+          }).catch((err) => {
+            console.error("Failed to fetch holders:", err);
+            setHolders([]);
+          })
+        );
+      }
+
+      // Keep this if receiptBooks is needed for other filters (e.g., bookType)
+      if (allowedFilters[reportType]?.includes("bookType") && openedSelectors.has("bookType")) {
+        promises.push(
+          getAllReceiptBooks().then((data) => {
+            if (data.books && Array.isArray(data.books)) {
+              setReceiptBooks(data.books); // Extract the books array
+            } else {
+              console.error("Expected object with books array for receiptBooks, got:", data);
+              setReceiptBooks([]);
+            }
+          }).catch((err) => {
+            console.error("Failed to fetch receiptBooks:", err);
+            setReceiptBooks([]);
+          })
+        );
+      }
+
+      if (allowedFilters[reportType]?.includes("supervisorID") && openedSelectors.has("supervisorID")) {
+        promises.push(getUsersByRole(import.meta.env.VITE_ROLES_SUPERVISOR).then(setSupervisors));
+      }
+      if (allowedFilters[reportType]?.includes("regionalManagerID") && openedSelectors.has("regionalManagerID")) {
+        promises.push(getUsersByRole(import.meta.env.VITE_ROLES_REGIONAL_MANAGER).then(setRegionalManagers));
+      }
+      if (allowedFilters[reportType]?.includes("directorID") && openedSelectors.has("directorID")) {
+        promises.push(getUsersByRole(import.meta.env.VITE_ROLES_DIRECTOR).then(setDirectors));
+      }
+      if ((allowedFilters[reportType]?.includes("agentID") || allowedFilters[reportType]?.includes("agentName")) && openedSelectors.has("agentID")) {
+        promises.push(getAllAgents().then(data => setAgents(data.agents)));
+      }
+      if (allowedFilters[reportType]?.includes("regionID") && openedSelectors.has("regionID")) {
+        promises.push(getAllRegions().then(setRegions));
+      }
+      if (allowedFilters[reportType]?.includes("governorateID") && openedSelectors.has("governorateID")) {
+        promises.push(getAllGovernorates().then(setGovernorates));
+      }
+      if (allowedFilters[reportType]?.includes("delegationID") && openedSelectors.has("delegationID")) {
+        promises.push(getAllDelegations().then(setDelegations));
+      }
+      if (allowedFilters[reportType]?.includes("visitReasons") && openedSelectors.has("visitReasons")) {
+        promises.push(getAllReasons().then(setReasons));
+      }
+      if (allowedFilters[reportType]?.includes("bookType") && openedSelectors.has("bookType")) {
+        promises.push(getAllReceiptBookTypes().then(setReceiptBookTypes));
+      }
+      if (allowedFilters[reportType]?.includes("currentHolderName") && openedSelectors.has("currentHolderName")) {
+        promises.push(getAllReceiptBooks().then(setReceiptBooks));
+      }
+      if (allowedFilters[reportType]?.includes("roleID") && openedSelectors.has("roleID")) {
+        promises.push(getAllRoles().then(setRoles));
+      }
+      if (allowedFilters[reportType]?.includes("activityType") && openedSelectors.has("activityType")) {
+        promises.push(getUniqueValues("route").then(setActivityTypes));
+      }
+      if (allowedFilters[reportType]?.includes("status") && reportType === "UserActivity" && openedSelectors.has("status")) {
+        promises.push(getUniqueValues("status").then(setLogStatuses));
+      }
+      if (allowedFilters[reportType]?.includes("affectedEntity") && openedSelectors.has("affectedEntity")) {
+        promises.push(getUniqueValues("service").then(setAffectedEntities));
+      }
+      if (allowedFilters[reportType]?.includes("severity") && openedSelectors.has("severity")) {
+        promises.push(getUniqueValues("level").then(setSeverities));
+      }
+      if (allowedFilters[reportType]?.includes("route") && openedSelectors.has("route")) {
+        promises.push(getUniqueValues("route").then(setRoutes));
+      }
+      if (allowedFilters[reportType]?.includes("userID") && openedSelectors.has("userID")) {
+        promises.push(getAllUsers().then(setUsers));
+      }
+
+      await Promise.all(promises);
     } catch (err) {
-      setError(handleApiError(err, 'Unable to fetch filter options.'));
+      setError(t("reports.errors.fetchFilterData"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  };
 
+  // Fetch schedules and reports
   useEffect(() => {
-    if (permissionsLoaded) {
-      fetchFilterOptions();
-      if (canViewSchedules) fetchSchedules();
-      if (canViewGenerated) fetchGeneratedReports();
-    }
-  }, [permissionsLoaded, canViewSchedules, canViewGenerated, fetchFilterOptions]);
-
-  const fetchSchedules = async () => {
-    try {
+    const fetchData = async () => {
       setLoading(true);
-      const data = await listSchedules();
-      setSchedules(data);
-    } catch (err) {
-      setError(handleApiError(err, 'Unable to fetch schedules.'));
-    } finally {
-      setLoading(false);
-    }
-  };
+      try {
+        const [schedulesData, reportsData] = await Promise.all([
+          listSchedules(),
+          listGeneratedReports(),
+        ]);
+        setSchedules(schedulesData);
+        setGeneratedReports(reportsData);
+        setError(null);
+      } catch (err: any) {
+        setError(err.message || t("reports.errors.fetchData"));
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [t]);
 
-  const fetchGeneratedReports = async () => {
-    try {
-      setLoading(true);
-      const data = await listGeneratedReports();
-      setGeneratedReports(data);
-    } catch (err) {
-      setError(handleApiError(err, 'Unable to fetch generated reports.'));
-    } finally {
-      setLoading(false);
+  // Fetch filter data when report type changes or selector is opened
+  useEffect(() => {
+    if (selectedReportType && openedSelectors.size > 0) {
+      fetchFilterData(selectedReportType);
     }
-  };
+    setFilterValues(prev => {
+      const allowed = allowedFilters[selectedReportType] || [];
+      const cleanedFilters: FilterValues = {};
+      Object.keys(prev).forEach(key => {
+        if (allowed.includes(key)) {
+          cleanedFilters[key] = prev[key];
+        }
+      });
+      return cleanedFilters;
+    });
+  }, [selectedReportType, openedSelectors]);
+
+  // Fetch filtered agents when supervisor or delegation changes
+  useEffect(() => {
+    if (["VisitSummary", "AgentPerformance", "StubCollection"].includes(selectedReportType) && openedSelectors.has("agentID")) {
+      const fetchFilteredAgents = async () => {
+        try {
+          setLoading(true);
+          let filteredAgents: Agent[] = [];
+          const supervisorID = filterValues.supervisorID as string;
+          const delegationID = filterValues.delegationID as string;
+
+          if (supervisorID && delegationID) {
+            const [bySupervisor, byDelegation] = await Promise.all([
+              getAgentsByUser(supervisorID),
+              getAgentsByDelegation(delegationID),
+            ]);
+            filteredAgents = bySupervisor.agents.filter(agent =>
+              byDelegation.agents.some(d => d.agentID === agent.agentID)
+            );
+          } else if (supervisorID) {
+            const data = await getAgentsByUser(supervisorID);
+            filteredAgents = data.agents;
+          } else if (delegationID) {
+            const data = await getAgentsByDelegation(delegationID);
+            filteredAgents = data.agents;
+          } else {
+            const data = await getAllAgents();
+            filteredAgents = data.agents;
+          }
+          setAgents(filteredAgents);
+        } catch (err) {
+          setError(t("reports.errors.fetchAgents"));
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchFilteredAgents();
+    }
+  }, [filterValues.supervisorID, filterValues.delegationID, selectedReportType, openedSelectors, t]);
+
+  // Fetch filtered governorates when region changes
+  useEffect(() => {
+    if (["VisitSummary", "AgentPerformance", "ReceiptBookInventory", "RegionPerformance"].includes(selectedReportType) && filterValues.regionID && openedSelectors.has("governorateID")) {
+      const fetchFilteredGovernorates = async () => {
+        try {
+          setLoading(true);
+          const data = await getGovernoratesByRegion(filterValues.regionID as string);
+          setGovernorates(data);
+        } catch (err) {
+          setError(t("reports.errors.fetchGovernorates"));
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchFilteredGovernorates();
+    }
+  }, [filterValues.regionID, selectedReportType, openedSelectors, t]);
+
+  // Fetch filtered delegations when governorate changes
+  useEffect(() => {
+    if (["VisitSummary", "AgentPerformance", "ReceiptBookInventory", "RegionPerformance"].includes(selectedReportType) && filterValues.governorateID && openedSelectors.has("delegationID")) {
+      const fetchFilteredDelegations = async () => {
+        try {
+          setLoading(true);
+          const data = await getDelegationsByGovernorate(filterValues.governorateID as string);
+          setDelegations(data);
+        } catch (err) {
+          setError(t("reports.errors.fetchDelegations"));
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchFilteredDelegations();
+    }
+  }, [filterValues.governorateID, selectedReportType, openedSelectors, t]);
+
+  const filteredSchedules = useMemo(() => {
+    let result = [...schedules];
+    if (reportTypeFilter) result = result.filter(s => s.reportType === reportTypeFilter);
+    if (formatFilter) result = result.filter(s => s.format === formatFilter);
+    if (dateStart && dateEnd) {
+      result = result.filter(s => {
+        const createdAt = new Date(s.createdAt).toISOString().split("T")[0];
+        return createdAt >= dateStart && createdAt <= dateEnd;
+      });
+    }
+    return result.sort((a, b) => {
+      const key = scheduleSort;
+      const order = scheduleSortOrder === "asc" ? 1 : -1;
+      return (a[key] > b[key] ? 1 : -1) * order;
+    });
+  }, [schedules, reportTypeFilter, formatFilter, dateStart, dateEnd, scheduleSort, scheduleSortOrder]);
+
+  const filteredGeneratedReports = useMemo(() => {
+    let result = [...generatedReports];
+    if (reportTypeFilter) result = result.filter(r => r.reportType === reportTypeFilter);
+    if (formatFilter) result = result.filter(r => r.format === formatFilter);
+    if (dateStart && dateEnd) {
+      result = result.filter(r => {
+        const generatedAt = new Date(r.generatedAt).toISOString().split("T")[0];
+        return generatedAt >= dateStart && generatedAt <= dateEnd;
+      });
+    }
+    return result.sort((a, b) => {
+      const key = reportSort;
+      const order = reportSortOrder === "asc" ? 1 : -1;
+      return (a[key] > b[key] ? 1 : -1) * order;
+    });
+  }, [generatedReports, reportTypeFilter, formatFilter, dateStart, dateEnd, reportSort, reportSortOrder]);
 
   const handleGenerateReport = async () => {
-    if (!canGenerateReports) return;
+    setLoading(true);
     try {
-      setLoading(true);
-      await generateReport({ reportType, filters, format });
-      fetchGeneratedReports();
-      alert('Report generated successfully!');
-      setShowDashboard(true);
-    } catch (err) {
-      setError(handleApiError(err, 'Unable to generate report.'));
+      const validatedFilters: FilterValues = { ...filterValues };
+      if (selectedReportType === "VisitSummary" && filterValues.visitType === false) {
+        validatedFilters.visitType = "recrutementVisits";
+      }
+
+      // Generate the report
+      const response = await generateReport({
+        reportType: selectedReportType,
+        filters: validatedFilters,
+        format: selectedFormat,
+      });
+
+      // Get the report path from the response
+      let filePath = response.reportPath;
+      // Normalize filePath (try both raw filename and prefixed path)
+      const possiblePaths = [
+        filePath,
+        `reports/${filePath}`,
+        filePath.split("/").pop() || filePath, // Ensure we try just the filename
+      ];
+
+      // Retry download with exponential backoff
+      const maxAttempts = 5;
+      const initialDelay = 1000; // 1 second
+      let fileData = null;
+      let lastError = null;
+
+      for (const path of possiblePaths) {
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+          try {
+            console.debug(`Attempting download: path=${path}, attempt=${attempt}`);
+            fileData = await downloadReport(path);
+            console.debug(`Download succeeded: path=${path}`);
+            filePath = path; // Update filePath to the successful one
+            break; // Success, exit retry loop
+          } catch (err: any) {
+            lastError = err;
+            if (err.status === 404 && attempt < maxAttempts) {
+              // File not found, wait and retry
+              const delay = initialDelay * Math.pow(2, attempt - 1); // 1s, 2s, 4s, 8s, 16s
+              console.debug(`404 error, retrying after ${delay}ms: path=${path}`);
+              await new Promise(resolve => setTimeout(resolve, delay));
+              continue;
+            }
+            console.error(`Download failed: path=${path}, error=${err.message}`);
+            break; // Non-404 error or max attempts, try next path
+          }
+        }
+        if (fileData) break; // Exit if download succeeded
+      }
+
+      if (!fileData) {
+        console.error(`All download attempts failed: last error=${lastError?.message}`);
+        // Refresh the generated reports list and inform user
+        const reports = await listGeneratedReports();
+        setGeneratedReports(reports);
+        setError(t("reports.errors.downloadReportRetryFailed"));
+        return; // Exit without throwing to allow manual download
+      }
+
+      // Create and trigger download
+      const blob = new Blob([fileData], {
+        type: selectedFormat === "pdf" ? "application/pdf" : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const fileName = filePath.split("/").pop() || `report_${selectedReportType}_${Date.now()}.${selectedFormat}`;
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      // Refresh the generated reports list
+      const reports = await listGeneratedReports();
+      setGeneratedReports(reports);
+      setError(null);
+    } catch (err: any) {
+      console.error(`Generate report failed: ${err.message}`);
+      setError(err.message || t("reports.errors.generateReport"));
     } finally {
       setLoading(false);
     }
   };
 
+
   const handleScheduleReport = async () => {
-    if (!canScheduleReports) return;
+    const cron = getCronExpression();
+    if (!cron) {
+      setError(t("reports.errors.cronRequired"));
+      return;
+    }
+    setLoading(true);
     try {
-      setLoading(true);
-      await scheduleReport({ reportType, filters, format, cronExpression });
-      setIsScheduleModalOpen(false);
-      setCronExpression('');
-      fetchSchedules();
-      alert('Report scheduled successfully!');
-    } catch (err) {
-      setError(handleApiError(err, 'Unable to schedule report.'));
+      const validatedFilters: FilterValues = { ...filterValues };
+      if (selectedReportType === "VisitSummary" && filterValues.visitType === false) {
+        validatedFilters.visitType = "recrutementVisits";
+      }
+      await scheduleReport({
+        reportType: selectedReportType,
+        filters: validatedFilters,
+        format: selectedFormat,
+        cronExpression: cron,
+      });
+      const schedulesData = await listSchedules();
+      setSchedules(schedulesData);
+      setSchedulePeriod("");
+      setCustomPeriodValue("");
+      setCustomPeriodUnit("");
+      setError(null);
+    } catch (err: any) {
+      setError(err.message || t("reports.errors.scheduleReport"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDownloadReport = async (filePath: string) => {
+    setLoading(true);
+    try {
+      const response = await downloadReport(filePath);
+      const blob = new Blob([response], {
+        type: selectedFormat === "pdf" ? "application/pdf" : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filePath.split("/").pop() || `report_${Date.now()}.${selectedFormat}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      setError(null);
+    } catch (err: any) {
+      setError(err.message || t("reports.errors.downloadReport"));
     } finally {
       setLoading(false);
     }
   };
 
   const handleDeleteSchedule = async (scheduleID: string) => {
-    if (!canDeleteSchedules || !window.confirm('Are you sure you want to delete this schedule?')) return;
+    setLoading(true);
     try {
-      setLoading(true);
       await deleteSchedule(scheduleID);
-      fetchSchedules();
-      alert('Schedule deleted successfully!');
-    } catch (err) {
-      setError(handleApiError(err, 'Unable to delete schedule.'));
+      const schedulesData = await listSchedules();
+      setSchedules(schedulesData);
+      setError(null);
+    } catch (err: any) {
+      setError(err.message || t("reports.errors.deleteSchedule"));
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDownloadReport = async (filePath: string, format: 'pdf' | 'excel') => {
-    if (!canViewGenerated) return;
+  const handleDeleteGeneratedReport = async (reportID: string) => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const data = await downloadReport(filePath);
-      const mimeType = format === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-      const blob = new Blob([data], { type: mimeType });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `report-${new Date().toISOString()}.${format}`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      setError(handleApiError(err, 'Unable to download report.'));
+      await deleteGeneratedReport(reportID);
+      const reports = await listGeneratedReports();
+      setGeneratedReports(reports);
+      setError(null);
+    } catch (err: any) {
+      setError(err.message || t("reports.errors.deleteReport"));
     } finally {
       setLoading(false);
     }
   };
 
-  // Chart data based on report type
-  const getChartData = () => {
-    switch (reportType) {
-      case 'VisitSummary':
-        return {
-          data: {
-            labels: ['Total Visits', 'Validated', 'Pending'],
-            datasets: [{
-              label: 'Visits',
-              data: [100, 70, 30],
-              backgroundColor: ['#4cb1c7', '#63b3ed', '#f87171'],
-            }],
-          },
-          options: {
-            responsive: true,
-            plugins: { legend: { position: 'top' } },
-            scales: {
-              x: { type: 'category' },
-              y: { beginAtZero: true },
-            },
-          },
-        };
-      case 'Timesheet':
-        return {
-          data: {
-            labels: ['Validated', 'Pending'],
-            datasets: [{
-              data: [60, 40],
-              backgroundColor: ['#4cb1c7', '#f87171'],
-            }],
-          },
-          options: {
-            responsive: true,
-            plugins: { legend: { position: 'top' } },
-          },
-        };
-      default:
-        return null;
-    }
+  const validateIPAddress = (ip: string): boolean => {
+    const ipRegex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+    return ipRegex.test(ip);
   };
 
-  // Column definitions
-  const scheduleColumns = [
-    { key: 'scheduleID', label: 'ID' },
-    { key: 'reportType', label: 'Report Type' },
-    { key: 'format', label: 'Format' },
-    { key: 'cronExpression', label: 'Schedule' },
-    { key: 'createdBy', label: 'Created By', render: (row: ReportSchedule) => row.creator ? `${row.creator.firstname} ${row.creator.lastname}` : 'N/A' },
-    { key: 'createdAt', label: 'Created At', render: (row: ReportSchedule) => new Date(row.createdAt).toLocaleString() },
-    {
-      key: 'actions',
-      label: 'Actions',
-      render: (row: ReportSchedule) => canDeleteSchedules && (
-        <button onClick={() => handleDeleteSchedule(row.scheduleID)} className="table-action">
-          <FaTrash />
-        </button>
-      ),
-    },
-  ];
-
-  const generatedColumns = [
-    { key: 'generatedReportID', label: 'ID' },
-    { key: 'reportType', label: 'Report Type' },
-    { key: 'format', label: 'Format' },
-    { key: 'generatedAt', label: 'Generated At', render: (row: GeneratedReport) => new Date(row.generatedAt).toLocaleString() },
-    { key: 'generatedBy', label: 'Generated By', render: (row: GeneratedReport) => row.generator ? `${row.generator.firstname} ${row.generator.lastname}` : 'N/A' },
-    { key: 'scheduleID', label: 'Schedule ID' },
-    {
-      key: 'download',
-      label: 'Download',
-      render: (row: GeneratedReport) => canViewGenerated && (
-        <button onClick={() => handleDownloadReport(row.filePath, row.format)} className="table-action">
-          <FaDownload />
-        </button>
-      ),
-    },
-  ];
-
-  if (!permissionsLoaded) {
-    return <div>Loading permissions...</div>;
-  }
-
-  return (
-    <div className="reports-container">
-      <header className="reports-header">
-        <h1>{t('reports.title')}</h1>
-        <div className="tabs">
-          <button
-            className={activeTab === 'generate' ? 'active' : ''}
-            onClick={() => setActiveTab('generate')}
-          >
-            {t('reports.tabs.generate')}
-          </button>
-          <button
-            className={activeTab === 'scheduled' ? 'active' : ''}
-            onClick={() => setActiveTab('scheduled')}
-          >
-            {t('reports.tabs.scheduled')}
-          </button>
-          <button
-            className={activeTab === 'generated' ? 'active' : ''}
-            onClick={() => setActiveTab('generated')}
-          >
-            {t('reports.tabs.generated')}
-          </button>
-          {canViewAnomalies && (
+  const renderFilterForm = () => (
+    <div className="filter-card">
+      <h3>{t("reports.filter.title")}</h3>
+      <div className="form-group">
+        <label className="filter-label">{t("reports.filter.reportType")}</label>
+        <Select
+          options={reportTypes.map(type => ({ value: type, label: t(`reports.types.${type.toLowerCase()}`) }))}
+          value={reportTypeFilter ? { value: reportTypeFilter, label: t(`reports.types.${reportTypeFilter.toLowerCase()}`) } : null}
+          onChange={(option) => setReportTypeFilter(option?.value || "")}
+          placeholder={t("reports.filter.placeholders.type")}
+          isClearable
+          isSearchable
+          className="react-select-container"
+          classNamePrefix="react-select"
+        />
+      </div>
+      <div className="form-group">
+        <label className="filter-label">{t("reports.filter.format")}</label>
+        <div className="button-group">
+          {formats.map(fmt => (
             <button
-              className={activeTab === 'anomalies' ? 'active' : ''}
-              onClick={() => setActiveTab('anomalies')}
+              key={fmt}
+              className={`toggle-btn ${formatFilter === fmt ? 'active' : ''}`}
+              onClick={() => setFormatFilter(fmt)}
             >
-              {t('reports.tabs.anomalies')}
+              {t(`reports.formats.${fmt}`)}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="form-group form-group-d">
+        <label className="filter-label">{t("reports.filter.dateRange")}</label>
+        <div className="date-picker-container form-group-d">
+          <DatePicker
+            selected={dateStart ? new Date(dateStart) : null}
+            onChange={(date: Date | null) => date ? setDateStart(date.toISOString().split("T")[0]) : setDateStart("")}
+            placeholderText={t("reports.filter.placeholders.startDate")}
+            className="date-input"
+          />
+          <DatePicker
+            selected={dateEnd ? new Date(dateEnd) : null}
+            onChange={(date: Date | null) => date ? setDateEnd(date.toISOString().split("T")[0]) : setDateEnd("")}
+            placeholderText={t("reports.filter.placeholders.endDate")}
+            className="date-input"
+          />
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderGenerateForm = () => {
+    const filters = selectedReportType ? allowedFilters[selectedReportType] || [] : [];
+    const currentStatusOptions = reportStatusOptions[selectedReportType] || [];
+
+    const filterSections = [
+      { title: "Date Range", filters: ["dateRange"].filter(f => filters.includes(f)) },
+      { title: "User Selection", filters: ["supervisorID", "regionalManagerID", "directorID", "agentID", "userID"].filter(f => filters.includes(f)) },
+      { title: "Location", filters: ["regionID", "governorateID", "delegationID"].filter(f => filters.includes(f)) },
+      {
+        title: "Other Filters",
+        filters: filters.filter(f => !["dateRange", "supervisorID", "regionalManagerID", "directorID", "agentID", "userID", "regionID", "governorateID", "delegationID"].includes(f)),
+      },
+    ].filter(section => section.filters.length > 0);
+
+    const renderRangeInput = (filter: string, label: string) => (
+      <div className="form-group range-group">
+        <label className="filter-label">{t(`reports.filters.${filter}`)}</label>
+        <div className="range-inputs flex gap-2">
+          <input
+            type="number"
+            value={(filterValues[filter] as RangeFilter)?.min || ""}
+            onChange={(e) => setFilterValues(prev => ({
+              ...prev,
+              [filter]: { ...prev[filter] as RangeFilter, min: Number(e.target.value) }
+            }))}
+            className="range-input"
+            placeholder={t("reports.filter.placeholders.min")}
+          />
+          <span className="range-divider">-</span>
+          <input
+            type="number"
+            value={(filterValues[filter] as RangeFilter)?.max || ""}
+            onChange={(e) => setFilterValues(prev => ({
+              ...prev,
+              [filter]: { ...prev[filter] as RangeFilter, max: Number(e.target.value) }
+            }))}
+            className="range-input"
+            placeholder={t("reports.filter.placeholders.max")}
+          />
+        </div>
+      </div>
+    );
+
+    const renderBooleanToggle = (filter: string, label: string) => (
+      <div className="form-group toggle-group">
+        <label className="filter-label">{t(`reports.filters.${filter}`)}</label>
+        <div
+          className={`toggle-switch ${filterValues[filter] ? 'active' : ''}`}
+          onClick={() => setFilterValues(prev => ({ ...prev, [filter]: !prev[filter] }))}
+        >
+          <span className="toggle-slider"></span>
+        </div>
+      </div>
+    );
+
+    return (
+      <div className="form-card">
+        <div className="form-header">
+          <h3>{t("reports.generate.title")}</h3>
+          {filters.length > 0 && (
+            <button
+              className={`toggle-btn ${isFilterOpen ? 'active' : ''} toggle-btn-1`}
+              onClick={() => setIsFilterOpen(!isFilterOpen)}
+            >
+              <FaFilter /> {t("reports.filter.toggle")}
             </button>
           )}
         </div>
-      </header>
-      <main className="reports-content">
-        {loading && <div className="loading-text">{t('reports.loading')}</div>}
-        {error && <div className="error-message">{error}</div>}
-        {activeTab === 'generate' && canGenerateReports && (
-          <div className="generate-report">
-            <div className="form-group">
-              <label>{t('reports.generate.reportType')}</label>
-              <select
-                className="report-select"
-                value={reportType}
-                onChange={e => {
-                  setReportType(e.target.value);
-                  setFilters({});
-                  setShowDashboard(false);
-                }}
-              >
-                {reportTypes.map(type => (
-                  <option key={type} value={type}>{type}</option>
-                ))}
-              </select>
+        <div className="form-content">
+          <div className="report-form">
+            <div className="form-group fg-1">
+              <label className="filter-label">{t("reports.filter.reportType")}</label>
+              <Select
+                options={reportTypes.map(type => ({ value: type, label: t(`reports.types.${type.toLowerCase()}`) }))}
+                value={selectedReportType ? { value: selectedReportType, label: t(`reports.types.${selectedReportType.toLowerCase()}`) } : null}
+                onChange={(option) => setSelectedReportType(option?.value || "")}
+                placeholder={t("reports.filter.placeholders.type")}
+                isSearchable
+                className="react-select-container"
+                classNamePrefix="react-select"
+              />
             </div>
-            {filterConfigs[reportType]?.map(config => (
-              <div key={config.label} className="form-group">
-                <label>{config.label}</label>
-                {config.type === 'dateRange' && (
-                  <DateRangePicker
-                    value={filters[config.label] || { start: '', end: '' }}
-                    onChange={(value) => handleFilterChange(config.label, value)}
-                  />
-                )}
-                {config.type === 'select' && (
-                  <select
-                    className="report-select"
-                    value={filters[config.label] || ''}
-                    onChange={e => handleFilterChange(config.label, e.target.value)}
+            <div className="form-group">
+              <label className="filter-label">{t("reports.filter.format")}</label>
+              <div className="button-group">
+                {formats.map(fmt => (
+                  <button
+                    key={fmt}
+                    className={`toggle-btn ${selectedFormat === fmt ? 'active' : ''} toggle-btn-1`}
+                    onClick={() => setSelectedFormat(fmt as "pdf" | "excel")}
                   >
-                    <option value="">{`Select ${config.label}`}</option>
-                    {config.options?.map(option => {
-                      const [id, name] = option.includes(':') ? option.split(':') : [option, option];
-                      return (
-                        <option key={id} value={id}>
-                          {name}
-                        </option>
-                      );
-                    })}
-                  </select>
-                )}
+                    {t(`reports.formats.${fmt}`)}
+                  </button>
+                ))}
               </div>
-            ))}
+            </div>
+          </div>
+          {isFilterOpen && filters.length > 0 && (
+            <motion.div
+              className="filter-panel"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              transition={{ duration: 0.3 }}
+            >
+              <h4>{t("reports.filter.options")}</h4>
+              {filterSections.map(section => (
+                <Accordion title={section.title} key={section.title}>
+                  <div className="filter-grid">
+                    {section.filters.map(filter => {
+                      if (!filters.includes(filter)) return null; // Skip disallowed filters
+                      switch (filter) {
+                        case "dateRange":
+                          const dateRange = filterValues[filter] as DateRangeFilter | undefined;
+                          return (
+                            <div key={filter} className="form-group date-range-group col-span-2">
+                              <label className="filter-label">{t("reports.filter.dateRange")}</label>
+                              <div className="date-picker-container flex gap-2">
+                                <DatePicker
+                                  selected={dateRange?.start ? new Date(dateRange.start) : null}
+                                  onChange={(date: Date | null) => setFilterValues(prev => ({
+                                    ...prev,
+                                    [filter]: {
+                                      ...((prev[filter] && typeof prev[filter] === 'object' ? prev[filter] : { start: "", end: "" })),
+                                      start: date ? date.toISOString() : ""
+                                    }
+                                  }))}
+                                  placeholderText={t("reports.filter.placeholders.startDate")}
+                                  className="date-input"
+                                />
+                                <span className="date-divider">{t("reports.filter.to")}</span>
+                                <DatePicker
+                                  selected={dateRange?.end ? new Date(dateRange.end) : null}
+                                  onChange={(date: Date | null) => setFilterValues(prev => ({
+                                    ...prev,
+                                    [filter]: {
+                                      ...((prev[filter] && typeof prev[filter] === 'object' ? prev[filter] : { start: "", end: "" })),
+                                      end: date ? date.toISOString() : ""
+                                    }
+                                  }))}
+                                  placeholderText={t("reports.filter.placeholders.endDate")}
+                                  className="date-input"
+                                />
+                              </div>
+                            </div>
+                          );
+                        case "supervisorID":
+                          return (
+                            <div key={filter} className="form-group">
+                              <label className="filter-label">{t("reports.filters.supervisor")}</label>
+                              <Select
+                                options={supervisors.map(sup => ({
+                                  value: sup.userID,
+                                  label: `${sup.firstname} ${sup.lastname} (${sup.phone})`
+                                }))}
+                                value={filterValues[filter] ? {
+                                  value: filterValues[filter] as string,
+                                  label: supervisors.find(sup => sup.userID === filterValues[filter])?.firstname + " " +
+                                    supervisors.find(sup => sup.userID === filterValues[filter])?.lastname + ` (${supervisors.find(sup => sup.userID === filterValues[filter])?.phone})`
+                                } : null}
+                                onChange={(option) => setFilterValues(prev => ({
+                                  ...prev,
+                                  [filter]: option?.value || ""
+                                }))}
+                                onMenuOpen={() => handleSelectorClick(filter)}
+                                placeholder={t("reports.filter.placeholders.supervisor")}
+                                isSearchable
+                                isClearable
+                                className="react-select-container"
+                                classNamePrefix="react-select"
+                              />
+                            </div>
+                          );
+                        case "regionalManagerID":
+                          return (
+                            <div key={filter} className="form-group">
+                              <label className="filter-label">{t("reports.filters.regionalManager")}</label>
+                              <Select
+                                options={regionalManagers.map(rm => ({
+                                  value: rm.userID,
+                                  label: `${rm.firstname} ${rm.lastname} (${rm.phone})`
+                                }))}
+                                value={filterValues[filter] ? {
+                                  value: filterValues[filter] as string,
+                                  label: regionalManagers.find(rm => rm.userID === filterValues[filter])?.firstname + " " +
+                                    regionalManagers.find(rm => rm.userID === filterValues[filter])?.lastname + ` (${regionalManagers.find(rm => rm.userID === filterValues[filter])?.phone})`
+                                } : null}
+                                onChange={(option) => setFilterValues(prev => ({
+                                  ...prev,
+                                  [filter]: option?.value || ""
+                                }))}
+                                onMenuOpen={() => handleSelectorClick(filter)}
+                                placeholder={t("reports.filter.placeholders.regionalManager")}
+                                isSearchable
+                                isClearable
+                                className="react-select-container"
+                                classNamePrefix="react-select"
+                              />
+                            </div>
+                          );
+                        case "directorID":
+                          return (
+                            <div key={filter} className="form-group">
+                              <label className="filter-label">{t("reports.filters.director")}</label>
+                              <Select
+                                options={directors.map(dir => ({
+                                  value: dir.userID,
+                                  label: `${dir.firstname} ${dir.lastname} (${dir.phone})`
+                                }))}
+                                value={filterValues[filter] ? {
+                                  value: filterValues[filter] as string,
+                                  label: directors.find(dir => dir.userID === filterValues[filter])?.firstname + " " +
+                                    directors.find(dir => dir.userID === filterValues[filter])?.lastname + ` (${directors.find(dir => dir.userID === filterValues[filter])?.phone})`
+                                } : null}
+                                onChange={(option) => setFilterValues(prev => ({
+                                  ...prev,
+                                  [filter]: option?.value || ""
+                                }))}
+                                onMenuOpen={() => handleSelectorClick(filter)}
+                                placeholder={t("reports.filter.placeholders.director")}
+                                isSearchable
+                                isClearable
+                                className="react-select-container"
+                                classNamePrefix="react-select"
+                              />
+                            </div>
+                          );
+                        case "agentID":
+                        case "agentName":
+                          return (
+                            <div key={filter} className="form-group">
+                              <label className="filter-label">{t("reports.filters.agent")}</label>
+                              <Select
+                                options={agents.map(agent => ({
+                                  value: agent.agentID,
+                                  label: `${agent.name} ${agent.lastname} (${agent.phone})`
+                                }))}
+                                value={filterValues[filter] ? {
+                                  value: filterValues[filter] as string,
+                                  label: agents.find(agent => agent.agentID === filterValues[filter])?.name + " " +
+                                    agents.find(agent => agent.agentID === filterValues[filter])?.lastname + ` (${agents.find(agent => agent.agentID === filterValues[filter])?.phone})`
+                                } : null}
+                                onChange={(option) => setFilterValues(prev => ({
+                                  ...prev,
+                                  [filter]: option?.value || ""
+                                }))}
+                                onMenuOpen={() => handleSelectorClick(filter)}
+                                placeholder={t("reports.filter.placeholders.agent")}
+                                isSearchable
+                                isClearable
+                                className="react-select-container"
+                                classNamePrefix="react-select"
+                              />
+                            </div>
+                          );
+                        case "regionID":
+                          return (
+                            <div key={filter} className="form-group">
+                              <label className="filter-label">{t("reports.filters.region")}</label>
+                              <Select
+                                options={regions.map(region => ({
+                                  value: region.regionID,
+                                  label: region.name
+                                }))}
+                                value={filterValues[filter] ? {
+                                  value: filterValues[filter] as string,
+                                  label: regions.find(region => region.regionID === filterValues[filter])?.name
+                                } : null}
+                                onChange={(option) => setFilterValues(prev => ({
+                                  ...prev,
+                                  [filter]: option?.value || ""
+                                }))}
+                                onMenuOpen={() => handleSelectorClick(filter)}
+                                placeholder={t("reports.filter.placeholders.region")}
+                                isSearchable
+                                isClearable
+                                className="react-select-container"
+                                classNamePrefix="react-select"
+                              />
+                            </div>
+                          );
+                        case "governorateID":
+                          return (
+                            <div key={filter} className="form-group">
+                              <label className="filter-label">{t("reports.filters.governorate")}</label>
+                              <Select
+                                options={governorates.map(gov => ({
+                                  value: gov.governorateID,
+                                  label: gov.name
+                                }))}
+                                value={filterValues[filter] ? {
+                                  value: filterValues[filter] as string,
+                                  label: governorates.find(gov => gov.governorateID === filterValues[filter])?.name
+                                } : null}
+                                onChange={(option) => setFilterValues(prev => ({
+                                  ...prev,
+                                  [filter]: option?.value || ""
+                                }))}
+                                onMenuOpen={() => handleSelectorClick(filter)}
+                                placeholder={t("reports.filter.placeholders.governorate")}
+                                isSearchable
+                                isClearable
+                                className="react-select-container"
+                                classNamePrefix="react-select"
+                              />
+                            </div>
+                          );
+                        case "delegationID":
+                          return (
+                            <div key={filter} className="form-group">
+                              <label className="filter-label">{t("reports.filters.delegation")}</label>
+                              <Select
+                                options={delegations.map(del => ({
+                                  value: del.delegationID,
+                                  label: del.name
+                                }))}
+                                value={filterValues[filter] ? {
+                                  value: filterValues[filter] as string,
+                                  label: delegations.find(del => del.delegationID === filterValues[filter])?.name
+                                } : null}
+                                onChange={(option) => setFilterValues(prev => ({
+                                  ...prev,
+                                  [filter]: option?.value || ""
+                                }))}
+                                onMenuOpen={() => handleSelectorClick(filter)}
+                                placeholder={t("reports.filter.placeholders.delegation")}
+                                isSearchable
+                                isClearable
+                                className="react-select-container"
+                                classNamePrefix="react-select"
+                              />
+                            </div>
+                          );
+                        case "visitType":
+                          return renderBooleanToggle(filter, t("reports.filters.visitType"));
+                        case "status":
+                          return (
+                            <div key={filter} className="form-group">
+                              <label className="filter-label">{t("reports.filters.status")}</label>
+                              <Select
+                                isMulti
+                                options={
+                                  selectedReportType === "UserActivity"
+                                    ? logStatuses.map(option => ({ value: option, label: option }))
+                                    : (reportStatusOptions[selectedReportType] || []).map(option => ({
+                                      value: option,
+                                      label: t(`reports.statuses.${option.toLowerCase().replace(/\s/g, "")}`),
+                                    }))
+                                }
+                                value={(filterValues[filter] as string[] || []).map(val => ({
+                                  value: val,
+                                  label: selectedReportType === "UserActivity"
+                                    ? val
+                                    : t(`reports.statuses.${val.toLowerCase().replace(/\s/g, "")}`),
+                                }))}
+                                onChange={(options) =>
+                                  setFilterValues(prev => ({
+                                    ...prev,
+                                    [filter]: options.map(opt => opt.value),
+                                  }))
+                                }
+                                onMenuOpen={() => handleSelectorClick(filter)}
+                                placeholder={t("reports.filter.placeholders.status")}
+                                isSearchable
+                                isClearable
+                                className="react-select-container"
+                                classNamePrefix="react-select"
+                              />
+                            </div>
+                          );
+                        case "visitReasons":
+                          return (
+                            <div key={filter} className="form-group">
+                              <label className="filter-label">{t("reports.filters.visitReasons")}</label>
+                              <Select
+                                isMulti
+                                options={reasons.map(reason => ({
+                                  value: reason.reasonID,
+                                  label: reason.item
+                                }))}
+                                value={(filterValues[filter] as string[] || []).map(val => ({
+                                  value: val,
+                                  label: reasons.find(r => r.reasonID === val)?.item
+                                }))}
+                                onChange={(options) => setFilterValues(prev => ({
+                                  ...prev,
+                                  [filter]: options.map(opt => opt.value)
+                                }))}
+                                onMenuOpen={() => handleSelectorClick(filter)}
+                                placeholder={t("reports.filter.placeholders.visitReasons")}
+                                isSearchable
+                                isClearable
+                                className="react-select-container"
+                                classNamePrefix="react-select"
+                              />
+                            </div>
+                          );
+                        case "checklistCompleted":
+                          return renderBooleanToggle(filter, t("reports.filters.checklistCompleted"));
+                        case "visitDuration":
+                          return renderRangeInput(filter, t("reports.filters.visitDuration"));
+                        case "aiAnomalies":
+                          return renderBooleanToggle(filter, t("reports.filters.aiAnomalies"));
+                        case "numberOfVisits":
+                          return renderRangeInput(filter, t("reports.filters.numberOfVisits"));
+                        case "totalHours":
+                          return renderRangeInput(filter, t("reports.filters.totalHours"));
+                        case "aiSuggestions":
+                          return renderBooleanToggle(filter, t("reports.filters.aiSuggestions"));
+                        case "anomaliesDetected":
+                          return renderBooleanToggle(filter, t("reports.filters.anomaliesDetected"));
+                        case "visitStatus":
+                          return (
+                            <div key={filter} className="form-group">
+                              <label className="filter-label">{t("reports.filters.visitStatus")}</label>
+                              <Select
+                                isMulti
+                                options={visitStatusOptions.map(option => ({ value: option, label: t(`reports.statuses.${option.toLowerCase()}`) }))}
+                                value={(filterValues[filter] as string[] || []).map(val => ({ value: val, label: t(`reports.statuses.${val.toLowerCase()}`) }))}
+                                onChange={(options) => setFilterValues(prev => ({
+                                  ...prev,
+                                  [filter]: options.map(opt => opt.value)
+                                }))}
+                                onMenuOpen={() => handleSelectorClick(filter)}
+                                placeholder={t("reports.filter.placeholders.visitStatus")}
+                                isSearchable
+                                isClearable
+                                className="react-select-container"
+                                classNamePrefix="react-select"
+                              />
+                            </div>
+                          );
+                        case "weekNumber":
+                          return (
+                            <div key={filter} className="form-group">
+                              <label className="filter-label">{t("reports.filters.weekNumber")}</label>
+                              <input
+                                type="number"
+                                min={1}
+                                max={52}
+                                value={(filterValues[filter] as number) || ""}
+                                onChange={(e) => setFilterValues(prev => ({
+                                  ...prev,
+                                  [filter]: Number(e.target.value)
+                                }))}
+                                className="text-input"
+                                placeholder={t("reports.filter.placeholders.weekNumber")}
+                              />
+                            </div>
+                          );
+                        case "bookType":
+                          return (
+                            <div key={filter} className="form-group">
+                              <label className="filter-label">{t("reports.filters.bookType")}</label>
+                              <Select
+                                options={receiptBookTypes.map(type => ({
+                                  value: type.typeID,
+                                  label: type.name
+                                }))}
+                                value={filterValues[filter] ? {
+                                  value: filterValues[filter] as string,
+                                  label: receiptBookTypes.find(type => type.typeID === filterValues[filter])?.name
+                                } : null}
+                                onChange={(option) => setFilterValues(prev => ({
+                                  ...prev,
+                                  [filter]: option?.value || ""
+                                }))}
+                                onMenuOpen={() => handleSelectorClick(filter)}
+                                placeholder={t("reports.filter.placeholders.bookType")}
+                                isSearchable
+                                isClearable
+                                className="react-select-container"
+                                classNamePrefix="react-select"
+                              />
+                            </div>
+                          );
+                        case "currentHolderName":
+                          return (
+                            <div key={filter} className="form-group">
+                              <label className="filter-label">{t("reports.filters.currentHolder")}</label>
+                              <Select
+                                options={holders.map(holder => ({
+                                  value: `${holder.firstname} ${holder.lastname} (${holder.phone})`,
+                                  label: `${holder.firstname} ${holder.lastname} (${holder.phone}) - ${holder.Roles?.map(r => r.name).join(", ") || "No Role"}`
+                                }))}
+                                value={filterValues[filter] ? { value: filterValues[filter] as string, label: filterValues[filter] as string } : null}
+                                onChange={(option) => setFilterValues(prev => ({ ...prev, [filter]: option?.value || "" }))}
+                                onMenuOpen={() => handleSelectorClick(filter)}
+                                placeholder={t("reports.filter.placeholders.currentHolder")}
+                                isSearchable
+                                isClearable
+                                className="react-select-container"
+                                classNamePrefix="react-select"
+                              />
+                            </div>
+                          );
+                        case "assignmentStatus":
+                          return renderBooleanToggle(filter, t("reports.filters.assignmentStatus"));
+                        case "roleID":
+                          return (
+                            <div key={filter} className="form-group">
+                              <label className="filter-label">{t("reports.filters.role")}</label>
+                              <Select
+                                options={roles.map(role => ({ value: role.name, label: role.name }))}
+                                value={filterValues[filter] ? {
+                                  value: filterValues[filter] as string,
+                                  label: filterValues[filter] as string
+                                } : null}
+                                onChange={(option) => setFilterValues(prev => ({
+                                  ...prev,
+                                  [filter]: option?.value || ""
+                                }))}
+                                onMenuOpen={() => handleSelectorClick(filter)}
+                                placeholder={t("reports.filter.placeholders.role")}
+                                isSearchable
+                                isClearable
+                                className="react-select-container"
+                                classNamePrefix="react-select"
+                              />
+                            </div>
+                          );
+                        case "activityType":
+                          return (
+                            <div key={filter} className="form-group">
+                              <label className="filter-label">{t("reports.filters.activityType")}</label>
+                              <Select
+                                options={activityTypes.map(type => ({ value: type, label: type }))}
+                                value={filterValues[filter] ? {
+                                  value: filterValues[filter] as string,
+                                  label: filterValues[filter] as string
+                                } : null}
+                                onChange={(option) => setFilterValues(prev => ({
+                                  ...prev,
+                                  [filter]: option?.value || ""
+                                }))}
+                                onMenuOpen={() => handleSelectorClick(filter)}
+                                placeholder={t("reports.filter.placeholders.activityType")}
+                                isSearchable
+                                isClearable
+                                className="react-select-container"
+                                classNamePrefix="react-select"
+                              />
+                            </div>
+                          );
+                        case "userID":
+                          return (
+                            <div key={filter} className="form-group">
+                              <label className="filter-label">{t("reports.filters.user")}</label>
+                              <Select
+                                options={users.map(user => ({
+                                  value: user.userID,
+                                  label: `${user.firstname} ${user.lastname} (${user.phone}) - ${user.Roles?.map(r => r.name).join(", ")}`
+                                }))}
+                                value={filterValues[filter] ? {
+                                  value: filterValues[filter] as string,
+                                  label: users.find(user => user.userID === filterValues[filter])?.firstname + " " +
+                                    users.find(user => user.userID === filterValues[filter])?.lastname + ` (${users.find(user => user.userID === filterValues[filter])?.phone}) - ${users.find(user => user.userID === filterValues[filter])?.Roles?.map(r => r.name).join(", ")}`
+                                } : null}
+                                onChange={(option) => setFilterValues(prev => ({
+                                  ...prev,
+                                  [filter]: option?.value || ""
+                                }))}
+                                onMenuOpen={() => handleSelectorClick(filter)}
+                                placeholder={t("reports.filter.placeholders.user")}
+                                isSearchable
+                                isClearable
+                                className="react-select-container"
+                                classNamePrefix="react-select"
+                              />
+                            </div>
+                          );
+                        case "suspiciousActivity":
+                          return renderBooleanToggle(filter, t("reports.filters.suspiciousActivity"));
+                        case "ipAddress":
+                          return (
+                            <div key={filter} className="form-group">
+                              <label className="filter-label">{t("reports.filters.ipAddress")}</label>
+                              <input
+                                type="text"
+                                value={filterValues[filter] as string || ""}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  if (value && !validateIPAddress(value)) {
+                                    setError(t("reports.errors.invalidIP"));
+                                  } else {
+                                    setError(null);
+                                    setFilterValues(prev => ({ ...prev, [filter]: value }));
+                                  }
+                                }}
+                                className="text-input"
+                                placeholder={t("reports.filter.placeholders.ipAddress")}
+                              />
+                            </div>
+                          );
+                        case "affectedEntity":
+                          return (
+                            <div key={filter} className="form-group">
+                              <label className="filter-label">{t("reports.filters.affectedEntity")}</label>
+                              <Select
+                                options={affectedEntities.map(entity => ({ value: entity, label: entity }))}
+                                value={filterValues[filter] ? {
+                                  value: filterValues[filter] as string,
+                                  label: filterValues[filter] as string
+                                } : null}
+                                onChange={(option) => setFilterValues(prev => ({
+                                  ...prev,
+                                  [filter]: option?.value || ""
+                                }))}
+                                onMenuOpen={() => handleSelectorClick(filter)}
+                                placeholder={t("reports.filter.placeholders.affectedEntity")}
+                                isSearchable
+                                isClearable
+                                className="react-select-container"
+                                classNamePrefix="react-select"
+                              />
+                            </div>
+                          );
+                        case "severity":
+                          return (
+                            <div key={filter} className="form-group">
+                              <label className="filter-label">{t("reports.filters.severity")}</label>
+                              <Select
+                                options={severities.map(severity => ({ value: severity, label: severity }))}
+                                value={filterValues[filter] ? {
+                                  value: filterValues[filter] as string,
+                                  label: filterValues[filter] as string
+                                } : null}
+                                onChange={(option) => setFilterValues(prev => ({
+                                  ...prev,
+                                  [filter]: option?.value || ""
+                                }))}
+                                onMenuOpen={() => handleSelectorClick(filter)}
+                                placeholder={t("reports.filter.placeholders.severity")}
+                                isSearchable
+                                isClearable
+                                className="react-select-container"
+                                classNamePrefix="react-select"
+                              />
+                            </div>
+                          );
+                        case "route":
+                          return (
+                            <div key={filter} className="form-group">
+                              <label className="filter-label">{t("reports.filters.route")}</label>
+                              <Select
+                                options={routes.map(route => ({ value: route, label: route }))}
+                                value={filterValues[filter] ? {
+                                  value: filterValues[filter] as string,
+                                  label: filterValues[filter] as string
+                                } : null}
+                                onChange={(option) => setFilterValues(prev => ({
+                                  ...prev,
+                                  [filter]: option?.value || ""
+                                }))}
+                                onMenuOpen={() => handleSelectorClick(filter)}
+                                placeholder={t("reports.filter.placeholders.route")}
+                                isSearchable
+                                isClearable
+                                className="react-select-container"
+                                classNamePrefix="react-select"
+                              />
+                            </div>
+                          );
+                        case "performanceScore":
+                          return renderRangeInput(filter, t("reports.filters.performanceScore"));
+                        case "stubsCollected":
+                          return renderRangeInput(filter, t("reports.filters.stubsCollected"));
+                        case "receiptBooksAssigned":
+                          return renderRangeInput(filter, t("reports.filters.receiptBooksAssigned"));
+                        case "visitCompletionRate":
+                          return renderRangeInput(filter, t("reports.filters.visitCompletionRate"));
+                        case "locationUpdated":
+                          return renderBooleanToggle(filter, t("reports.filters.locationUpdated"));
+                        default:
+                          return (
+                            <div key={filter} className="form-group">
+                              <label className="filter-label">{t(`reports.filters.${filter}`)}</label>
+                              <input
+                                type="text"
+                                value={(filterValues[filter] as string) || ""}
+                                onChange={(e) => setFilterValues(prev => ({ ...prev, [filter]: e.target.value }))}
+                                className="text-input"
+                                placeholder={t(`reports.filter.placeholders.${filter}`)}
+                              />
+                            </div>
+                          );
+                      }
+                    })}
+                  </div>
+                </Accordion>
+              ))}
+            </motion.div>
+          )}
+        </div>
+        <div className="form-actions">
+          <button
+            className="submit-btn secondary"
+            onClick={() => setView("scheduled")}
+          >
+            {t("reports.actions.cancel")}
+          </button>
+          <button
+            onClick={handleGenerateReport}
+            disabled={loading || !selectedReportType}
+            className="submit-btn primary"
+          >
+            {loading ? t("reports.actions.generating") : t("reports.actions.generate")}
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderScheduleForm = () => {
+    const filters = selectedReportType ? allowedFilters[selectedReportType] || [] : [];
+
+    const filterSections = [
+      { title: "Date Range", filters: ["dateRange"].filter(f => filters.includes(f)) },
+      { title: "User Selection", filters: ["supervisorID", "regionalManagerID", "directorID", "agentID", "userID"].filter(f => filters.includes(f)) },
+      { title: "Location", filters: ["regionID", "governorateID", "delegationID"].filter(f => filters.includes(f)) },
+      {
+        title: "Other Filters",
+        filters: filters.filter(f => !["dateRange", "supervisorID", "regionalManagerID", "directorID", "agentID", "userID", "regionID", "governorateID", "delegationID"].includes(f)),
+      },
+    ].filter(section => section.filters.length > 0);
+
+    const renderRangeInput = (filter: string, label: string) => (
+      <div className="form-group range-group">
+        <label className="filter-label">{t(`reports.filters.${filter}`)}</label>
+        <div className="range-inputs flex gap-2">
+          <input
+            type="number"
+            value={(filterValues[filter] as RangeFilter)?.min || ""}
+            onChange={(e) => setFilterValues(prev => ({
+              ...prev,
+              [filter]: { ...prev[filter] as RangeFilter, min: Number(e.target.value) }
+            }))}
+            className="range-input"
+            placeholder={t("reports.filter.placeholders.min")}
+          />
+          <span className="range-divider">-</span>
+          <input
+            type="number"
+            value={(filterValues[filter] as RangeFilter)?.max || ""}
+            onChange={(e) => setFilterValues(prev => ({
+              ...prev,
+              [filter]: { ...prev[filter] as RangeFilter, max: Number(e.target.value) }
+            }))}
+            className="range-input"
+            placeholder={t("reports.filter.placeholders.max")}
+          />
+        </div>
+      </div>
+    );
+
+    const renderBooleanToggle = (filter: string, label: string) => (
+      <div className="form-group toggle-group">
+        <label className="filter-label">{t(`reports.filters.${filter}`)}</label>
+        <div
+          className={`toggle-switch ${filterValues[filter] ? 'active' : ''}`}
+          onClick={() => setFilterValues(prev => ({ ...prev, [filter]: !prev[filter] }))}
+        >
+          <span className="toggle-slider"></span>
+        </div>
+      </div>
+    );
+
+    return (
+      <div className="form-card">
+        <div className="form-header">
+          <h3>{t("reports.schedule.title")}</h3>
+          {filters.length > 0 && (
+            <button
+              className={`comeback toggle-btn ${isFilterOpen ? 'active' : ''} toggle-btn-1`}
+              onClick={() => setIsFilterOpen(!isFilterOpen)}
+            >
+              <FaFilter /> {t("reports.filter.toggle")}
+            </button>
+          )}
+        </div>
+        <div className="form-content">
+          <div className="report-form">
+            <div className="form-group fg-1">
+              <label className="filter-label">{t("reports.filter.reportType")}</label>
+              <Select
+                options={reportTypes.map(type => ({ value: type, label: t(`reports.types.${type.toLowerCase()}`) }))}
+                value={selectedReportType ? { value: selectedReportType, label: t(`reports.types.${selectedReportType.toLowerCase()}`) } : null}
+                onChange={(option) => setSelectedReportType(option?.value || "")}
+                placeholder={t("reports.filter.placeholders.type")}
+                isSearchable
+                className="react-select-container"
+                classNamePrefix="react-select"
+              />
+            </div>
             <div className="form-group">
-              <label>{t('reports.generate.format')}</label>
-              <select
-                className="report-select"
-                value={format}
-                onChange={e => setFormat(e.target.value as 'pdf' | 'excel')}
-              >
-                <option value="pdf">PDF</option>
-                <option value="excel">Excel</option>
-              </select>
+              <label className="filter-label">{t("reports.filter.format")}</label>
+              <div className="button-group">
+                {formats.map(fmt => (
+                  <button
+                    key={fmt}
+                    className={`toggle-btn ${selectedFormat === fmt ? 'active' : ''} toggle-btn-1`}
+                    onClick={() => setSelectedFormat(fmt as "pdf" | "excel")}
+                  >
+                    {t(`reports.formats.${fmt}`)}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="action-buttons">
-              <button className="action-button" onClick={handleGenerateReport}>
-                {t('reports.actions.generate')}
-              </button>
-              {canScheduleReports && (
-                <button
-                  className="action-button"
-                  onClick={() => setIsScheduleModalOpen(true)}
-                >
-                  {t('reports.actions.schedule')}
-                </button>
-              )}
-              <button
-                className="action-button"
-                onClick={() => setShowDashboard(!showDashboard)}
-              >
-                <FaChartBar /> {showDashboard ? 'Hide Dashboard' : 'Show Dashboard'}
-              </button>
-            </div>
-            {showDashboard && getChartData() && (
-              <div className="chart-container">
-                <Chart
-                  type={reportType === 'VisitSummary' ? 'bar' : 'pie'}
-                  data={getChartData().data}
-                  options={getChartData().options}
+          </div>
+          <div className="form-group fg-1">
+            <label className="filter-label">{t("reports.schedule.period")}</label>
+            <Select
+              options={[
+                { value: "daily", label: t("reports.schedule.daily") },
+                { value: "weekly", label: t("reports.schedule.weekly") },
+                { value: "monthly", label: t("reports.schedule.monthly") },
+                { value: "yearly", label: t("reports.schedule.yearly") },
+                { value: "custom", label: t("reports.schedule.custom") },
+              ]}
+              value={schedulePeriod ? { value: schedulePeriod, label: t(`reports.schedule.${schedulePeriod}`) } : null}
+              onChange={(option) => setSchedulePeriod(option?.value as "daily" | "weekly" | "monthly" | "yearly" | "custom" || "")}
+              placeholder={t("reports.schedule.placeholders.period")}
+              isSearchable
+              className="react-select-container"
+              classNamePrefix="react-select"
+            />
+          </div>
+          {schedulePeriod === "custom" && (
+            <div className="form-groups" style={{ display: "flex", flexDirection: "row", gap: "1rem" }}>
+              <div>
+                <label className="filter-label">{t("reports.schedule.customPeriod")}</label>
+                <input
+                  type="number"
+                  value={customPeriodValue}
+                  onChange={(e) => setCustomPeriodValue(e.target.value)}
+                  placeholder={t("reports.schedule.placeholders.customPeriod")}
+                  className="text-input"
+                  style={{ display: "flex", flexDirection: "column" }}
+                  min="1"
                 />
+              </div>
+              <div>
+                <label className="filter-label">{t("reports.schedule.unit")}</label>
+                <Select
+                  options={[
+                    { value: "minutes", label: t("reports.schedule.minutes") },
+                    { value: "hours", label: t("reports.schedule.hours") },
+                    { value: "days", label: t("reports.schedule.days") },
+                  ]}
+                  value={customPeriodUnit ? { value: customPeriodUnit, label: t(`reports.schedule.${customPeriodUnit}`) } : null}
+                  onChange={(option) => setCustomPeriodUnit(option?.value as "minutes" | "hours" | "days" || "")}
+                  placeholder={t("reports.schedule.placeholders.unit")}
+                  isSearchable
+                  className="react-select-container"
+                  classNamePrefix="react-select"
+                />
+              </div>
+            </div>
+          )}
+          {isFilterOpen && filters.length > 0 && (
+            <motion.div
+              className="filter-panel"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              transition={{ duration: 0.3 }}
+            >
+              <h4>{t("reports.filter.options")}</h4>
+              {filterSections.map(section => (
+                <Accordion title={section.title} key={section.title}>
+                  <div className="filter-grid">
+                    {section.filters.map(filter => {
+                      if (!filters.includes(filter)) return null; // Skip disallowed filters
+                      switch (filter) {
+                        case "dateRange":
+                          const dateRange = filterValues[filter] as DateRangeFilter | undefined;
+                          return (
+                            <div key={filter} className="form-group date-range-group col-span-2">
+                              <label className="filter-label">{t("reports.filter.dateRange")}</label>
+                              <div className="date-picker-container flex gap-2">
+                                <DatePicker
+                                  selected={dateRange?.start ? new Date(dateRange.start) : null}
+                                  onChange={(date: Date | null) => setFilterValues(prev => ({
+                                    ...prev,
+                                    [filter]: {
+                                      ...((prev[filter] && typeof prev[filter] === 'object' ? prev[filter] : { start: "", end: "" })),
+                                      start: date ? date.toISOString() : ""
+                                    }
+                                  }))}
+                                  placeholderText={t("reports.filter.placeholders.startDate")}
+                                  className="date-input"
+                                />
+                                <span className="date-divider">{t("reports.filter.to")}</span>
+                                <DatePicker
+                                  selected={dateRange?.end ? new Date(dateRange.end) : null}
+                                  onChange={(date: Date | null) => setFilterValues(prev => ({
+                                    ...prev,
+                                    [filter]: {
+                                      ...((prev[filter] && typeof prev[filter] === 'object' ? prev[filter] : { start: "", end: "" })),
+                                      end: date ? date.toISOString() : ""
+                                    }
+                                  }))}
+                                  placeholderText={t("reports.filter.placeholders.endDate")}
+                                  className="date-input"
+                                />
+                              </div>
+                            </div>
+                          );
+                        case "supervisorID":
+                          return (
+                            <div key={filter} className="form-group">
+                              <label className="filter-label">{t("reports.filters.supervisor")}</label>
+                              <Select
+                                options={supervisors.map(sup => ({
+                                  value: sup.userID,
+                                  label: `${sup.firstname} ${sup.lastname} (${sup.phone})`
+                                }))}
+                                value={filterValues[filter] ? {
+                                  value: filterValues[filter] as string,
+                                  label: supervisors.find(sup => sup.userID === filterValues[filter])?.firstname + " " +
+                                    supervisors.find(sup => sup.userID === filterValues[filter])?.lastname + ` (${supervisors.find(sup => sup.userID === filterValues[filter])?.phone})`
+                                } : null}
+                                onChange={(option) => setFilterValues(prev => ({
+                                  ...prev,
+                                  [filter]: option?.value || ""
+                                }))}
+                                onMenuOpen={() => handleSelectorClick(filter)}
+                                placeholder={t("reports.filter.placeholders.supervisor")}
+                                isSearchable
+                                isClearable
+                                className="react-select-container"
+                                classNamePrefix="react-select"
+                              />
+                            </div>
+                          );
+                        case "regionalManagerID":
+                          return (
+                            <div key={filter} className="form-group">
+                              <label className="filter-label">{t("reports.filters.regionalManager")}</label>
+                              <Select
+                                options={regionalManagers.map(rm => ({
+                                  value: rm.userID,
+                                  label: `${rm.firstname} ${rm.lastname} (${rm.phone})`
+                                }))}
+                                value={filterValues[filter] ? {
+                                  value: filterValues[filter] as string,
+                                  label: regionalManagers.find(rm => rm.userID === filterValues[filter])?.firstname + " " +
+                                    regionalManagers.find(rm => rm.userID === filterValues[filter])?.lastname + ` (${regionalManagers.find(rm => rm.userID === filterValues[filter])?.phone})`
+                                } : null}
+                                onChange={(option) => setFilterValues(prev => ({
+                                  ...prev,
+                                  [filter]: option?.value || ""
+                                }))}
+                                onMenuOpen={() => handleSelectorClick(filter)}
+                                placeholder={t("reports.filter.placeholders.regionalManager")}
+                                isSearchable
+                                isClearable
+                                className="react-select-container"
+                                classNamePrefix="react-select"
+                              />
+                            </div>
+                          );
+                        case "directorID":
+                          return (
+                            <div key={filter} className="form-group">
+                              <label className="filter-label">{t("reports.filters.director")}</label>
+                              <Select
+                                options={directors.map(dir => ({
+                                  value: dir.userID,
+                                  label: `${dir.firstname} ${dir.lastname} (${dir.phone})`
+                                }))}
+                                value={filterValues[filter] ? {
+                                  value: filterValues[filter] as string,
+                                  label: directors.find(dir => dir.userID === filterValues[filter])?.firstname + " " +
+                                    directors.find(dir => dir.userID === filterValues[filter])?.lastname + ` (${directors.find(dir => dir.userID === filterValues[filter])?.phone})`
+                                } : null}
+                                onChange={(option) => setFilterValues(prev => ({
+                                  ...prev,
+                                  [filter]: option?.value || ""
+                                }))}
+                                onMenuOpen={() => handleSelectorClick(filter)}
+                                placeholder={t("reports.filter.placeholders.director")}
+                                isSearchable
+                                isClearable
+                                className="react-select-container"
+                                classNamePrefix="react-select"
+                              />
+                            </div>
+                          );
+                        case "agentID":
+                        case "agentName":
+                          return (
+                            <div key={filter} className="form-group">
+                              <label className="filter-label">{t("reports.filters.agent")}</label>
+                              <Select
+                                options={agents.map(agent => ({
+                                  value: agent.agentID,
+                                  label: `${agent.name} ${agent.lastname} (${agent.phone})`
+                                }))}
+                                value={filterValues[filter] ? {
+                                  value: filterValues[filter] as string,
+                                  label: agents.find(agent => agent.agentID === filterValues[filter])?.name + " " +
+                                    agents.find(agent => agent.agentID === filterValues[filter])?.lastname + ` (${agents.find(agent => agent.agentID === filterValues[filter])?.phone})`
+                                } : null}
+                                onChange={(option) => setFilterValues(prev => ({
+                                  ...prev,
+                                  [filter]: option?.value || ""
+                                }))}
+                                onMenuOpen={() => handleSelectorClick(filter)}
+                                placeholder={t("reports.filter.placeholders.agent")}
+                                isSearchable
+                                isClearable
+                                className="react-select-container"
+                                classNamePrefix="react-select"
+                              />
+                            </div>
+                          );
+                        case "regionID":
+                          return (
+                            <div key={filter} className="form-group">
+                              <label className="filter-label">{t("reports.filters.region")}</label>
+                              <Select
+                                options={regions.map(region => ({
+                                  value: region.regionID,
+                                  label: region.name
+                                }))}
+                                value={filterValues[filter] ? {
+                                  value: filterValues[filter] as string,
+                                  label: regions.find(region => region.regionID === filterValues[filter])?.name
+                                } : null}
+                                onChange={(option) => setFilterValues(prev => ({
+                                  ...prev,
+                                  [filter]: option?.value || ""
+                                }))}
+                                onMenuOpen={() => handleSelectorClick(filter)}
+                                placeholder={t("reports.filter.placeholders.region")}
+                                isSearchable
+                                isClearable
+                                className="react-select-container"
+                                classNamePrefix="react-select"
+                              />
+                            </div>
+                          );
+                        case "governorateID":
+                          return (
+                            <div key={filter} className="form-group">
+                              <label className="filter-label">{t("reports.filters.governorate")}</label>
+                              <Select
+                                options={governorates.map(gov => ({
+                                  value: gov.governorateID,
+                                  label: gov.name
+                                }))}
+                                value={filterValues[filter] ? {
+                                  value: filterValues[filter] as string,
+                                  label: governorates.find(gov => gov.governorateID === filterValues[filter])?.name
+                                } : null}
+                                onChange={(option) => setFilterValues(prev => ({
+                                  ...prev,
+                                  [filter]: option?.value || ""
+                                }))}
+                                onMenuOpen={() => handleSelectorClick(filter)}
+                                placeholder={t("reports.filter.placeholders.governorate")}
+                                isSearchable
+                                isClearable
+                                className="react-select-container"
+                                classNamePrefix="react-select"
+                              />
+                            </div>
+                          );
+                        case "delegationID":
+                          return (
+                            <div key={filter} className="form-group">
+                              <label className="filter-label">{t("reports.filters.delegation")}</label>
+                              <Select
+                                options={delegations.map(del => ({
+                                  value: del.delegationID,
+                                  label: del.name
+                                }))}
+                                value={filterValues[filter] ? {
+                                  value: filterValues[filter] as string,
+                                  label: delegations.find(del => del.delegationID === filterValues[filter])?.name
+                                } : null}
+                                onChange={(option) => setFilterValues(prev => ({
+                                  ...prev,
+                                  [filter]: option?.value || ""
+                                }))}
+                                onMenuOpen={() => handleSelectorClick(filter)}
+                                placeholder={t("reports.filter.placeholders.delegation")}
+                                isSearchable
+                                isClearable
+                                className="react-select-container"
+                                classNamePrefix="react-select"
+                              />
+                            </div>
+                          );
+                        case "visitType":
+                          return renderBooleanToggle(filter, t("reports.filters.visitType"));
+                        case "status":
+                          return (
+                            <div key={filter} className="form-group">
+                              <label className="filter-label">{t("reports.filters.status")}</label>
+                              <Select
+                                isMulti
+                                options={
+                                  selectedReportType === "UserActivity"
+                                    ? logStatuses.map(option => ({ value: option, label: option }))
+                                    : (reportStatusOptions[selectedReportType] || []).map(option => ({
+                                      value: option,
+                                      label: t(`reports.statuses.${option.toLowerCase().replace(/\s/g, "")}`),
+                                    }))
+                                }
+                                value={(filterValues[filter] as string[] || []).map(val => ({
+                                  value: val,
+                                  label: selectedReportType === "UserActivity"
+                                    ? val
+                                    : t(`reports.statuses.${val.toLowerCase().replace(/\s/g, "")}`),
+                                }))}
+                                onChange={(options) =>
+                                  setFilterValues(prev => ({
+                                    ...prev,
+                                    [filter]: options.map(opt => opt.value),
+                                  }))
+                                }
+                                onMenuOpen={() => handleSelectorClick(filter)}
+                                placeholder={t("reports.filter.placeholders.status")}
+                                isSearchable
+                                isClearable
+                                className="react-select-container"
+                                classNamePrefix="react-select"
+                              />
+                            </div>
+                          );
+                        case "visitReasons":
+                          return (
+                            <div key={filter} className="form-group">
+                              <label className="filter-label">{t("reports.filters.visitReasons")}</label>
+                              <Select
+                                isMulti
+                                options={reasons.map(reason => ({
+                                  value: reason.reasonID,
+                                  label: reason.item
+                                }))}
+                                value={(filterValues[filter] as string[] || []).map(val => ({
+                                  value: val,
+                                  label: reasons.find(r => r.reasonID === val)?.item
+                                }))}
+                                onChange={(options) => setFilterValues(prev => ({
+                                  ...prev,
+                                  [filter]: options.map(opt => opt.value)
+                                }))}
+                                onMenuOpen={() => handleSelectorClick(filter)}
+                                placeholder={t("reports.filter.placeholders.visitReasons")}
+                                isSearchable
+                                isClearable
+                                className="react-select-container"
+                                classNamePrefix="react-select"
+                              />
+                            </div>
+                          );
+                        case "checklistCompleted":
+                          return renderBooleanToggle(filter, t("reports.filters.checklistCompleted"));
+                        case "visitDuration":
+                          return renderRangeInput(filter, t("reports.filters.visitDuration"));
+                        case "aiAnomalies":
+                          return renderBooleanToggle(filter, t("reports.filters.aiAnomalies"));
+                        case "numberOfVisits":
+                          return renderRangeInput(filter, t("reports.filters.numberOfVisits"));
+                        case "totalHours":
+                          return renderRangeInput(filter, t("reports.filters.totalHours"));
+                        case "aiSuggestions":
+                          return renderBooleanToggle(filter, t("reports.filters.aiSuggestions"));
+                        case "anomaliesDetected":
+                          return renderBooleanToggle(filter, t("reports.filters.anomaliesDetected"));
+                        case "visitStatus":
+                          return (
+                            <div key={filter} className="form-group">
+                              <label className="filter-label">{t("reports.filters.visitStatus")}</label>
+                              <Select
+                                isMulti
+                                options={visitStatusOptions.map(option => ({ value: option, label: t(`reports.statuses.${option.toLowerCase()}`) }))}
+                                value={(filterValues[filter] as string[] || []).map(val => ({ value: val, label: t(`reports.statuses.${val.toLowerCase()}`) }))}
+                                onChange={(options) => setFilterValues(prev => ({
+                                  ...prev,
+                                  [filter]: options.map(opt => opt.value)
+                                }))}
+                                onMenuOpen={() => handleSelectorClick(filter)}
+                                placeholder={t("reports.filter.placeholders.visitStatus")}
+                                isSearchable
+                                isClearable
+                                className="react-select-container"
+                                classNamePrefix="react-select"
+                              />
+                            </div>
+                          );
+                        case "weekNumber":
+                          return (
+                            <div key={filter} className="form-group">
+                              <label className="filter-label">{t("reports.filters.weekNumber")}</label>
+                              <input
+                                type="number"
+                                min={1}
+                                max={52}
+                                value={(filterValues[filter] as number) || ""}
+                                onChange={(e) => setFilterValues(prev => ({
+                                  ...prev,
+                                  [filter]: Number(e.target.value)
+                                }))}
+                                className="text-input"
+                                placeholder={t("reports.filter.placeholders.weekNumber")}
+                              />
+                            </div>
+                          );
+                        case "bookType":
+                          return (
+                            <div key={filter} className="form-group">
+                              <label className="filter-label">{t("reports.filters.bookType")}</label>
+                              <Select
+                                options={receiptBookTypes.map(type => ({
+                                  value: type.typeID,
+                                  label: type.name
+                                }))}
+                                value={filterValues[filter] ? {
+                                  value: filterValues[filter] as string,
+                                  label: receiptBookTypes.find(type => type.typeID === filterValues[filter])?.name
+                                } : null}
+                                onChange={(option) => setFilterValues(prev => ({
+                                  ...prev,
+                                  [filter]: option?.value || ""
+                                }))}
+                                onMenuOpen={() => handleSelectorClick(filter)}
+                                placeholder={t("reports.filter.placeholders.bookType")}
+                                isSearchable
+                                isClearable
+                                className="react-select-container"
+                                classNamePrefix="react-select"
+                              />
+                            </div>
+                          );
+                        case "currentHolderName":
+                          return (
+                            <div key={filter} className="form-group">
+                              <label className="filter-label">{t("reports.filters.currentHolder")}</label>
+                              <Select
+                                options={holders.map(holder => ({
+                                  value: `${holder.firstname} ${holder.lastname} (${holder.phone})`,
+                                  label: `${holder.firstname} ${holder.lastname} (${holder.phone}) - ${holder.Roles?.map(r => r.name).join(", ") || "No Role"}`
+                                }))}
+                                value={filterValues[filter] ? { value: filterValues[filter] as string, label: filterValues[filter] as string } : null}
+                                onChange={(option) => setFilterValues(prev => ({ ...prev, [filter]: option?.value || "" }))}
+                                onMenuOpen={() => handleSelectorClick(filter)}
+                                placeholder={t("reports.filter.placeholders.currentHolder")}
+                                isSearchable
+                                isClearable
+                                className="react-select-container"
+                                classNamePrefix="react-select"
+                              />
+                            </div>
+                          );
+                        case "assignmentStatus":
+                          return renderBooleanToggle(filter, t("reports.filters.assignmentStatus"));
+                        case "roleID":
+                          return (
+                            <div key={filter} className="form-group">
+                              <label className="filter-label">{t("reports.filters.role")}</label>
+                              <Select
+                                options={roles.map(role => ({ value: role.name, label: role.name }))}
+                                value={filterValues[filter] ? {
+                                  value: filterValues[filter] as string,
+                                  label: filterValues[filter] as string
+                                } : null}
+                                onChange={(option) => setFilterValues(prev => ({
+                                  ...prev,
+                                  [filter]: option?.value || ""
+                                }))}
+                                onMenuOpen={() => handleSelectorClick(filter)}
+                                placeholder={t("reports.filter.placeholders.role")}
+                                isSearchable
+                                isClearable
+                                className="react-select-container"
+                                classNamePrefix="react-select"
+                              />
+                            </div>
+                          );
+                        case "activityType":
+                          return (
+                            <div key={filter} className="form-group">
+                              <label className="filter-label">{t("reports.filters.activityType")}</label>
+                              <Select
+                                options={activityTypes.map(type => ({ value: type, label: type }))}
+                                value={filterValues[filter] ? {
+                                  value: filterValues[filter] as string,
+                                  label: filterValues[filter] as string
+                                } : null}
+                                onChange={(option) => setFilterValues(prev => ({
+                                  ...prev,
+                                  [filter]: option?.value || ""
+                                }))}
+                                onMenuOpen={() => handleSelectorClick(filter)}
+                                placeholder={t("reports.filter.placeholders.activityType")}
+                                isSearchable
+                                isClearable
+                                className="react-select-container"
+                                classNamePrefix="react-select"
+                              />
+                            </div>
+                          );
+                        case "userID":
+                          return (
+                            <div key={filter} className="form-group">
+                              <label className="filter-label">{t("reports.filters.user")}</label>
+                              <Select
+                                options={users.map(user => ({
+                                  value: user.userID,
+                                  label: `${user.firstname} ${user.lastname} (${user.phone}) - ${user.Roles?.map(r => r.name).join(", ")}`
+                                }))}
+                                value={filterValues[filter] ? {
+                                  value: filterValues[filter] as string,
+                                  label: users.find(user => user.userID === filterValues[filter])?.firstname + " " +
+                                    users.find(user => user.userID === filterValues[filter])?.lastname + ` (${users.find(user => user.userID === filterValues[filter])?.phone}) - ${users.find(user => user.userID === filterValues[filter])?.Roles?.map(r => r.name).join(", ")}`
+                                } : null}
+                                onChange={(option) => setFilterValues(prev => ({
+                                  ...prev,
+                                  [filter]: option?.value || ""
+                                }))}
+                                onMenuOpen={() => handleSelectorClick(filter)}
+                                placeholder={t("reports.filter.placeholders.user")}
+                                isSearchable
+                                isClearable
+                                className="react-select-container"
+                                classNamePrefix="react-select"
+                              />
+                            </div>
+                          );
+                        case "suspiciousActivity":
+                          return renderBooleanToggle(filter, t("reports.filters.suspiciousActivity"));
+                        case "ipAddress":
+                          return (
+                            <div key={filter} className="form-group">
+                              <label className="filter-label">{t("reports.filters.ipAddress")}</label>
+                              <input
+                                type="text"
+                                value={filterValues[filter] as string || ""}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  if (value && !validateIPAddress(value)) {
+                                    setError(t("reports.errors.invalidIP"));
+                                  } else {
+                                    setError(null);
+                                    setFilterValues(prev => ({ ...prev, [filter]: value }));
+                                  }
+                                }}
+                                className="text-input"
+                                placeholder={t("reports.filter.placeholders.ipAddress")}
+                              />
+                            </div>
+                          );
+                        case "affectedEntity":
+                          return (
+                            <div key={filter} className="form-group">
+                              <label className="filter-label">{t("reports.filters.affectedEntity")}</label>
+                              <Select
+                                options={affectedEntities.map(entity => ({ value: entity, label: entity }))}
+                                value={filterValues[filter] ? {
+                                  value: filterValues[filter] as string,
+                                  label: filterValues[filter] as string
+                                } : null}
+                                onChange={(option) => setFilterValues(prev => ({
+                                  ...prev,
+                                  [filter]: option?.value || ""
+                                }))}
+                                onMenuOpen={() => handleSelectorClick(filter)}
+                                placeholder={t("reports.filter.placeholders.affectedEntity")}
+                                isSearchable
+                                isClearable
+                                className="react-select-container"
+                                classNamePrefix="react-select"
+                              />
+                            </div>
+                          );
+                        case "severity":
+                          return (
+                            <div key={filter} className="form-group">
+                              <label className="filter-label">{t("reports.filters.severity")}</label>
+                              <Select
+                                options={severities.map(severity => ({ value: severity, label: severity }))}
+                                value={filterValues[filter] ? {
+                                  value: filterValues[filter] as string,
+                                  label: filterValues[filter] as string
+                                } : null}
+                                onChange={(option) => setFilterValues(prev => ({
+                                  ...prev,
+                                  [filter]: option?.value || ""
+                                }))}
+                                onMenuOpen={() => handleSelectorClick(filter)}
+                                placeholder={t("reports.filter.placeholders.severity")}
+                                isSearchable
+                                isClearable
+                                className="react-select-container"
+                                classNamePrefix="react-select"
+                              />
+                            </div>
+                          );
+                        case "route":
+                          return (
+                            <div key={filter} className="form-group">
+                              <label className="filter-label">{t("reports.filters.route")}</label>
+                              <Select
+                                options={routes.map(route => ({ value: route, label: route }))}
+                                value={filterValues[filter] ? {
+                                  value: filterValues[filter] as string,
+                                  label: filterValues[filter] as string
+                                } : null}
+                                onChange={(option) => setFilterValues(prev => ({
+                                  ...prev,
+                                  [filter]: option?.value || ""
+                                }))}
+                                onMenuOpen={() => handleSelectorClick(filter)}
+                                placeholder={t("reports.filter.placeholders.route")}
+                                isSearchable
+                                isClearable
+                                className="react-select-container"
+                                classNamePrefix="react-select"
+                              />
+                            </div>
+                          );
+                        case "performanceScore":
+                          return renderRangeInput(filter, t("reports.filters.performanceScore"));
+                        case "stubsCollected":
+                          return renderRangeInput(filter, t("reports.filters.stubsCollected"));
+                        case "receiptBooksAssigned":
+                          return renderRangeInput(filter, t("reports.filters.receiptBooksAssigned"));
+                        case "visitCompletionRate":
+                          return renderRangeInput(filter, t("reports.filters.visitCompletionRate"));
+                        case "locationUpdated":
+                          return renderBooleanToggle(filter, t("reports.filters.locationUpdated"));
+                        default:
+                          return (
+                            <div key={filter} className="form-group">
+                              <label className="filter-label">{t(`reports.filters.${filter}`)}</label>
+                              <input
+                                type="text"
+                                value={(filterValues[filter] as string) || ""}
+                                onChange={(e) => setFilterValues(prev => ({ ...prev, [filter]: e.target.value }))}
+                                className="text-input"
+                                placeholder={t(`reports.filter.placeholders.${filter}`)}
+                              />
+                            </div>
+                          );
+                      }
+                    })}
+                  </div>
+                </Accordion>
+              ))}
+            </motion.div>
+          )}
+        </div>
+        <div className="form-actions">
+          <button
+            className="submit-btn secondary"
+            onClick={() => setView("scheduled")}
+          >
+            {t("reports.actions.cancel")}
+          </button>
+          <button
+            onClick={handleScheduleReport}
+            disabled={loading || !selectedReportType || !schedulePeriod || (schedulePeriod === "custom" && (!customPeriodValue || !customPeriodUnit))}
+            className="submit-btn primary"
+          >
+            {loading ? t("reports.actions.scheduling") : t("reports.actions.schedule")}
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderSkeleton = () => (
+    <div className="table-card" aria-busy="true">
+      <h2>{t("reports.loading")}</h2>
+      <div className="table-container">
+        <div className="table-head">
+          {view === "scheduled" ? (
+            <div className="table-row-1 table-row-0  table-row-8">
+              <div className="table-cell">{t("reports.table.headers.scheduleID")}</div>
+              <div className="table-cell">{t("reports.table.headers.reportType")}</div>
+              <div className="table-cell">{t("reports.table.headers.format")}</div>
+              <div className="table-cell">{t("reports.table.headers.cronExpression")}</div>
+              <div className="table-cell">{t("reports.table.headers.createdAt")}</div>
+              <div className="table-cell">{t("reports.table.headers.actions")}</div>
+            </div>
+          ) : (
+            <div className="table-row-1 table-row-0  table-row-9">
+              <div className="table-cell">{t("reports.table.headers.reportID")}</div>
+              <div className="table-cell">{t("reports.table.headers.reportType")}</div>
+              <div className="table-cell">{t("reports.table.headers.format")}</div>
+              <div className="table-cell">{t("reports.table.headers.generatedAt")}</div>
+              <div className="table-cell">{t("reports.table.headers.actions")}</div>
+            </div>
+          )}
+        </div>
+        <div className="table-body">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="table-row-1 table-row-0  table-row-8 ">
+              <div className="table-cell"><div className="skeleton"></div></div>
+              <div className="table-cell"><div className="skeleton"></div></div>
+              <div className="table-cell"><div className="skeleton"></div></div>
+              <div className="table-cell"><div className="skeleton"></div></div>
+              <div className="table-cell"><div className="skeleton"></div></div>
+              {view === "scheduled" && <div className="table-cell"><div className="skeleton"></div></div>}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderListView = () => (
+    <motion.div
+      className="table-card"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
+    >
+      {loading && (view === "scheduled" ? schedules.length === 0 : generatedReports.length === 0) ? (
+        renderSkeleton()
+      ) : (
+        <div className="table-container">
+          <h2>{view === "scheduled" ? t("reports.scheduled.listTitle") : t("reports.generated.listTitle")}</h2>
+          <div className="table-head">
+            {view === "scheduled" ? (
+              <div className="table-row-1 table-row-0  table-row-8">
+                <div className="table-cell sortable" onClick={() => { setScheduleSort("scheduleID"); setScheduleSortOrder(prev => prev === "asc" ? "desc" : "asc"); }}>
+                  {t("reports.table.headers.scheduleID")} <FaSort />
+                </div>
+                <div className="table-cell sortable" onClick={() => { setScheduleSort("reportType"); setScheduleSortOrder(prev => prev === "asc" ? "desc" : "asc"); }}>
+                  {t("reports.table.headers.reportType")} <FaSort />
+                </div>
+                <div className="table-cell">{t("reports.table.headers.format")}</div>
+                <div className="table-cell">{t("reports.table.headers.cronExpression")}</div>
+                <div className="table-cell sortable" onClick={() => { setScheduleSort("createdAt"); setScheduleSortOrder(prev => prev === "asc" ? "desc" : "asc"); }}>
+                  {t("reports.table.headers.createdAt")} <FaSort />
+                </div>
+                <div className="table-cell">{t("reports.table.headers.actions")}</div>
+              </div>
+            ) : (
+              <div className="table-row-1 table-row-0 table-row-9">
+                <div className="table-cell sortable" onClick={() => { setReportSort("generatedReportID"); setReportSortOrder(prev => prev === "asc" ? "desc" : "asc"); }}>
+                  {t("reports.table.headers.reportID")} <FaSort />
+                </div>
+                <div className="table-cell sortable" onClick={() => { setReportSort("reportType"); setReportSortOrder(prev => prev === "asc" ? "desc" : "asc"); }}>
+                  {t("reports.table.headers.reportType")} <FaSort />
+                </div>
+                <div className="table-cell">{t("reports.table.headers.format")}</div>
+                <div className="table-cell sortable" onClick={() => { setReportSort("generatedAt"); setReportSortOrder(prev => prev === "asc" ? "desc" : "asc"); }}>
+                  {t("reports.table.headers.generatedAt")} <FaSort />
+                </div>
+                <div className="table-cell">{t("reports.table.headers.actions")}</div>
               </div>
             )}
           </div>
-        )}
-        {activeTab === 'scheduled' && canViewSchedules && (
-          <div className="scheduled-reports">
-            <h2>{t('reports.tabs.scheduled')}</h2>
-            <Table
-              columns={scheduleColumns}
-              data={schedules.map(schedule => ({ ...schedule, id: schedule.scheduleID }))}
-            />
+          <div className="table-body">
+            {view === "scheduled" ? (
+              filteredSchedules.length > 0 ? (
+                filteredSchedules.map(schedule => (
+                  <div className="table-row-1 table-row-0 table-row-8">
+                    <div className="table-cell">{schedule.scheduleID}</div>
+                    <div className="table-cell">{t(`reports.types.${schedule.reportType.toLowerCase()}`)}</div>
+                    <div className="table-cell">{t(`reports.formats.${schedule.format}`)}</div>
+                    <div className="table-cell">{cronToReadable(schedule.cronExpression, t)}</div>
+                    <div className="table-cell">{new Date(schedule.createdAt).toLocaleString()}</div>
+                    <div className="table-cell actions flex space-x-2">
+                      <button onClick={() => handleDeleteSchedule(schedule.scheduleID)} disabled={loading} className="action-btn delete">
+                        <FaTrash aria-hidden="true" />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="table-row no-data">{t("reports.table.noScheduled")}</div>
+              )
+            ) : (
+              filteredGeneratedReports.length > 0 ? (
+                filteredGeneratedReports.map(report => (
+                  <div className="table-row-1 table-row-0 table-row-9">
+                    <div className="table-cell">{report.generatedReportID}</div>
+                    <div className="table-cell">{t(`reports.types.${report.reportType.toLowerCase()}`)}</div>
+                    <div className="table-cell">{t(`reports.formats.${report.format}`)}</div>
+                    <div className="table-cell">{new Date(report.generatedAt).toLocaleString()}</div>
+                    <div className="table-cell actions flex space-x-2">
+                      <button onClick={() => handleDownloadReport(report.filePath)} disabled={loading} className="action-btn download">
+                        <FaDownload aria-hidden="true" />
+                      </button>
+                      <button onClick={() => handleDeleteGeneratedReport(report.generatedReportID)} disabled={loading} className="action-btn delete">
+                        <FaTrash aria-hidden="true" />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="table-row no-data">{t("reports.table.noGenerated")}</div>
+              )
+            )}
           </div>
-        )}
-        {activeTab === 'generated' && canViewGenerated && (
-          <div className="generated-reports">
-            <h2>{t('reports.tabs.generated')}</h2>
-            <Table
-              columns={generatedColumns}
-              data={generatedReports.map(report => ({ ...report, id: report.generatedReportID }))}
-            />
-          </div>
-        )}
-        {activeTab === 'anomalies' && canViewAnomalies && (
-          <div className="anomalies-reports">
-            <h2>{t('reports.anomalies.title')}</h2>
-            <div className="anomaly-realtime">
-              <FaBell style={{ marginRight: 8 }} />
-              <span>{t('reports.anomalies.realtime')}</span>
+        </div>
+      )}
+    </motion.div>
+  );
+
+  return (
+    <div className="reporting-container">
+      <header className="dashboard-header">
+        <h1>
+          {view === "scheduled" ? t("reports.scheduled.title") :
+            view === "generated" ? t("reports.generated.title") :
+              view === "generate" ? t("reports.generate.title") : t("reports.schedule.title")}
+        </h1>
+      </header>
+      <section className="dashboard-content">
+        <aside className="sidebar">
+          <div className="filter-card">
+            <h3>{t("reports.manager.title")}</h3>
+            <div className="manager-buttons">
+              <button
+                className={`action-btn ${view === "scheduled" ? "active" : ""}`}
+                onClick={() => setView("scheduled")}
+              >
+                <FaList /> {t("reports.manager.scheduled")}
+              </button>
+              <button
+                className={`action-btn ${view === "generated" ? "active" : ""}`}
+                onClick={() => setView("generated")}
+              >
+                <FaList /> {t("reports.manager.generated")}
+              </button>
+              <button
+                className={`action-btn ${view === "generate" ? "active" : ""}`}
+                onClick={() => setView("generate")}
+              >
+                <FaPlus /> {t("reports.manager.generate")}
+              </button>
+              <button
+                className={`action-btn ${view === "schedule" ? "active" : ""}`}
+                onClick={() => setView("schedule")}
+              >
+                <FaClock /> {t("reports.manager.schedule")}
+              </button>
             </div>
-            <Table
-              columns={[
-                { key: 'id', label: 'ID' },
-                { key: 'user', label: 'User' },
-                { key: 'anomaly', label: 'Anomaly' },
-                { key: 'timestamp', label: 'Timestamp' },
-              ]}
-              data={generatedReports
-                .filter(r => r.reportType === 'AIAnomaly')
-                .map(r => ({
-                  id: r.generatedReportID,
-                  user: r.generator ? `${r.generator.firstname} ${r.generator.lastname}` : 'N/A',
-                  anomaly: 'Irregular Duration',
-                  timestamp: new Date(r.generatedAt).toLocaleString(),
-                }))
-              }
-            />
           </div>
-        )}
-        {canScheduleReports && (
-          <Modal isOpen={isScheduleModalOpen} onClose={() => setIsScheduleModalOpen(false)}>
-            <h2>{t('reports.schedule.title')}</h2>
-            <p>{t('reports.schedule.reportType')}: {reportType}</p>
-            <p>{t('reports.schedule.filters')}: {JSON.stringify(filters)}</p>
-            <p>{t('reports.schedule.format')}: {format}</p>
-            <div className="form-group">
-              <label>{t('reports.schedule.cronExpression')}</label>
-              <input
-                className="report-input"
-                type="text"
-                value={cronExpression}
-                onChange={e => setCronExpression(e.target.value)}
-                placeholder="e.g., 0 0 * * * (daily at midnight)"
-              />
-            </div>
-            <button className="action-button" onClick={handleScheduleReport}>
-              {t('reports.actions.schedule')}
-            </button>
-          </Modal>
-        )}
-      </main>
+          {(view === "scheduled" || view === "generated") && renderFilterForm()}
+        </aside>
+        <main className="main-content">
+          {(view === "scheduled" || view === "generated") && renderListView()}
+          {view === "generate" && renderGenerateForm()}
+          {view === "schedule" && renderScheduleForm()}
+        </main>
+      </section>
     </div>
   );
 };
 
-export default Reports;
+export default ReportingPage;

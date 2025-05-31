@@ -15,7 +15,7 @@ module.exports = (sequelize, DataTypes) => {
         'ReceiptBookInventory',
         'StubCollection',
         'UserActivity',
-        'AIAnomaly',
+        'Anomaly',
         'AgentPerformance',
         'RegionPerformance',
         'Full'
