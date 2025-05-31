@@ -15,6 +15,8 @@ import Region from "../../models/Region";
 import Governorate from "../../models/Governorate";
 import User from "../../models/User";
 import "./TimesheetSuggestionsModal.css";
+import { format, startOfWeek, addDays } from 'date-fns';
+
 
 interface TimesheetSuggestionsModalProps {
     isOpen: boolean;
@@ -60,7 +62,7 @@ const TimesheetSuggestionsModal: React.FC<TimesheetSuggestionsModalProps> = ({
         delegationIds: [] as string[],
         agentIds: [] as string[],
         preferredDays: [] as string[],
-        timeInterval: { startHour: 9, endHour: 17 },
+        timeInterval: { startHour: 8, endHour: 17 },
         maxVisitsPerAgentPerWeek: 2,
         includeRecruitmentVisits: false,
         selectedRegion: "",
@@ -305,10 +307,6 @@ const TimesheetSuggestionsModal: React.FC<TimesheetSuggestionsModalProps> = ({
             setError(t("timesheets.suggestions.noSupervisor"));
             return;
         }
-        if (formData.includeRecruitmentVisits && !formData.selectedRecruitmentDelegation) {
-            setError(t("timesheets.suggestions.missingRecruitmentAreas"));
-            return;
-        }
         if (typeof coordinates.lat !== "number" || typeof coordinates.lng !== "number") {
             setError(t("timesheets.suggestions.invalidCoordinates"));
             return;
@@ -321,17 +319,15 @@ const TimesheetSuggestionsModal: React.FC<TimesheetSuggestionsModalProps> = ({
                     regions.find(r => r.regionID === formData.selectedRegion)?.name ?? "",
                     governorates.find(g => g.governorateID === formData.selectedGovernorate)?.name ?? "",
                     recruitmentDelegations.find(d => d.delegationID === formData.selectedRecruitmentDelegation)?.name ?? "",
-                ]
-                    .filter(str => str !== "")
-                    .join(", ") || ""
-                : "";
+                ].filter(str => str !== "")
+                : undefined;
             const { suggestions, requestId: newRequestId } = await suggestTimesheet({
-                supervisorId: supervisorID,
+                supervisorID: supervisorID,
                 weekNumber,
                 year,
                 criteria: {
                     ...formData,
-                    recruitmentAreas: recruitmentAreas ? [recruitmentAreas] : [],
+                    recruitmentAreas,
                 },
                 coordinates,
             });
@@ -345,7 +341,6 @@ const TimesheetSuggestionsModal: React.FC<TimesheetSuggestionsModalProps> = ({
             setLoading(false);
         }
     }, [supervisorID, weekNumber, year, formData, coordinates, regions, governorates, recruitmentDelegations, t, onSuggestionsGenerated, onClose]);
-
     // Memoized select options
     const delegationOptions = useMemo(
         () => delegations.map(del => ({ value: del.delegationID, label: del.name })),
@@ -355,14 +350,17 @@ const TimesheetSuggestionsModal: React.FC<TimesheetSuggestionsModalProps> = ({
         () => agents.map(agent => ({ value: agent.agentID, label: `${agent.name} ${agent.lastname}` })),
         [agents]
     );
-    const dayOptions = useMemo(
-        () =>
-            ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map(day => ({
-                value: day,
-                label: t(`timesheets.days.${day}`),
-            })),
-        [t]
-    );
+    const weekDates = useMemo(() => {
+        const weekStart = startOfWeek(new Date(year, 0, 1 + (weekNumber - 1) * 7), { weekStartsOn: 1 });
+        return Array.from({ length: 7 }, (_, i) => {
+            const date = addDays(weekStart, i);
+            return {
+                value: format(date, 'yyyy-MM-dd'),
+                label: date.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' }),
+            };
+        });
+    }, [year, weekNumber]);
+    const dayOptions = weekDates;
     const regionOptions = useMemo(
         () => regions.map(r => ({ value: r.regionID, label: r.name })),
         [regions]
@@ -375,6 +373,7 @@ const TimesheetSuggestionsModal: React.FC<TimesheetSuggestionsModalProps> = ({
         () => recruitmentDelegations.map(d => ({ value: d.delegationID, label: d.name })),
         [recruitmentDelegations]
     );
+
 
     // Skeleton loader component
     const SkeletonSelect = () => (
@@ -394,7 +393,7 @@ const TimesheetSuggestionsModal: React.FC<TimesheetSuggestionsModalProps> = ({
             transition={{ duration: 0.3 }}
         >
             <motion.div
-                className="modal-content"
+                className="sugg-modal-content"
                 initial={{ y: "-50%", opacity: 0 }}
                 animate={{ y: "0%", opacity: 1 }}
                 exit={{ y: "-50%", opacity: 0 }}
@@ -412,6 +411,19 @@ const TimesheetSuggestionsModal: React.FC<TimesheetSuggestionsModalProps> = ({
                     {error && <div className="error-message">{error}</div>}
                     {locationError && <div className="warning-message">{locationError}</div>}
                     <form onSubmit={e => { e.preventDefault(); generateSuggestions(); }}>
+                        <div className="form-group">
+                            <label>{t("timesheets.suggestions.preferredDays")}</label>
+                            <Select
+                                isMulti
+                                options={dayOptions}
+                                value={dayOptions.filter(option => formData.preferredDays.includes(option.value))}
+                                onChange={(selected) => handleSelectChange(selected, "preferredDays")}
+                                placeholder={t("timesheets.suggestions.selectDays")}
+                                classNamePrefix="react-select"
+                                isDisabled={loading}
+                            />
+                        </div>
+                        <hr />
                         <div className="form-group">
                             <label>{t("timesheets.suggestions.delegationIds")}</label>
                             {isDelegationsLoading ? (
@@ -446,68 +458,20 @@ const TimesheetSuggestionsModal: React.FC<TimesheetSuggestionsModalProps> = ({
                                 />
                             )}
                         </div>
+                        <hr />
                         <div className="form-group">
-                            <label>{t("timesheets.suggestions.preferredDays")}</label>
-                            <Select
-                                isMulti
-                                options={dayOptions}
-                                value={dayOptions.filter(option => formData.preferredDays.includes(option.value))}
-                                onChange={(selected) => handleSelectChange(selected, "preferredDays")}
-                                placeholder={t("timesheets.suggestions.selectDays")}
-                                classNamePrefix="react-select"
-                                isDisabled={loading}
-                            />
-                        </div>
-                        <div className="form-group time-interval-group">
-                            <label>{t("timesheets.suggestions.timeInterval")}</label>
-                            <div className="input-pair">
-                                <input
-                                    type="number"
-                                    name="startHour"
-                                    value={formData.timeInterval.startHour}
-                                    onChange={handleInputChange}
-                                    placeholder="Start Hour (0-23)"
-                                    min="0"
-                                    max="23"
-                                    disabled={loading}
-                                    className="filter-input"
-                                />
-                                <input
-                                    type="number"
-                                    name="endHour"
-                                    value={formData.timeInterval.endHour}
-                                    onChange={handleInputChange}
-                                    placeholder="End Hour (1-24)"
-                                    min="1"
-                                    max="24"
-                                    disabled={loading}
-                                    className="filter-input"
-                                />
+                            <div className="switch-container">
+                                <label className="switch-label">{t("timesheets.suggestions.includeRecruitmentVisits")}</label>
+                                <label className="switch">
+                                    <input
+                                        type="checkbox"
+                                        checked={formData.includeRecruitmentVisits}
+                                        onChange={handleCheckboxChange}
+                                        disabled={loading}
+                                    />
+                                    <span className="slider"></span>
+                                </label>
                             </div>
-                        </div>
-                        <div className="form-group">
-                            <label>{t("timesheets.suggestions.maxVisitsPerAgentPerWeek")}</label>
-                            <input
-                                type="number"
-                                name="maxVisitsPerAgentPerWeek"
-                                value={formData.maxVisitsPerAgentPerWeek}
-                                onChange={handleInputChange}
-                                placeholder="Max Visits"
-                                min="1"
-                                disabled={loading}
-                                className="filter-input"
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label className="checkbox-label">
-                                <input
-                                    type="checkbox"
-                                    checked={formData.includeRecruitmentVisits}
-                                    onChange={handleCheckboxChange}
-                                    disabled={loading}
-                                />
-                                {t("timesheets.suggestions.includeRecruitmentVisits")}
-                            </label>
                         </div>
                         <div className={`form-group recruitment-areas ${formData.includeRecruitmentVisits ? "" : "hidden"}`}>
                             <label>{t("timesheets.suggestions.recruitmentAreas")}</label>
@@ -551,6 +515,50 @@ const TimesheetSuggestionsModal: React.FC<TimesheetSuggestionsModalProps> = ({
                                 )}
                             </div>
                         </div>
+                        <hr />
+                        <div style={{ display: "flex", flexDirection: "row", justifyContent: "space-around" }}>
+                            <div className="form-group time-interval-group">
+                                <label>{t("timesheets.suggestions.timeInterval")}</label>
+                                <div className="input-pair">
+                                    <input
+                                        type="number"
+                                        name="startHour"
+                                        value={formData.timeInterval.startHour}
+                                        onChange={handleInputChange}
+                                        placeholder="Start Hour (0-23)"
+                                        min="0"
+                                        max="23"
+                                        disabled={loading}
+                                        className="filter-input"
+                                    />
+                                    <input
+                                        type="number"
+                                        name="endHour"
+                                        value={formData.timeInterval.endHour}
+                                        onChange={handleInputChange}
+                                        placeholder="End Hour (1-24)"
+                                        min="1"
+                                        max="24"
+                                        disabled={loading}
+                                        className="filter-input"
+                                    />
+                                </div>
+                            </div>
+                            <div className="form-group">
+                                <label>{t("timesheets.suggestions.maxVisitsPerAgentPerWeek")}</label>
+                                <input
+                                    type="number"
+                                    name="maxVisitsPerAgentPerWeek"
+                                    value={formData.maxVisitsPerAgentPerWeek}
+                                    onChange={handleInputChange}
+                                    placeholder="Max Visits"
+                                    min="1"
+                                    disabled={loading}
+                                    className="filter-input"
+                                />
+                            </div>
+                        </div>
+                        <hr />
                         <div className="form-group">
                             <label>{t("timesheets.suggestions.description")}</label>
                             <textarea

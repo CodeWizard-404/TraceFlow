@@ -51,7 +51,6 @@ class ReportService {
         if (delegationID) agentWhere.delegationID = delegationID;
         if (visitDuration) where.duration = { [Op.between]: visitDuration };
         if (visitType) where.agentID = visitType === 'recrutementVisits' ? null : { [Op.ne]: null };
-        if (dayOfWeek) where.date = Sequelize.where(Sequelize.fn('EXTRACT', Sequelize.literal('DOW FROM date')), dayOfWeek);
 
         try {
             const visits = await Visit.findAll({

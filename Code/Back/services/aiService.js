@@ -101,38 +101,74 @@ class AIService {
         return checklists;
     }
 
-    static extractJsonFromResponse(responseText) {
-        const arrayMatch = responseText.match(/^\s*\[[\s\S]*?\]\s*$/);
-        if (arrayMatch && arrayMatch[0]) {
-            return arrayMatch[0];
-        }
-        const jsonMatch = responseText.match(/```json\n([\s\S]*?)\n```/);
-        if (jsonMatch && jsonMatch[1]) {
-            return jsonMatch[1];
-        }
-        const fallbackMatch = responseText.match(/\[[\s\S]*?\]/);
-        if (fallbackMatch && fallbackMatch[0]) {
-            return fallbackMatch[0];
-        }
-        throw new Error('No valid JSON array found in response');
-    }
+    // static extractJsonFromResponse(responseText) {
+    //     console.log('Extracting JSON from response:', responseText);
+
+    //     // Ensure responseText is a string
+    //     let cleanedText = typeof responseText === 'string' ? responseText : JSON.stringify(responseText);
+
+    //     // Remove markdown code block markers and trim whitespace
+    //     cleanedText = cleanedText.replace(/```json\n|```/g, '').trim();
+
+    //     // Extract the JSON array by finding the first [ and last ]
+    //     const start = cleanedText.indexOf('[');
+    //     const end = cleanedText.lastIndexOf(']');
+    //     if (start === -1 || end === -1 || start > end) {
+    //         console.log('No valid JSON array found in response');
+    //         throw new Error('No valid JSON array found in response');
+    //     }
+    //     cleanedText = cleanedText.slice(start, end + 1);
+
+    //     try {
+    //         const parsed = JSON.parse(cleanedText);
+    //         if (!Array.isArray(parsed)) {
+    //             console.log('Parsed response is not an array:', parsed);
+    //             throw new Error('Parsed response is not an array');
+    //         }
+    //         console.log('Successfully parsed JSON array:', parsed);
+    //         return parsed;
+    //     } catch (error) {
+    //         console.log('JSON parsing error:', error.message);
+    //         throw new Error(`Failed to parse JSON: ${error.message}`);
+    //     }
+    // }
 
     static async generateTimesheetSuggestions(supervisorId, weekNumber, year, timesheetData, controller = new AbortController()) {
+        console.log('Starting generateTimesheetSuggestions', { supervisorId, weekNumber, year });
+
         try {
+            console.log('Flushing cache');
             cache.flushAll();
+
+            console.log('Fetching supervisor by ID:', supervisorId);
             const supervisor = await User.findByPk(supervisorId, { attributes: ['userID'] });
+            console.log('Supervisor fetch result:', supervisor);
+
             if (!supervisor) {
+                console.log('Supervisor not found, throwing error');
                 const error = new Error(ERROR_MESSAGES.INVALID_SUPERVISOR);
                 error.status = 404;
                 throw error;
             }
 
+            console.log('Calculating week start date');
             const weekStart = this.getWeekStartDate(weekNumber, year);
+            console.log('Week start date:', weekStart);
             const weekStartString = weekStart.toISOString().split('T')[0];
+            console.log('Week start string:', weekStartString);
 
-            const today = new Date('2025-05-21T19:57:00.000Z'); // 20:57 CET
+            console.log('Getting current date and time');
+            const today = new Date();
+            const currentHour = today.getUTCHours() + 1; // CET is UTC+1
+            const currentMinutes = today.getUTCMinutes();
+            const currentTimeString = `${currentHour.toString().padStart(2, '0')}:${currentMinutes.toString().padStart(2, '0')}`;
+            console.log('Today:', today, 'Current time:', currentTimeString);
+
+            console.log('Checking if current week');
             const isCurrentWeek = year === today.getUTCFullYear() && weekNumber === Math.floor((today - new Date(Date.UTC(today.getUTCFullYear(), 0, 4 - ((new Date(Date.UTC(today.getUTCFullYear(), 0, 4)).getUTCDay() || 7) - 1)))) / (7 * 24 * 60 * 60 * 1000)) + 1;
+            console.log('Is current week:', isCurrentWeek);
 
+            console.log('Destructuring timesheetData');
             const {
                 delegationIds = [],
                 agentIds = [],
@@ -143,49 +179,74 @@ class AIService {
                 includeRecruitmentVisits = false,
                 coordinates
             } = timesheetData;
+            console.log('Timesheet data:', { delegationIds, agentIds, criteria, preferredDays, timeInterval, maxVisitsPerAgentPerWeek, includeRecruitmentVisits, coordinates });
 
+            console.log('Validating time interval');
             if (!timeInterval || !Number.isInteger(timeInterval.startHour) || !Number.isInteger(timeInterval.endHour) ||
                 timeInterval.startHour < 0 || timeInterval.endHour > 24 || timeInterval.startHour >= timeInterval.endHour) {
+                console.log('Invalid time interval, throwing error');
                 const error = new Error(ERROR_MESSAGES.INVALID_TIME_INTERVAL);
                 error.status = 400;
                 throw error;
             }
 
-            // Adjust time interval for today
+            console.log('Adjusting start hour for current week');
             let adjustedStartHour = timeInterval.startHour;
             if (isCurrentWeek && weekStartString === today.toISOString().split('T')[0]) {
-                const currentHour = today.getUTCHours() + 1; // CET is UTC+1
-                const currentMinutes = today.getUTCMinutes();
+                console.log('Current week and day match, calculating current time');
                 adjustedStartHour = Math.max(timeInterval.startHour, Math.ceil((currentHour * 60 + currentMinutes) / 60));
+                console.log('Adjusted start hour:', adjustedStartHour);
             }
 
+            console.log('Validating coordinates');
             if (!coordinates || !coordinates.lat || !coordinates.lng) {
+                console.log('Missing coordinates, throwing error');
                 throw Object.assign(new Error(ERROR_MESSAGES.MISSING_COORDINATES), { status: 400 });
             }
+
+            console.log('Fetching supervisor location');
             let supervisorLocation;
             try {
                 const locationData = await GoogleMapsService.getCurrentUserLocation(supervisorId, coordinates);
+                console.log('Supervisor location data:', locationData);
                 supervisorLocation = {
                     latitude: locationData.latitude,
                     longitude: locationData.longitude,
                     formattedAddress: locationData.address
                 };
+                console.log('Formatted supervisor location:', supervisorLocation);
             } catch (error) {
+                console.log('Error fetching supervisor location:', error.message);
                 throw Object.assign(new Error(ERROR_MESSAGES.NO_SUPERVISOR_LOCATION), { status: 400, details: error.message });
             }
 
-            // Calculate valid dates
+            console.log('Calculating valid dates');
             let daysOfWeek = preferredDays.length > 0
                 ? preferredDays
                 : Array.from({ length: 7 }, (_, i) => this.getDateString(weekStart, i));
-            const todayDate = today.toISOString().split('T')[0]; // 2025-05-21
+            console.log('Initial days of week:', daysOfWeek);
+
+            const todayDate = today.toISOString().split('T')[0];
+            console.log('Today date string:', todayDate);
             daysOfWeek = daysOfWeek.filter(date => date >= todayDate);
+            console.log('Filtered days of week:', daysOfWeek);
+
+            if (isCurrentWeek && daysOfWeek.includes(todayDate)) {
+                const currentMinutesTotal = currentHour * 60 + currentMinutes;
+                const endMinutes = timeInterval.endHour * 60;
+                if (currentMinutesTotal >= endMinutes) {
+                    console.log('No valid time slots today, excluding', todayDate);
+                    daysOfWeek = daysOfWeek.filter(date => date !== todayDate);
+                }
+            }
+
             if (daysOfWeek.length === 0) {
+                console.log('No valid days remaining, returning empty array');
                 return [];
             }
 
-            // Fetch agents and delegations
-            const [agents, reasons, checklists, delegations] = await Promise.all([
+            console.log('Fetching agents, reasons, and checklists');
+            const [agents, reasons, checklists] = await Promise.all([
                 Agent.findAll({
                     where: {
                         supervisorID: supervisorId,
@@ -193,130 +254,277 @@ class AIService {
                         ...(delegationIds.length > 0 && { delegationID: { [Op.in]: delegationIds } })
                     },
                     attributes: ['agentID', 'name', 'lastname', 'location', 'latitude', 'longitude', 'delegationID'],
-                    include: [{ model: Delegation, attributes: ['name', 'latitude', 'longitude'] }]
+                    include: [{ model: Delegation, attributes: ['delegationID', 'name'] }]
                 }),
                 this.getCachedReasons(),
-                this.getCachedChecklists(),
-                Delegation.findAll({
-                    where: delegationIds.length > 0 ? { delegationID: { [Op.in]: delegationIds } } : {},
-                    attributes: ['delegationID', 'name', 'latitude', 'longitude']
-                })
+                this.getCachedChecklists()
             ]);
+            console.log('Fetched data:', { agentsCount: agents.length, reasonsCount: reasons.length, checklistsCount: checklists.length });
 
+            console.log('Checking agent availability');
             if (agents.length === 0 && !includeRecruitmentVisits) {
+                console.log('No agents available and recruitment visits not included, throwing error');
                 throw Object.assign(new Error(ERROR_MESSAGES.NO_AGENTS_AVAILABLE), { status: 400 });
             }
 
-            const delegationMap = new Map(delegations.map(d => [d.delegationID, { latitude: d.latitude, longitude: d.longitude }]));
-
+            console.log('Processing agent data');
             const agentData = agents.map(agent => ({
                 agentID: agent.agentID,
-                location: agent.location || null,
-                latitude: agent.latitude || delegationMap.get(agent.delegationID)?.latitude || null,
-                longitude: agent.longitude || delegationMap.get(agent.delegationID)?.longitude || null,
-                delegationID: agent.delegationID
+                location: agent.location || agent.Delegation?.name || 'Unknown',
+                latitude: agent.latitude || null,
+                longitude: agent.longitude || null,
+                delegationID: agent.delegationID,
+                delegationName: agent.Delegation?.name || 'Unknown'
             }));
+            console.log('Agent data:', agentData);
 
-            // Geocode recruitment areas
+            console.log('Sorting agents by proximity');
+            const sortedAgents = agentData.sort((a, b) => {
+                const distA = this.calculateDistance(
+                    supervisorLocation.latitude,
+                    supervisorLocation.longitude,
+                    a.latitude,
+                    a.longitude
+                );
+                const distB = this.calculateDistance(
+                    supervisorLocation.latitude,
+                    supervisorLocation.longitude,
+                    b.latitude,
+                    b.longitude
+                );
+                if (distA === Infinity && distB !== Infinity) return 1;
+                if (distB === Infinity && distA !== Infinity) return -1;
+                return distA - distB;
+            });
+            console.log('Sorted agent data:', sortedAgents);
+
+            console.log('Validating recruitment areas');
             let recruitmentVisitLocations = [];
-            if (includeRecruitmentVisits && criteria.recruitmentAreas?.length > 0) {
+            if (includeRecruitmentVisits && Array.isArray(criteria.recruitmentAreas) && criteria.recruitmentAreas.length > 0) {
+                console.log('Processing recruitment areas:', criteria.recruitmentAreas);
                 recruitmentVisitLocations = await Promise.all(
                     criteria.recruitmentAreas.map(async area => {
                         try {
+                            console.log('Geocoding area:', area);
                             const geocode = await GoogleMapsService.geocodeAddress(`${area}, Tunisia`, 'tn');
+                            console.log('Geocode result for', area, ':', geocode);
                             return {
                                 latitude: geocode.latitude,
                                 longitude: geocode.longitude,
                                 formattedAddress: geocode.formattedAddress
                             };
                         } catch (error) {
+                            console.log('Error geocoding area', area, ':', error.message);
                             return { latitude: null, longitude: null, formattedAddress: 'Recruitment Location' };
                         }
                     })
                 );
             } else if (includeRecruitmentVisits) {
+                console.log('No specific recruitment areas, using default recruitment location');
                 recruitmentVisitLocations = [{ latitude: null, longitude: null, formattedAddress: 'Recruitment Location' }];
             }
+            console.log('Recruitment visit locations:', recruitmentVisitLocations);
 
+            console.log('Creating reason map');
             const reasonMap = {};
             reasons.forEach(r => { reasonMap[r.reasonID] = { id: r.reasonID, item: r.item }; });
+            console.log('Reason map:', reasonMap);
+
+            console.log('Creating checklist map');
             const checklistMap = {};
             checklists.forEach(c => { checklistMap[c.checklistID] = { id: c.checklistID, item: c.item }; });
+            console.log('Checklist map:', checklistMap);
 
-            // Prepare AI prompt
+            console.log('Initializing AI configuration');
             const aiConfig = await initializeAI();
+            console.log('AI config:', aiConfig);
+            console.log('Fetching AI config for supervisor');
             const config = (await AIConfig.findOne({ where: { supervisorId }, attributes: ['modelName', 'timesheetMaxSuggestions'] })) || aiConfig;
+            console.log('Final AI config:', config);
 
+            console.log('Preparing AI prompt');
             const prompt = `Generate timesheet visit suggestions for supervisor ${supervisorId} for week ${weekNumber} of ${year} starting ${weekStartString}.
 - Dates: ${daysOfWeek.join(',')}
 - Time Interval: ${adjustedStartHour}:00-${timeInterval.endHour}:00
-- Current Date: 2025-05-21
-- Current Time: 20:57
-- Agents: ${agentData.length > 0 ? agentData.map(a => `${a.agentID}`).join(',') : 'none'}
+- Current Date: ${todayDate}
+- Current Time: ${currentTimeString}
+- Supervisor Coordinates: lat: ${timesheetData.coordinates.lat}, lng: ${timesheetData.coordinates.lng}
+- Agents: ${sortedAgents.length > 0 ? sortedAgents.map(a => `${a.agentID} (lat: ${a.latitude || 'unknown'}, lng: ${a.longitude || 'unknown'})`).join(',') : 'none'}
+- Agent Locations for Sorting: ${sortedAgents.map(a => `${a.agentID}: ${a.location}`).join(';')}
 - Reasons: ${reasons.map(r => `${r.reasonID}:${r.item}`).join(';')}
 - Checklists: ${checklists.map(c => `${c.checklistID}:${c.item}`).join(';')}
-${includeRecruitmentVisits ? `- Recruitment Visit Locations: ${recruitmentVisitLocations.map(l => l.formattedAddress).join(';')}` : ''}
-Return a JSON array of visit objects: [{"date":"YYYY-MM-DD","time":"HH:MM","agentID":"string|null","location":"string|null","reasons":[{"id":"string"}],"checklists":[{"id":"string"}]}]
-- Generate visits for the provided dates only: ${daysOfWeek.join(',')}.
-- For visits on 2025-05-21, ensure time is after 20:57.
-- ${includeRecruitmentVisits ? 'Include recruitment visits with agentID: null and location from Recruitment Visit Locations or "Recruitment Location" if none provided.' : 'Do not include visits with agentID: null.'}
-- For non-recruitment visits, agentID must be one of: ${agentData.length > 0 ? agentData.map(a => a.agentID).join(',') : 'none'}.
-- Ensure at least 1 reason per visit, selected based on relevance to the visit context (e.g., "Inventory discrepancy" for inventory-related visits).
-- Include at least 1 checklist per visit, chosen to match the reasons (e.g., if reason is "Inventory discrepancy," select "Verify store inventory").
-- Ensure date is in YYYY-MM-DD format and time is in HH:MM (24-hour) format within the time interval.
-- Ensure unique times for visits on the same day with at least a 1-hour gap.
+- Recruitment Visit Locations: ${recruitmentVisitLocations.map(loc => loc.formattedAddress).join(',')}
+Return a JSON array of visit objects: [{"date":"YYYY-MM-DD","time":"HH:MM","agentID":"string|null","reasons":[{"id":"string"}],"checklists":[{"id":"string"}]}]
+- Generate up to ${config.timesheetMaxSuggestions} visits for the provided dates: ${daysOfWeek.join(',')}.
+- Ensure visit times are within ${adjustedStartHour}:00-${timeInterval.endHour}:00.
+- ${isCurrentWeek && daysOfWeek.includes(todayDate) ? `For visits on ${todayDate}, ensure time is after ${currentTimeString}.` : ''}
+- Include at least one recruitment visit with agentID: null if includeRecruitmentVisits is true.
+- For non-recruitment visits, agentID must be one of: ${sortedAgents.length > 0 ? sortedAgents.map(a => a.agentID).join(',') : 'none'}.
+- Sort non-recruitment visits by agent proximity to supervisor coordinates (${timesheetData.coordinates.lat}, ${timesheetData.coordinates.lng}) using agent latitude and longitude. If coordinates are unknown, prioritize agents with known coordinates. Use the haversine formula for distance calculation.
+- Ensure at least 1 reason per visit in the format {"id": "string"}, selected based on relevance to the checklist.
+- Ensure at least 1 checklist per visit in the format {"id": "string"}, selected based on relevance to the reasons, except for recruitment visits which may have no checklists.
+- Ensure date is in YYYY-MM-DD format and time is in HH:MM (24-hour) format.
+- Ensure unique times on the same day with at least a 1-hour gap.
 - Return only the JSON array without additional text or formatting.`;
+            console.log('Generated AI prompt:', prompt);
 
+            console.log('Preparing API payload');
             const payload = {
-                model: 'mistral',
+                model: config.modelName || 'mistral',
                 prompt,
                 stream: false
             };
+            console.log('API payload:', payload);
 
+            console.log('Making Ollama API call');
             let response;
             try {
-                console.log('Sending request to Ollama:', { payload });
                 response = await makeOllamaApiCall('post', '/generate', payload, { signal: controller.signal });
-                console.log('Raw Ollama response:', response);
+                console.log('API response:', response);
             } catch (error) {
-                console.error('AI API Error:', error);
+                console.log('API call failed:', error.message);
                 throw Object.assign(new Error(ERROR_MESSAGES.AI_API_UNAVAILABLE), { status: 503, details: error.message });
             }
 
+            console.log('Validating API response');
             if (!response || !response.response) {
+                console.log('Invalid API response, throwing error');
                 throw Object.assign(new Error(ERROR_MESSAGES.INVALID_AI_RESPONSE), { status: 503, details: 'No response data from AI service.' });
             }
 
+            console.log('Parsing API response');
             let suggestionsRaw;
             try {
-                const jsonString = this.extractJsonFromResponse(response.response);
-                console.log('Extracted JSON:', jsonString);
-                suggestionsRaw = JSON.parse(jsonString);
+                // Directly parse the response.response field
+                suggestionsRaw = JSON.parse(response.response.trim());
+                console.log('Parsed suggestions:', JSON.stringify(suggestionsRaw, null, 2));
+                console.log('Type of suggestionsRaw:', Object.prototype.toString.call(suggestionsRaw));
             } catch (parseError) {
-                console.error('Parse Error:', parseError, 'Raw Response:', response.response);
-                throw Object.assign(new Error(ERROR_MESSAGES.INVALID_AI_JSON), { status: 503, details: `Failed to extract or parse JSON: ${parseError.message}` });
+                console.log('JSON parsing failed:', parseError.message);
+                throw Object.assign(new Error(ERROR_MESSAGES.INVALID_AI_JSON), {
+                    status: 503,
+                    details: `Failed to parse JSON: ${parseError.message}`
+                });
             }
 
+            console.log('Validating suggestions format');
             if (!Array.isArray(suggestionsRaw)) {
-                console.warn('AI response is not an array:', suggestionsRaw);
+                console.log('Suggestions is not an array:', suggestionsRaw);
                 return [];
             }
 
-            const cacheKey = `${supervisorId}-${weekNumber}-${year}-${JSON.stringify(timesheetData)}`;
-            cache.set(cacheKey, suggestionsRaw);
+            // Validate and filter suggestions
+            console.log('Validating and filtering suggestions');
+            const validSuggestions = suggestionsRaw.filter((visit, index) => {
+                console.log(`Validating visit ${index}:`, visit);
+                // Validate date
+                if (!visit.date || !daysOfWeek.includes(visit.date) || visit.date < todayDate) {
+                    console.log(`Invalid visit date for visit ${index}:`, visit.date);
+                    return false;
+                }
 
-            return suggestionsRaw;
+                // Validate time
+                const timeMatch = visit.time && visit.time.match(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/);
+                if (!timeMatch) {
+                    console.log(`Invalid visit time format for visit ${index}:`, visit.time);
+                    return false;
+                }
+
+                const [hours, minutes] = visit.time.split(':').map(Number);
+                const visitMinutes = hours * 60 + minutes;
+                if (
+                    visitMinutes < adjustedStartHour * 60 ||
+                    visitMinutes >= timeInterval.endHour * 60 ||
+                    (visit.date === todayDate && visitMinutes <= (currentHour * 60 + currentMinutes))
+                ) {
+                    console.log(`Visit time out of bounds for visit ${index}:`, visit.time);
+                    return false;
+                }
+
+                // Validate agentID
+                const isRecruitment = visit.agentID === null;
+                if (!isRecruitment && !sortedAgents.some(agent => agent.agentID === visit.agentID)) {
+                    console.log(`Invalid agentID for visit ${index}:`, visit.agentID);
+                    return false;
+                }
+
+                // Validate reasons
+                if (!Array.isArray(visit.reasons) || visit.reasons.length === 0 || !visit.reasons.every(r => r.id && reasonMap[r.id])) {
+                    console.log(`Invalid or missing reasons for visit ${index}:`, visit.reasons);
+                    return false;
+                }
+
+                // Validate checklists (allow empty for recruitment visits)
+                if (!isRecruitment && (!Array.isArray(visit.checklists) || visit.checklists.length === 0 || !visit.checklists.every(c => c.id && checklistMap[c.id]))) {
+                    console.log(`Invalid or missing checklists for visit ${index}:`, visit.checklists);
+                    return false;
+                }
+
+                return true;
+            });
+
+            console.log('Valid suggestions count:', validSuggestions.length);
+            if (validSuggestions.length === 0 && suggestionsRaw.length > 0) {
+                console.log('All suggestions filtered out, raw suggestions:', suggestionsRaw);
+            }
+
+            // Ensure at least one recruitment visit if required
+            if (includeRecruitmentVisits && !validSuggestions.some(visit => visit.agentID === null)) {
+                console.log('Adding fallback recruitment visit');
+                validSuggestions.push({
+                    date: daysOfWeek[0],
+                    time: `${adjustedStartHour.toString().padStart(2, '0')}:00`,
+                    agentID: null,
+                    reasons: [{ id: reasons[0].reasonID }],
+                    checklists: []
+                });
+            }
+
+            // Limit suggestions to max allowed
+            const finalSuggestions = validSuggestions.slice(0, config.timesheetMaxSuggestions);
+
+            console.log('Caching suggestions');
+            const cacheKey = `${supervisorId}-${weekNumber}-${year}-${JSON.stringify(timesheetData)}`;
+            console.log('Cache key:', cacheKey);
+            cache.set(cacheKey, finalSuggestions);
+            console.log('Suggestions cached successfully');
+
+            console.log('Returning suggestions');
+            return finalSuggestions;
         } catch (error) {
+            console.log('Error caught:', error);
             if (error.name === 'AbortError') {
+                console.log('Request aborted, throwing abort error');
                 const abortError = new Error(ERROR_MESSAGES.REQUEST_CANCELED);
                 abortError.status = 499;
                 throw abortError;
             }
+            console.log('Handling non-abort error');
             throw error.message in ERROR_MESSAGES
                 ? error
                 : Object.assign(new Error(ERROR_MESSAGES.AI_API_UNAVAILABLE), { status: 503, details: error.message });
         }
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     static async optimizeRoute(origin, allPoints = [], mode = 'driving', trafficModel = 'best_guess', distanceMatrix, controller = new AbortController()) {
         try {
@@ -377,7 +585,6 @@ Return only the JSON object without additional text or formatting.
                 try {
                     response = await makeOllamaApiCall('post', '/generate', payload, { signal: controller.signal });
                 } catch (error) {
-                    console.error('AI API Error:', error);
                     throw Object.assign(new Error(ERROR_MESSAGES.AI_API_UNAVAILABLE), { status: 503, details: error.message });
                 }
 
@@ -554,6 +761,29 @@ Return only the JSON object without additional text or formatting.
             estimatedDistance: totalDistance
         };
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
     static async detectAnomalies(dataType, data, controller = new AbortController()) {

@@ -280,7 +280,6 @@ class NotificationService {
             });
             return { success: true, method: 'WebSocket' };
         } catch (error) {
-            console.error('WebSocket notification failed:', error.message);
             return { success: false, method: 'WebSocket', reason: error.message };
         }
     }
@@ -314,7 +313,6 @@ class NotificationService {
             });
             return { success: true, method: 'Email' };
         } catch (error) {
-            console.error('Email notification failed:', error.message);
             return { success: false, method: 'Email', reason: error.message };
         }
     }
@@ -331,7 +329,6 @@ class NotificationService {
             const result = await sendSMS(to, smsMessage, 'notification');
             return result;
         } catch (error) {
-            console.error('SMS notification failed:', error.message);
             return { success: false, method: 'SMS', reason: error.message };
         }
     }
@@ -447,7 +444,6 @@ class NotificationService {
                 isCustomizable: !rule || rule.priority !== 'high',
             };
         } catch (error) {
-            console.error('Failed to get user preferences:', error.message);
             return {
                 preferences: event ? { email: rule?.channels.email || false, sms: rule?.channels.sms || false, inApp: rule?.channels.inApp || true } : {},
                 isCustomizable: !rule || rule.priority !== 'high',
@@ -468,7 +464,6 @@ class NotificationService {
 
             const notificationMessage = await Promise.resolve(message).then(String);
             if (!notificationMessage) {
-                console.error(`Invalid notification message for event: ${event}`);
                 return null;
             }
 
@@ -487,7 +482,6 @@ class NotificationService {
 
             return notification;
         } catch (error) {
-            console.error('Failed to store notification:', error.message);
             return null;
         }
     }
@@ -541,7 +535,6 @@ class NotificationService {
             const rule = await NotificationRule.create(defaultRule);
             return rule;
         } catch (error) {
-            console.error('Failed to create default notification rule:', error.message);
             return null;
         }
     }
@@ -627,7 +620,6 @@ class NotificationService {
 
             return results;
         } catch (error) {
-            console.error('Failed to trigger notification:', error.message);
             return [{ success: false, reason: error.message }];
         }
     }
@@ -653,7 +645,6 @@ class NotificationService {
             }
             return Array.from(users);
         } catch (error) {
-            console.error('Failed to resolve recipients:', error.message);
             return [];
         }
     }

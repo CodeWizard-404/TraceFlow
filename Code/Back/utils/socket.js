@@ -43,15 +43,12 @@ io.on('connection', async (socket) => {
     if (userId) {
         await User.update({ isOnline: true }, { where: { userID: userId } });
         socket.join(userId);
-        console.log(`User ${userId} connected`);
 
         socket.on('disconnect', async () => {
             await User.update({ isOnline: false }, { where: { userID: userId } });
-            console.log(`User ${userId} disconnected`);
         });
     }
     socket.on('message', (message) => {
-        console.log(`Message from ${socket.user.userID}: ${message}`);
         socket.to(socket.user.userID).emit('message', message);
     });
     socket.on('join', (room) => socket.join(room));

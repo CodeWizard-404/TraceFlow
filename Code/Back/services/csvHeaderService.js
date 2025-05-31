@@ -14,7 +14,6 @@ class CsvHeaderService {
             });
             return headers || [];
         } catch (error) {
-            console.error(`Failed to fetch headers for csvType ${csvType}:`, error);
             return [];
         }
     }
@@ -90,7 +89,6 @@ class CsvHeaderService {
             return { success: true, message: 'Headers updated successfully' };
         } catch (error) {
             await transaction.rollback();
-            console.error(`Failed to update headers for csvType ${csvType}:`, error);
             return { success: false, message: `Unable to update headers: ${error.message}` };
         }
     }

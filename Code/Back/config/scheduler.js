@@ -1,4 +1,3 @@
-// utils/cron.js
 const cron = require('node-cron');
 const otpService = require('../services/otpService');
 const { Visit, GeneratedReport } = require('../models');
@@ -17,7 +16,7 @@ function setupCron() {
         try {
             await otpService.cleanupExpiredOTPs();
         } catch (error) {
-            console.error(`Error cleaning up OTPs: ${error.message}`);
+            logger.error(`Error cleaning up OTPs: ${error.message}`);
         }
     });
 
@@ -35,7 +34,7 @@ function setupCron() {
                 }
             );
         } catch (error) {
-            console.error(`Error updating visits: ${error.message}`);
+            logger.error(`Error updating visits: ${error.message}`);
         }
     });
 
@@ -170,15 +169,58 @@ function setupCron() {
         const reportsDir = path.join(__dirname, '../reports');
         try {
             const files = await fs.readdir(reportsDir);
+            const redisClient = getRedisClient();
             const now = Date.now();
-            const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+            const sevenDays = 7 * 24 * 60 * 60 * 1000;
+            const oneDay = 24 * 60 * 60 * 1000;
 
             for (const file of files) {
                 const filePath = path.join(reportsDir, file);
                 const stats = await fs.stat(filePath);
-                if (now - stats.mtimeMs > thirtyDays) {
-                    await fs.unlink(filePath);
-                    logger.info('Deleted old report file', { file, service: 'cron' });
+
+                // Check Redis for download count
+                const fileKeys = await redisClient.keys('file:*');
+                let downloadCount = 0;
+                let fileKeyToDelete = null;
+
+                for (const fileKey of fileKeys) {
+                    const fileData = await redisClient.hgetall(fileKey);
+                    if (fileData.filePath === filePath) {
+                        downloadCount = parseInt(fileData.downloadCount, 10) || 0;
+                        fileKeyToDelete = fileKey;
+                        break;
+                    }
+                }
+
+                // Delete if:
+                // 1. Older than 7 days
+                // 2. Downloaded 5 or more times
+                // 3. Downloaded once and older than 24 hours
+                if (
+                    (now - stats.mtimeMs > sevenDays) ||
+                    (downloadCount >= 5) ||
+                    (downloadCount === 1 && now - stats.mtimeMs > oneDay)
+                ) {
+                    try {
+                        await fs.unlink(filePath);
+                        if (fileKeyToDelete) {
+                            await redisClient.del(fileKeyToDelete);
+                        }
+                        logger.info('Deleted report file', {
+                            file,
+                            service: 'cron',
+                            reason:
+                                now - stats.mtimeMs > sevenDays ? 'older than 7 days' :
+                                    downloadCount >= 5 ? 'downloaded 5+ times' :
+                                        'downloaded once and older than 24 hours'
+                        });
+                    } catch (err) {
+                        logger.error('Failed to delete report file', {
+                            file,
+                            error: err.message,
+                            service: 'cron',
+                        });
+                    }
                 }
             }
         } catch (error) {

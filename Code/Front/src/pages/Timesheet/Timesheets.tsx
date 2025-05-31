@@ -60,16 +60,34 @@ interface VisitWithSupervisor extends Visit {
 }
 
 interface GeneratedVisit {
-    startTime: string;
+    visitID: string;
+    date: string; // Format: "YYYY-MM-DD"
+    time: string; // Format: "HH:MM"
     location: string;
     latitude: number | null;
     longitude: number | null;
-    reasons: Array<{ id: string; item: string }>;
-    checklists: Array<{ id: string; item: string }>;
+    reasons: Array<{ reasonID: string; item: string }>;
+    checklists: Array<{ checklistID: string; item: string }>;
     agentID: string | null;
-    date: string; // Format: "YYYY-MM-DD"
     status: VisitStatus.GENERATED;
     selected?: boolean;
+    timesheetID: string;
+    photos: string[];
+    comment: string | null;
+    calendarEventId: string | null;
+    Agent: {
+        agentID: string;
+        name: string;
+        lastname: string;
+        email: string;
+        phone: string;
+        location: string; // Use 'location' instead of 'address'
+        latitude: number | null;
+        longitude: number | null;
+        supervisorID: string;
+        delegationID: string | null;
+        Delegation: { delegationID: string; name: string } | null;
+    } | null;
 }
 
 const TimesheetsSkeleton: React.FC = () => (
@@ -182,16 +200,14 @@ const DayColumn: React.FC<DayColumnProps> = ({
     const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
     const isPastDate = new Date(dayStr) < new Date(todayStr);
 
-    const dayVisits = sortVisitsByTime(visits.filter((v) => {
-        const visitDate = "time" in v ? v.date : v.date;
-        return visitDate.split("T")[0] === dayStr;
-    }));
+    const dayVisits = sortVisitsByTime(visits.filter((v) => v.date === dayStr));
 
     const dayRef = useRef<HTMLDivElement>(null);
     const [{ isOver }, drop] = useDrop(() => ({
         accept: ItemTypes.VISIT,
         canDrop: () => !isPastDate,
         drop: (item: { visitId: string; originalDate: string; time: string; isGenerated: boolean }) => {
+            console.log('Dropped visit:', item, 'to date:', dayStr);
             handleDropVisit(item, dayStr);
         },
         collect: (monitor) => ({
@@ -231,7 +247,7 @@ const DayColumn: React.FC<DayColumnProps> = ({
                 {dayVisits.length > 0 ? (
                     dayVisits.map((visit) => (
                         <VisitCard
-                            key={"visitID" in visit ? visit.visitID : `${visit.agentID}-${visit.date}-${visit.startTime}`}
+                            key={'visitID' in visit ? visit.visitID : (visit as GeneratedVisit).visitID}
                             visit={visit}
                             t={t}
                             users={users}
@@ -258,6 +274,7 @@ const DayColumn: React.FC<DayColumnProps> = ({
         </div>
     );
 };
+
 
 interface VisitCardProps {
     visit: VisitWithSupervisor | GeneratedVisit;
@@ -297,46 +314,47 @@ const VisitCard: React.FC<VisitCardProps> = ({
     isRegionalManager,
     isDirector,
 }) => {
-    const visitId = "visitID" in visit ? visit.visitID : `${visit.agentID}-${visit.date}-${visit.startTime}`;
+    const visitId = 'visitID' in visit
+        ? visit.visitID
+        : ((visit as GeneratedVisit).agentID && (visit as GeneratedVisit).date && (visit as GeneratedVisit).time
+            ? `${(visit as GeneratedVisit).visitID}` // Use visitID directly for generated visits
+            : '');
     const isVisited = visit.status === VisitStatus.VISITED;
-    const isGenerated = !("visitID" in visit);
+    const isGenerated = 'selected' in visit;
     const isSelected = isGenerated && (visit as GeneratedVisit).selected;
     const visitRef = useRef<HTMLDivElement>(null);
     const [{ isDragging }, drag] = useDrag(() => ({
         type: ItemTypes.VISIT,
         item: {
             visitId,
-            originalDate: "time" in visit ? visit.date : visit.date,
-            time: "time" in visit ? visit.time : visit.startTime,
+            originalDate: visit.date, // Use full date as stored
+            time: visit.time,
             isGenerated,
         },
         collect: (monitor) => ({
             isDragging: !!monitor.isDragging(),
         }),
-        canDrag: () => (userPermissions.canCreateTimesheets || userPermissions.canCreateSupervisorTimesheets) && !isVisited,
-    }), [visit, userPermissions, isVisited]);
+        canDrag: () => (userPermissions.canCreateTimesheets || userPermissions.canCreateSupervisorTimesheets),
+    }), [visitId, visit.date, visit.time, isGenerated, userPermissions]);
 
     useEffect(() => {
-        if ((userPermissions.canCreateTimesheets || userPermissions.canCreateSupervisorTimesheets) && !isVisited) {
-            drag(visitRef);
-        }
-    }, [drag, userPermissions, isVisited]);
+        drag(visitRef);
+    }, [drag]);
 
-    // Compute agent name using correct field names
-    const agentName =
-        "Agent" in visit && visit.Agent && "name" in visit.Agent && "lastname" in visit.Agent
-            ? `${(visit.Agent as { name: string; lastname: string }).name} ${(visit.Agent as { name: string; lastname: string }).lastname}`
-            : "";
+    // Compute agent name
+    const agentName = 'Agent' in visit && visit.Agent
+        ? `${visit.Agent.name} ${visit.Agent.lastname}`
+        : '';
 
-    // Compute supervisor name using supervisorID from visit and users array
-    const supervisor = "supervisorID" in visit && visit.supervisorID
+    // Compute supervisor name
+    const supervisor = 'supervisorID' in visit && visit.supervisorID
         ? users.find((u) => u.userID === visit.supervisorID)
         : null;
     const supervisorName = supervisor
         ? `${supervisor.firstname} ${supervisor.lastname}`
-        : t("timesheets.unknownSupervisor");
+        : '';
 
-    let displayLocation = t("visitDetails.whenWhere.na");
+    let displayLocation = '';
     if (
         visit.agentID &&
         "Agent" in visit &&
@@ -347,13 +365,19 @@ const VisitCard: React.FC<VisitCardProps> = ({
         displayLocation = (visit.Agent as { address: string }).address;
     } else if (visit.location) {
         displayLocation = isCoordinates(visit.location)
-            ? locationCache[`coords:${visit.location}`] || t("visitDetails.whenWhere.na")
+            ? locationCache[`coords:${visit.location}`] || ''
             : visit.location;
     }
 
     const displayReasons = isGenerated
-        ? visit.reasons
-        : visitReasons[visitId] || ("Reasons" in visit ? visit.Reasons : []);
+        ? (visit as GeneratedVisit).reasons
+        : visitReasons[visitId] || ('Reasons' in visit ? visit.Reasons : []);
+
+    const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        e.stopPropagation();
+        console.log('Checkbox change for visitId:', visitId);
+        toggleVisitSelection(visitId, isGenerated);
+    };
 
     return (
         <div
@@ -361,29 +385,28 @@ const VisitCard: React.FC<VisitCardProps> = ({
             className={`visit-card ${isVisited ? 'visited' : ''} ${isSelected ? 'selected' : ''}`}
             style={{ opacity: isDragging ? 0.5 : 1 }}
             onClick={
-                userPermissions.canAccessTimesheetDetails && "visitID" in visit
+                !isGenerated && userPermissions.canAccessTimesheetDetails && 'visitID' in visit
                     ? () => navigate(`/visit/${visit.visitID}`)
                     : undefined
             }
-            role="button"
-            tabIndex={userPermissions.canAccessTimesheetDetails && "visitID" in visit ? 0 : -1}
+            role={!isGenerated && userPermissions.canAccessTimesheetDetails && 'visitID' in visit ? "button" : undefined}
+            tabIndex={!isGenerated && userPermissions.canAccessTimesheetDetails && 'visitID' in visit ? 0 : -1}
             onKeyDown={(e) =>
+                !isGenerated &&
                 userPermissions.canAccessTimesheetDetails &&
-                "visitID" in visit &&
-                e.key === "Enter" &&
+                'visitID' in visit &&
+                e.key === 'Enter' &&
                 navigate(`/visit/${visit.visitID}`)
             }
-            aria-label={t("timesheets.weekView.visitCard", {
-                time: "time" in visit ? visit.time : visit.startTime,
-            })}
+            aria-label={t('timesheets.weekView.visitCard', { time: visit.time })}
         >
             {isGenerated && (
                 <input
                     type="checkbox"
-                    checked={isSelected}
-                    onChange={() => toggleVisitSelection(visitId, isGenerated)}
+                    checked={!!isSelected}
+                    onChange={handleCheckboxChange}
                     className="visit-selection-checkbox"
-                    aria-label={t("timesheets.selectVisit")}
+                    aria-label={t('timesheets.selectVisit')}
                 />
             )}
             {(isSupervisor && agentName) && (
@@ -399,7 +422,7 @@ const VisitCard: React.FC<VisitCardProps> = ({
             <hr className="hr" />
             <div className="visit-header">
                 <span className="visit-time">
-                    <FaClock /> {formatTime("time" in visit ? visit.time : visit.startTime)}
+                    <FaClock /> {formatTime(visit.time)}
                 </span>
                 <span className={`visit-status status-${visit.status.toLowerCase()}`}>
                     {visit.status}
@@ -410,12 +433,16 @@ const VisitCard: React.FC<VisitCardProps> = ({
             </p>
             {displayReasons.length > 0 && (
                 <p className="visit-reasons">
-                    {displayReasons.map((r) => r.item).join(", ")}
+                    {displayReasons.map((r: { reasonID: string; item: string }) => r.item).join(', ')}
                 </p>
             )}
         </div>
     );
 };
+
+
+
+
 
 const Timesheets: React.FC = React.memo(() => {
     const navigate = useNavigate();
@@ -444,7 +471,7 @@ const Timesheets: React.FC = React.memo(() => {
     const [supervisorSearch, setSupervisorSearch] = useState<string>("");
     const [isFilterVisible, setIsFilterVisible] = useState<boolean>(false);
     const [isSuggestionsModalOpen, setIsSuggestionsModalOpen] = useState<boolean>(false);
-    const [error, setError] = useState<string | null>(null);
+    const [, setError] = useState<string | null>(null);
     const [locationCache, setLocationCache] = useState<Record<string, string | undefined>>({});
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState<boolean>(false);
     const [supervisorSearchInput, setSupervisorSearchInput] = useState<string>("");
@@ -692,11 +719,7 @@ const Timesheets: React.FC = React.memo(() => {
 
     const sortVisitsByTime = useCallback(
         (visits: (VisitWithSupervisor | GeneratedVisit)[]): (VisitWithSupervisor | GeneratedVisit)[] =>
-            [...visits].sort((a, b) => {
-                const timeA = 'time' in a ? a.time : a.startTime;
-                const timeB = 'time' in b ? b.time : b.startTime;
-                return timeA.localeCompare(timeB);
-            }),
+            [...visits].sort((a, b) => a.time.localeCompare(b.time)),
         []
     );
 
@@ -731,7 +754,7 @@ const Timesheets: React.FC = React.memo(() => {
                             "address" in visit.Agent &&
                             typeof (visit.Agent as { address?: string }).address === "string"
                             ? (visit.Agent as { address: string }).address
-                            : visit.location || t("visitDetails.whenWhere.na");
+                            : visit.location || '';
                 }
             }
 
@@ -763,22 +786,24 @@ const Timesheets: React.FC = React.memo(() => {
     );
 
     const handleSuggestionsGenerated = useCallback((suggestions: SuggestTimesheetResponse) => {
-        const visits: GeneratedVisit[] = suggestions.flatMap(agent =>
-            agent.schedule.flatMap(day => {
-                return day.visits.map(visit => ({
-                    startTime: visit.startTime,
-                    location: visit.location,
-                    latitude: visit.latitude,
-                    longitude: visit.longitude,
-                    reasons: Array.isArray(visit.reasons) ? visit.reasons : [],
-                    checklists: Array.isArray(visit.checklists) ? visit.checklists : [],
-                    agentID: agent.agentID,
-                    date: day.date, // Keep YYYY-MM-DD format
-                    status: VisitStatus.GENERATED,
-                    selected: true,
-                }));
-            })
-        );
+        const visits: GeneratedVisit[] = suggestions.map(suggestion => ({
+            visitID: suggestion.visitID,
+            date: suggestion.date, // YYYY-MM-DD
+            time: suggestion.time, // HH:MM
+            location: suggestion.location,
+            latitude: null, // Backend does not provide coordinates in suggestions
+            longitude: null,
+            reasons: Array.isArray(suggestion.Reasons) ? suggestion.Reasons.map(r => ({ reasonID: r.reasonID, item: r.item })) : [],
+            checklists: Array.isArray(suggestion.Checklists) ? suggestion.Checklists.map(c => ({ checklistID: c.checklistID, item: c.item })) : [],
+            agentID: suggestion.agentID,
+            status: VisitStatus.GENERATED,
+            selected: true,
+            timesheetID: suggestion.timesheetID,
+            photos: suggestion.photos || [],
+            comment: suggestion.comment || null,
+            calendarEventId: suggestion.calendarEventId || null,
+            Agent: suggestion.Agent || null,
+        }));
         setGeneratedVisits(visits);
         setIsSuggestionsModalOpen(false);
         setHasUnsavedChanges(true);
@@ -790,18 +815,32 @@ const Timesheets: React.FC = React.memo(() => {
         setHasUnsavedChanges(false);
     }, []);
 
+
+
+
+
+
     const toggleVisitSelection = useCallback((visitId: string, isGenerated: boolean) => {
         if (isGenerated) {
-            setGeneratedVisits(prev =>
-                prev.map(visit =>
-                    `${visit.agentID}-${visit.date}-${visit.startTime}` === visitId
-                        ? { ...visit, selected: !visit.selected }
-                        : visit
-                )
-            );
+            setGeneratedVisits(prev => {
+                const updatedVisits = prev.map((visit: GeneratedVisit) => {
+                    if (visit.visitID === visitId) {
+                        return { ...visit, selected: !visit.selected };
+                    }
+                    return visit;
+                });
+                console.log('Toggled visit selection:', visitId, updatedVisits);
+                return [...updatedVisits]; // Force re-render
+            });
             setHasUnsavedChanges(true);
         }
     }, []);
+
+
+
+
+
+
 
     const toggleSelectAllVisits = useCallback(() => {
         setGeneratedVisits(prev => {
@@ -824,11 +863,13 @@ const Timesheets: React.FC = React.memo(() => {
                 return;
             }
             const visits = selectedVisits.map(visit => ({
-                date: visit.date,
-                time: visit.startTime,
+                date: visit.date, // YYYY-MM-DD
+                time: visit.time, // HH:MM
                 agentID: visit.agentID,
-                reasons: visit.reasons.map(r => ({ id: r.id, item: r.item })),
-                checklists: visit.checklists.map(c => ({ id: c.id, item: c.item })),
+                location: visit.location,
+                reasons: visit.reasons.map(r => ({ id: r.reasonID, item: r.item })),
+                checklists: visit.checklists.map(c => ({ id: c.checklistID, item: c.item })),
+                status: VisitStatus.PENDING,
             }));
             await createTimesheet({
                 weekNumber: currentWeek,
@@ -970,9 +1011,7 @@ const Timesheets: React.FC = React.memo(() => {
         const supervisorIds = supervisorSearch
             ? filteredSupervisors.map(s => s.userID)
             : undefined;
-        const allVisits = [...savedVisits, ...generatedVisits.filter(v => {
-            return weekDays.some(day => day.toISOString().split("T")[0] === v.date);
-        })].filter((visit) => {
+        const allVisits = [...savedVisits, ...generatedVisits].filter((visit) => {
             const statusMatch = visitStatusFilter === "all" ? true : visit.status === visitStatusFilter;
             const reasonMatch = visitReasonSearch
                 ? ("reasons" in visit
@@ -1001,7 +1040,7 @@ const Timesheets: React.FC = React.memo(() => {
         };
     }, [
         filteredTimesheets,
-        generatedVisits,
+        generatedVisits, // Ensure re-renders when generatedVisits changes
         currentYear,
         currentWeek,
         getWeekDays,
@@ -1031,7 +1070,6 @@ const Timesheets: React.FC = React.memo(() => {
                     ),
                 ...generatedVisits
             ].filter((visit) => {
-                const visitDate = 'time' in visit ? visit.date : visit.date;
                 const statusMatch = visitStatusFilter === "all" ? true : visit.status === visitStatusFilter;
                 const reasonMatch = visitReasonSearch
                     ? ("reasons" in visit
@@ -1045,7 +1083,7 @@ const Timesheets: React.FC = React.memo(() => {
                 const supervisorMatch = supervisorIds
                     ? "supervisorID" in visit && supervisorIds.includes(visit.supervisorID!)
                     : true;
-                return visitDate.split("T")[0] === dateStr && statusMatch && reasonMatch && supervisorMatch;
+                return visit.date.split("T")[0] === dateStr && statusMatch && reasonMatch && supervisorMatch;
             })
         );
         console.log('Filtered visits for day view (supervisor):', filteredVisits.length);
@@ -1148,17 +1186,16 @@ const Timesheets: React.FC = React.memo(() => {
 
             try {
                 if (item.isGenerated) {
-                    setGeneratedVisits((prev) =>
-                        prev.map((visit) =>
-                            `${visit.agentID}-${visit.date}-${visit.startTime}` === item.visitId
-                                ? {
-                                    ...visit,
-                                    date: targetDate,
-                                    status: isSupervisor ? VisitStatus.GENERATED : visit.status
-                                }
-                                : visit
-                        )
-                    );
+                    setGeneratedVisits((prev) => {
+                        const updatedVisits = prev.map((visit: GeneratedVisit) => {
+                            if (visit.visitID === item.visitId) {
+                                return { ...visit, date: targetDate };
+                            }
+                            return visit;
+                        });
+                        console.log('Updated generated visits after drop:', updatedVisits);
+                        return [...updatedVisits]; // Force re-render
+                    });
                     setHasUnsavedChanges(true);
                 } else {
                     await updateVisit(item.visitId, {
@@ -1637,7 +1674,7 @@ const Timesheets: React.FC = React.memo(() => {
                                         </button>
                                     )}
                                 {isSupervisor && generatedVisits.length > 0 && (
-                                    <>
+                                    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                                         <button
                                             className="select-all-btn"
                                             onClick={toggleSelectAllVisits}
@@ -1667,7 +1704,7 @@ const Timesheets: React.FC = React.memo(() => {
                                                         : t("timesheets.actions.saveSuggestions")}
                                                 </button>
                                             )}
-                                    </>
+                                    </div>
                                 )}
                             </div>
                             <div className="days-grid">
@@ -1741,9 +1778,15 @@ const Timesheets: React.FC = React.memo(() => {
                         </div>
                         <div className="visits-list">
                             {dayData.length > 0 ? (
-                                dayData.map((visit) => (
+                                dayData.map((visit: VisitWithSupervisor | GeneratedVisit) => (
                                     <VisitCard
-                                        key={'visitID' in visit ? visit.visitID : `${visit.agentID}-${visit.date}-${visit.startTime}`}
+                                        key={
+                                            'visitID' in visit
+                                                ? visit.visitID
+                                                : ('agentID' in visit && 'date' in visit && 'time' in visit
+                                                    ? `${(visit as GeneratedVisit).agentID}-${(visit as GeneratedVisit).date}-${(visit as GeneratedVisit).time}`
+                                                    : '')
+                                        }
                                         visit={visit}
                                         t={t}
                                         users={users}
