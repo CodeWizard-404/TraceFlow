@@ -3,11 +3,11 @@ const ExcelJS = require('exceljs');
 const AIService = require('./aiService')
 const fs = require('fs').promises;
 const path = require('path');
+const { Op, literal } = require('sequelize');
 const {
     Visit, Role, Timesheet, ReceiptBook, ReceiptStub, User, Log, Agent, Region,
     Delegation, Governorate, ReceiptBookType, Reason, Checklist, VisitChecklist
 } = require('../models');
-const { Op } = require('sequelize');
 const logger = require('../utils/logger');
 
 class ReportService {
@@ -29,937 +29,142 @@ class ReportService {
 
 
 
-    // static async generateVisitSummaryReport(filters) {
-    //     const allowedFilters = [
-    //         'supervisorID', 'dateRange', 'regionID', 'agentID', 'status', 'visitReasons',
-    //         'checklistCompleted', 'visitDuration', 'governorateID', 'delegationID',
-    //         'visitType', 'Anomalies', 'dayOfWeek'
-    //     ];
-    //     const {
-    //         supervisorID, dateRange, regionID, agentID, status = [], visitReasons = [],
-    //         checklistCompleted, visitDuration, governorateID, delegationID, visitType,
-    //         Anomalies
-    //     } = ReportService.validateFilters(filters, allowedFilters);
 
-    //     const where = {};
-    //     const userWhere = {};
-    //     const agentWhere = {};
-    //     const delegationWhere = {};
-    //     const governorateWhere = {};
-
-    //     if (dateRange) {
-    //         if (!dateRange.start || !dateRange.end) {
-    //             throw new Error('Invalid date range: both start and end dates are required');
-    //         }
-    //         where.date = { [Op.between]: [new Date(dateRange.start), new Date(dateRange.end)] };
-    //     }
-    //     if (agentID) where.agentID = agentID;
-    //     if (status.length) where.status = { [Op.in]: status };
-    //     if (supervisorID) userWhere.userID = supervisorID;
-    //     if (regionID) governorateWhere.regionID = regionID;
-    //     if (governorateID) delegationWhere.governorateID = governorateID;
-    //     if (delegationID) agentWhere.delegationID = delegationID;
-    //     if (visitDuration) where.duration = { [Op.between]: visitDuration };
-    //     if (visitType) where.agentID = visitType === 'recrutementVisits' ? null : { [Op.ne]: null };
-
-    //     try {
-    //         const visits = await Visit.findAll({
-    //             where,
-    //             include: [
-    //                 {
-    //                     model: Agent,
-    //                     where: agentWhere,
-    //                     required: false,
-    //                     include: [{
-    //                         model: Delegation,
-    //                         where: delegationWhere,
-    //                         required: !!delegationID,
-    //                         include: [{
-    //                             model: Governorate,
-    //                             where: governorateWhere,
-    //                             required: !!governorateID || !!regionID,
-    //                             include: [{
-    //                                 model: Region,
-    //                                 required: !!regionID
-    //                             }]
-    //                         }]
-    //                     }]
-    //                 },
-    //                 {
-    //                     model: Timesheet,
-    //                     include: [{
-    //                         model: User,
-    //                         where: userWhere,
-    //                         required: true
-    //                     }],
-    //                     required: true
-    //                 },
-    //                 { model: Reason, through: { attributes: [] } },
-    //                 {
-    //                     model: Checklist,
-    //                     through: { model: VisitChecklist, attributes: ['checked'] }
-    //                 }
-    //             ]
-    //         });
-
-    //         let filteredVisits = visits;
-    //         if (visitReasons.length) {
-    //             filteredVisits = filteredVisits.filter(v =>
-    //                 v.Reasons.some(r => visitReasons.includes(r.item))
-    //             );
-    //         }
-    //         if (checklistCompleted !== undefined) {
-    //             filteredVisits = filteredVisits.filter(v => {
-    //                 const completed = v.Checklists.every(c => c.VisitChecklist?.checked === true);
-    //                 return checklistCompleted ? completed : !completed;
-    //             });
-    //         }
-    //         if (Anomalies) {
-    //             const anomalyLogs = await Log.findAll({
-    //                 where: {
-    //                     level: ['warn', 'error'],
-    //                     route: { [Op.iLike]: '%visit%' }
-    //                 }
-    //             });
-    //             const anomalyVisitIds = anomalyLogs.map(log => log.metadata?.visitID).filter(id => id);
-    //             filteredVisits = filteredVisits.filter(v => anomalyVisitIds.includes(v.visitID));
-    //         }
-
-    //         const totalVisits = filteredVisits.length;
-    //         const validatedVisits = filteredVisits.filter(v => v.status === 'validated').length;
-    //         const pendingVisits = filteredVisits.filter(v => v.status === 'pending').length;
-    //         const visitedVisits = filteredVisits.filter(v => v.status === 'visited').length;
-    //         const rejectedVisits = filteredVisits.filter(v => v.status === 'rejected').length;
-    //         const averageDuration = totalVisits > 0
-    //             ? filteredVisits.reduce((sum, v) => sum + (v.duration || 0), 0) / totalVisits / 60
-    //             : 0;
-
-    //         return {
-    //             summary: {
-    //                 totalVisits,
-    //                 validatedVisits,
-    //                 pendingVisits,
-    //                 visitedVisits,
-    //                 rejectedVisits,
-    //                 averageDuration: averageDuration.toFixed(2)
-    //             },
-    //             details: filteredVisits.map(v => ({
-    //                 id: v.visitID,
-    //                 date: v.date instanceof Date && !isNaN(v.date) ? v.date.toISOString().split('T')[0] : 'N/A',
-    //                 location: v.location || 'N/A',
-    //                 status: v.status || 'N/A',
-    //                 agent: v.Agent ? `${v.Agent.name} ${v.Agent.lastname}` : 'No Agent',
-    //                 supervisor: v.Timesheet?.User ? `${v.Timesheet.User.firstname} ${v.Timesheet.User.lastname}` : 'N/A',
-    //                 region: v.Agent?.Delegation?.Governorate?.Region?.name || 'N/A',
-    //                 reasons: v.Reasons.map(r => r.item).join(', ') || 'N/A',
-    //                 checklistCompleted: v.Checklists.every(c => c.VisitChecklist?.checked === true)
-    //             }))
-    //         };
-    //     } catch (error) {
-    //         throw new Error(`Failed to generate VisitSummary report: ${error.message}`);
-    //     }
-    // }
-
-    // static async generateTimesheetReport(filters) {
-    //     const allowedFilters = [
-    //         'supervisorID', 'regionalManagerID', 'directorID', 'dateRange', 'status', 'numberOfVisits',
-    //         'totalHours', 'aiSuggestions', 'anomaliesDetected', 'visitStatus', 'weekNumber',
-    //         'directorName', 'checklistCompleted'];
-    //     const {
-    //         supervisorID, regionalManagerID, directorID, dateRange, status = [], numberOfVisits,
-    //         totalHours, aiSuggestions, anomaliesDetected, visitStatus = [], weekNumber, checklistCompleted
-    //     } = ReportService.validateFilters(filters, allowedFilters);
-
-    //     const where = {};
-    //     const userWhere = {};
-    //     if (supervisorID) where.supervisorID = supervisorID;
-    //     if (regionalManagerID) userWhere.regionalManagerID = regionalManagerID;
-    //     if (directorID) userWhere.directorID = directorID;
-
-    //     if (dateRange) {
-    //         if (!dateRange.start || !dateRange.end) {
-    //             throw new Error('Invalid date range: both start and end dates are required');
-    //         }
-    //         where.createdAt = { [Op.between]: [new Date(dateRange.start), new Date(dateRange.end)] };
-    //     }
-    //     if (status.length) where.status = { [Op.in]: status };
-    //     if (weekNumber) where.weekNumber = weekNumber;
-
-
-    //     try {
-    //         const timesheets = await Timesheet.findAll({
-    //             where,
-    //             include: [
-    //                 {
-    //                     model: User,
-    //                     where: userWhere,
-    //                     required: true
-    //                 },
-    //                 {
-    //                     model: Visit,
-    //                     where: visitStatus.length ? { status: { [Op.in]: visitStatus } } : {},
-    //                     required: false,
-    //                     include: [
-    //                         { model: Agent },
-    //                         { model: Reason, through: { attributes: [] } },
-    //                         { model: Checklist, through: { model: VisitChecklist, attributes: ['checked'] } }
-    //                     ]
-    //                 }
-    //             ]
-    //         });
-
-    //         let filteredTimesheets = timesheets;
-    //         if (numberOfVisits) filteredTimesheets = filteredTimesheets.filter(t => t.Visits.length >= numberOfVisits[0] && t.Visits.length <= numberOfVisits[1]);
-    //         if (totalHours) {
-    //             filteredTimesheets = filteredTimesheets.filter(t => {
-    //                 const hours = t.Visits.reduce((sum, v) => sum + (v.duration || 0), 0) / 60;
-    //                 return hours >= totalHours[0] && hours <= totalHours[1];
-    //             });
-    //         }
-    //         if (visitStatus.length) filteredTimesheets = filteredTimesheets.filter(t => t.Visits.every(v => visitStatus.includes(v.status)));
-    //         if (checklistCompleted !== undefined) {
-    //             filteredTimesheets = filteredTimesheets.filter(t => {
-    //                 const completed = t.Visits.every(v => v.Checklists.every(c => c.VisitChecklist?.checked === true));
-    //                 return checklistCompleted ? completed : !completed;
-    //             });
-    //         }
-    //         if (aiSuggestions) {
-    //             const aiLogs = await Log.findAll({ where: { route: { [Op.iLike]: '%timesheet%' }, message: { [Op.iLike]: '%suggestion%' } } });
-    //             const suggestionIds = aiLogs.map(log => log.metadata?.timesheetID).filter(id => id);
-    //             filteredTimesheets = filteredTimesheets.filter(t => suggestionIds.includes(t.timesheetID));
-    //         }
-    //         if (anomaliesDetected) {
-    //             const anomalyLogs = await Log.findAll({ where: { level: ['warn', 'error'], route: { [Op.iLike]: '%timesheet%' } } });
-    //             const anomalyIds = anomalyLogs.map(log => log.metadata?.timesheetID).filter(id => id);
-    //             filteredTimesheets = filteredTimesheets.filter(t => anomalyIds.includes(t.timesheetID));
-    //         }
-
-    //         return {
-    //             summary: {
-    //                 totalTimesheets: filteredTimesheets.length,
-    //                 totalHours: filteredTimesheets.reduce((sum, t) => sum + t.Visits.reduce((s, v) => s + (v.duration || 0), 0), 0) / 60,
-    //                 validatedTimesheets: filteredTimesheets.filter(t => t.status === 'validated').length,
-    //                 pendingTimesheets: filteredTimesheets.filter(t => t.status === 'pending').length,
-    //                 rejectedTimesheets: filteredTimesheets.filter(t => t.status === 'rejected').length
-    //             },
-    //             details: filteredTimesheets.map(t => ({
-    //                 id: t.timesheetID,
-    //                 supervisor: t.User ? `${t.User.firstname} ${t.User.lastname}` : 'N/A',
-    //                 week: `${t.weekNumber}/${t.year}`,
-    //                 status: t.status || 'N/A',
-    //                 totalHours: (t.Visits.reduce((sum, v) => sum + (v.duration || 0), 0) / 60).toFixed(2),
-    //                 visitReasons: t.Visits.map(v => v.Reasons?.map(r => r.item).join(', ') || 'N/A').join('; '),
-    //                 numberOfVisits: t.Visits.length,
-    //                 checklistCompleted: t.Visits.every(v => v.Checklists.every(c => c.VisitChecklist?.checked === true))
-    //             }))
-    //         };
-    //     } catch (error) {
-    //         throw new Error(`Failed to generate Timesheet report: ${error.message}`);
-    //     }
-    // }
-
-    // static async generateReceiptBookInventoryReport(filters) {
-    //     const allowedFilters = [
-    //         'dateRange', 'regionID', 'bookType', 'status', 'agentID', 'governorateID', 'delegationID',
-    //         'currentHolderName', 'agentName', 'assignmentStatus'
-    //     ];
-    //     const {
-    //         dateRange, regionID, bookType, status = [], governorateID, delegationID,
-    //         currentHolderName, agentName, assignmentStatus
-    //     } = ReportService.validateFilters(filters, allowedFilters);
-
-    //     const where = {};
-    //     const agentWhere = {};
-    //     const userWhere = {};
-    //     const delegationWhere = {};
-    //     const governorateWhere = {};
-
-    //     if (regionID) governorateWhere.regionID = regionID;
-    //     if (governorateID) delegationWhere.governorateID = governorateID;
-    //     if (delegationID) agentWhere.delegationID = delegationID;
-    //     if (bookType) where.typeID = bookType;
-    //     if (status.length) where.status = { [Op.in]: status };
-    //     if (currentHolderName) userWhere[Op.or] = [
-    //         { firstname: { [Op.iLike]: `%${currentHolderName}%` } },
-    //         { lastname: { [Op.iLike]: `%${currentHolderName}%` } }
-    //     ];
-    //     if (agentName) agentWhere[Op.or] = [
-    //         { name: { [Op.iLike]: `%${agentName}%` } },
-    //         { lastname: { [Op.iLike]: `%${agentName}%` } }
-    //     ];
-    //     if (assignmentStatus) where.agentID = assignmentStatus === 'assigned' ? { [Op.ne]: null } : null;
-
-    //     // If dateRange is provided, filter ReceiptBooks based on related Visits or Transfers
-    //     if (dateRange) {
-    //         if (!dateRange.start || !dateRange.end) {
-    //             throw new Error('Invalid date range: both start and end dates are required');
-    //         }
-    //         // Find agents involved in visits within the date range
-    //         const visitsInRange = await Visit.findAll({
-    //             where: {
-    //                 date: { [Op.between]: [new Date(dateRange.start), new Date(dateRange.end)] },
-    //                 agentID: { [Op.ne]: null } // Only include visits with agents
-    //             },
-    //             attributes: ['agentID'],
-    //             include: [{
-    //                 model: Agent,
-    //                 attributes: [],
-    //                 include: [{
-    //                     model: Delegation,
-    //                     where: delegationWhere,
-    //                     required: !!delegationID,
-    //                     include: [{
-    //                         model: Governorate,
-    //                         where: governorateWhere,
-    //                         required: !!governorateID || !!regionID
-    //                     }]
-    //                 }]
-    //             }]
-    //         });
-    //         const agentIDs = [...new Set(visitsInRange.map(v => v.agentID).filter(id => id))];
-
-    //         // Include ReceiptBooks assigned to these agents
-    //         if (agentIDs.length > 0) {
-    //             agentWhere.agentID = { [Op.in]: agentIDs };
-    //         } else {
-    //             // If no agents are found, return no ReceiptBooks (or adjust logic as needed)
-    //             where.agentID = null;
-    //         }
-    //     }
-
-    //     try {
-    //         const receiptBooks = await ReceiptBook.findAll({
-    //             where,
-    //             include: [
-    //                 {
-    //                     model: Agent,
-    //                     where: agentWhere,
-    //                     required: false,
-    //                     include: [{
-    //                         model: Delegation,
-    //                         where: delegationWhere,
-    //                         required: !!delegationID,
-    //                         include: [{
-    //                             model: Governorate,
-    //                             where: governorateWhere,
-    //                             required: !!governorateID || !!regionID,
-    //                             include: [{ model: Region, required: !!regionID }]
-    //                         }]
-    //                     }]
-    //                 },
-    //                 { model: ReceiptBookType, required: false },
-    //                 {
-    //                     model: User,
-    //                     as: 'CurrentHolder',
-    //                     where: userWhere,
-    //                     required: false
-    //                 },
-    //                 { model: ReceiptStub, required: false } // Include ReceiptStub to respect one-to-one
-    //             ]
-    //         });
-
-    //         return {
-    //             summary: {
-    //                 totalBooks: receiptBooks.length,
-    //                 inStock: receiptBooks.filter(b => b.status === 'In Stock').length,
-    //                 withAgents: receiptBooks.filter(b => b.status === 'Assigned to Agent').length,
-    //                 withSupervisors: receiptBooks.filter(b => b.status === 'With Supervisor').length,
-    //                 archived: receiptBooks.filter(b => b.status === 'Archived').length
-    //             },
-    //             details: receiptBooks.map(b => ({
-    //                 id: b.bookID,
-    //                 number: b.number || 'N/A',
-    //                 status: b.status || 'N/A',
-    //                 type: b.ReceiptBookType?.name || 'N/A',
-    //                 region: b.Agent?.Delegation?.Governorate?.Region?.name || 'N/A',
-    //                 currentHolder: b.CurrentHolder
-    //                     ? `${b.CurrentHolder.firstname} ${b.CurrentHolder.lastname}`
-    //                     : b.Agent
-    //                         ? `${b.Agent.name} ${b.Agent.lastname}`
-    //                         : 'N/A',
-    //                 assignedToAgent: !!b.agentID,
-    //                 stubStatus: b.ReceiptStub?.status || 'N/A'
-    //             }))
-    //         };
-    //     } catch (error) {
-    //         throw new Error(`Failed to generate ReceiptBookInventory report: ${error.message}`);
-    //     }
-    // }
-
-    // static async generateStubCollectionReport(filters) {
-    //     const allowedFilters = [
-    //         'agentID', 'supervisorID', 'regionalManagerID', 'dateRange', 'status',
-    //         'agentName', 'currentHolderName'
-    //     ];
-    //     const {
-    //         agentID, supervisorID, regionalManagerID, dateRange, status = [],
-    //         agentName, currentHolderName
-    //     } = ReportService.validateFilters(filters, allowedFilters);
-
-    //     const where = {};
-    //     const bookWhere = {};
-    //     const userWhere = {};
-    //     const agentWhere = {};
-
-    //     if (agentID) bookWhere.agentID = agentID;
-    //     if (supervisorID) bookWhere.currentHolderID = supervisorID;
-    //     if (regionalManagerID) userWhere.regionalManagerID = regionalManagerID;
-    //     if (dateRange) {
-    //         if (!dateRange.start || !dateRange.end) {
-    //             throw new Error('Invalid date range: both start and end dates are required');
-    //         }
-    //         where.updatedAt = { [Op.between]: [new Date(dateRange.start), new Date(dateRange.end)] };
-    //     }
-    //     if (status.length) where.status = { [Op.in]: status };
-    //     if (agentName) agentWhere[Op.or] = [
-    //         { name: { [Op.iLike]: `%${agentName}%` } },
-    //         { lastname: { [Op.iLike]: `%${agentName}%` } }
-    //     ];
-    //     if (currentHolderName) userWhere[Op.or] = [
-    //         { firstname: { [Op.iLike]: `%${currentHolderName}%` } },
-    //         { lastname: { [Op.iLike]: `%${currentHolderName}%` } }
-    //     ];
-
-    //     try {
-    //         const stubs = await ReceiptStub.findAll({
-    //             where,
-    //             include: [
-    //                 {
-    //                     model: ReceiptBook,
-    //                     where: bookWhere,
-    //                     include: [
-    //                         { model: User, as: 'CurrentHolder', where: userWhere, required: false },
-    //                         {
-    //                             model: Agent,
-    //                             where: agentWhere,
-    //                             required: false,
-    //                             include: [{
-    //                                 model: Delegation,
-    //                                 include: [{ model: Governorate, include: [{ model: Region }] }]
-    //                             }]
-    //                         }
-    //                     ]
-    //                 }
-    //             ]
-    //         });
-
-    //         return {
-    //             summary: {
-    //                 totalStubs: stubs.length,
-    //                 collected: stubs.filter(s => s.status === 'collected').length,
-    //                 transmitted: stubs.filter(s => s.status === 'transmitted').length,
-    //                 archived: stubs.filter(s => s.status === 'archived').length,
-    //                 pending: stubs.filter(s => s.status === 'pending').length
-    //             },
-    //             details: stubs.map(s => ({
-    //                 id: s.stubID,
-    //                 stubNumber: s.number || 'N/A',
-    //                 bookNumber: s.ReceiptBook?.number || 'N/A',
-    //                 status: s.status || 'N/A',
-    //                 agent: s.ReceiptBook?.Agent
-    //                     ? `${s.ReceiptBook.Agent.name} ${s.ReceiptBook.Agent.lastname}`
-    //                     : 'N/A',
-    //                 currentHolder: s.ReceiptBook?.CurrentHolder
-    //                     ? `${s.ReceiptBook.CurrentHolder.firstname} ${s.ReceiptBook.CurrentHolder.lastname}`
-    //                     : 'N/A',
-    //                 region: s.ReceiptBook?.Agent?.Delegation?.Governorate?.Region?.name || 'N/A'
-    //             }))
-    //         };
-    //     } catch (error) {
-    //         throw new Error(`Failed to generate StubCollection report: ${error.message}`);
-    //     }
-    // }
-
-    // static async generateUserActivityReport(filters) {
-    //     const allowedFilters = [
-    //         'roleID', 'dateRange', 'activityType', 'userID', 'status',
-    //         'suspiciousActivity', 'ipAddress'
-    //     ];
-    //     const {
-    //         roleID, dateRange, activityType, userID, status, suspiciousActivity,
-    //         ipAddress
-    //     } = ReportService.validateFilters(filters, allowedFilters);
-
-    //     const where = {};
-    //     const roleWhere = {};
-    //     const userWhere = {};
-    //     if (dateRange) {
-    //         if (!dateRange.start || !dateRange.end) {
-    //             throw new Error('Invalid date range: both start and end dates are required');
-    //         }
-    //         where.timestamp = { [Op.between]: [new Date(dateRange.start), new Date(dateRange.end)] };
-    //     }
-    //     if (activityType) where.route = { [Op.iLike]: `%${activityType}%` };
-    //     if (userID) where.userId = userID;
-    //     if (status) where.status = status;
-    //     if (ipAddress) where.ip = { [Op.iLike]: `%${ipAddress}%` };
-    //     if (roleID) roleWhere.roleID = roleID;
-
-    //     try {
-    //         const logs = await Log.findAll({ where });
-    //         const userIds = [...new Set(logs.map(l => l.userId).filter(id => id))];
-    //         const users = await User.findAll({
-    //             where: { userID: { [Op.in]: userIds }, ...userWhere },
-    //             include: [{
-    //                 model: Role,
-    //                 where: roleWhere,
-    //                 required: !!roleID,
-    //                 through: { attributes: [] }
-    //             }]
-    //         });
-
-    //         const userMap = users.reduce((map, user) => {
-    //             map[user.userID] = {
-    //                 firstname: user.firstname,
-    //                 lastname: user.lastname,
-    //                 role: user.Roles?.[0]?.name || 'N/A'
-    //             };
-    //             return map;
-    //         }, {});
-
-    //         let filteredLogs = logs;
-    //         if (suspiciousActivity) {
-    //             filteredLogs = filteredLogs.filter(l => ['warn', 'error'].includes(l.level));
-    //         }
-
-    //         return {
-    //             summary: {
-    //                 totalActivities: filteredLogs.length,
-    //                 uniqueUsers: [...new Set(filteredLogs.map(l => l.userId).filter(id => id))].length,
-    //                 suspiciousActivities: filteredLogs.filter(l => ['warn', 'error'].includes(l.level)).length,
-    //                 lastActivity: filteredLogs.length
-    //                     ? new Date(Math.max(...filteredLogs.map(l => new Date(l.timestamp).getTime()))).toISOString()
-    //                     : 'N/A'
-    //             },
-    //             details: filteredLogs.map(l => ({
-    //                 id: l.logID,
-    //                 user: l.userId && userMap[l.userId]
-    //                     ? `${userMap[l.userId].firstname} ${userMap[l.userId].lastname}`
-    //                     : 'N/A',
-    //                 role: l.userId && userMap[l.userId] ? userMap[l.userId].role : 'N/A',
-    //                 activity: l.route,
-    //                 timestamp: l.timestamp ? l.timestamp.toISOString() : 'N/A',
-    //                 status: l.status || 'N/A',
-    //                 suspicious: ['warn', 'error'].includes(l.level) ? 'Yes' : 'No',
-    //                 ipAddress: l.ip || 'N/A',
-    //             }))
-    //         };
-    //     } catch (error) {
-    //         throw new Error(`Failed to generate UserActivity report: ${error.message}`);
-    //     }
-    // }
-
-    // static async generateAnomalyReport(filters) {
-    //     const allowedFilters = [
-    //         'dateRange', 'roleID', 'userID', 'affectedEntity',
-    //         'severity', 'route'
-    //     ];
-    //     const {
-    //         dateRange, roleID, userID, affectedEntity, severity = ['warn', 'error'], route
-    //     } = ReportService.validateFilters(filters, allowedFilters);
-
-    //     const where = { level: { [Op.in]: severity } };
-    //     const roleWhere = {};
-    //     const userWhere = {};
-    //     if (dateRange) {
-    //         if (!dateRange.start || !dateRange.end) {
-    //             throw new Error('Invalid date range: both start and end dates are required');
-    //         }
-    //         where.timestamp = { [Op.between]: [new Date(dateRange.start), new Date(dateRange.end)] };
-    //     }
-    //     if (userID) where.userId = userID;
-    //     if (route) where.route = { [Op.iLike]: `%${route}%` };
-    //     if (roleID) roleWhere.roleID = roleID;
-    //     if (affectedEntity) where.route = { [Op.iLike]: `%${affectedEntity}%` };
-
-    //     try {
-    //         const logs = await Log.findAll({ where });
-    //         const userIds = [...new Set(logs.map(l => l.userId).filter(id => id))];
-    //         const users = await User.findAll({
-    //             where: { userID: { [Op.in]: userIds }, ...userWhere },
-    //             include: [{
-    //                 model: Role,
-    //                 where: roleWhere,
-    //                 required: !!roleID,
-    //                 through: { attributes: [] }
-    //             }]
-    //         });
-
-    //         const userMap = users.reduce((map, user) => {
-    //             map[user.userID] = {
-    //                 firstname: user.firstname,
-    //                 lastname: user.lastname,
-    //                 role: user.Roles?.[0]?.name || 'N/A'
-    //             };
-    //             return map;
-    //         }, {});
-
-    //         return {
-    //             summary: {
-    //                 totalAnomalies: logs.length,
-    //                 warningAnomalies: logs.filter(l => l.level === 'warn').length,
-    //                 errorAnomalies: logs.filter(l => l.level === 'error').length,
-    //                 uniqueUsers: userIds.length
-    //             },
-    //             details: logs.map(l => ({
-    //                 id: l.logID,
-    //                 user: l.userId && userMap[l.userId]
-    //                     ? `${userMap[l.userId].firstname} ${userMap[l.userId].lastname}`
-    //                     : 'N/A',
-    //                 role: l.userId && userMap[l.userId] ? userMap[l.userId].role : 'N/A',
-    //                 anomaly: l.message || 'N/A',
-    //                 affected: l.route.includes('timesheet') ? 'Timesheet'
-    //                     : l.route.includes('visit') ? 'Visit'
-    //                         : l.route.includes('receipt') ? 'Receipt'
-    //                             : 'Other',
-    //                 severity: l.level,
-    //                 timestamp: l.timestamp ? l.timestamp.toISOString() : 'N/A',
-    //                 route: l.route || 'N/A'
-    //             }))
-    //         };
-    //     } catch (error) {
-    //         throw new Error(`Failed to generate Anomaly report: ${error.message}`);
-    //     }
-    // }
-
-    // static async generateAgentPerformanceReport(filters) {
-    //     const allowedFilters = [
-    //         'supervisorID', 'regionalManagerID', 'dateRange', 'agentID', 'performanceScore',
-    //         'numberOfVisits', 'stubsCollected', 'receiptBooksAssigned', 'regionID', 'governorateID',
-    //         'delegationID', 'visitCompletionRate', 'locationUpdated'
-    //     ];
-    //     const {
-    //         supervisorID, regionalManagerID, dateRange, agentID, performanceScore,
-    //         numberOfVisits, stubsCollected, receiptBooksAssigned, regionID, governorateID,
-    //         delegationID, visitCompletionRate, locationUpdated
-    //     } = ReportService.validateFilters(filters, allowedFilters);
-
-    //     const where = {};
-    //     const visitWhere = {};
-    //     const delegationWhere = {};
-    //     const governorateWhere = {};
-    //     const userWhere = {};
-
-    //     if (supervisorID) where.supervisorID = supervisorID;
-    //     if (regionalManagerID) userWhere.regionalManagerID = regionalManagerID;
-    //     if (dateRange) {
-    //         if (!dateRange.start || !dateRange.end) {
-    //             throw new Error('Invalid date range: both start and end dates are required');
-    //         }
-    //         visitWhere.date = { [Op.between]: [new Date(dateRange.start), new Date(dateRange.end)] };
-    //     }
-    //     if (agentID) where.agentID = agentID;
-    //     if (regionID) governorateWhere.regionID = regionID;
-    //     if (governorateID) delegationWhere.governorateID = governorateID;
-    //     if (delegationID) delegationWhere.delegationID = delegationID;
-
-    //     try {
-    //         const agents = await Agent.findAll({
-    //             where,
-    //             include: [
-    //                 { model: Visit, where: visitWhere, required: false },
-    //                 { model: ReceiptBook, include: [{ model: ReceiptStub, required: false }], required: false },
-    //                 {
-    //                     model: Delegation,
-    //                     where: delegationWhere,
-    //                     include: [{
-    //                         model: Governorate,
-    //                         where: governorateWhere,
-    //                         required: !!governorateID || !!regionID,
-    //                         include: [{ model: Region, required: !!regionID }]
-    //                     }],
-    //                     required: !!delegationID
-    //                 },
-    //                 { model: User, as: 'Supervisor', where: userWhere, required: !!regionalManagerID }
-    //             ]
-    //         });
-
-    //         let filteredAgents = agents;
-    //         if (numberOfVisits) filteredAgents = filteredAgents.filter(a => a.Visits.length >= numberOfVisits[0] && a.Visits.length <= numberOfVisits[1]);
-    //         if (stubsCollected) filteredAgents = filteredAgents.filter(a => {
-    //             const collected = a.ReceiptBooks.reduce((sum, b) => sum + (b.ReceiptStub?.status === 'collected' ? 1 : 0), 0);
-    //             return collected >= stubsCollected[0] && collected <= stubsCollected[1];
-    //         });
-    //         if (receiptBooksAssigned) filteredAgents = filteredAgents.filter(a => a.ReceiptBooks.length >= receiptBooksAssigned[0] && a.ReceiptBooks.length <= receiptBooksAssigned[1]);
-    //         if (visitCompletionRate) {
-    //             filteredAgents = filteredAgents.filter(a => {
-    //                 const rate = a.Visits.length ? (a.Visits.filter(v => v.status === 'completed').length / a.Visits.length) * 100 : 0;
-    //                 return rate >= visitCompletionRate[0] && rate <= visitCompletionRate[1];
-    //             });
-    //         }
-    //         if (performanceScore) {
-    //             filteredAgents = filteredAgents.filter(a => {
-    //                 const score = a.Visits.length ? (a.Visits.filter(v => v.status === 'completed').length / a.Visits.length) * 100 : 0;
-    //                 return score >= performanceScore[0] && score <= performanceScore[1];
-    //             });
-    //         }
-    //         if (locationUpdated !== undefined) filteredAgents = filteredAgents.filter(a => (a.latitude && a.longitude) === locationUpdated);
-
-    //         return {
-    //             summary: {
-    //                 totalAgents: filteredAgents.length,
-    //                 totalVisits: filteredAgents.reduce((sum, a) => sum + a.Visits.length, 0),
-    //                 totalStubsCollected: filteredAgents.reduce((sum, a) => sum + (a.ReceiptBooks?.reduce((s, b) => s + (b.ReceiptStub?.status === 'collected' ? 1 : 0), 0) || 0), 0),
-    //                 totalReceiptBooksAssigned: filteredAgents.reduce((sum, a) => sum + a.ReceiptBooks.length, 0),
-    //                 averagePerformanceScore: filteredAgents.length
-    //                     ? (filteredAgents.reduce((sum, a) => {
-    //                         const score = a.Visits.length ? (a.Visits.filter(v => v.status === 'completed').length / a.Visits.length) * 100 : 0;
-    //                         return sum + score;
-    //                     }, 0) / filteredAgents.length).toFixed(1)
-    //                     : '0.0'
-    //             },
-    //             details: filteredAgents.map(a => ({
-    //                 id: a.agentID,
-    //                 name: `${a.name || 'N/A'} ${a.lastname || ''}`,
-    //                 visitsReceived: a.Visits.length,
-    //                 completedVisits: a.Visits.filter(v => v.status === 'completed').length,
-    //                 stubsCollected: a.ReceiptBooks.reduce((sum, b) => sum + (b.ReceiptStub?.status === 'collected' ? 1 : 0), 0),
-    //                 receiptBooksAssigned: a.ReceiptBooks.length,
-    //                 region: a.Delegation?.Governorate?.Region?.name || 'N/A',
-    //                 supervisor: a.Supervisor ? `${a.Supervisor.firstname} ${a.Supervisor.lastname}` : 'N/A',
-    //                 performanceScore: a.Visits.length ? ((a.Visits.filter(v => v.status === 'completed').length / a.Visits.length) * 100).toFixed(1) : '0.0',
-    //                 locationUpdated: !!(a.latitude && a.longitude)
-    //             }))
-    //         };
-    //     } catch (error) {
-
-    //         throw new Error(`Failed to generate AgentPerformance report: ${error.message}`);
-    //     }
-    // }
-
-    // static async generateRegionPerformance(filters) {
-    //     const allowedFilters = [
-    //         'regionalManagerID', 'dateRange', 'regionID', 'governorateID', 'delegationID',
-    //         'performanceScore', 'numberOfVisits', 'stubsCollected'
-    //     ];
-    //     const {
-    //         regionalManagerID, dateRange, regionID, governorateID, delegationID,
-    //         performanceScore, numberOfVisits, stubsCollected
-    //     } = ReportService.validateFilters(filters, allowedFilters);
-
-    //     const where = {};
-    //     const visitWhere = {};
-    //     const governorateWhere = {};
-    //     const delegationWhere = {};
-    //     const userRegionWhere = {};
-
-    //     if (regionalManagerID) userRegionWhere.userID = regionalManagerID;
-    //     if (dateRange) {
-    //         if (!dateRange.start || !dateRange.end) {
-    //             throw new Error('Invalid date range: both start and end are required');
-    //         }
-    //         visitWhere.date = { [Op.between]: [new Date(dateRange.start), new Date(dateRange.end)] };
-    //     }
-    //     if (regionID) where.regionID = regionID;
-    //     if (governorateID) governorateWhere.governorateID = governorateID;
-    //     if (delegationID) delegationWhere.delegationID = delegationID;
-
-    //     try {
-    //         const regions = await Region.findAll({
-    //             where,
-    //             include: [
-    //                 {
-    //                     model: Governorate,
-    //                     where: governorateWhere,
-    //                     required: !!governorateID,
-    //                     include: [
-    //                         {
-    //                             model: Delegation,
-    //                             where: delegationWhere,
-    //                             required: !!delegationID,
-    //                             include: [
-    //                                 {
-    //                                     model: Agent,
-    //                                     include: [
-    //                                         { model: Visit, where: visitWhere, required: false },
-    //                                         { model: ReceiptBook, include: [{ model: ReceiptStub, required: false }], required: false }
-    //                                     ],
-    //                                     required: false
-    //                                 }
-    //                             ]
-    //                         }
-    //                     ]
-    //                 },
-    //                 {
-    //                     model: User,
-    //                     through: { model: 'UserRegions', where: userRegionWhere },
-    //                     required: !!regionalManagerID
-    //                 }
-    //             ]
-    //         });
-
-    //         let filteredRegions = regions;
-    //         if (numberOfVisits) {
-    //             filteredRegions = filteredRegions.filter(r => {
-    //                 const visits = r.Governorates.reduce((sum, g) =>
-    //                     sum + g.Delegations.reduce((s, d) => s + (d.Agent?.Visits?.length || 0), 0), 0);
-    //                 return visits >= numberOfVisits[0] && visits <= numberOfVisits[1];
-    //             });
-    //         }
-    //         if (stubsCollected) {
-    //             filteredRegions = filteredRegions.filter(r => {
-    //                 const stubs = r.Governorates.reduce((sum, g) =>
-    //                     sum + g.Delegations.reduce((s, d) =>
-    //                         s + (d.Agent?.ReceiptBooks?.reduce((t, b) =>
-    //                             t + (b.ReceiptStub?.status === 'collected' ? 1 : 0), 0) || 0), 0), 0);
-    //                 return stubs >= stubsCollected[0] && stubs <= stubsCollected[1];
-    //             });
-    //         }
-    //         if (performanceScore) {
-    //             filteredRegions = filteredRegions.filter(r => {
-    //                 const totalVisits = r.Governorates.reduce((sum, g) =>
-    //                     sum + g.Delegations.reduce((s, d) => s + (d.Agent?.Visits?.length || 0), 0), 0);
-    //                 const completedVisits = r.Governorates.reduce((sum, g) =>
-    //                     sum + g.Delegations.reduce((s, d) =>
-    //                         s + (d.Agent?.Visits?.filter(v => v.status === 'completed').length || 0), 0), 0);
-    //                 const score = totalVisits ? (completedVisits / totalVisits) * 100 : 0;
-    //                 return score >= performanceScore[0] && score <= performanceScore[1];
-    //             });
-    //         }
-
-    //         return {
-    //             summary: {
-    //                 totalRegions: filteredRegions.length,
-    //                 totalVisits: filteredRegions.reduce((sum, r) =>
-    //                     sum + r.Governorates.reduce((a, g) =>
-    //                         a + g.Delegations.reduce((s, d) => s + (d.Agent?.Visits?.length || 0), 0), 0), 0),
-    //                 totalStubsCollected: filteredRegions.reduce((sum, r) =>
-    //                     sum + r.Governorates.reduce((a, g) =>
-    //                         a + g.Delegations.reduce((s, d) =>
-    //                             s + (d.Agent?.ReceiptBooks?.reduce((t, b) =>
-    //                                 t + (b.ReceiptStub?.status === 'collected' ? 1 : 0), 0) || 0), 0), 0), 0),
-    //                 averagePerformanceScore: filteredRegions.length
-    //                     ? (filteredRegions.reduce((sum, r) => {
-    //                         const totalVisits = r.Governorates.reduce((sum, g) =>
-    //                             sum + g.Delegations.reduce((s, d) => s + (d.Agent?.Visits?.length || 0), 0), 0);
-    //                         const completedVisits = r.Governorates.reduce((sum, g) =>
-    //                             sum + g.Delegations.reduce((s, d) =>
-    //                                 s + (d.Agent?.Visits?.filter(v => v.status === 'completed').length || 0), 0), 0);
-    //                         return sum + (totalVisits ? (completedVisits / totalVisits) * 100 : 0);
-    //                     }, 0) / filteredRegions.length).toFixed(1)
-    //                     : '0.0'
-    //             },
-    //             details: await Promise.all(filteredRegions.map(async r => {
-    //                 let regionalManagerName = 'N/A';
-    //                 if (r.regionalManagerID) {
-    //                     const user = await User.findByPk(r.regionalManagerID);
-    //                     if (user) {
-    //                         regionalManagerName = `${user.firstname} ${user.lastname}`;
-    //                     }
-    //                 }
-    //                 return {
-    //                     id: r.regionID,
-    //                     name: r.name || 'N/A',
-    //                     visits: r.Governorates.reduce((sum, g) =>
-    //                         sum + g.Delegations.reduce((s, d) => s + (d.Agent?.Visits?.length || 0), 0), 0),
-    //                     visitsCompleted: r.Governorates.reduce((sum, g) =>
-    //                         sum + g.Delegations.reduce((s, d) =>
-    //                             s + (d.Agent?.Visits?.filter(v => v.status === 'completed').length || 0), 0), 0),
-    //                     stubsCollected: r.Governorates.reduce((sum, g) =>
-    //                         sum + g.Delegations.reduce((s, d) =>
-    //                             s + (d.Agent?.ReceiptBooks?.reduce((t, b) =>
-    //                                 t + (b.ReceiptStub?.status === 'collected' ? 1 : 0), 0) || 0), 0), 0),
-    //                     performanceScore: ((r.Governorates.reduce((sum, g) =>
-    //                         sum + g.Delegations.reduce((s, d) =>
-    //                             s + (d.Agent?.Visits?.filter(v => v.status === 'completed').length || 0), 0), 0) /
-    //                         (r.Governorates.reduce((sum, g) =>
-    //                             sum + g.Delegations.reduce((s, d) => s + (d.Agent?.Visits?.length || 0), 0), 0) || 1)) *
-    //                         100).toFixed(1) || '0.0',
-    //                     regionalManager: regionalManagerName
-    //                 };
-    //             }))
-    //         };
-    //     } catch (error) {
-    //         throw new Error(`Failed to generate RegionPerformance report: ${error.message}`);
-    //     }
-    // }
-
-    // static async generateFullReport(filters) {
-    //     const allowedFilters = [
-    //         'supervisorID', 'regionalManagerID', 'dateRange', 'regionID', 'agentID', 'status',
-    //         'visitReasons'
-    //     ];
-    //     const {
-    //         supervisorID, regionalManagerID, dateRange, regionID, agentID, status,
-    //         visitReasons,
-    //     } = ReportService.validateFilters(filters, allowedFilters);
-
-    //     if (!supervisorID && !regionalManagerID) {
-    //         throw new Error('Either supervisorID or regionalManagerID is required');
-    //     }
-
-    //     try {
-    //         const [
-    //             visitSummaryReport,
-    //             timesheetReport,
-    //             receiptBookInventoryReport,
-    //             stubCollectionReport,
-    //             userActivityReport,
-    //             AnomalyReport,
-    //             agentPerformanceReport,
-    //             regionPerformanceReport
-    //         ] = await Promise.all([
-    //             ReportService.generateVisitSummaryReport({ supervisorID, dateRange, regionID, status, visitReasons, agentID }),
-    //             ReportService.generateTimesheetReport({ supervisorID, regionalManagerID, dateRange, status }),
-    //             ReportService.generateReceiptBookInventoryReport({ dateRange, regionID }),
-    //             ReportService.generateStubCollectionReport({ agentID, supervisorID, regionalManagerID, dateRange, status }),
-    //             ReportService.generateUserActivityReport({ dateRange }),
-    //             ReportService.generateAnomalyReport({ dateRange }),
-    //             ReportService.generateAgentPerformanceReport({ supervisorID, regionalManagerID, dateRange, agentID, regionID }),
-    //             ReportService.generateRegionPerformance({ regionalManagerID, dateRange, regionID })
-    //         ]);
-
-    //         return {
-    //             visitSummaryReport,
-    //             timesheetReport,
-    //             receiptBookInventoryReport,
-    //             stubCollectionReport,
-    //             userActivityReport,
-    //             AnomalyReport,
-    //             agentPerformanceReport,
-    //             regionPerformanceReport
-    //         };
-    //     } catch (error) {
-    //         throw new Error(`Failed to generate Full report: ${error.message}`);
-    //     }
-    // }
-
-
-
-
-    static async generateVisitSummaryReport(filters) {
-        console.log(filters)
+    static async generateVisitSummaryReport(filters = {}) {
+        // Define allowed filters
         const allowedFilters = [
             'supervisorID', 'dateRange', 'regionID', 'agentID', 'status', 'visitReasons',
             'checklistCompleted', 'visitDuration', 'governorateID', 'delegationID',
             'visitType', 'Anomalies', 'dayOfWeek'
         ];
-        const {
-            supervisorID, dateRange, regionID, agentID, status = [], visitReasons = [],
-            checklistCompleted, visitDuration, governorateID, delegationID, visitType,
-            Anomalies
-        } = ReportService.validateFilters(filters, allowedFilters);
 
+        // Initialize where clauses
         const where = {};
         const userWhere = {};
         const agentWhere = {};
         const delegationWhere = {};
         const governorateWhere = {};
+        let reasonWhere = {};
+        let visitChecklistWhere = {};
 
-        if (dateRange) {
-            if (!dateRange.start || !dateRange.end) {
-                throw new Error('Invalid date range: both start and end dates are required');
+        // Validate and apply filters
+        if (filters.supervisorID) {
+            if (typeof filters.supervisorID === 'string') {
+                userWhere.userID = filters.supervisorID;
+            } else {
+                throw new Error('Invalid supervisorID: must be a string');
             }
-            where.date = { [Op.between]: [dateRange.start, dateRange.end] };
         }
-        if (agentID) where.agentID = agentID;
-        if (status.length) where.status = { [Op.in]: status };
-        if (supervisorID) userWhere.userID = supervisorID;
-        if (regionID) governorateWhere.regionID = regionID;
-        if (governorateID) delegationWhere.governorateID = governorateID;
-        if (delegationID) agentWhere.delegationID = delegationID;
-        if (visitDuration) where.duration = { [Op.between]: visitDuration };
-        if (visitType) where.agentID = visitType === 'recrutementVisits' ? null : { [Op.ne]: null };
+
+        if (filters.dateRange && filters.dateRange.start && filters.dateRange.end) {
+            try {
+                where.date = {
+                    [Op.between]: [
+                        new Date(filters.dateRange.start),
+                        new Date(filters.dateRange.end)
+                    ]
+                };
+            } catch (error) {
+                throw new Error('Invalid date range: start and end must be valid dates');
+            }
+        }
+
+        if (filters.agentID) {
+            if (typeof filters.agentID === 'string') {
+                where.agentID = filters.agentID;
+            } else {
+                throw new Error('Invalid agentID: must be a string');
+            }
+        }
+
+        if (filters.status && Array.isArray(filters.status) && filters.status.length) {
+            where.status = { [Op.in]: filters.status };
+        }
+
+        if (filters.regionID) {
+            if (typeof filters.regionID === 'string') {
+                governorateWhere.regionID = filters.regionID;
+            } else {
+                throw new Error('Invalid regionID: must be a string');
+            }
+        }
+
+        if (filters.governorateID) {
+            if (typeof filters.governorateID === 'string') {
+                delegationWhere.governorateID = filters.governorateID;
+            } else {
+                throw new Error('Invalid governorateID: must be a string');
+            }
+        }
+
+        if (filters.delegationID) {
+            if (typeof filters.delegationID === 'string') {
+                agentWhere.delegationID = filters.delegationID;
+            } else {
+                throw new Error('Invalid delegationID: must be a string');
+            }
+        }
+
+        if (filters.visitDuration && Array.isArray(filters.visitDuration) && filters.visitDuration.length === 2) {
+            const [min, max] = filters.visitDuration.map(Number);
+            if (!isNaN(min) && !isNaN(max) && min <= max) {
+                where.duration = { [Op.between]: [min, max] };
+            } else {
+                throw new Error('Invalid visitDuration: must be an array of two numbers, min <= max');
+            }
+        }
+
+        if (filters.visitType) {
+            if (typeof filters.visitType === 'string') {
+                where.visitType = filters.visitType; // Assumes visitType is a field in Visit model
+            } else {
+                throw new Error('Invalid visitType: must be a string');
+            }
+        }
+
+        if (filters.visitReasons && Array.isArray(filters.visitReasons) && filters.visitReasons.length) {
+            reasonWhere = { item: { [Op.in]: filters.visitReasons } };
+        }
+
+        if (filters.checklistCompleted !== undefined) {
+            if (typeof filters.checklistCompleted === 'boolean') {
+                visitChecklistWhere = { checked: filters.checklistCompleted };
+            } else {
+                throw new Error('Invalid checklistCompleted: must be a boolean');
+            }
+        }
+
+        if (filters.dayOfWeek) {
+            if (typeof filters.dayOfWeek === 'string' && ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].includes(filters.dayOfWeek)) {
+                where[Op.and] = where[Op.and] || [];
+                where[Op.and].push(literal(`EXTRACT(DOW FROM "Visit"."date") = ${['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].indexOf(filters.dayOfWeek)}`));
+            } else {
+                throw new Error('Invalid dayOfWeek: must be a valid day name (e.g., "Monday")');
+            }
+        }
+
+        let anomalyVisitIds = [];
+        if (filters.Anomalies === true) {
+            try {
+                const anomalyLogs = await Log.findAll({
+                    where: { level: ['warn', 'error'], route: { [Op.iLike]: '%visit%' } },
+                    attributes: ['metadata']
+                });
+                anomalyVisitIds = anomalyLogs
+                    .map(log => log.metadata?.visitID)
+                    .filter(id => id && typeof id === 'string');
+                if (anomalyVisitIds.length) {
+                    where.visitID = { [Op.in]: anomalyVisitIds };
+                } else {
+                    return { summary: { totalVisits: 0, validatedVisits: 0, pendingVisits: 0, visitedVisits: 0, rejectedVisits: 0, averageDuration: '0.00' }, details: [], aiSummary: 'No anomalies found' };
+                }
+            } catch (error) {
+                logger.warn('Failed to fetch anomaly logs for VisitSummary report:', error.message);
+                throw new Error('Failed to process anomalies filter');
+            }
+        } else if (filters.Anomalies !== undefined && filters.Anomalies !== false) {
+            throw new Error('Invalid Anomalies: must be a boolean');
+        }
 
         try {
             const visits = await Visit.findAll({
@@ -968,18 +173,18 @@ class ReportService {
                     {
                         model: Agent,
                         where: agentWhere,
-                        required: false,
+                        required: !!filters.agentID || !!filters.delegationID,
                         include: [
                             {
                                 model: Delegation,
                                 where: delegationWhere,
-                                required: false,
+                                required: !!filters.delegationID || !!filters.governorateID,
                                 include: [
                                     {
                                         model: Governorate,
                                         where: governorateWhere,
-                                        required: false,
-                                        include: [{ model: Region, required: false }],
+                                        required: !!filters.governorateID || !!filters.regionID,
+                                        include: [{ model: Region, required: !!filters.regionID }],
                                     },
                                 ],
                             },
@@ -987,45 +192,34 @@ class ReportService {
                     },
                     {
                         model: Timesheet,
-                        include: [{ model: User, where: userWhere, required: false }],
-                        required: false,
+                        include: [{ model: User, where: userWhere, required: !!filters.supervisorID }],
+                        required: !!filters.supervisorID,
                     },
-                    { model: Reason, through: { attributes: [] }, required: false },
+                    {
+                        model: Reason,
+                        where: reasonWhere,
+                        through: { attributes: [] },
+                        required: !!(filters.visitReasons && filters.visitReasons.length),
+                    },
                     {
                         model: Checklist,
-                        through: { model: VisitChecklist, attributes: ['checked'] },
-                        required: false,
+                        through: { model: VisitChecklist, attributes: ['checked'], where: visitChecklistWhere },
+                        required: filters.checklistCompleted !== undefined,
                     },
                 ],
             });
 
-            let filteredVisits = visits;
-            if (visitReasons.length) {
-                filteredVisits = filteredVisits.filter(v => v.Reasons.some(r => visitReasons.includes(r.item)));
-            }
-            if (checklistCompleted !== undefined) {
-                filteredVisits = filteredVisits.filter(v => {
-                    const completed = v.Checklists.length > 0 && v.Checklists.some(c => c.VisitChecklist?.checked);
-                    return checklistCompleted ? completed : !completed;
-                });
-            }
-            if (Anomalies) {
-                const anomalyLogs = await Log.findAll({
-                    where: { level: ['warn', 'error'], route: { [Op.iLike]: '%visit%' } },
-                });
-                const anomalyVisitIds = anomalyLogs.map(log => log.metadata?.visitID).filter(id => id);
-                filteredVisits = filteredVisits.filter(v => anomalyVisitIds.includes(v.visitID));
-            }
-
-            const totalVisits = filteredVisits.length;
-            const validatedVisits = filteredVisits.filter(v => v.status === 'validated').length;
-            const pendingVisits = filteredVisits.filter(v => v.status === 'pending').length;
-            const visitedVisits = filteredVisits.filter(v => v.status === 'visited').length;
-            const rejectedVisits = filteredVisits.filter(v => v.status === 'rejected').length;
+            // Compute summary stats
+            const totalVisits = visits.length;
+            const validatedVisits = visits.filter(v => v.status === 'validated').length;
+            const pendingVisits = visits.filter(v => v.status === 'pending').length;
+            const visitedVisits = visits.filter(v => v.status === 'visited').length;
+            const rejectedVisits = visits.filter(v => v.status === 'rejected').length;
             const averageDuration = totalVisits > 0
-                ? filteredVisits.reduce((sum, v) => sum + (v.duration || 0), 0) / totalVisits / 60
+                ? visits.reduce((sum, v) => sum + (v.duration || 0), 0) / totalVisits / 60
                 : 0;
 
+            // Format report data
             const reportData = {
                 summary: {
                     totalVisits,
@@ -1035,21 +229,32 @@ class ReportService {
                     rejectedVisits,
                     averageDuration: averageDuration.toFixed(2),
                 },
-                details: filteredVisits.map(v => {
-                    const detail = {
-                        date: v.date || 'N/A',
+                details: visits.map(v => {
+                    // Safely handle date field
+                    let formattedDate = 'N/A';
+                    if (v.date) {
+                        if (v.date instanceof Date) {
+                            formattedDate = v.date.toISOString().split('T')[0];
+                        } else if (typeof v.date === 'string') {
+                            const parsedDate = new Date(v.date);
+                            formattedDate = isNaN(parsedDate.getTime()) ? 'N/A' : parsedDate.toISOString().split('T')[0];
+                        }
+                    }
+
+                    return {
+                        date: formattedDate,
                         location: v.location || 'N/A',
                         status: v.status || 'N/A',
                         agent: v.Agent ? `${v.Agent.name || ''} ${v.Agent.lastname || ''}`.trim() || 'No Agent' : 'No Agent',
                         supervisor: v.Timesheet?.User ? `${v.Timesheet.User.firstname || ''} ${v.Timesheet.User.lastname || ''}`.trim() : 'N/A',
                         duration: v.duration != null ? (v.duration / 60).toFixed(2) : 'N/A',
-                        reasons: v.Reasons.map(r => r.item).join(', ') || 'N/A',
+                        reasons: v.Reasons ? v.Reasons.map(r => r.item).join(', ') || 'N/A' : 'N/A',
                         checklistCompleted: v.Checklists.length > 0 ? v.Checklists.some(c => c.VisitChecklist?.checked) : false,
                     };
-                    return detail;
                 }),
             };
 
+            // Generate AI summary
             try {
                 const aiSummary = await AIService.generateReport(
                     { ...filters, reportType: 'VisitSummary', data: reportData },
@@ -1064,9 +269,15 @@ class ReportService {
 
             return reportData;
         } catch (error) {
+            logger.error(`Failed to generate VisitSummary report: ${error.message}`, {
+                filters,
+                error: error.stack
+            });
             throw new Error(`Failed to generate VisitSummary report: ${error.message}`);
         }
     }
+
+
 
     static async generateTimesheetReport(filters) {
         const allowedFilters = [
@@ -1623,7 +834,7 @@ class ReportService {
             'delegationID', 'locationUpdated'
         ];
         const {
-            supervisorID, regionalManagerID, dateRange, agentID, 
+            supervisorID, regionalManagerID, dateRange, agentID,
             numberOfVisits, stubsCollected, receiptBooksAssigned, regionID, governorateID,
             delegationID, locationUpdated
         } = ReportService.validateFilters(filters, allowedFilters);

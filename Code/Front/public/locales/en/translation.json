@@ -363,7 +363,8 @@
       "deselectAll": "Deselect All",
       "cancelSuggestions": "Cancel Suggestions",
       "saveSuggestions": "Save Suggestions",
-      "saving": "Saving..."
+      "saving": "Saving...",
+      "viewDayOnMap": "View Visits on Map"
     },
     "filter": {
       "toggle": "Filter",

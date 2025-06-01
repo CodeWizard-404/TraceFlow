@@ -3,6 +3,7 @@ const router = express.Router();
 const AuthController = require('../controllers/authController');
 const { body } = require('express-validator');
 const { authenticateCookie } = require('../config/security');
+const { sensitiveLimiter, otpLimiter, refreshLimiter } = require('../config/rateLimit');
 
 
 // Routes for authentication
@@ -13,6 +14,7 @@ router.post(
         body('password').notEmpty().withMessage('Password is required'),
         body('deviceIdentifier').notEmpty().withMessage('Device identifier is required'),
     ],
+    sensitiveLimiter,
     AuthController.login
 );
 router.post(
@@ -25,13 +27,15 @@ router.post(
         body('tempToken').notEmpty().withMessage('Temporary token is required'),
         body('refreshToken').notEmpty().withMessage('Refresh token is required'),
     ],
+    sensitiveLimiter,
     AuthController.verify2FA
 );
-router.post('/refresh', AuthController.refreshToken);
+router.post('/refresh', refreshLimiter, AuthController.refreshToken);
 router.post('/logout', AuthController.logout);
 router.post(
     '/2fa/resend',
     [body('userID').notEmpty().withMessage('User ID is required')],
+    otpLimiter,
     AuthController.resend2FA
 );
 router.post(

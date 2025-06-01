@@ -44,7 +44,7 @@ if (process.env.NODE_ENV === 'production') {
     });
 
     const refreshLimiter = rateLimit({
-        windowMs: parseInt(process.env.REFRESH_LIMITER_WINDOW_MS) || 60 * 60 * 1000, // 1 hour
+        windowMs: parseInt(process.env.REFRESH_LIMITER_WINDOW_MS) || 10 * 60 * 1000,
         max: parseInt(process.env.REFRESH_LIMITER_MAX) || 10,
         message: {
             error: 'Too many refresh attempts. Please wait 1 hour and try again.',

@@ -27,7 +27,8 @@ import { useTranslation } from "react-i18next";
 import CalendarSyncButton from "../../components/Google/CalendarSyncButton";
 import TimesheetSuggestionsModal from "../Timesheet/TimesheetSuggestionsModal";
 import { io } from "socket.io-client";
-import VisitMapModal from '../../components/Google/VisitMapsView';
+import MapComponent from '../../components/Google/MapComponent';
+import Modal from 'react-modal';
 
 const PERMISSIONS = {
     ACCESS_TIMESHEETS: import.meta.env.VITE_PERMISSIONS_ACCESS_TIMESHEETS,
@@ -478,6 +479,7 @@ const Timesheets: React.FC = React.memo(() => {
     const [visitReasonSearchInput, setVisitReasonSearchInput] = useState<string>("");
     const [hasCalendarAccess, setHasCalendarAccess] = useState<boolean>(false);
     const [isMapModalOpen, setIsMapModalOpen] = useState(false);
+    const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
 
     const userPermissions = useMemo(
         () => ({
@@ -655,6 +657,16 @@ const Timesheets: React.FC = React.memo(() => {
         };
         if (user?.userID) fetchUserCalendarAccess();
     }, [user]);
+
+    useEffect(() => {
+        if (navigator.geolocation && !userLocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    setUserLocation({ lat: position.coords.latitude, lng: position.coords.longitude });
+                }
+            );
+        }
+    }, [userLocation]);
 
 
     const getWeekNumber = useCallback((date: Date): number => {
@@ -1738,17 +1750,20 @@ const Timesheets: React.FC = React.memo(() => {
                     <section className="day-view">
                         <div className="day-header">
                             {isSupervisor && (
-                                <button onClick={() => setIsMapModalOpen(true)}>
-                                    View Today's Visits on Map
+                                <button
+                                    className="nav-btn"
+                                    onClick={() => setIsMapModalOpen(true)}
+                                    aria-label={t("timesheets.actions.viewDayOnMap")}
+                                >
+                                    {t("timesheets.actions.viewDayOnMap")}
                                 </button>
                             )}
+                            {/* Existing navigation buttons */}
                             <button
                                 className="nav-btn"
                                 onClick={() =>
                                     setCurrentDay(
-                                        new Date(
-                                            currentDay!.setDate(currentDay!.getDate() - 1)
-                                        )
+                                        new Date(currentDay!.setDate(currentDay!.getDate() - 1))
                                     )
                                 }
                                 aria-label={t("timesheets.navigation.previousDay")}
@@ -1766,9 +1781,7 @@ const Timesheets: React.FC = React.memo(() => {
                                 className="nav-btn"
                                 onClick={() =>
                                     setCurrentDay(
-                                        new Date(
-                                            currentDay!.setDate(currentDay!.getDate() + 1)
-                                        )
+                                        new Date(currentDay!.setDate(currentDay!.getDate() + 1))
                                     )
                                 }
                                 aria-label={t("timesheets.navigation.nextDay")}
@@ -1805,9 +1818,7 @@ const Timesheets: React.FC = React.memo(() => {
                                     />
                                 ))
                             ) : (
-                                <div className="no-visits">
-                                    {t("timesheets.dayView.noVisits")}
-                                </div>
+                                <div className="no-visits">{t("timesheets.dayView.noVisits")}</div>
                             )}
                         </div>
                     </section>
@@ -1821,15 +1832,52 @@ const Timesheets: React.FC = React.memo(() => {
                 onSuggestionsGenerated={handleSuggestionsGenerated}
             />
             {isMapModalOpen && (
-                <VisitMapModal
-                    visits={todayVisits
-                        .filter(v => typeof v.location === 'string' && v.location !== undefined && v.location !== null)
-                        .map(v => ({
-                            ...v,
-                            location: v.location as string
-                        }))}
-                    onClose={() => setIsMapModalOpen(false)}
-                />
+                <Modal
+                    isOpen={isMapModalOpen}
+                    onRequestClose={() => setIsMapModalOpen(false)}
+                    style={{
+                        content: {
+                            top: '50%',
+                            left: '50%',
+                            right: 'auto',
+                            bottom: 'auto',
+                            marginRight: '-50%',
+                            transform: 'translate(-50%, -50%)',
+                            width: '80%',
+                            height: '80%',
+                            padding: '0',
+                        },
+                    }}
+                >
+                    <MapComponent
+                        visits={dayData
+                            .filter(
+                                (v) =>
+                                    v.Agent?.latitude != null &&
+                                    v.Agent?.longitude != null &&
+                                    v.location !== undefined &&
+                                    v.location !== null
+                            )
+                            .map((v) => ({
+                                visitID: 'visitID' in v ? v.visitID : (v as GeneratedVisit).visitID,
+                                latitude: v.Agent?.latitude!,
+                                longitude: v.Agent?.longitude!,
+                                location: v.location as string,
+                                time: v.time,
+                                reasons:
+                                    'reasons' in v
+                                        ? (v as GeneratedVisit).reasons.map((r) => r.item).join(', ')
+                                        : visitReasons[v.visitID]?.map((r) => r.item).join(', ') || '',
+                                agentName:
+                                    'Agent' in v && v.Agent
+                                        ? `${v.Agent.name} ${v.Agent.lastname}`
+                                        : '',
+                            }))}
+                        userLocation={userLocation}
+                        isTimesheetModal={true}
+                        onClose={() => setIsMapModalOpen(false)}
+                    />
+                </Modal>
             )}
         </motion.div>
 
