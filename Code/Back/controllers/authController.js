@@ -183,7 +183,46 @@ class AuthController {
     }
 
 
+    static async googleIdTokenLogin(req, res) {
+        try {
+            const { id_token } = req.body;
+            if (!id_token) throw new Error('Missing ID token');
 
+            const result = await GoogleAuthService.googleIdTokenLogin(id_token, res);
+
+            logger.info('Google ID token login successful', {
+                traceId: req.traceId,
+                route: 'auth',
+                service: 'api',
+                status: 200,
+                method: req.method,
+                url: req.originalUrl,
+                ip: req.ip,
+                userId: result.user?.userID || null,
+                metadata: {
+                    userEmail: result.user?.email ? logger.sensitive(result.user.email) : null,
+                },
+            });
+
+            return res.status(200).json(result);
+        } catch (error) {
+            const response = AuthController.formatError(error);
+
+            logger.error('Google ID token login failed', {
+                traceId: req.traceId,
+                route: 'auth',
+                service: 'api',
+                status: 400,
+                method: req.method,
+                url: req.originalUrl,
+                ip: req.ip,
+                userId: null,
+                metadata: { error: response.error },
+            });
+
+            return res.status(400).json(response);
+        }
+    }
 
 
 

@@ -1,7 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
-import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import '../utils/constants.dart';
 import './cookie_manager.dart';
@@ -9,80 +10,89 @@ import './http_client.dart';
 
 class AuthService {
   static Future<Map<String, dynamic>> initiateKeycloakLogin() async {
-    try {
-      final authUrl =
-          '$keycloakUrl/realms/$realm/protocol/openid-connect/auth?client_id=$clientId&redirect_uri=${Uri.encodeComponent(redirectUri)}&response_type=code&scope=openid%20email%20profile&kc_idp_hint=google&prompt=select_account';
-      final result = await FlutterWebAuth2.authenticate(
-        url: authUrl,
-        callbackUrlScheme: 'http',
-      );
-      final code = Uri.parse(result).queryParameters['code'];
-      if (code == null) throw Exception('No authorization code received');
+    return initiateGoogleLogin();
+  }
 
-      final tokenResponse = await http.post(
-        Uri.parse('$keycloakUrl/realms/$realm/protocol/openid-connect/token'),
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: {
-          'grant_type': 'authorization_code',
-          'code': code,
-          'redirect_uri': redirectUri,
-          'client_id': clientId,
-          'client_secret': clientSecret,
-        },
+  static Future<Map<String, dynamic>> initiateGoogleLogin() async {
+    try {
+      final googleSignIn = GoogleSignIn(
+        serverClientId: googleClientIdWeb,
+        scopes: ['email', 'profile', 'openid'],
       );
-      if (tokenResponse.statusCode != 200) {
-        throw Exception(
-          'Failed to exchange code: ${json.decode(tokenResponse.body)['error_description'] ?? tokenResponse.body}',
-        );
+
+      final googleUser = await googleSignIn.signIn();
+      if (googleUser == null) {
+        throw Exception('Google Sign-In cancelled');
       }
 
-      final tokens = json.decode(tokenResponse.body);
-      final accessToken = tokens['access_token'] as String;
+      final googleAuth = await googleUser.authentication;
+      final idToken = googleAuth.idToken;
+      if (idToken == null) {
+        throw Exception('Failed to retrieve ID token from Google');
+      }
+      if (kDebugMode) {
+        print('Google ID Token: $idToken');
+      }
+
+      // Send ID token to backend for validation and login
+      final tokenResponse = await http.post(
+        Uri.parse('$baseUrl/auth/google'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'id_token': idToken}),
+      );
+
+      if (tokenResponse.statusCode != 200) {
+        if (kDebugMode) {
+          print('Login failed: ${tokenResponse.body}');
+        }
+        throw Exception(
+            'Failed to log in: ${jsonDecode(tokenResponse.body)['error'] ?? tokenResponse.body}');
+      }
+
+      final tokens = jsonDecode(tokenResponse.body);
+      if (kDebugMode) {
+        print('Backend response: ${jsonEncode(tokens)}');
+      }
+      final accessToken = tokens['accessToken'] as String;
+      final refreshToken = tokens['refreshToken'] as String;
       await CookieManager.saveCookies({
         'accessToken': accessToken,
-        'refreshToken': tokens['refresh_token'],
+        'refreshToken': refreshToken,
       });
 
-      final userResponse = await CustomHttpClient.get(Uri.parse('$baseUrl/test'));
+      // Fetch user data
+      final userResponse = await CustomHttpClient.get(
+        Uri.parse('$baseUrl/users/profile'),
+      );
       if (userResponse.statusCode != 200) {
         throw Exception('Failed to fetch user data: ${userResponse.body}');
       }
 
-      final userData = json.decode(userResponse.body);
-      // Ensure roles are included
-      if (userData['user']?['roles'] == null || userData['user']['roles'].isEmpty) {
-        final decodedToken = JwtDecoder.decode(accessToken);
-        final realmRoles = (decodedToken['realm_access']?['roles'] as List<dynamic>?) ?? [];
-        userData['user']['roles'] = realmRoles
-            .asMap()
-            .entries
-            .map((e) => {
-          'roleID': (e.key + 1).toString(),
-          'name': e.value.toString(),
-          'description': null,
-        })
-            .toList();
-      }
+      final userData = jsonDecode(userResponse.body);
+      _ensureRoles(userData, accessToken);
 
       final requires2FA = await _check2FARequired();
       if (requires2FA) {
         return {
-          'userID': userData['user']['userID'],
+          'userID': userData['user']?['userID']?.toString(),
           'requires2FA': true,
           'tempToken': accessToken,
-          'refreshToken': tokens['refresh_token'],
-          'expiresIn': tokens['expires_in'] * 1000,
+          'refreshToken': refreshToken,
+          'expiresIn': tokens['expiresIn'] * 1000,
           'otpMethod': 'phone',
         };
       }
 
       return {
         'accessToken': accessToken,
-        'refreshToken': tokens['refresh_token'],
-        'expiresIn': tokens['expires_in'] * 1000,
+        'refreshToken': refreshToken,
+        'expiresIn': tokens['expiresIn'] * 1000,
         'user': userData['user'],
       };
     } catch (e) {
+      if (kDebugMode) {
+        print('Google login error: $e');
+      }
       throw Exception(_parseError(e));
     }
   }
@@ -94,7 +104,7 @@ class AuthService {
       );
       if (response.statusCode == 200) {
         final result = json.decode(response.body);
-        return result['requires2FA'] as bool;
+        return result['requires2FA'] as bool? ?? false;
       }
       throw Exception('Failed to check 2FA requirement');
     } catch (e) {
@@ -107,23 +117,8 @@ class AuthService {
       final response = await CustomHttpClient.get(Uri.parse('$baseUrl/test'));
       if (response.statusCode == 200) {
         final result = json.decode(response.body);
-        // Ensure roles are included
-        if (result['user']?['roles'] == null || result['user']['roles'].isEmpty) {
-          final accessToken = CookieManager.cookies['accessToken'];
-          if (accessToken != null) {
-            final decodedToken = JwtDecoder.decode(accessToken);
-            final realmRoles = (decodedToken['realm_access']?['roles'] as List<dynamic>?) ?? [];
-            result['user']['roles'] = realmRoles
-                .asMap()
-                .entries
-                .map((e) => {
-              'roleID': (e.key + 1).toString(),
-              'name': e.value.toString(),
-              'description': null,
-            })
-                .toList();
-          }
-        }
+        final accessToken = CookieManager.cookies['accessToken'];
+        if (accessToken != null) _ensureRoles(result, accessToken);
         return result;
       }
       throw Exception(_parseError(response));
@@ -149,49 +144,19 @@ class AuthService {
       );
       if (response.statusCode == 200) {
         final result = json.decode(response.body);
-        if (kDebugMode) {
-          print('Login response: ${jsonEncode(result)}');
-        }
-        // Always attempt to inject roles from JWT if accessToken is present
+        if (kDebugMode) print('Login response: ${jsonEncode(result)}');
         if (result['accessToken'] != null) {
-          final decodedToken = JwtDecoder.decode(result['accessToken']);
-          final realmRoles = (decodedToken['realm_access']?['roles'] as List<dynamic>?) ?? [];
-          final userId = decodedToken['sub']?.toString() ?? 'unknown';
-          if (realmRoles.isNotEmpty || result['user'] == null) {
-            // Initialize user object if missing or roles are empty
-            result['user'] ??= {
-              'userID': userId,
-              'roles': [],
-            };
-            result['user']['roles'] = realmRoles
-                .asMap()
-                .entries
-                .map((e) => {
-              'roleID': (e.key + 1).toString(),
-              'name': e.value.toString(),
-              'description': null,
-            })
-                .toList();
-          }
-        }
-        if (result['user']?['roles'] == null || result['user']['roles'].isEmpty) {
-          if (kDebugMode) {
-            print('Warning: No roles found in user object after JWT injection');
-          }
-        }
-        if (result['user']?['userID'] == null) {
-          if (kDebugMode) {
-            print('Warning: userID missing in user object');
-          }
-          result['user']['userID'] = JwtDecoder.decode(result['accessToken'])['sub']?.toString() ?? 'unknown';
+          _ensureRoles(result, result['accessToken']);
+          await CookieManager.saveCookies({
+            'accessToken': result['accessToken'],
+            'refreshToken': result['refreshToken'] ?? '',
+          });
         }
         return result;
       }
       throw Exception(_parseError(response));
     } catch (e) {
-      if (kDebugMode) {
-        print('Login error: $e');
-      }
+      if (kDebugMode) print('Login error: $e');
       throw Exception(_parseError(e));
     }
   }
@@ -210,7 +175,7 @@ class AuthService {
         body: json.encode({
           'userID': userID,
           'otpCode': otpCode,
-          'trustDevice': true,
+          'trustDevice': trustDevice,
           'tempToken': tempToken,
           'refreshToken': refreshToken,
           'deviceIdentifier': deviceIdentifier,
@@ -218,21 +183,12 @@ class AuthService {
       );
       if (response.statusCode == 200) {
         final result = json.decode(response.body);
-        // Ensure roles are included
-        if (result['user'] != null &&
-            (result['user']['roles'] == null || result['user']['roles'].isEmpty) &&
-            result['accessToken'] != null) {
-          final decodedToken = JwtDecoder.decode(result['accessToken']);
-          final realmRoles = (decodedToken['realm_access']?['roles'] as List<dynamic>?) ?? [];
-          result['user']['roles'] = realmRoles
-              .asMap()
-              .entries
-              .map((e) => {
-            'roleID': (e.key + 1).toString(),
-            'name': e.value.toString(),
-            'description': null,
-          })
-              .toList();
+        if (result['accessToken'] != null) {
+          _ensureRoles(result, result['accessToken']);
+          await CookieManager.saveCookies({
+            'accessToken': result['accessToken'],
+            'refreshToken': result['refreshToken'] ?? '',
+          });
         }
         return result;
       }
@@ -242,12 +198,20 @@ class AuthService {
     }
   }
 
-  static Future<Map<String, dynamic>> refreshToken() async {
+  static Future<Map<String, dynamic>> refreshToken(String refreshToken) async {
     try {
+      await CookieManager.saveCookies({'refreshToken': refreshToken});
       final response = await CustomHttpClient.post(
         Uri.parse('$baseUrl/auth/refresh'),
       );
-      if (response.statusCode == 200) return json.decode(response.body);
+      if (response.statusCode == 200) {
+        final result = json.decode(response.body);
+        await CookieManager.saveCookies({
+          'accessToken': result['accessToken'],
+          'refreshToken': result['refreshToken'] ?? refreshToken,
+        });
+        return result;
+      }
       throw Exception(_parseError(response));
     } catch (e) {
       throw Exception(_parseError(e));
@@ -328,11 +292,38 @@ class AuthService {
       );
       if (response.statusCode != 200) throw Exception(_parseError(response));
     } catch (e) {
-      if (kDebugMode) {
-        print('Logout error: $e');
-      }
+      if (kDebugMode) print('Logout error: $e');
     } finally {
       await CookieManager.clearCookies();
+    }
+  }
+
+  static void _ensureRoles(Map<String, dynamic> data, String accessToken) {
+    if (data['user'] == null ||
+        data['user']['roles'] == null ||
+        (data['user']['roles'] as List).isEmpty) {
+      final decodedToken = JwtDecoder.decode(accessToken);
+      if (kDebugMode) {
+        print('Decoded token: ${jsonEncode(decodedToken)}');
+      }
+      final realmRoles =
+          (decodedToken['realm_access']?['roles'] as List<dynamic>?) ?? [];
+      data['user'] ??= {'roles': []};
+      data['user']['roles'] = realmRoles
+          .where((role) => role != null)
+          .toList()
+          .asMap()
+          .entries
+          .map((e) => {
+        'roleID': (e.key + 1).toString(),
+        'name': e.value.toString(),
+        'description': null,
+        'permissions': [],
+      })
+          .toList();
+      if (kDebugMode) {
+        print('Assigned roles: ${data['user']['roles']}');
+      }
     }
   }
 
@@ -347,6 +338,9 @@ class AuthService {
       } catch (_) {
         return _getErrorMessage(input.statusCode);
       }
+    }
+    if (input is PlatformException) {
+      return input.message ?? 'Platform error occurred';
     }
     return input.toString().replaceFirst('Exception: ', '');
   }
@@ -370,17 +364,18 @@ class AuthService {
     }
   }
 
-
-
-  // Makes an authenticated request with automatic token refresh.
   static Future<dynamic> makeAuthenticatedRequest({
     required Future<http.Response> Function() request,
   }) async {
     try {
       final response = await request();
       if (response.statusCode == 401) {
+        final refreshToken = CookieManager.cookies['refreshToken'];
+        if (refreshToken == null || refreshToken.isEmpty) {
+          throw Exception('No refresh token available');
+        }
         try {
-          final refreshResult = await refreshToken();
+          final refreshResult = await refreshToken;
           if (kDebugMode) print('Refresh result: $refreshResult');
           final retryResponse = await request();
           return json.decode(retryResponse.body);
