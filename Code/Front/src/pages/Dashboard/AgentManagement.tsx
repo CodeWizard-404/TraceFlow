@@ -1,109 +1,679 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import MapComponent from '../../components/Google/MapComponent';
-import "../../components/Google/Map.css";
-import { getAgentLocations } from '../../apis/agentAPI';
-import { getUsersByRole } from '../../apis/userAPI';
+import '../../components/Google/Map.css';
+import {
+    getAllAgents,
+    updateAgent,
+    deleteAgent,
+    uploadAgents,
+} from '../../apis/agentAPI';
+import {
+    getUsersByRole,
+} from '../../apis/userAPI';
+import {
+    getAllRegions,
+    getAllGovernorates,
+    getAllDelegations,
+    getGovernoratesByRegion,
+    getDelegationsByGovernorate,
+    getRegionsByUser,
+    getGovernoratesByUser,
+    getDelegationsByUser,
+} from '../../apis/locationApi';
 import { useAuth } from '../../context/AuthContext';
+import {
+    Table,
+    Button,
+    Modal,
+    Form,
+    Input,
+    Select,
+    message,
+    Upload,
+    Space,
+    Tooltip,
+    Popconfirm,
+    Tabs,
+    Card,
+} from 'antd';
+import type { TableProps } from 'antd';
+import {
+    UploadOutlined,
+    DownloadOutlined,
+    EditOutlined,
+    DeleteOutlined,
+    PhoneOutlined,
+    PlusOutlined,
+} from '@ant-design/icons';
+import { saveAs } from 'file-saver';
+import './AgentManagement.css';
+import { debounce } from 'lodash';
+import { useInView } from 'react-intersection-observer';
 
-// Define permissions as constants
-const PERMISSIONS = {
-    ACCESS_AGENT_MAP_LOCATIONS: import.meta.env.VITE_PERMISSIONS_READ_AGENT_MAP_LOCATIONS,
-    ACCESS_SUPERVISORS: import.meta.env.VITE_PERMISSIONS_READ_SUPERVISORS,
-};
+interface Agent {
+    agentID: string;
+    name: string;
+    lastname: string;
+    email: string;
+    phone: string;
+    location: string | null;
+    latitude?: number;
+    longitude?: number;
+    supervisorID?: string;
+    delegationID: string;
+    createdAt: string;
+    updatedAt: string;
+    Supervisor?: { userID: string; firstname: string; lastname: string; phone: string };
+    Delegation: { delegationID: string; name: string; Governorate: { governorateID: string; name: string } };
+}
 
-// Define roles as constants
+interface User {
+    userID: string;
+    firstname: string;
+    lastname: string;
+    email?: string;
+    role?: string;
+    phone?: string;
+}
+
+interface Region {
+    regionID: string;
+    name: string;
+    nameAr?: string;
+    nameFr?: string;
+}
+
+interface Governorate {
+    governorateID: string;
+    name: string;
+    nameAr?: string;
+    nameFr?: string;
+    regionID: string;
+}
+
+interface Delegation {
+    delegationID: string;
+    name: string;
+    nameAr?: string;
+    nameFr?: string;
+    governorateID: string;
+}
+
+interface ActivityLog {
+    id: number;
+    action: string;
+    timestamp: string;
+}
+
+interface Metrics {
+    totalAgents: number;
+    withLocations: number;
+    withoutLocations: number;
+    totalSupervisors: number;
+}
+
 const ROLES = {
     SUPERVISOR: import.meta.env.VITE_ROLES_SUPERVISOR,
 };
 
 const AgentManagement: React.FC = () => {
     const { effectivePermissions } = useAuth();
-    const [metrics, setMetrics] = useState({
+    const navigate = useNavigate();
+    const [agents, setAgents] = useState<Agent[]>([]);
+    const [supervisors, setSupervisors] = useState<User[]>([]);
+    const [regions, setRegions] = useState<Region[]>([]);
+    const [governorates, setGovernorates] = useState<Governorate[]>([]);
+    const [delegations, setDelegations] = useState<Delegation[]>([]);
+    const [metrics, setMetrics] = useState<Metrics>({
         totalAgents: 0,
         withLocations: 0,
         withoutLocations: 0,
         totalSupervisors: 0,
     });
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+    const [searchText, setSearchText] = useState('');
+    const [filters, setFilters] = useState({
+        region: '',
+        governorate: '',
+        delegation: '',
+        supervisor: '',
+    });
+    const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+    const [isBulkAssignModalVisible, setIsBulkAssignModalVisible] = useState(false);
+    const [editingAgent, setEditingAgent] = useState<Agent | null>(null);
+    const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+    const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
+    const [form] = Form.useForm();
+    const [bulkForm] = Form.useForm();
+    const [loading, setLoading] = useState(false);
+    const [filteredGovernorates, setFilteredGovernorates] = useState<Governorate[]>([]);
+    const [filteredDelegations, setFilteredDelegations] = useState<Delegation[]>([]);
+    const [filteredSupervisors, setFilteredSupervisors] = useState<User[]>([]);
+    const [filterDelegationIds, setFilterDelegationIds] = useState<string[]>([]);
+    const [editModalDelegations, setEditModalDelegations] = useState<Delegation[]>([]);
+    const { ref, inView } = useInView({ triggerOnce: false });
 
     useEffect(() => {
-        const fetchMetrics = async () => {
-            try {
-                // Check permission to view agent locations
-                const hasAgentPermission = effectivePermissions!.some(
-                    (p) => p.name === PERMISSIONS.ACCESS_AGENT_MAP_LOCATIONS
-                );
-                if (hasAgentPermission) {
-                    const agentLocations = await getAgentLocations();
-                    const agents = agentLocations.locations;
-                    const totalAgents = agents.length;
-                    const withLocations = agents.filter(
-                        (a) => a.latitude != null && a.longitude != null
-                    ).length;
-                    const withoutLocations = totalAgents - withLocations;
-                    setMetrics((prev) => ({
-                        ...prev,
-                        totalAgents,
-                        withLocations,
-                        withoutLocations,
-                    }));
-                }
+        if (inView) {
+            fetchData();
+        }
+    }, [effectivePermissions, inView]);
 
-                // Check permission to view supervisors
-                const hasSupervisorPermission = effectivePermissions!.some(
-                    (p) => p.name === PERMISSIONS.ACCESS_SUPERVISORS
-                );
-                if (hasSupervisorPermission) {
-                    const supervisors = await getUsersByRole(ROLES.SUPERVISOR);
-                    setMetrics((prev) => ({
-                        ...prev,
-                        totalSupervisors: supervisors.length,
-                    }));
-                }
+    const fetchData = async () => {
+        setLoading(true);
+        try {
+            const [agentData, supervisorData, regionData, govData, delData] = await Promise.all([
+                getAllAgents(),
+                getUsersByRole(ROLES.SUPERVISOR),
+                getAllRegions(),
+                getAllGovernorates(),
+                getAllDelegations(),
+            ]);
 
-                setLastUpdated(new Date());
-            } catch (error) {
-                console.error('Failed to fetch metrics:', error);
+            const enrichedAgents = agentData.agents.map((agent: Agent) => {
+                const supervisor = supervisorData.find((s: User) => s.userID === agent.supervisorID);
+                return {
+                    ...agent,
+                    Supervisor: supervisor
+                        ? { userID: supervisor.userID, firstname: supervisor.firstname, lastname: supervisor.lastname, phone: supervisor.phone }
+                        : undefined,
+                    supervisorName: supervisor ? `${supervisor.firstname} ${supervisor.lastname}` : 'N/A',
+                };
+            });
+
+            setAgents(enrichedAgents);
+            setSupervisors(supervisorData);
+            setRegions(regionData);
+            setGovernorates(govData);
+            setDelegations(delData);
+            setFilteredGovernorates(govData);
+            setFilteredDelegations(delData);
+            setFilteredSupervisors(supervisorData);
+            setFilterDelegationIds(delData.map(d => d.delegationID));
+            setEditModalDelegations(delData);
+
+            updateMetrics(enrichedAgents, supervisorData.length);
+            setActivityLogs([...activityLogs, {
+                id: Date.now(),
+                action: 'Data Fetched',
+                timestamp: new Date().toLocaleString(),
+            }]);
+            setLastUpdated(new Date());
+        } catch (error) {
+            console.error('Failed to fetch data:', error);
+            message.error('Failed to fetch data');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const updateMetrics = (agentList: Agent[], supervisorCount: number) => {
+        setMetrics({
+            totalAgents: agentList.length,
+            withLocations: agentList.filter(a => a.latitude && a.longitude).length,
+            withoutLocations: agentList.filter(a => !a.latitude || !a.longitude).length,
+            totalSupervisors: supervisorCount,
+        });
+    };
+
+    const handleRegionChange = async (regionId: string) => {
+        setFilters(prev => ({ ...prev, region: regionId, governorate: '', delegation: '' }));
+        try {
+            let delegationIds: string[] = [];
+            if (regionId) {
+                const govData = await getGovernoratesByRegion(regionId);
+                setFilteredGovernorates(govData);
+                const delPromises = govData.map(gov => getDelegationsByGovernorate(gov.governorateID));
+                const delDataArrays = await Promise.all(delPromises);
+                const delData = delDataArrays.flat();
+                setFilteredDelegations(delData);
+                delegationIds = delData.map(d => d.delegationID);
+            } else {
+                setFilteredGovernorates(governorates);
+                setFilteredDelegations(delegations);
+                delegationIds = delegations.map(d => d.delegationID);
             }
-        };
+            setFilterDelegationIds(delegationIds);
+        } catch (error) {
+            message.error('Failed to fetch governorates or delegations');
+        }
+    };
 
-        fetchMetrics();
-    }, [effectivePermissions]);
+    const handleGovernorateChange = async (governorateId: string) => {
+        setFilters(prev => ({ ...prev, governorate: governorateId, delegation: '' }));
+        try {
+            let delegationIds: string[] = [];
+            if (governorateId) {
+                const delData = await getDelegationsByGovernorate(governorateId);
+                setFilteredDelegations(delData);
+                delegationIds = delData.map(d => d.delegationID);
+            } else {
+                setFilteredDelegations(delegations);
+                delegationIds = delegations.map(d => d.delegationID);
+            }
+            setFilterDelegationIds(delegationIds);
+        } catch (error) {
+            message.error('Failed to fetch delegations');
+        }
+    };
+
+    const handleSupervisorChange = async (supervisorId: string) => {
+        setFilters(prev => ({ ...prev, supervisor: supervisorId, region: '', governorate: '', delegation: '' }));
+        try {
+            let delegationIds: string[] = [];
+            if (supervisorId) {
+                const [regionData, govData, delData] = await Promise.all([
+                    getRegionsByUser(supervisorId),
+                    getGovernoratesByUser(supervisorId),
+                    getDelegationsByUser(supervisorId),
+                ]);
+                setFilteredSupervisors([supervisors.find(s => s.userID === supervisorId)!]);
+                setRegions(regionData);
+                setFilteredGovernorates(govData);
+                setFilteredDelegations(delData);
+                delegationIds = delData.map(d => d.delegationID);
+            } else {
+                setFilteredSupervisors(supervisors);
+                setRegions(regions);
+                setFilteredGovernorates(governorates);
+                setFilteredDelegations(delegations);
+                delegationIds = delegations.map(d => d.delegationID);
+            }
+            setFilterDelegationIds(delegationIds);
+        } catch (error) {
+            message.error('Failed to fetch supervisor locations');
+        }
+    };
+
+    const handleEdit = async (agent: Agent) => {
+        setEditingAgent(agent);
+        form.setFieldsValue(agent);
+        try {
+            let delegationsToShow = delegations;
+            if (agent.supervisorID) {
+                const supervisorDelegations = await getDelegationsByUser(agent.supervisorID);
+                delegationsToShow = supervisorDelegations;
+            }
+            setEditModalDelegations(delegationsToShow);
+        } catch (error) {
+            message.error('Failed to fetch supervisor delegations');
+        }
+        setIsEditModalVisible(true);
+    };
+
+    const handleFormSupervisorChange = async (supervisorId: string) => {
+        try {
+            let delegationsToShow = delegations;
+            if (supervisorId) {
+                const supervisorDelegations = await getDelegationsByUser(supervisorId);
+                delegationsToShow = supervisorDelegations;
+            }
+            setEditModalDelegations(delegationsToShow);
+            form.setFieldsValue({ delegationID: undefined });
+        } catch (error) {
+            message.error('Failed to fetch supervisor delegations');
+        }
+    };
+
+    const handleDelete = async (agentId: string) => {
+        try {
+            await deleteAgent(agentId);
+            setAgents(agents.filter(a => a.agentID !== agentId));
+            setActivityLogs([...activityLogs, {
+                id: Date.now(),
+                action: `Agent ${agentId} Deleted`,
+                timestamp: new Date().toLocaleString(),
+            }]);
+            message.success('Agent deleted successfully');
+            updateMetrics(agents.filter(a => a.agentID !== agentId), supervisors.length);
+        } catch (error) {
+            message.error('Failed to delete agent');
+        }
+    };
+
+    const handleUpdate = async (values: Partial<Agent>) => {
+        try {
+            if (editingAgent) {
+                await updateAgent(editingAgent.agentID, values);
+                setAgents(agents.map(a => a.agentID === editingAgent.agentID ? { ...a, ...values } : a));
+                setIsEditModalVisible(false);
+                setActivityLogs([...activityLogs, {
+                    id: Date.now(),
+                    action: `Agent ${editingAgent.agentID} Updated`,
+                    timestamp: new Date().toLocaleString(),
+                }]);
+                message.success('Agent updated successfully');
+                fetchData();
+            } else {
+                message.error('No agent selected for update');
+            }
+        } catch (error) {
+            message.error('Failed to update agent');
+        }
+    };
+
+    const handleBulkAssign = async (values: { supervisorID: string }) => {
+        try {
+            await Promise.all(selectedRowKeys.map(agentId =>
+                updateAgent(agentId as string, { supervisorID: values.supervisorID })
+            ));
+            setIsBulkAssignModalVisible(false);
+            setSelectedRowKeys([]);
+            setActivityLogs([...activityLogs, {
+                id: Date.now(),
+                action: `Bulk Assigned ${selectedRowKeys.length} Agents`,
+                timestamp: new Date().toLocaleString(),
+            }]);
+            message.success('Supervisors assigned successfully');
+            fetchData();
+        } catch (error) {
+            message.error('Failed to bulk assign supervisors');
+        }
+    };
+
+    const handleExportCSV = () => {
+        const csv = [
+            ['firstname', 'lastname', 'phone', 'email', 'delegation', 'supervisor_phone', 'governorate', 'address', 'latitude', 'longitude'],
+            ...filteredAgents.map(a => [
+                a.name,
+                a.lastname,
+                a.phone,
+                a.email,
+                a.Delegation?.name || a.delegationID,
+                a.Supervisor?.phone || '',
+                a.Delegation?.Governorate?.name || '',
+                a.location || '',
+                a.latitude || '',
+                a.longitude || '',
+            ].map(field => `"${String(field).replace(/"/g, '""')}"`)),
+        ].join('\n');
+        const bom = '\uFEFF';
+        const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' });
+        saveAs(blob, 'agents_export.csv');
+        setActivityLogs([...activityLogs, {
+            id: Date.now(),
+            action: 'Exported Agents to CSV',
+            timestamp: new Date().toLocaleString(),
+        }]);
+    };
+
+    const handleCSVUpload = async (file: File) => {
+        try {
+            const response = await uploadAgents(file);
+            const { summary, detailedLog } = response;
+            message.success(`Uploaded ${summary.agentsCreated} agents, updated ${summary.agentsUpdated}, skipped ${summary.recordsSkipped} records.`);
+            if (summary.errorsEncountered > 0) {
+                const errorDetails = detailedLog.errors.map(e => `Agent ${e.agentName} (${e.agentPhone}): ${e.reason}`).join('; ');
+                message.warning(`Encountered ${summary.errorsEncountered} errors: ${errorDetails}`);
+            }
+            setActivityLogs([...activityLogs, {
+                id: Date.now(),
+                action: `Imported CSV: ${summary.agentsCreated} created, ${summary.agentsUpdated} updated, ${summary.recordsSkipped} skipped, ${summary.errorsEncountered} errors`,
+                timestamp: new Date().toLocaleString(),
+            }]);
+            fetchData();
+        } catch (error) {
+            message.error('Failed to upload agents');
+            setActivityLogs([...activityLogs, {
+                id: Date.now(),
+                action: 'Failed to import CSV',
+                timestamp: new Date().toLocaleString(),
+            }]);
+        }
+        return false;
+    };
+
+    const debouncedSearch = useCallback(
+        debounce((value: string) => setSearchText(value), 300),
+        []
+    );
+
+    const filteredAgents = useMemo(() => {
+        return agents.filter(agent => {
+            const searchTerms = searchText.toLowerCase().trim().split(/\s+/);
+            const matchesSearch = searchTerms.every(term =>
+                agent.name.toLowerCase().includes(term) ||
+                agent.lastname.toLowerCase().includes(term) ||
+                agent.phone.toLowerCase().includes(term) ||
+                agent.agentID.toLowerCase().includes(term)
+            );
+            const matchesFilters = (
+                (filterDelegationIds.length === 0 || filterDelegationIds.includes(agent.delegationID)) &&
+                (!filters.supervisor || agent.supervisorID === filters.supervisor) &&
+                (!filters.delegation || agent.delegationID === filters.delegation)
+            );
+            return matchesSearch && matchesFilters;
+        });
+    }, [agents, searchText, filters.supervisor, filters.delegation, filterDelegationIds]);
+
+    const columns: TableProps<Agent>['columns'] = [
+        {
+            title: 'ID',
+            dataIndex: 'agentID',
+            key: 'agentID',
+            sorter: (a: Agent, b: Agent) => a.agentID.localeCompare(b.agentID),
+        },
+        {
+            title: 'Name',
+            dataIndex: 'name',
+            key: 'name',
+            render: (_: string, record: Agent) => `${record.name} ${record.lastname}`,
+            sorter: (a: Agent, b: Agent) => a.name.localeCompare(b.name),
+        },
+        { title: 'Email', dataIndex: 'email', key: 'email' },
+        { title: 'Phone', dataIndex: 'phone', key: 'phone' },
+        {
+            title: 'Supervisor',
+            dataIndex: 'supervisorName',
+            key: 'supervisorName',
+            sorter: (a: Agent, b: Agent) => (a.Supervisor?.firstname || '').localeCompare(b.Supervisor?.firstname || ''),
+        },
+        {
+            title: 'Delegation',
+            dataIndex: 'delegationID',
+            key: 'delegationID',
+            render: (id: string) => delegations.find(d => d.delegationID === id)?.name || id,
+            sorter: (a: Agent, b: Agent) => {
+                const aName = delegations.find(d => d.delegationID === a.delegationID)?.name || '';
+                const bName = delegations.find(d => d.delegationID === b.delegationID)?.name || '';
+                return aName.localeCompare(bName);
+            },
+        },
+        {
+            title: 'Actions',
+            key: 'actions',
+            render: (_: any, record: Agent) => (
+                <Space size="middle">
+                    <Tooltip title="Edit"><Button icon={<EditOutlined />} onClick={() => handleEdit(record)} /></Tooltip>
+                    <Popconfirm title="Sure to delete?" onConfirm={() => handleDelete(record.agentID)}>
+                        <Button icon={<DeleteOutlined />} danger />
+                    </Popconfirm>
+                    <Tooltip title="Call"><Button icon={<PhoneOutlined />} onClick={() => window.location.href = `tel:${record.phone}`} /></Tooltip>
+                    <Tooltip title="Add Visit"><Button icon={<PlusOutlined />} onClick={() => navigate(`/timesheet-form?agentId=${record.agentID}`)} /></Tooltip>
+                </Space>
+            ),
+        },
+    ];
+
+    const rowSelection: TableProps<Agent>['rowSelection'] = {
+        selectedRowKeys,
+        onChange: (keys: React.Key[]) => setSelectedRowKeys(keys),
+    };
 
     return (
-        <div className="container mx-auto p-4">
-            <h1 className="text-2xl font-bold mb-4">Agent Management</h1>
+        <div className="agent-management-container" ref={ref}>
+            <h1 className="text-2xl font-bold mb-4">Agent Management Dashboard</h1>
 
-            {/* Metrics Section */}
-            <div className="metrics-container">
-                <div className="metric-card">
-                    <h3>Total Agents</h3>
-                    <p>{metrics.totalAgents}</p>
-                </div>
-                <div className="metric-card">
-                    <h3>Agents with Locations</h3>
-                    <p>{metrics.withLocations}</p>
-                </div>
-                <div className="metric-card">
-                    <h3>Agents without Locations</h3>
-                    <p>{metrics.withoutLocations}</p>
-                </div>
-                <div className="metric-card">
-                    <h3>Total Supervisors</h3>
-                    <p>{metrics.totalSupervisors}</p>
-                </div>
-            </div>
+            <Tabs defaultActiveKey="1">
+                <Tabs.TabPane tab="Overview" key="1">
+                    <div className="metrics-container">
+                        {Object.entries(metrics).map(([key, value]) => (
+                            <Card key={key} className="metric-card">
+                                <h3>{key.replace(/([A-Z])/g, ' $1').trim()}</h3>
+                                <p>{value}</p>
+                            </Card>
+                        ))}
+                    </div>
+                </Tabs.TabPane>
 
-            {/* Last Updated Timestamp */}
+                <Tabs.TabPane tab="Agents" key="2">
+                    <Space direction="vertical" style={{ width: '100%', marginBottom: 16 }}>
+                        <Space wrap>
+                            <Input.Search
+                                placeholder="Search by name, lastname, phone..."
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => debouncedSearch(e.target.value)}
+                                style={{ width: 200 }}
+                            />
+                            <Select
+                                placeholder="Filter by Region"
+                                value={filters.region}
+                                onChange={handleRegionChange}
+                                style={{ width: 150 }}
+                            >
+                                <Select.Option value="">All Regions</Select.Option>
+                                {regions.map(r => <Select.Option key={r.regionID} value={r.regionID}>{r.name}</Select.Option>)}
+                            </Select>
+                            <Select
+                                placeholder="Filter by Governorate"
+                                value={filters.governorate}
+                                onChange={handleGovernorateChange}
+                                style={{ width: 150 }}
+                            >
+                                <Select.Option value="">All Governorates</Select.Option>
+                                {filteredGovernorates.map(g => <Select.Option key={g.governorateID} value={g.governorateID}>{g.name}</Select.Option>)}
+                            </Select>
+                            <Select
+                                placeholder="Filter by Delegation"
+                                value={filters.delegation}
+                                onChange={(value: string) => setFilters({ ...filters, delegation: value })}
+                                style={{ width: 150 }}
+                            >
+                                <Select.Option value="">All Delegations</Select.Option>
+                                {filteredDelegations.map(d => <Select.Option key={d.delegationID} value={d.delegationID}>{d.name}</Select.Option>)}
+                            </Select>
+                            <Select
+                                placeholder="Filter by Supervisor"
+                                value={filters.supervisor}
+                                onChange={handleSupervisorChange}
+                                style={{ width: 150 }}
+                            >
+                                <Select.Option value="">All Supervisors</Select.Option>
+                                {filteredSupervisors.map(s => <Select.Option key={s.userID} value={s.userID}>{s.firstname} {s.lastname}</Select.Option>)}
+                            </Select>
+                        </Space>
+
+                        <Space>
+                            <Button
+                                type="primary"
+                                icon={<PlusOutlined />}
+                                onClick={() => setIsBulkAssignModalVisible(true)}
+                                disabled={!selectedRowKeys.length}
+                            >
+                                Bulk Assign Supervisor
+                            </Button>
+                            <Upload beforeUpload={handleCSVUpload} showUploadList={false}>
+                                <Button icon={<UploadOutlined />}>Import CSV</Button>
+                            </Upload>
+                            <Button icon={<DownloadOutlined />} onClick={handleExportCSV}>
+                                Export CSV
+                            </Button>
+                        </Space>
+                    </Space>
+
+                    <Table
+                        rowSelection={rowSelection}
+                        columns={columns}
+                        dataSource={filteredAgents}
+                        rowKey="agentID"
+                        pagination={{ pageSize: 10 }}
+                        loading={loading}
+                    />
+                </Tabs.TabPane>
+
+                <Tabs.TabPane tab="Map" key="3">
+                    <MapComponent />
+                </Tabs.TabPane>
+
+                <Tabs.TabPane tab="Activity Logs" key="4">
+                    <Table
+                        columns={[
+                            { title: 'Action', dataIndex: 'action', key: 'action' },
+                            { title: 'Timestamp', dataIndex: 'timestamp', key: 'timestamp' },
+                        ]}
+                        dataSource={activityLogs}
+                        rowKey="id"
+                        pagination={{ pageSize: 5 }}
+                    />
+                </Tabs.TabPane>
+            </Tabs>
+
+            <Modal
+                title="Edit Agent"
+                open={isEditModalVisible}
+                onCancel={() => setIsEditModalVisible(false)}
+                onOk={() => form.submit()}
+            >
+                <Form form={form} onFinish={handleUpdate}>
+                    <Form.Item name="name" label="Name" rules={[{ required: true }]}>
+                        <Input />
+                    </Form.Item>
+                    <Form.Item name="lastname" label="Last Name" rules={[{ required: true }]}>
+                        <Input />
+                    </Form.Item>
+                    <Form.Item name="email" label="Email" rules={[{ required: true, type: 'email' }]}>
+                        <Input />
+                    </Form.Item>
+                    <Form.Item name="phone" label="Phone" rules={[{ required: true }]}>
+                        <Input />
+                    </Form.Item>
+                    <Form.Item name="supervisorID" label="Supervisor">
+                        <Select onChange={handleFormSupervisorChange}>
+                            {filteredSupervisors.map(s => (
+                                <Select.Option key={s.userID} value={s.userID}>
+                                    {s.firstname} {s.lastname}
+                                </Select.Option>
+                            ))}
+                        </Select>
+                    </Form.Item>
+                    <Form.Item name="delegationID" label="Delegation">
+                        <Select>
+                            {editModalDelegations.map(d => (
+                                <Select.Option key={d.delegationID} value={d.delegationID}>
+                                    {d.name}
+                                </Select.Option>
+                            ))}
+                        </Select>
+                    </Form.Item>
+                </Form>
+            </Modal>
+
+            <Modal
+                title="Bulk Assign Supervisor"
+                open={isBulkAssignModalVisible}
+                onCancel={() => setIsBulkAssignModalVisible(false)}
+                onOk={() => bulkForm.submit()}
+            >
+                <Form form={bulkForm} onFinish={handleBulkAssign}>
+                    <Form.Item
+                        name="supervisorID"
+                        label="Supervisor"
+                        rules={[{ required: true, message: 'Please select a supervisor' }]}
+                    >
+                        <Select placeholder="Select Supervisor">
+                            {filteredSupervisors.map((s: User) => (
+                                <Select.Option key={s.userID} value={s.userID}>
+                                    {s.firstname} {s.lastname}
+                                </Select.Option>
+                            ))}
+                        </Select>
+                    </Form.Item>
+                </Form>
+            </Modal>
+
             <p className="last-updated">
                 Last updated: {lastUpdated ? lastUpdated.toLocaleString() : 'Never'}
             </p>
-
-            {/* Map Section */}
-            <div className="mb-6">
-                <h2 className="text-xl font-semibold mb-2">Agent Locations</h2>
-                <MapComponent />
-            </div>
         </div>
     );
 };
