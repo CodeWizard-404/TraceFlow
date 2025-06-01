@@ -1,7 +1,6 @@
-// utils/cron.js
 const cron = require('node-cron');
 const otpService = require('../services/otpService');
-const { Visit, GeneratedReport } = require('../models');
+const { Visit, GeneratedReport, Timesheet, ReceiptBook, ReceiptStub } = require('../models');
 const { Op } = require('sequelize');
 const fs = require('fs').promises;
 const path = require('path');
@@ -10,6 +9,7 @@ const { getRedisClient } = require('./redis');
 const ReportService = require('../services/reportService');
 const { ReportSchedule } = require('../models');
 const NotificationService = require('../services/notificationService');
+const AIService = require('../services/aiService');
 
 function setupCron() {
     // Schedule hourly OTP cleanup
@@ -17,7 +17,7 @@ function setupCron() {
         try {
             await otpService.cleanupExpiredOTPs();
         } catch (error) {
-            console.error(`Error cleaning up OTPs: ${error.message}`);
+            logger.error(`Error cleaning up OTPs: ${error.message}`);
         }
     });
 
@@ -35,7 +35,7 @@ function setupCron() {
                 }
             );
         } catch (error) {
-            console.error(`Error updating visits: ${error.message}`);
+            logger.error(`Error updating visits: ${error.message}`);
         }
     });
 
@@ -170,15 +170,58 @@ function setupCron() {
         const reportsDir = path.join(__dirname, '../reports');
         try {
             const files = await fs.readdir(reportsDir);
+            const redisClient = getRedisClient();
             const now = Date.now();
-            const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+            const sevenDays = 7 * 24 * 60 * 60 * 1000;
+            const oneDay = 24 * 60 * 60 * 1000;
 
             for (const file of files) {
                 const filePath = path.join(reportsDir, file);
                 const stats = await fs.stat(filePath);
-                if (now - stats.mtimeMs > thirtyDays) {
-                    await fs.unlink(filePath);
-                    logger.info('Deleted old report file', { file, service: 'cron' });
+
+                // Check Redis for download count
+                const fileKeys = await redisClient.keys('file:*');
+                let downloadCount = 0;
+                let fileKeyToDelete = null;
+
+                for (const fileKey of fileKeys) {
+                    const fileData = await redisClient.hgetall(fileKey);
+                    if (fileData.filePath === filePath) {
+                        downloadCount = parseInt(fileData.downloadCount, 10) || 0;
+                        fileKeyToDelete = fileKey;
+                        break;
+                    }
+                }
+
+                // Delete if:
+                // 1. Older than 7 days
+                // 2. Downloaded 5 or more times
+                // 3. Downloaded once and older than 24 hours
+                if (
+                    (now - stats.mtimeMs > sevenDays) ||
+                    (downloadCount >= 5) ||
+                    (downloadCount === 1 && now - stats.mtimeMs > oneDay)
+                ) {
+                    try {
+                        await fs.unlink(filePath);
+                        if (fileKeyToDelete) {
+                            await redisClient.del(fileKeyToDelete);
+                        }
+                        logger.info('Deleted report file', {
+                            file,
+                            service: 'cron',
+                            reason:
+                                now - stats.mtimeMs > sevenDays ? 'older than 7 days' :
+                                    downloadCount >= 5 ? 'downloaded 5+ times' :
+                                        'downloaded once and older than 24 hours'
+                        });
+                    } catch (err) {
+                        logger.error('Failed to delete report file', {
+                            file,
+                            error: err.message,
+                            service: 'cron',
+                        });
+                    }
                 }
             }
         } catch (error) {
@@ -188,6 +231,89 @@ function setupCron() {
             });
         }
     });
+
+
+    // Cron job for anomaly detection on problematic APIs (every day at midnight)
+    cron.schedule('0 0 * * *', async () => {
+        try {
+            logger.info('Starting scheduled anomaly detection for problematic APIs');
+
+            // Define the time window for the previous day
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // Start of today
+            const yesterdayStart = new Date(today.getTime() - 24 * 60 * 60 * 1000); // Start of yesterday
+            const yesterdayEnd = new Date(today.getTime() - 1); // End of yesterday (23:59:59.999)
+
+            // Collect data from problematic APIs for the previous day
+            const recentVisits = await Visit.findAll({
+                where: {
+                    createdAt: {
+                        [Op.gte]: yesterdayStart,
+                        [Op.lte]: yesterdayEnd,
+                    },
+                },
+            });
+
+            const recentTimesheets = await Timesheet.findAll({
+                where: {
+                    createdAt: {
+                        [Op.gte]: yesterdayStart,
+                        [Op.lte]: yesterdayEnd,
+                    },
+                },
+            });
+
+            const recentReceiptBooks = await ReceiptBook.findAll({
+                where: {
+                    createdAt: {
+                        [Op.gte]: yesterdayStart,
+                        [Op.lte]: yesterdayEnd,
+                    },
+                },
+            });
+
+            const recentReceiptStubs = await ReceiptStub.findAll({
+                where: {
+                    createdAt: {
+                        [Op.gte]: yesterdayStart,
+                        [Op.lte]: yesterdayEnd,
+                    },
+                },
+            });
+
+            // Define data types and their corresponding datasets
+            const apiData = [
+                { type: 'visit', data: recentVisits, name: 'Visits API' },
+                { type: 'timesheet', data: recentTimesheets, name: 'Timesheets API' },
+                { type: 'receipt_book', data: recentReceiptBooks, name: 'Receipt Books API' },
+                { type: 'receipt_stub', data: recentReceiptStubs, name: 'Receipt Stubs API' },
+            ];
+
+            // Process each API's data
+            for (const { type, data, name } of apiData) {
+                if (data.length > 0) {
+                    logger.info(`Analyzing ${name} for anomalies`);
+                    const anomalies = await AIService.detectAnomalies(type, data);
+                    if (anomalies.length > 0) {
+                        await NotificationService.triggerNotification({
+                            event: 'ai:anomaly_detected',
+                            data: { dataType: type, anomalyCount: anomalies.length },
+                            metadata: { anomalies, apiName: name },
+                        });
+                        logger.info(`Detected ${anomalies.length} anomalies in ${name}`);
+                    } else {
+                        logger.info(`No anomalies detected in ${name}`);
+                    }
+                } else {
+                    logger.info(`No data to analyze for ${name} from yesterday`);
+                }
+            }
+
+        } catch (error) {
+            logger.error('Error in scheduled anomaly detection', { error: error.message });
+        }
+    });
+
 }
 
 module.exports = { setupCron };

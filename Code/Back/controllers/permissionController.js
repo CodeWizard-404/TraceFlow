@@ -260,7 +260,6 @@ class PermissionController {
      * @returns {Promise<void>} JSON response with result or error.
      */
     static async assignPermissionsToRole(req, res) {
-        console.log(req.body);
         const actorID = req.user?.userID || 'unknown';
         try {
             const { roleID } = req.params;

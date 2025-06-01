@@ -39,6 +39,9 @@ import Delegation from "../../../models/Delegation";
 import Role from "../../../models/Role";
 import "../AdminDashboard.css";
 
+
+
+
 interface AssignmentsManagementProps {
     selectedUser: User | null;
     users: User[];
@@ -366,6 +369,7 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
     const [showConfirm, setShowConfirm] = useState<{
         message: string;
         onConfirm: (cascade: boolean) => Promise<void>;
+        onCancel?: () => void;
     } | null>(null);
 
     const [state, setState] = useState({
@@ -1206,25 +1210,41 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                     await revokeDirectorFromRegionalManager(userID);
                 }
 
-                const currentRMs = (await getRegionalManagersByDirector(userID)).map((rm) => rm.userID);
                 const currentRegions = (await getRegionsByUser(userID)).map((r) => r.regionID);
                 const newRegions = tempRegions.map((r) => r.regionID);
+                console.log(`Current regions: ${currentRegions}`);
+                console.log(`New regions: ${newRegions}`);
                 const regionsToAssign = newRegions.filter((id) => !currentRegions.includes(id));
-                const regionsToRevoke = currentRMs.filter((id) => !newRegions.includes(id));
+                const regionsToRevoke = currentRegions.filter((id) => !newRegions.includes(id));
+                console.log(`Regions to assign: ${regionsToAssign}`);
+                console.log(`Regions to revoke: ${regionsToRevoke}`);
 
                 if (regionsToAssign.length) {
                     await assignRegionsToRegionalManager(userID, regionsToAssign);
                 }
                 if (regionsToRevoke.length) {
-                    await new Promise<void>((resolve) => {
+                    await new Promise<void>((resolve, reject) => {
                         setShowConfirm({
                             message: `Revoking regions will remove all assigned supervisors. Apply cascade?`,
                             onConfirm: async (cascade) => {
-                                await revokeRegionsFromRegionalManager(userID, regionsToRevoke, {
-                                    revokeSupervisors: cascade,
-                                });
+                                try {
+                                    console.log(`Revoking regions: ${regionsToRevoke}, with cascade: ${cascade}`);
+                                    await revokeRegionsFromRegionalManager(userID, regionsToRevoke, {
+                                        revokeSupervisors: cascade,
+                                    });
+                                    console.log(`Successfully revoked regions: ${regionsToRevoke}`);
+                                    setShowConfirm(null);
+                                    resolve();
+                                } catch (error) {
+                                    console.error(`Error revoking regions:`, error);
+                                    setGlobalError("Failed to revoke regions.");
+                                    setShowConfirm(null);
+                                    reject(error);
+                                }
+                            },
+                            onCancel: () => {
                                 setShowConfirm(null);
-                                resolve();
+                                reject(new Error("Save operation cancelled"));
                             },
                         });
                     });
@@ -1239,17 +1259,27 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                     ...supervisorsToAssign.map((id) => assignRegionalManagerToSupervisor(id, userID)),
                     ...(supervisorsToRevoke.length
                         ? [
-                            new Promise<void>((resolve) => {
+                            new Promise<void>((resolve, reject) => {
                                 setShowConfirm({
                                     message: `Revoking supervisors will remove all their assignments. Apply cascade?`,
                                     onConfirm: async (cascade) => {
-                                        await Promise.all(
-                                            supervisorsToRevoke.map((id) =>
-                                                revokeRegionalManagerFromSupervisor(id, { revokeAll: cascade })
-                                            )
-                                        );
+                                        try {
+                                            await Promise.all(
+                                                supervisorsToRevoke.map((id) =>
+                                                    revokeRegionalManagerFromSupervisor(id, { revokeAll: cascade })
+                                                )
+                                            );
+                                            setShowConfirm(null);
+                                            resolve();
+                                        } catch (error) {
+                                            setGlobalError("Failed to revoke supervisors.");
+                                            setShowConfirm(null);
+                                            reject(error);
+                                        }
+                                    },
+                                    onCancel: () => {
                                         setShowConfirm(null);
-                                        resolve();
+                                        reject(new Error("Save operation cancelled"));
                                     },
                                 });
                             }),
@@ -1263,13 +1293,23 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                 if (newRM && !currentRMs.includes(newRM)) {
                     await assignRegionalManagerToSupervisor(userID, newRM);
                 } else if (currentRMs.length > 0 && !newRM) {
-                    await new Promise<void>((resolve) => {
+                    await new Promise<void>((resolve, reject) => {
                         setShowConfirm({
                             message: `Revoking regional manager will remove all assignments. Apply cascade?`,
                             onConfirm: async (cascade) => {
-                                await revokeRegionalManagerFromSupervisor(userID, { revokeAll: cascade });
+                                try {
+                                    await revokeRegionalManagerFromSupervisor(userID, { revokeAll: cascade });
+                                    setShowConfirm(null);
+                                    resolve();
+                                } catch (error) {
+                                    setGlobalError("Failed to revoke regional manager.");
+                                    setShowConfirm(null);
+                                    reject(error);
+                                }
+                            },
+                            onCancel: () => {
                                 setShowConfirm(null);
-                                resolve();
+                                reject(new Error("Save operation cancelled"));
                             },
                         });
                     });
@@ -1284,15 +1324,25 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                     await assignGovernoratesToSupervisor(userID, govsToAssign);
                 }
                 if (govsToRevoke.length) {
-                    await new Promise<void>((resolve) => {
+                    await new Promise<void>((resolve, reject) => {
                         setShowConfirm({
-                            message: `Revoking governorates will remove all assigned delegations and agents. Apply cascade?`,
+                            message: `Revoking governorates can remove all assigned delegations and agents. approve?`,
                             onConfirm: async (cascade) => {
-                                await revokeGovernoratesFromSupervisor(userID, govsToRevoke, {
-                                    revokeAll: cascade,
-                                });
+                                try {
+                                    await revokeGovernoratesFromSupervisor(userID, govsToRevoke, {
+                                        revokeAll: cascade,
+                                    });
+                                    setShowConfirm(null);
+                                    resolve();
+                                } catch (error) {
+                                    setGlobalError("Failed to revoke governorates.");
+                                    setShowConfirm(null);
+                                    reject(error);
+                                }
+                            },
+                            onCancel: () => {
                                 setShowConfirm(null);
-                                resolve();
+                                reject(new Error("Save operation cancelled"));
                             },
                         });
                     });
@@ -1307,15 +1357,25 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                     await assignDelegationsToSupervisor(userID, delsToAssign);
                 }
                 if (delsToRevoke.length) {
-                    await new Promise<void>((resolve) => {
+                    await new Promise<void>((resolve, reject) => {
                         setShowConfirm({
                             message: `Revoking delegations will remove all assigned agents. Apply cascade?`,
                             onConfirm: async (cascade) => {
-                                await revokeDelegationsFromSupervisor(userID, delsToRevoke, {
-                                    revokeAgents: cascade,
-                                });
+                                try {
+                                    await revokeDelegationsFromSupervisor(userID, delsToRevoke, {
+                                        revokeAgents: cascade,
+                                    });
+                                    setShowConfirm(null);
+                                    resolve();
+                                } catch (error) {
+                                    setGlobalError("Failed to revoke delegations.");
+                                    setShowConfirm(null);
+                                    reject(error);
+                                }
+                            },
+                            onCancel: () => {
                                 setShowConfirm(null);
-                                resolve();
+                                reject(new Error("Save operation cancelled"));
                             },
                         });
                     });
@@ -1397,7 +1457,6 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
     ]);
 
     return (
-
         <div className="dropdown-unit" aria-expanded={expandedSection === "assignments"}>
             <div className="dropdown-bar" onClick={() => toggleSection("assignments")} role="button" tabIndex={0}>
                 <h3>Assignments</h3>
@@ -1607,12 +1666,36 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                         )}
                     </>
 
+                    {showConfirm && (
+                        <div className="sop-confirmation-modal">
+                            <div className="sop-modal-content">
+                                <p className="sop-modal-message">{showConfirm.message}</p>
+                                <div className="sop-modal-buttons">
+                                    <button
+                                        className="sop-modal-button sop-modal-confirm"
+                                        onClick={() => showConfirm.onConfirm(true)}
+                                    >
+                                        Yes, Apply Cascade
+                                    </button>
+                                    <button
+                                        className="sop-modal-button sop-modal-revoke"
+                                        onClick={() => showConfirm.onConfirm(false)}
+                                    >
+                                        No, Just Revoke
+                                    </button>
+                                    <button
+                                        className="sop-modal-button sop-modal-cancel"
+                                        onClick={() => showConfirm.onCancel?.()}
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
-
             )}
-
         </div>
-
     );
 
 };

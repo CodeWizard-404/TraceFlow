@@ -337,118 +337,104 @@
     "loading": "Loading..."
   },
   "timesheets": {
-    "loading": "Loading Timesheet...",
-    "locationTBD": "Location",
     "viewModes": {
       "year": "Year",
       "month": "Month",
       "week": "Week",
       "day": "Day"
     },
+    "navigation": {
+      "previousYear": "Previous Year",
+      "nextYear": "Next Year",
+      "previousMonth": "Previous Month",
+      "nextMonth": "Next Month",
+      "previousWeek": "Previous Week",
+      "nextWeek": "Next Week",
+      "previousDay": "Previous Day",
+      "nextDay": "Next Day"
+    },
     "actions": {
       "scheduleVisit": "Schedule Visit",
-      "receiptBooks": "Receipt Books",
-      "current": "Current {{view}}",
-      "viewReceiptBooks": "View Receipt Books",
-      "filterSupervisors": "Filter Supervisors",
-      "validateTimesheet": "Validate Entire Timesheet",
+      "scrollToCurrent": "Go to Current {{view}}",
       "generateSuggestions": "Generate Suggestions",
-      "validate": "Validate"
+      "validate": "Validate Timesheet",
+      "toggleSelectAll": "Toggle Select All",
+      "selectAll": "Select All",
+      "deselectAll": "Deselect All",
+      "cancelSuggestions": "Cancel Suggestions",
+      "saveSuggestions": "Save Suggestions",
+      "saving": "Saving..."
     },
     "filter": {
-      "searchPlaceholder": "Search by name or phone...",
+      "toggle": "Filter",
+      "searchPlaceholder": "Search Supervisors",
+      "supervisorSelect": "Select Supervisor",
       "allSupervisors": "All Supervisors",
-      "supervisorSelect": "Select a supervisor",
-      "visitStatusSelect": "Select a visit status",
+      "visitStatusSelect": "Select Visit Status",
       "allStatuses": "All Statuses",
-      "reasonPlaceholder": "SEARCH REASONS...",
-      "toggle": "Filter"
+      "reasonPlaceholder": "Search by Reason"
     },
     "yearView": {
       "week": "Week",
       "visits": "Visits",
       "supervisors": "Supervisors",
-      "month": "{{monthName}}",
-      "weekNumber": "Week {{weekNumber}} :",
-      "weekRange": "{{startDate}} - {{endDate}}",
-      "supervisorCount": "Supervisors: {{count}}"
+      "weekTile": "Week {{weekNumber}}"
     },
     "monthView": {
       "week": "Week",
-      "weekRange": "{{startDate}} - {{endDate}}",
-      "visitCount": "{{count}} Visits",
-      "visits": "Visit(s)",
-      "supervisorCount": "Supervisors: {{count}}",
+      "visits": "Visits",
       "status": "Status",
-      "supervisors": "Supervisors"
+      "supervisors": "{{count}} Supervisor(s)",
+      "weekCard": "Week {{weekNumber}}"
     },
     "weekView": {
       "week": "Week",
-      "weekRange": "{{startDate}} - {{endDate}}",
       "status": "Status",
-      "supervisor": "Supervisor",
       "visits": "Visits",
-      "dayName": "{{dayName}}",
-      "dayDate": "{{dayDate}}",
-      "visitCount": "/ {{count}} Visits"
+      "visitCard": "Visit at {{time}}"
     },
     "dayView": {
-      "date": "{{weekday}} {{day}}/{{month}}",
-      "noVisits": "No Visits Scheduled"
+      "noVisits": "No visits scheduled for this day"
     },
-    "visitCard": {
-      "supervisor": "{{firstname}} {{lastname}}",
-      "time": "{{time}}",
-      "status": "{{status}}",
-      "location": "{{location}}",
-      "locationTBD": "Location TBD",
-      "reasons": "Reasons: {{reasons}}"
+    "errors": {
+      "fetchTimesheets": "Failed to fetch timesheets. Please try again.",
+      "fetchUsers": "Failed to fetch users. Please try again.",
+      "noPendingVisits": "No pending visits to validate.",
+      "validateTimesheet": "Failed to validate timesheet. Please try again.",
+      "updateVisit": "Failed to update visit date. Please try again.",
+      "saveSuggestions": "Failed to save suggestions. Please try again.",
+      "partialSuccessGoogleSync": "Timesheet saved, but Google Calendar sync failed."
     },
-    "aria": {
-      "prevYear": "Previous year",
-      "nextYear": "Next year",
-      "prevMonth": "Previous month",
-      "nextMonth": "Next month",
-      "prevWeek": "Previous week",
-      "nextWeek": "Next week",
-      "prevDay": "Previous day",
-      "nextDay": "Next day",
-      "viewToggle": "Switch to {{mode}} view",
-      "scheduleVisit": "Schedule a new visit",
-      "receiptBooks": "View receipt books",
-      "current": "Scroll to current {{mode}}",
-      "supervisorSearch": "Search supervisors by name or phone",
-      "supervisorFilter": "Filter timesheets by supervisor",
-      "month": "View timesheets for {{month}}",
-      "weekTile": "View week {{weekNumber}} details",
-      "weekCard": "View week {{weekNumber}} details",
-      "dayTile": "View visits for {{weekday}} {{day}}",
-      "visitCard": "View visit details for {{time}} at {{location}}"
+    "warnings": {
+      "unsavedChanges": "You have unsaved changes. Are you sure you want to leave?"
     },
+    "confirmValidate": "Are you sure you want to validate {{count}} visit(s)?",
     "suggestions": {
-      "title": "Suggestions",
-      "governorateIds": "Governorates",
-      "selectGovernorates": "Select governorates",
+      "title": "Generate Timesheet Suggestions",
+      "close": "Close",
       "delegationIds": "Delegations",
-      "selectDelegations": "Select delegations",
       "agentIds": "Agents",
-      "selectAgents": "Select agents",
-      "supervisorLocation": "Supervisor Location",
       "preferredDays": "Preferred Days",
-      "selectDays": "Select preferred days",
       "timeInterval": "Time Interval",
-      "maxVisitsPerAgentPerWeek": "Max Visits Per Agent Per Week",
-      "generate": "Generate",
-      "cancel": "Cancel"
-    },
-    "days": {
-      "Monday": "Monday",
-      "Tuesday": "Tuesday",
-      "Wednesday": "Wednesday",
-      "Thursday": "Thursday",
-      "Friday": "Friday",
-      "Saturday": "Saturday",
-      "Sunday": "Sunday"
+      "maxVisitsPerAgentPerWeek": "Max Visits per Agent per Week",
+      "includeRecruitmentVisits": "Include Recruitment Visits",
+      "recruitmentAreas": "Recruitment Areas",
+      "description": "Description",
+      "descriptionPlaceholder": "Enter a description for the suggestions",
+      "selectDelegations": "Select Delegations",
+      "selectAgents": "Select Agents",
+      "selectDays": "Select Preferred Days",
+      "generate": "Generate Suggestions",
+      "generating": "Generating...",
+      "cancel": "Cancel Suggestion",
+      "canceled": "Suggestion generation canceled.",
+      "fetchError": "Failed to fetch data. Please try again.",
+      "locationError": "Unable to retrieve your location. Please ensure location services are enabled.",
+      "geolocationUnsupported": "Geolocation is not supported by your browser.",
+      "noSupervisor": "No supervisor ID provided.",
+      "invalidCoordinates": "Invalid coordinates provided.",
+      "cancelError": "Failed to cancel suggestion. Please try again.",
+      "generateError": "Failed to generate suggestions. Please try again."
     }
   },
   "timesheetForm": {
@@ -469,23 +455,23 @@
         "location": "Enter visit location (optional)",
         "supervisorSearch": "Search supervisors by name...",
         "supervisorPhone": "Or enter supervisor phone number...",
-        "supervisorSelect": "Select a supervisor",
+        "supervisorSelect": "supervisor",
         "agentPhone": "Enter agent's phone number",
         "permissionDenied": "Permission denied",
         "locationSearch": "Search locations...",
-        "locationSelect": "Select a location",
+        "locationSelect": "location",
         "agentSearch": "Search agents...",
         "agentSearchPlaceholder": "Search agents...",
-        "agentSelect": "Select an agent",
+        "agentSelect": " agent",
         "reasonSearch": "Search reasons...",
-        "reasonSelect": "Select a reason",
+        "reasonSelect": "reason",
         "checklistSearch": "Search checklists...",
-        "checklistSelect": "Select a checklist",
+        "checklistSelect": "checklist",
         "regionalManagerSearch": "Search regional managers...",
-        "regionalManagerSelect": "Select a regional manager",
+        "regionalManagerSelect": "regional manager",
         "regionSelect": "Select a region",
-        "governorateSelect": "Select a governorate",
-        "delegationSelect": "Select a delegation"
+        "governorateSelect": "governorate",
+        "delegationSelect": "delegation"
       },
       "regionalManager": "Regional Manager",
       "region": "Region",
@@ -1955,5 +1941,194 @@
     "agentDetailsError": "Failed to retrieve agent details",
     "confirm": "Confirm",
     "cancel": "Cancel"
+  },
+  "reports": {
+    "scheduled": {
+      "title": "Scheduled Reports",
+      "listTitle": "Scheduled Reports List"
+    },
+    "generated": {
+      "title": "Generated Reports",
+      "listTitle": "Generated Reports List"
+    },
+    "generate": {
+      "title": "Generate Report"
+    },
+    "schedule": {
+      "title": "Schedule Report",
+      "period": "Period",
+      "customPeriod": "Custom Period",
+      "unit": "Unit",
+      "minutes": "Minutes",
+      "hours": "Hours",
+      "days": "Days",
+      "cron": "Period",
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "monthly": "Monthly",
+      "yearly": "Yearly",
+      "custom": "Custom",
+      "placeholders": {
+        "cron": "Enter Period ",
+        "customPeriod": "Enter period (e.g., 30)",
+        "unit": "Select unit",
+        "period": "Period"
+      }
+    },
+    "manager": {
+      "title": "Report Manager",
+      "scheduled": "Scheduled Reports",
+      "generated": "Generated Reports",
+      "generate": "Generate New Report",
+      "schedule": "Schedule New Report"
+    },
+    "filter": {
+      "title": "Filter Reports",
+      "toggle": "Filters",
+      "options": "Filter Options",
+      "reportType": "Report Type",
+      "format": "Format",
+      "dateRange": "Date Range",
+      "to": "to",
+      "placeholders": {
+        "type": "Report Type",
+        "startDate": "Start Date",
+        "endDate": "End Date",
+        "supervisor": "Supervisor",
+        "regionalManager": "Regional Manager",
+        "director": "Director",
+        "agent": "Agent",
+        "region": "Region",
+        "governorate": "Governorate",
+        "delegation": "Delegation",
+        "status": "Status",
+        "visitReasons": "Visit Reasons",
+        "visitStatus": "Visit Status",
+        "bookType": "Book Type",
+        "currentHolder": "Current Holder",
+        "role": "Role",
+        "activityType": "Activity Type",
+        "user": "User",
+        "ipAddress": "Enter IP Address",
+        "anomalyType": "Anomaly Type",
+        "affectedEntity": "Affected Entity",
+        "severity": "Severity",
+        "route": "Route",
+        "weekNumber": "Enter Week Number (1-52)",
+        "min": "Min",
+        "max": "Max"
+      }
+    },
+    "accordion": {
+      "daterange": "Date Range",
+      "userselection": "User Selection",
+      "location": "Location",
+      "otherfilters": "Other Filters"
+    },
+    "types": {
+      "visitsummary": "Visit Summary",
+      "timesheet": "Timesheet",
+      "receiptbookinventory": "Receipt Book Inventory",
+      "stubcollection": "Stub Collection",
+      "useractivity": "User Activity",
+      "aianomaly": "AI Anomaly",
+      "agentperformance": "Agent Performance",
+      "regionperformance": "Region Performance",
+      "full": "Full Report"
+    },
+    "formats": {
+      "pdf": "PDF",
+      "excel": "Excel"
+    },
+    "statuses": {
+      "pending": "Pending",
+      "visited": "Visited",
+      "validated": "Validated",
+      "rejected": "Rejected",
+      "collected": "Collected",
+      "archived": "Archived",
+      "instock": "In Stock",
+      "senttosupplier": "Sent to Supplier",
+      "collectfromsupplier": "Collect from Supplier",
+      "withregionalmanager": "With Regional Manager",
+      "withsupervisor": "With Supervisor",
+      "assignedtoagent": "Assigned to Agent",
+      "stubcollected": "Stub Collected",
+      "withstockmanager": "With Stock Manager"
+    },
+    "filters": {
+      "supervisor": "Supervisor",
+      "regionalManager": "Regional Manager",
+      "director": "Director",
+      "agent": "Agent",
+      "region": "Region",
+      "governorate": "Governorate",
+      "delegation": "Delegation",
+      "visitType": "Visit Type (Recruitment)",
+      "status": "Status",
+      "visitReasons": "Visit Reasons",
+      "checklistCompleted": "Checklist Completed",
+      "visitDuration": "Visit Duration (minutes)",
+      "aiAnomalies": "AI Anomalies Detected",
+      "numberOfVisits": "Number of Visits",
+      "totalHours": "Total Hours",
+      "aiSuggestions": "AI Suggestions",
+      "anomaliesDetected": "Anomalies Detected",
+      "visitStatus": "Visit Status",
+      "weekNumber": "Week Number",
+      "bookType": "Book Type",
+      "currentHolder": "Current Holder",
+      "assignmentStatus": "Assignment Status",
+      "role": "Role",
+      "activityType": "Activity Type",
+      "user": "User",
+      "suspiciousActivity": "Suspicious Activity",
+      "ipAddress": "IP Address",
+      "anomalyType": "Anomaly Type",
+      "affectedEntity": "Affected Entity",
+      "severity": "Severity",
+      "route": "Route",
+      "performanceScore": "Performance Score",
+      "stubsCollected": "Stubs Collected",
+      "receiptBooksAssigned": "Receipt Books Assigned",
+      "visitCompletionRate": "Visit Completion Rate (%)",
+      "locationUpdated": "Location Updated"
+    },
+    "table": {
+      "headers": {
+        "scheduleID": "Schedule ID",
+        "reportID": "Report ID",
+        "reportType": "Report Type",
+        "format": "Format",
+        "cronExpression": "Period",
+        "createdAt": "Created At",
+        "generatedAt": "Generated At",
+        "actions": "Actions"
+      },
+      "noScheduled": "No scheduled reports found.",
+      "noGenerated": "No generated reports found."
+    },
+    "actions": {
+      "cancel": "Cancel",
+      "generate": "Generate Report",
+      "generating": "Generating...",
+      "schedule": "Schedule Report",
+      "scheduling": "Scheduling..."
+    },
+    "errors": {
+      "fetchFilterData": "Failed to fetch filter data.",
+      "fetchAgents": "Failed to fetch agents.",
+      "fetchGovernorates": "Failed to fetch governorates.",
+      "fetchDelegations": "Failed to fetch delegations.",
+      "fetchData": "Failed to fetch report data.",
+      "generateReport": "Failed to generate report.",
+      "scheduleReport": "Failed to schedule report.",
+      "cronRequired": "Period is required.",
+      "downloadReport": "Failed to download report.",
+      "deleteSchedule": "Failed to delete schedule.",
+      "deleteReport": "Failed to delete report.",
+      "invalidIP": "Invalid IP address format."
+    },
+    "loading": "Loading Reports..."
   }
 }

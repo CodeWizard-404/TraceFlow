@@ -158,7 +158,7 @@ class UserService {
             // Send the SMS
             await sendSMS(phone, message, 'notification');
         } catch (error) {
-            console.error(`Failed to send SMS to ${phone}: ${error.message}`);
+            throw new Error(error);
         }
     }
     /**
@@ -204,7 +204,6 @@ class UserService {
             if (error.message === ERROR_MESSAGES.DUPLICATE_EMAIL) {
                 throw error; // Propagate duplicate email error
             }
-            console.error(`Keycloak email check failed: ${error.message}`, error.response?.data);
             throw new Error(ERROR_MESSAGES.AUTH_SERVICE_DOWN);
         }
 
@@ -225,7 +224,6 @@ class UserService {
             );
             keycloakUserId = keycloakResponse.headers.location.split('/').pop();
         } catch (error) {
-            console.error(`Keycloak user creation failed: ${error.message}`, error.response?.data);
             throw new Error(ERROR_MESSAGES.KEYCLOAK_CREATE_FAILED);
         }
 
@@ -248,7 +246,7 @@ class UserService {
                     headers: { Authorization: `Bearer ${token}` },
                 });
             } catch (deleteError) {
-                console.error(`Failed to rollback Keycloak user: ${deleteError.message}`);
+                throw new Error(`${ERROR_MESSAGES.KEYCLOAK_CREATE_FAILED} and ${ERROR_MESSAGES.DB_CREATE_FAILED}`);
             }
             throw new Error(ERROR_MESSAGES.DB_CREATE_FAILED);
         }
@@ -295,7 +293,7 @@ class UserService {
             // Send SMS notification
             await this.sendSMSNotification(phone, subject);
         } catch (error) {
-            console.error(`Failed to send welcome email/SMS to ${email}: ${error.message}`);
+            throw new Error(ERROR_MESSAGES.EMAIL_SEND_FAILED);
         }
 
         return user;
@@ -440,7 +438,7 @@ class UserService {
                 // Send SMS notification
                 await this.sendSMSNotification(user.phone, subject);
             } catch (error) {
-                console.error(`Failed to send update email/SMS to ${user.email}: ${error.message}`);
+                throw new Error(ERROR_MESSAGES.EMAIL_SEND_FAILED);
             }
         }
 
@@ -476,7 +474,7 @@ class UserService {
             // Send SMS notification
             await this.sendSMSNotification(user.phone, subject);
         } catch (error) {
-            console.error(`Failed to send password reset email/SMS to ${user.email}: ${error.message}`);
+            throw new Error(ERROR_MESSAGES.EMAIL_SEND_FAILED);
         }
     }
 
@@ -514,7 +512,7 @@ class UserService {
             // Send SMS notification
             await this.sendSMSNotification(user.phone, subject);
         } catch (error) {
-            console.error(`Failed to send role change email/SMS to ${user.email}: ${error.message}`);
+            throw new Error(ERROR_MESSAGES.EMAIL_SEND_FAILED);
         }
     }
 

@@ -344,6 +344,41 @@ class ReceiptBookController {
         }
     }
 
+    /**
+     * Get all unique receipt book holders with their roles.
+     * @param {Object} req - Express request object.
+     * @param {Object} res - Express response object.
+     * @returns {Promise<void>} JSON response with holders or error.
+     */
+    static async getReceiptBookHolders(req, res) {
+        const actorID = req.user?.userID || 'unknown';
+        try {
+            const holders = await ReceiptBookService.getReceiptBookHolders();
+            logger.info('Successfully fetched receipt book holders', {
+                route: 'receipt-books/holders',
+                method: req.method,
+                url: req.originalUrl,
+                status: 200,
+                ip: req.ip,
+                traceId: req.traceId,
+                userId: actorID,
+                metadata: { holderCount: holders.length }
+            });
+            return res.status(200).json(holders);
+        } catch (error) {
+            logger.error('Failed to fetch receipt book holders', {
+                route: 'receipt-books/holders',
+                method: req.method,
+                url: req.originalUrl,
+                status: error.status || 500,
+                ip: req.ip,
+                traceId: req.traceId,
+                userId: actorID,
+                metadata: { error: error.message }
+            });
+            return res.status(error.status || 500).json({ error: error.message || 'Failed to fetch receipt book holders' });
+        }
+    }
 
     /**
      * Get a receipt book by ID.

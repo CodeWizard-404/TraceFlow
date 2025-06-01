@@ -11,7 +11,7 @@ const fs = require('fs');
 const retry = require('async-retry');
 
 class VisitService {
-    static async createVisit(data, actorID, options = {}) {
+    static async createVisit(data, options = {}) {
         const { date, time, agentID, supervisorID, timesheetID, reasons, checklists, location, status = 'pending' } = data;
 
         if (!date || !time || !supervisorID) {
@@ -193,7 +193,7 @@ class VisitService {
         }
     }
 
-    static async logVisit(visitID, data, files, actorID) {
+    static async logVisit(visitID, data, files) {
         const transaction = await sequelize.transaction();
         try {
             const { duration, checklistUpdates, comment, date, time, status } = data;

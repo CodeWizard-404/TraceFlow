@@ -20,40 +20,40 @@ export type SyncTimesheetCalendarResponse = Array<{
 
 // Type for timesheet suggestions response
 export type SuggestTimesheetResponse = Array<{
+  visitID: string;
+  date: string; // YYYY-MM-DD
+  time: string; // HH:MM
+  location: string;
+  status: string;
+  photos: string[];
+  comment: string | null;
   agentID: string | null;
-  supervisorID: string;
-  schedule: Array<{
-    date: string; // DD/MM/YYYY
-    visits: Array<{
-      startTime: string; // HH:MM
-      location: string;
-      latitude: number | null;
-      longitude: number | null;
-      reasons: Array<{ id: string; item: string }>;
-      checklists: Array<{ id: string; item: string }>;
-    }>;
-  }>;
+  timesheetID: string;
+  calendarEventId: string | null;
+  Reasons: Array<{ reasonID: string; item: string }>;
+  Checklists: Array<{ checklistID: string; item: string }>;
+  Agent: {
+    agentID: string;
+    name: string;
+    lastname: string;
+    email: string;
+    phone: string;
+    location: string;
+    latitude: number | null;
+    longitude: number | null;
+    supervisorID: string;
+    delegationID: string | null;
+    Delegation: { delegationID: string; name: string } | null;
+  } | null;
 }>;
 
 // Type for the raw API response
 type SuggestTimesheetApiResponse = {
-  suggestions: Array<{
-    agentID: string | null;
-    supervisorID: string;
-    schedule: Array<{
-      date: string; // YYYY-MM-DD
-      visits: Array<{
-        time: string; // HH:MM
-        location: string;
-        latitude: number | null;
-        longitude: number | null;
-        reasons: Array<{ id: string; item: string }>;
-        checklists: Array<{ id: string; item: string }>;
-      }>;
-    }>;
-  }>;
+  suggestions: SuggestTimesheetResponse;
   requestId: string;
 };
+
+
 
 // Type for cancel timesheet suggestion response
 type CancelTimesheetSuggestionResponse = {
@@ -282,13 +282,13 @@ export const syncTimesheetToCalendar = async (timesheetId: string): Promise<Sync
 };
 
 export const suggestTimesheet = async (data: {
-  supervisorId: string;
+  supervisorID: string;
   weekNumber: number;
   year: number;
   criteria: {
     delegationIds?: string[];
     agentIds?: string[];
-    preferredDays?: string[];
+    preferredDays?: string[]; // Expected in YYYY-MM-DD format
     timeInterval?: { startHour: number; endHour: number };
     maxVisitsPerAgentPerWeek?: number;
     includeRecruitmentVisits?: boolean;
@@ -299,7 +299,7 @@ export const suggestTimesheet = async (data: {
   coordinates: { lat: number; lng: number };
 }): Promise<{ suggestions: SuggestTimesheetResponse; requestId: string }> => {
   try {
-    if (!data.supervisorId || !data.weekNumber || !data.year) {
+    if (!data.supervisorID || !data.weekNumber || !data.year) {
       throw new Error("Supervisor ID, week number, and year are required.");
     }
     if (!data.coordinates || typeof data.coordinates.lat !== "number" || typeof data.coordinates.lng !== "number") {
@@ -317,33 +317,13 @@ export const suggestTimesheet = async (data: {
         throw new Error("Invalid time interval: startHour must be less than endHour and both must be integers between 0 and 24.");
       }
     }
-    if (data.criteria?.includeRecruitmentVisits && (!data.criteria.recruitmentAreas || data.criteria.recruitmentAreas.length === 0)) {
-      throw new Error("Recruitment areas are required when includeRecruitmentVisits is true.");
-    }
     const response = await api.post<SuggestTimesheetApiResponse>("/timesheets/suggest", data);
     if (!response.data.suggestions || !Array.isArray(response.data.suggestions)) {
       throw new Error("Invalid suggestions response: Expected an array");
     }
 
-    // Transform the response to match parent component expectations
-    const transformedSuggestions: SuggestTimesheetResponse = response.data.suggestions.map((suggestion) => ({
-      ...suggestion,
-      schedule: suggestion.schedule.map((day) => {
-        // Convert date from YYYY-MM-DD to DD/MM/YYYY
-        const [y, m, d] = day.date.split("-").map(Number);
-        const formattedDate = `${d.toString().padStart(2, "0")}/${m.toString().padStart(2, "0")}/${y}`;
-        return {
-          date: formattedDate,
-          visits: day.visits.map((visit) => ({
-            ...visit,
-            startTime: visit.time,
-          })),
-        };
-      }),
-    }));
-
     return {
-      suggestions: transformedSuggestions,
+      suggestions: response.data.suggestions,
       requestId: response.data.requestId,
     };
   } catch (error) {

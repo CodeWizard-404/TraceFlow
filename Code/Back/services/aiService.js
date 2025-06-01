@@ -4,7 +4,6 @@ const { AIConfig, User, Agent, Reason, Checklist, Delegation } = require('../mod
 const GoogleMapsService = require('./googleMapsService');
 const { Op } = require('sequelize');
 const NodeCache = require('node-cache');
-const logger = require('../utils/logger');
 
 const cache = new NodeCache({ stdTTL: 3600 });
 
@@ -101,23 +100,8 @@ class AIService {
         return checklists;
     }
 
-    static extractJsonFromResponse(responseText) {
-        const arrayMatch = responseText.match(/^\s*\[[\s\S]*?\]\s*$/);
-        if (arrayMatch && arrayMatch[0]) {
-            return arrayMatch[0];
-        }
-        const jsonMatch = responseText.match(/```json\n([\s\S]*?)\n```/);
-        if (jsonMatch && jsonMatch[1]) {
-            return jsonMatch[1];
-        }
-        const fallbackMatch = responseText.match(/\[[\s\S]*?\]/);
-        if (fallbackMatch && fallbackMatch[0]) {
-            return fallbackMatch[0];
-        }
-        throw new Error('No valid JSON array found in response');
-    }
-
     static async generateTimesheetSuggestions(supervisorId, weekNumber, year, timesheetData, controller = new AbortController()) {
+
         try {
             cache.flushAll();
             const supervisor = await User.findByPk(supervisorId, { attributes: ['userID'] });
@@ -130,7 +114,11 @@ class AIService {
             const weekStart = this.getWeekStartDate(weekNumber, year);
             const weekStartString = weekStart.toISOString().split('T')[0];
 
-            const today = new Date('2025-05-21T19:57:00.000Z'); // 20:57 CET
+            const today = new Date();
+            const currentHour = today.getUTCHours() + 1; // CET is UTC+1
+            const currentMinutes = today.getUTCMinutes();
+            const currentTimeString = `${currentHour.toString().padStart(2, '0')}:${currentMinutes.toString().padStart(2, '0')}`;
+
             const isCurrentWeek = year === today.getUTCFullYear() && weekNumber === Math.floor((today - new Date(Date.UTC(today.getUTCFullYear(), 0, 4 - ((new Date(Date.UTC(today.getUTCFullYear(), 0, 4)).getUTCDay() || 7) - 1)))) / (7 * 24 * 60 * 60 * 1000)) + 1;
 
             const {
@@ -151,17 +139,15 @@ class AIService {
                 throw error;
             }
 
-            // Adjust time interval for today
             let adjustedStartHour = timeInterval.startHour;
             if (isCurrentWeek && weekStartString === today.toISOString().split('T')[0]) {
-                const currentHour = today.getUTCHours() + 1; // CET is UTC+1
-                const currentMinutes = today.getUTCMinutes();
                 adjustedStartHour = Math.max(timeInterval.startHour, Math.ceil((currentHour * 60 + currentMinutes) / 60));
             }
 
             if (!coordinates || !coordinates.lat || !coordinates.lng) {
                 throw Object.assign(new Error(ERROR_MESSAGES.MISSING_COORDINATES), { status: 400 });
             }
+
             let supervisorLocation;
             try {
                 const locationData = await GoogleMapsService.getCurrentUserLocation(supervisorId, coordinates);
@@ -174,18 +160,26 @@ class AIService {
                 throw Object.assign(new Error(ERROR_MESSAGES.NO_SUPERVISOR_LOCATION), { status: 400, details: error.message });
             }
 
-            // Calculate valid dates
             let daysOfWeek = preferredDays.length > 0
                 ? preferredDays
                 : Array.from({ length: 7 }, (_, i) => this.getDateString(weekStart, i));
-            const todayDate = today.toISOString().split('T')[0]; // 2025-05-21
+
+            const todayDate = today.toISOString().split('T')[0];
             daysOfWeek = daysOfWeek.filter(date => date >= todayDate);
+
+            if (isCurrentWeek && daysOfWeek.includes(todayDate)) {
+                const currentMinutesTotal = currentHour * 60 + currentMinutes;
+                const endMinutes = timeInterval.endHour * 60;
+                if (currentMinutesTotal >= endMinutes) {
+                    daysOfWeek = daysOfWeek.filter(date => date !== todayDate);
+                }
+            }
+
             if (daysOfWeek.length === 0) {
                 return [];
             }
 
-            // Fetch agents and delegations
-            const [agents, reasons, checklists, delegations] = await Promise.all([
+            const [agents, reasons, checklists] = await Promise.all([
                 Agent.findAll({
                     where: {
                         supervisorID: supervisorId,
@@ -193,33 +187,45 @@ class AIService {
                         ...(delegationIds.length > 0 && { delegationID: { [Op.in]: delegationIds } })
                     },
                     attributes: ['agentID', 'name', 'lastname', 'location', 'latitude', 'longitude', 'delegationID'],
-                    include: [{ model: Delegation, attributes: ['name', 'latitude', 'longitude'] }]
+                    include: [{ model: Delegation, attributes: ['delegationID', 'name'] }]
                 }),
                 this.getCachedReasons(),
-                this.getCachedChecklists(),
-                Delegation.findAll({
-                    where: delegationIds.length > 0 ? { delegationID: { [Op.in]: delegationIds } } : {},
-                    attributes: ['delegationID', 'name', 'latitude', 'longitude']
-                })
+                this.getCachedChecklists()
             ]);
 
             if (agents.length === 0 && !includeRecruitmentVisits) {
                 throw Object.assign(new Error(ERROR_MESSAGES.NO_AGENTS_AVAILABLE), { status: 400 });
             }
 
-            const delegationMap = new Map(delegations.map(d => [d.delegationID, { latitude: d.latitude, longitude: d.longitude }]));
-
             const agentData = agents.map(agent => ({
                 agentID: agent.agentID,
-                location: agent.location || null,
-                latitude: agent.latitude || delegationMap.get(agent.delegationID)?.latitude || null,
-                longitude: agent.longitude || delegationMap.get(agent.delegationID)?.longitude || null,
-                delegationID: agent.delegationID
+                location: agent.location || agent.Delegation?.name || 'Unknown',
+                latitude: agent.latitude || null,
+                longitude: agent.longitude || null,
+                delegationID: agent.delegationID,
+                delegationName: agent.Delegation?.name || 'Unknown'
             }));
 
-            // Geocode recruitment areas
+            const sortedAgents = agentData.sort((a, b) => {
+                const distA = this.calculateDistance(
+                    supervisorLocation.latitude,
+                    supervisorLocation.longitude,
+                    a.latitude,
+                    a.longitude
+                );
+                const distB = this.calculateDistance(
+                    supervisorLocation.latitude,
+                    supervisorLocation.longitude,
+                    b.latitude,
+                    b.longitude
+                );
+                if (distA === Infinity && distB !== Infinity) return 1;
+                if (distB === Infinity && distA !== Infinity) return -1;
+                return distA - distB;
+            });
+
             let recruitmentVisitLocations = [];
-            if (includeRecruitmentVisits && criteria.recruitmentAreas?.length > 0) {
+            if (includeRecruitmentVisits && Array.isArray(criteria.recruitmentAreas) && criteria.recruitmentAreas.length > 0) {
                 recruitmentVisitLocations = await Promise.all(
                     criteria.recruitmentAreas.map(async area => {
                         try {
@@ -240,46 +246,47 @@ class AIService {
 
             const reasonMap = {};
             reasons.forEach(r => { reasonMap[r.reasonID] = { id: r.reasonID, item: r.item }; });
+
             const checklistMap = {};
             checklists.forEach(c => { checklistMap[c.checklistID] = { id: c.checklistID, item: c.item }; });
 
-            // Prepare AI prompt
             const aiConfig = await initializeAI();
             const config = (await AIConfig.findOne({ where: { supervisorId }, attributes: ['modelName', 'timesheetMaxSuggestions'] })) || aiConfig;
 
             const prompt = `Generate timesheet visit suggestions for supervisor ${supervisorId} for week ${weekNumber} of ${year} starting ${weekStartString}.
 - Dates: ${daysOfWeek.join(',')}
 - Time Interval: ${adjustedStartHour}:00-${timeInterval.endHour}:00
-- Current Date: 2025-05-21
-- Current Time: 20:57
-- Agents: ${agentData.length > 0 ? agentData.map(a => `${a.agentID}`).join(',') : 'none'}
+- Current Date: ${todayDate}
+- Current Time: ${currentTimeString}
+- Supervisor Coordinates: lat: ${timesheetData.coordinates.lat}, lng: ${timesheetData.coordinates.lng}
+- Agents: ${sortedAgents.length > 0 ? sortedAgents.map(a => `${a.agentID} (lat: ${a.latitude || 'unknown'}, lng: ${a.longitude || 'unknown'})`).join(',') : 'none'}
+- Agent Locations for Sorting: ${sortedAgents.map(a => `${a.agentID}: ${a.location}`).join(';')}
 - Reasons: ${reasons.map(r => `${r.reasonID}:${r.item}`).join(';')}
 - Checklists: ${checklists.map(c => `${c.checklistID}:${c.item}`).join(';')}
-${includeRecruitmentVisits ? `- Recruitment Visit Locations: ${recruitmentVisitLocations.map(l => l.formattedAddress).join(';')}` : ''}
-Return a JSON array of visit objects: [{"date":"YYYY-MM-DD","time":"HH:MM","agentID":"string|null","location":"string|null","reasons":[{"id":"string"}],"checklists":[{"id":"string"}]}]
-- Generate visits for the provided dates only: ${daysOfWeek.join(',')}.
-- For visits on 2025-05-21, ensure time is after 20:57.
-- ${includeRecruitmentVisits ? 'Include recruitment visits with agentID: null and location from Recruitment Visit Locations or "Recruitment Location" if none provided.' : 'Do not include visits with agentID: null.'}
-- For non-recruitment visits, agentID must be one of: ${agentData.length > 0 ? agentData.map(a => a.agentID).join(',') : 'none'}.
-- Ensure at least 1 reason per visit, selected based on relevance to the visit context (e.g., "Inventory discrepancy" for inventory-related visits).
-- Include at least 1 checklist per visit, chosen to match the reasons (e.g., if reason is "Inventory discrepancy," select "Verify store inventory").
-- Ensure date is in YYYY-MM-DD format and time is in HH:MM (24-hour) format within the time interval.
-- Ensure unique times for visits on the same day with at least a 1-hour gap.
+- Recruitment Visit Locations: ${recruitmentVisitLocations.map(loc => loc.formattedAddress).join(',')}
+Return a JSON array of visit objects: [{"date":"YYYY-MM-DD","time":"HH:MM","agentID":"string|null","reasons":[{"id":"string"}],"checklists":[{"id":"string"}]}]
+- Generate up to ${config.timesheetMaxSuggestions} visits for the provided dates: ${daysOfWeek.join(',')}.
+- Ensure visit times are within ${adjustedStartHour}:00-${timeInterval.endHour}:00.
+- ${isCurrentWeek && daysOfWeek.includes(todayDate) ? `For visits on ${todayDate}, ensure time is after ${currentTimeString}.` : ''}
+- Include at least one recruitment visit with agentID: null if includeRecruitmentVisits is true.
+- For non-recruitment visits, agentID must be one of: ${sortedAgents.length > 0 ? sortedAgents.map(a => a.agentID).join(',') : 'none'}.
+- Sort non-recruitment visits by agent proximity to supervisor coordinates (${timesheetData.coordinates.lat}, ${timesheetData.coordinates.lng}) using agent latitude and longitude. If coordinates are unknown, prioritize agents with known coordinates. Use the haversine formula for distance calculation.
+- Ensure at least 1 reason per visit in the format {"id": "string"}, selected based on relevance to the checklist.
+- Ensure at least 1 checklist per visit in the format {"id": "string"}, selected based on relevance to the reasons, except for recruitment visits which may have no checklists.
+- Ensure date is in YYYY-MM-DD format and time is in HH:MM (24-hour) format.
+- Ensure unique times on the same day with at least a 1-hour gap.
 - Return only the JSON array without additional text or formatting.`;
 
             const payload = {
-                model: 'mistral',
+                model: config.modelName || 'mistral',
                 prompt,
                 stream: false
             };
 
             let response;
             try {
-                console.log('Sending request to Ollama:', { payload });
                 response = await makeOllamaApiCall('post', '/generate', payload, { signal: controller.signal });
-                console.log('Raw Ollama response:', response);
             } catch (error) {
-                console.error('AI API Error:', error);
                 throw Object.assign(new Error(ERROR_MESSAGES.AI_API_UNAVAILABLE), { status: 503, details: error.message });
             }
 
@@ -289,23 +296,81 @@ Return a JSON array of visit objects: [{"date":"YYYY-MM-DD","time":"HH:MM","agen
 
             let suggestionsRaw;
             try {
-                const jsonString = this.extractJsonFromResponse(response.response);
-                console.log('Extracted JSON:', jsonString);
-                suggestionsRaw = JSON.parse(jsonString);
+                // Directly parse the response.response field
+                suggestionsRaw = JSON.parse(response.response.trim());
             } catch (parseError) {
-                console.error('Parse Error:', parseError, 'Raw Response:', response.response);
-                throw Object.assign(new Error(ERROR_MESSAGES.INVALID_AI_JSON), { status: 503, details: `Failed to extract or parse JSON: ${parseError.message}` });
+                throw Object.assign(new Error(ERROR_MESSAGES.INVALID_AI_JSON), {
+                    status: 503,
+                    details: `Failed to parse JSON: ${parseError.message}`
+                });
             }
 
             if (!Array.isArray(suggestionsRaw)) {
-                console.warn('AI response is not an array:', suggestionsRaw);
                 return [];
             }
 
-            const cacheKey = `${supervisorId}-${weekNumber}-${year}-${JSON.stringify(timesheetData)}`;
-            cache.set(cacheKey, suggestionsRaw);
+            // Validate and filter suggestions
+            const validSuggestions = suggestionsRaw.filter((visit, index) => {
+                // Validate date
+                if (!visit.date || !daysOfWeek.includes(visit.date) || visit.date < todayDate) {
+                    return false;
+                }
 
-            return suggestionsRaw;
+                // Validate time
+                const timeMatch = visit.time && visit.time.match(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/);
+                if (!timeMatch) {
+                    return false;
+                }
+
+                const [hours, minutes] = visit.time.split(':').map(Number);
+                const visitMinutes = hours * 60 + minutes;
+                if (
+                    visitMinutes < adjustedStartHour * 60 ||
+                    visitMinutes >= timeInterval.endHour * 60 ||
+                    (visit.date === todayDate && visitMinutes <= (currentHour * 60 + currentMinutes))
+                ) {
+                    return false;
+                }
+
+                // Validate agentID
+                const isRecruitment = visit.agentID === null;
+                if (!isRecruitment && !sortedAgents.some(agent => agent.agentID === visit.agentID)) {
+                    return false;
+                }
+
+                // Validate reasons
+                if (!Array.isArray(visit.reasons) || visit.reasons.length === 0 || !visit.reasons.every(r => r.id && reasonMap[r.id])) {
+                    return false;
+                }
+
+                // Validate checklists (allow empty for recruitment visits)
+                if (!isRecruitment && (!Array.isArray(visit.checklists) || visit.checklists.length === 0 || !visit.checklists.every(c => c.id && checklistMap[c.id]))) {
+                    return false;
+                }
+
+                return true;
+            });
+
+
+
+            // Ensure at least one recruitment visit if required
+            if (includeRecruitmentVisits && !validSuggestions.some(visit => visit.agentID === null)) {
+                validSuggestions.push({
+                    date: daysOfWeek[0],
+                    time: `${adjustedStartHour.toString().padStart(2, '0')}:00`,
+                    agentID: null,
+                    reasons: [{ id: reasons[0].reasonID }],
+                    checklists: []
+                });
+            }
+
+            // Limit suggestions to max allowed
+            const finalSuggestions = validSuggestions.slice(0, config.timesheetMaxSuggestions);
+
+            const cacheKey = `${supervisorId}-${weekNumber}-${year}-${JSON.stringify(timesheetData)}`;
+            cache.set(cacheKey, finalSuggestions);
+
+            return finalSuggestions;
         } catch (error) {
             if (error.name === 'AbortError') {
                 const abortError = new Error(ERROR_MESSAGES.REQUEST_CANCELED);
@@ -317,6 +382,26 @@ Return a JSON array of visit objects: [{"date":"YYYY-MM-DD","time":"HH:MM","agen
                 : Object.assign(new Error(ERROR_MESSAGES.AI_API_UNAVAILABLE), { status: 503, details: error.message });
         }
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     static async optimizeRoute(origin, allPoints = [], mode = 'driving', trafficModel = 'best_guess', distanceMatrix, controller = new AbortController()) {
         try {
@@ -377,7 +462,6 @@ Return only the JSON object without additional text or formatting.
                 try {
                     response = await makeOllamaApiCall('post', '/generate', payload, { signal: controller.signal });
                 } catch (error) {
-                    console.error('AI API Error:', error);
                     throw Object.assign(new Error(ERROR_MESSAGES.AI_API_UNAVAILABLE), { status: 503, details: error.message });
                 }
 
@@ -556,11 +640,33 @@ Return only the JSON object without additional text or formatting.
     }
 
 
-    static async detectAnomalies(dataType, data, controller = new AbortController()) {
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    static async detectAnomalies(dataType, data, context = '', controller = new AbortController()) {
         try {
-            const validDataTypes = ['timesheet', 'visit', 'receipt'];
-            if (!dataType || !validDataTypes.includes(dataType)) {
-                const error = new Error(ERROR_MESSAGES.INVALID_DATA_TYPE);
+            if (!dataType || typeof dataType !== 'string') {
+                const error = new Error('Data type must be a non-empty string');
                 error.status = 400;
                 throw error;
             }
@@ -573,10 +679,16 @@ Return only the JSON object without additional text or formatting.
 
             const aiConfig = await initializeAI();
             const config = (await AIConfig.findOne()) || aiConfig;
-            const prompt = `Analyze ${dataType} data: ${JSON.stringify(data)}. Detect anomalies with a confidence threshold of ${config.anomalyThreshold}. Return a JSON array of anomalies with explanations. Return only the JSON array without additional text or formatting.`;
+            const prompt = `Analyze the following data of type "${dataType}": ${JSON.stringify(data)}. ${context ? `Context: ${context}. ` : ''
+                }Detect anomalies with a confidence threshold of ${config.anomalyThreshold}. For each anomaly, provide a detailed explanation including:
+    - Why it is considered an anomaly
+    - What might have caused it
+    - Where it occurred (e.g., specific field or record)
+    Return a JSON array of anomalies with their explanations. Return only the JSON array without additional text or formatting.`;
+
 
             const payload = {
-                model: 'mistral',
+                model: config.modelName || 'mistral',
                 prompt,
                 stream: false
             };
@@ -586,6 +698,7 @@ Return only the JSON object without additional text or formatting.
             if (!response || !response.response) {
                 throw new Error(ERROR_MESSAGES.INVALID_AI_RESPONSE);
             }
+
 
             let anomalies;
             try {
@@ -620,7 +733,7 @@ Return only the JSON object without additional text or formatting.
                 throw error;
             }
 
-            const validFormats = ['pdf', 'excel'];
+            const validFormats = ['pdf', 'excel', 'json'];
             if (!format || !validFormats.includes(format)) {
                 const error = new Error(ERROR_MESSAGES.INVALID_FORMAT);
                 error.status = 400;
@@ -628,7 +741,15 @@ Return only the JSON object without additional text or formatting.
             }
 
             const aiConfig = await initializeAI();
-            const prompt = `Generate a ${format} report based on filters: ${JSON.stringify(filters)}. Include summaries and visualizations where applicable. Return the response as a JSON object. Return only the JSON object without additional text or formatting.`;
+            const prompt = `Generate a comprehensive and precise ${filters.reportType} report based on the provided dataset: ${JSON.stringify(filters.data, null, 2)}. Your task is to deliver a professional analysis that includes:
+
+- **Key Metrics**: Identify and explain the most critical metrics, including their values and significance to the ${filters.reportType} context.
+- **Trends and Patterns**: Analyze the data to detect notable trends, patterns, or shifts, and describe their relevance.
+- **Implications and Recommendations**: Provide actionable insights or recommendations based on the analysis, highlighting potential impacts or next steps.
+- **Anomalies and Outliers**: Identify any unusual data points or anomalies, and explain their potential causes or implications.
+
+Ensure the response is structured as a JSON object with a single 'summary' field containing the detailed analysis as a string. The summary should be clear, concise, and professionally written, avoiding jargon unless necessary and ensuring relevance to the ${filters.reportType} report. Return only the JSON object, with no additional text, comments, or formatting.`;
+
 
             const payload = {
                 model: 'mistral',
@@ -646,6 +767,9 @@ Return only the JSON object without additional text or formatting.
             try {
                 const jsonString = this.extractJsonFromResponse(response.response);
                 report = JSON.parse(jsonString);
+                if (!report.summary || typeof report.summary !== 'string') {
+                    throw new Error('Invalid summary format');
+                }
             } catch (parseError) {
                 throw new Error(ERROR_MESSAGES.INVALID_AI_JSON);
             }
@@ -662,6 +786,9 @@ Return only the JSON object without additional text or formatting.
                 : Object.assign(new Error(ERROR_MESSAGES.AI_API_UNAVAILABLE), { status: 503 });
         }
     }
+
+
+
 
 
 
@@ -719,7 +846,6 @@ Return only the JSON object without additional text or formatting.
                 supervisorId: supervisorId || null
             });
 
-            logger.info('AI configuration created', { configID: newConfig.configID, supervisorId, requesterId });
             return {
                 configID: newConfig.configID,
                 modelName: newConfig.modelName,
@@ -730,7 +856,6 @@ Return only the JSON object without additional text or formatting.
                 updatedAt: newConfig.updatedAt
             };
         } catch (error) {
-            logger.error('Failed to create AI configuration', { error: error.message, requesterId });
             throw error.message in ERROR_MESSAGES
                 ? error
                 : Object.assign(new Error(ERROR_MESSAGES.INVALID_AI_CONFIG), { status: 400, details: error.message });
@@ -779,7 +904,6 @@ Return only the JSON object without additional text or formatting.
                 timesheetMaxSuggestions: timesheetMaxSuggestions !== undefined ? timesheetMaxSuggestions : config.timesheetMaxSuggestions
             });
 
-            logger.info('AI configuration updated', { configID, requesterId });
             return {
                 configID: config.configID,
                 modelName: config.modelName,
@@ -790,7 +914,6 @@ Return only the JSON object without additional text or formatting.
                 updatedAt: config.updatedAt
             };
         } catch (error) {
-            logger.error('Failed to update AI configuration', { error: error.message, configID, requesterId });
             throw error.message in ERROR_MESSAGES
                 ? error
                 : Object.assign(new Error(ERROR_MESSAGES.INVALID_AI_CONFIG), { status: 400, details: error.message });
@@ -836,7 +959,6 @@ Return only the JSON object without additional text or formatting.
                 updatedAt: config.updatedAt
             };
         } catch (error) {
-            logger.error('Failed to retrieve AI configuration', { error: error.message, params, requesterId });
             throw error.message in ERROR_MESSAGES
                 ? error
                 : Object.assign(new Error(ERROR_MESSAGES.AI_CONFIG_NOT_FOUND), { status: 404, details: error.message });
@@ -863,10 +985,8 @@ Return only the JSON object without additional text or formatting.
             }
 
             await config.destroy();
-            logger.info('AI configuration deleted', { configID, requesterId });
             return { message: 'AI configuration deleted successfully', configID };
         } catch (error) {
-            logger.error('Failed to delete AI configuration', { error: error.message, configID, requesterId });
             throw error.message in ERROR_MESSAGES
                 ? error
                 : Object.assign(new Error(ERROR_MESSAGES.AI_CONFIG_NOT_FOUND), { status: 404, details: error.message });
@@ -901,7 +1021,6 @@ Return only the JSON object without additional text or formatting.
                 updatedAt: config.updatedAt
             }));
         } catch (error) {
-            logger.error('Failed to list AI configurations', { error: error.message, params, requesterId });
             throw error.message in ERROR_MESSAGES
                 ? error
                 : Object.assign(new Error('Failed to list AI configurations'), { status: 500, details: error.message });
@@ -947,10 +1066,8 @@ Return only the JSON object without additional text or formatting.
                 throw Object.assign(new Error(ERROR_MESSAGES.INVALID_AI_JSON), { status: 503, details: parseError.message });
             }
 
-            logger.info('AI configuration tested successfully', { configID, requesterId });
             return { configID, status: 'success', response: result };
         } catch (error) {
-            logger.error('Failed to test AI configuration', { error: error.message, configID, requesterId });
             throw error.message in ERROR_MESSAGES
                 ? error
                 : Object.assign(new Error(ERROR_MESSAGES.AI_API_UNAVAILABLE), { status: 503, details: error.message });

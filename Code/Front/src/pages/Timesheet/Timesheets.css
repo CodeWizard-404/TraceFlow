@@ -1345,3 +1345,71 @@ body.dark .visit-card.visited:hover {
   margin: 0;
   font-weight: 500;
 }
+
+
+
+/* Custom Map Modal Styles */
+.custom-map-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  /* Semi-transparent overlay */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  /* Ensure it appears above other content */
+}
+
+.custom-map-modal {
+  position: relative;
+  width: 100%;
+  /* Adjustable width */
+  height: 100vh;
+  /* Adjustable height */
+  background-color: #fff;
+  /* White background for the modal */
+  border-radius: 10px;
+  /* Rounded corners */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  /* Shadow for depth */
+  overflow: hidden;
+  /* Prevent content overflow */
+}
+
+.custom-map-modal-close {
+  position: absolute;
+  background-color: #fff;
+  top: 3.2rem;
+  right: 0.85rem;
+  border: 1px solid #f0f0f0;
+  box-shadow: 0 0 0.5rem rgba(0, 0, 0, 0.144);
+  border-radius: 0.8rem;
+  width: 2rem;
+  height: 2rem;
+  font-size: 2rem;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-bottom: 0.5rem;
+  z-index: 1001;
+}
+
+body.dark .custom-map-modal-close {
+  border: 1px solid #5f6368;
+  color: white;
+  background-color: #303134;
+
+}
+
+
+
+.custom-map-modal-content {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+}

@@ -46,7 +46,15 @@ class LocationService {
                 return {
                     success: true,
                     address: `${regionName}, ${governorateName}, ${delegationName}`,
-                    idInfo: `${delegationName}`
+                    idInfo: `${delegationName}`,
+                    addressInfo: {
+                        region: regionName,
+                        governorate: governorateName,
+                        delegation: delegationName,
+                        regionID: delegation.Governorate.Region.regionID,
+                        governorateID: delegation.Governorate.governorateID,
+                        delegationID: delegation.delegationID
+                    }
                 };
             }
 
@@ -75,7 +83,15 @@ class LocationService {
                 return {
                     success: true,
                     address: `${regionName}, ${governorateName}, ${delegationName}`,
-                    idInfo: `${governorateName}`
+                    idInfo: `${governorateName}`,
+                    addressInfo: {
+                        region: regionName,
+                        governorate: governorateName,
+                        delegation: delegationName,
+                        regionID: governorate.Region.regionID,
+                        governorateID: governorate.governorateID,
+                        delegationID: delegation.delegationID
+                    }
                 };
             }
 
@@ -105,15 +121,22 @@ class LocationService {
 
                 return {
                     success: true,
-                    address: `Address: ${region.name}, ${governorateName}, ${delegationName}`,
-                    idInfo: `ID: Region : ${region.name}`
+                    address: ` ${region.name}, ${governorateName}, ${delegationName}`,
+                    idInfo: ` ${region.name}`,
+                    addressInfo: {
+                        region: region.name,
+                        governorate: governorateName,
+                        delegation: delegationName,
+                        regionID: region.regionID,
+                        governorateID: governorate.governorateID,
+                        delegationID: delegation.delegationID
+                    }
                 };
             }
 
             return { success: false, message: 'Location not found.' };
 
         } catch (error) {
-            console.error(error);
             return { success: false, message: 'Error fetching location.' };
         }
     }

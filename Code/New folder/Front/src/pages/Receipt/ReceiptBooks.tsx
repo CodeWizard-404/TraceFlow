@@ -256,7 +256,7 @@ const ReceiptBookForm: React.FC<{
       </div>
       <div className="form-actions">
         <button
-          className="action-button-0"
+          className="action-button"
           onClick={handleSubmit}
           aria-label={t(isEdit ? "receiptBooks.actions.aria.save" : "receiptBooks.actions.aria.create")}
         >
@@ -375,7 +375,7 @@ const ReceiptBookTypeForm: React.FC<{
       </div>
       <div className="form-actions">
         <button
-          className="action-button-0"
+          className="action-button"
           onClick={handleSubmit}
           aria-label={t(isEdit ? "receiptBooks.types.actions.aria.save" : "receiptBooks.types.actions.aria.create")}
         >

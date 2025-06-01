@@ -293,5 +293,17 @@ export type LoggerHealthResponse = {
 };
 
 
+// Report API response types
 
+export interface GenerateReportResponse {
+    message: string;
+    reportPath: string;
+}
+
+export interface ScheduleReportResponse {
+    message: string;
+    scheduleID: string;
+}
+
+export type DownloadReportResponse = ArrayBuffer;
 

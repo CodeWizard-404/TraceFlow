@@ -11,6 +11,7 @@ router.get('/types', requirePermission('access_receipt_book_types'), ReceiptBook
 router.get('/types/:typeID', requirePermission('access_receipt_book_types'), ReceiptBookController.getReceiptBookTypeById);
 router.put('/types/:typeID', requirePermission('manage_receipt_book_types'), ReceiptBookController.updateReceiptBookType);
 router.delete('/types/:typeID', requirePermission('manage_receipt_book_types'), ReceiptBookController.deleteReceiptBookType);
+router.get('/holders', requirePermission('access_receipt_book_holders'), ReceiptBookController.getReceiptBookHolders);
 
 // Receipt Book Routes
 router.post('/', requirePermission('create_receipt_books'), ReceiptBookController.createReceiptBook);

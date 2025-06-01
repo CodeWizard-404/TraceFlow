@@ -43,6 +43,53 @@ class ReceiptBookService {
         }
     }
 
+    static async getReceiptBookHolders() {
+        try {
+            // Find all unique currentHolderIDs from ReceiptBook
+            const holders = await ReceiptBook.findAll({
+                attributes: [
+                    [sequelize.col('currentHolderID'), 'userID']
+                ],
+                where: {
+                    currentHolderID: { [Op.ne]: null }
+                },
+                group: ['currentHolderID'],
+                raw: true
+            });
+
+            const userIDs = holders.map(h => h.userID).filter(Boolean);
+
+            if (userIDs.length === 0) return [];
+
+            // Fetch user details and roles for those IDs
+            const users = await User.findAll({
+                where: { userID: userIDs },
+                attributes: ['userID', 'firstname', 'lastname', 'phone'],
+                include: [
+                    {
+                        model: Role,
+                        attributes: ['roleID', 'name'],
+                        through: { attributes: [] }
+                    }
+                ],
+                order: [['lastname', 'ASC'], ['firstname', 'ASC']]
+            });
+
+            return users.map(u => {
+                const user = u.toJSON();
+                user.Roles = user.Roles
+                    ? user.Roles.map(r => ({
+                        roleID: r.roleID,
+                        name: r.name
+                    }))
+                    : [];
+                return user;
+            });
+        } catch (error) {
+            throw new Error('Failed to fetch receipt book holders: ' + error.message);
+        }
+    }
+
     static async getReceiptBookTypeById(typeID) {
         try {
             const type = await ReceiptBookType.findByPk(typeID);

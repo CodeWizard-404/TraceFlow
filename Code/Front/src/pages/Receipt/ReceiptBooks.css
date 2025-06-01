@@ -251,6 +251,8 @@ body.dark .table-card h2, body.dark .form-card h3, body.dark .history-card h3 {
     top: 0;
     z-index: 1;
     text-align: center;
+    border-radius: 0.75rem !important;
+
 }
 
 body.dark .table-head .table-row-0 {
@@ -496,6 +498,7 @@ body.dark .pagination span {
 /* History Card */
 .history-card .table-row-0 {
     grid-template-columns: 2fr 2fr 1fr;
+    border-radius: 0.75rem !important;
 }
 
 /* Loading */

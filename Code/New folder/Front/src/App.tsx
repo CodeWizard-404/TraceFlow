@@ -13,7 +13,7 @@ import './App.css';
 import LoginPage from './pages/Auth/Login';
 import ProfilePage from './pages/Auth/Profile/ProfilePage';
 import AgentManagement from './pages/Dashboard/AgentManagement';
-import Reports from './pages/Admin/Reports';
+import Reports from './pages/Report/Reports';
 
 // Lazy load route components
 const Timesheets = React.lazy(() => import('./pages/Timesheet/Timesheets'));

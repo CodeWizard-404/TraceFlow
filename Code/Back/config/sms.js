@@ -40,23 +40,11 @@ async function sendSMS(to, message, context = 'general') {
         const response = await axios.post(url, payload, { headers });
 
         if (response.data && response.data.status && response.data.status !== 0) {
-            logger.error('w-Board SMS Gateway error', {
-                route: 'sms',
-                service: 'notification',
-                context,
-                response: response.data,
-            });
             throw new Error(`SMS sending failed with status: ${response.data.status} - ${response.data.status_desc}`);
         }
 
         return { success: true, method: 'SMS' };
     } catch (error) {
-        logger.error('w-Board SMS Gateway error', {
-            route: 'sms',
-            service: 'notification',
-            context,
-            message: error.response?.data || error.message,
-        });
 
         try {
             const email = await findEmailByPhone(to);
@@ -76,12 +64,6 @@ async function sendSMS(to, message, context = 'general') {
 
 
                 });
-                logger.info('Fallback email sent', {
-                    route: 'email',
-                    service: 'notification',
-                    to: email,
-                    context,
-                });
                 return {
                     success: true,
                     method: 'Email',
@@ -91,12 +73,6 @@ async function sendSMS(to, message, context = 'general') {
             }
             return { success: false, method: 'None', reason: 'No SMS or email available' };
         } catch (emailError) {
-            logger.error('Email fallback error', {
-                route: 'email',
-                service: 'notification',
-                context,
-                message: emailError.message,
-            });
             return { success: false, method: 'None', reason: 'Failed to send SMS and email' };
         }
     }
@@ -133,25 +109,11 @@ async function initializeSMS() {
         });
 
         if (response.data && response.data.status === 0) {
-            logger.info('SMS gateway initialized successfully', {
-                route: 'sms',
-                service: 'notification',
-            });
             return { success: true, message: 'SMS gateway initialized successfully' };
         } else {
-            logger.error('SMS gateway initialization failed', {
-                route: 'sms',
-                service: 'notification',
-                response: response.data,
-            });
             throw new Error(`SMS gateway initialization failed with status: ${response.data.status} - ${response.data.status_desc}`);
         }
     } catch (error) {
-        logger.error('SMS gateway initialization error', {
-            route: 'sms',
-            service: 'notification',
-            message: error.response?.data || error.message,
-        });
         throw new Error(`SMS gateway initialization error: ${error.message}`);
     }
 

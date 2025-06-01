@@ -1,6 +1,6 @@
 const cron = require('node-cron');
 const otpService = require('../services/otpService');
-const { Visit } = require('../models');
+const { Visit, GeneratedReport } = require('../models');
 const { Op } = require('sequelize');
 const fs = require('fs').promises;
 const path = require('path');
@@ -8,6 +8,7 @@ const logger = require('../utils/logger');
 const { getRedisClient } = require('./redis');
 const ReportService = require('../services/reportService');
 const { ReportSchedule } = require('../models');
+const NotificationService = require('../services/notificationService');
 
 function setupCron() {
     // Schedule hourly OTP cleanup
@@ -15,7 +16,7 @@ function setupCron() {
         try {
             await otpService.cleanupExpiredOTPs();
         } catch (error) {
-            console.error(`Error cleaning up OTPs: ${error.message}`);
+            logger.error(`Error cleaning up OTPs: ${error.message}`);
         }
     });
 
@@ -33,7 +34,7 @@ function setupCron() {
                 }
             );
         } catch (error) {
-            console.error(`Error updating visits: ${error.message}`);
+            logger.error(`Error updating visits: ${error.message}`);
         }
     });
 
@@ -89,6 +90,14 @@ function setupCron() {
         schedules.forEach(schedule => {
             cron.schedule(schedule.cronExpression, async () => {
                 try {
+                    const currentSchedule = await ReportSchedule.findByPk(schedule.scheduleID);
+                    if (!currentSchedule) {
+                        logger.info(`Schedule ${schedule.scheduleID} no longer exists, skipping report generation`, {
+                            route: 'reports',
+                            service: 'cron',
+                        });
+                        return;
+                    }
                     let data;
                     switch (schedule.reportType) {
                         case 'VisitSummary':
@@ -119,7 +128,19 @@ function setupCron() {
                             data = await ReportService.generateFullReport(schedule.filters);
                             break;
                     }
-                    await ReportService.exportReport(schedule.reportType, data, schedule.format);
+                    const filePath = await ReportService.exportReport(schedule.reportType, data, schedule.format);
+                    await GeneratedReport.create({
+                        reportType: schedule.reportType,
+                        format: schedule.format,
+                        filePath,
+                        generatedBy: null,
+                        scheduleID: schedule.scheduleID,
+                    });
+                    await NotificationService.triggerNotification({
+                        event: 'report:generated',
+                        data: { reportType: schedule.reportType, format: schedule.format, filePath: path.basename(filePath) },
+                        metadata: { scheduleID: schedule.scheduleID },
+                    });
                     logger.info(`Scheduled ${schedule.reportType} report generated`, {
                         route: 'reports',
                         service: 'cron',
@@ -142,6 +163,73 @@ function setupCron() {
         status: 500,
         metadata: { error: error.message },
     }));
+
+    // Clean up old report files
+    cron.schedule('0 0 * * *', async () => {
+        const reportsDir = path.join(__dirname, '../reports');
+        try {
+            const files = await fs.readdir(reportsDir);
+            const redisClient = getRedisClient();
+            const now = Date.now();
+            const sevenDays = 7 * 24 * 60 * 60 * 1000;
+            const oneDay = 24 * 60 * 60 * 1000;
+
+            for (const file of files) {
+                const filePath = path.join(reportsDir, file);
+                const stats = await fs.stat(filePath);
+
+                // Check Redis for download count
+                const fileKeys = await redisClient.keys('file:*');
+                let downloadCount = 0;
+                let fileKeyToDelete = null;
+
+                for (const fileKey of fileKeys) {
+                    const fileData = await redisClient.hgetall(fileKey);
+                    if (fileData.filePath === filePath) {
+                        downloadCount = parseInt(fileData.downloadCount, 10) || 0;
+                        fileKeyToDelete = fileKey;
+                        break;
+                    }
+                }
+
+                // Delete if:
+                // 1. Older than 7 days
+                // 2. Downloaded 5 or more times
+                // 3. Downloaded once and older than 24 hours
+                if (
+                    (now - stats.mtimeMs > sevenDays) ||
+                    (downloadCount >= 5) ||
+                    (downloadCount === 1 && now - stats.mtimeMs > oneDay)
+                ) {
+                    try {
+                        await fs.unlink(filePath);
+                        if (fileKeyToDelete) {
+                            await redisClient.del(fileKeyToDelete);
+                        }
+                        logger.info('Deleted report file', {
+                            file,
+                            service: 'cron',
+                            reason:
+                                now - stats.mtimeMs > sevenDays ? 'older than 7 days' :
+                                    downloadCount >= 5 ? 'downloaded 5+ times' :
+                                        'downloaded once and older than 24 hours'
+                        });
+                    } catch (err) {
+                        logger.error('Failed to delete report file', {
+                            file,
+                            error: err.message,
+                            service: 'cron',
+                        });
+                    }
+                }
+            }
+        } catch (error) {
+            logger.error('Failed to clean up report files', {
+                error: error.message,
+                service: 'cron',
+            });
+        }
+    });
 }
 
 module.exports = { setupCron };
