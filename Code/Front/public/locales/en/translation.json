@@ -1882,7 +1882,10 @@
       "addStop": "Add_Stop",
       "directions": "Directions",
       "phone": "Phone",
-      "addVisit": "Visit"
+      "addVisit": "Visit",
+      "location": "Location",
+      "time": "Time",
+      "reasons": "Reasons"
     },
     "addAgent": "Add Agent",
     "addAgentPrompt": "Click on the map to select a location for the new agent",

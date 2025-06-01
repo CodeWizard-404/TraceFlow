@@ -132,6 +132,8 @@ interface AgentMarker {
   governorate?: { id: string; name: string };
   region?: { id: string; name: string };
   supervisor?: { userID: string; firstname: string; lastname: string };
+  time?: string;
+  reasons?: string;
 }
 
 interface User {
@@ -152,12 +154,11 @@ interface MapComponentProps {
   }[];
   userLocation?: { lat: number; lng: number } | null;
   isTimesheetModal?: boolean;
-  onClose?: () => void;
 }
 
 
 
-const containerStyle = { width: '100%', height: '70vh' };
+const containerStyle = { width: '100%', height: '100vh' };
 const defaultCenter = { lat: 36.8065, lng: 10.1815 };
 const libraries: ('places' | 'geometry')[] = ['places', 'geometry'];
 
@@ -203,7 +204,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
   visits = [],
   userLocation: propUserLocation,
   isTimesheetModal = false,
-  onClose,
 }) => {
   const { t } = useTranslation();
   const { effectivePermissions, user } = useAuth();
@@ -212,22 +212,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
     [effectivePermissions]
   );
 
-  const [allMarkers, setAllMarkers] = useState<AgentMarker[]>(() => {
-    if (isTimesheetModal && visits.length > 0) {
-      return visits.map((visit) => ({
-        id: visit.visitID,
-        lat: visit.latitude,
-        lng: visit.longitude,
-        name: visit.agentName.split(' ')[0] || 'Unknown',
-        lastname: visit.agentName.split(' ')[1] || '',
-        email: '',
-        phone: '',
-        address: visit.location,
-        source: 'visit',
-      }));
-    }
-    return [];
-  });
+  const [allMarkers, setAllMarkers] = useState<AgentMarker[]>([]);
   const [filteredMarkers, setFilteredMarkers] = useState<AgentMarker[]>(allMarkers);
   const [filteredAgents, setFilteredAgents] = useState<AgentMarker[]>([]);
   const [selectedMarker, setSelectedMarker] = useState<AgentMarker | null>(null);
@@ -364,6 +349,26 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
 
 
+  useEffect(() => {
+    if (isTimesheetModal && visits.length > 0) {
+      const newMarkers = visits.map((visit) => ({
+        id: visit.visitID,
+        lat: visit.latitude,
+        lng: visit.longitude,
+        name: visit.agentName.split(' ')[0] || 'Unknown',
+        lastname: visit.agentName.split(' ')[1] || '',
+        email: '',
+        phone: '',
+        address: visit.location,
+        source: 'visit',
+        time: visit.time, // Include visit time
+        reasons: visit.reasons, // Include visit reasons
+      }));
+      setAllMarkers(newMarkers);
+      setFilteredMarkers(newMarkers);
+      setFilteredAgents(newMarkers);
+    }
+  }, [visits, isTimesheetModal]);
 
 
   const sortedMarkers = useMemo(() => {
@@ -651,6 +656,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
         setRoutePoints([...newPoints]);
         routePointsRef.current = [...newPoints];
+        // Save to local storage
+        localStorage.setItem('savedRoutePoints', JSON.stringify(newPoints));
 
         if (fitBounds && mapRef.current) {
           const bounds = new google.maps.LatLngBounds();
@@ -690,7 +697,29 @@ const MapComponent: React.FC<MapComponentProps> = ({
     }
   }, [isTimesheetModal, visits, userLocation, t, routeMode, handleCalculateRoute]);
 
-
+  useEffect(() => {
+    const savedRoute = localStorage.getItem('savedRoutePoints');
+    if (savedRoute && !isTimesheetModal) {
+      try {
+        const parsedPoints: RoutePoint[] = JSON.parse(savedRoute);
+        if (parsedPoints.length >= 2 && parsedPoints.every(p => p.id && p.location && p.address && p.type)) {
+          console.log('Loaded routePoints from local storage:', parsedPoints.map(p => ({ id: p.id, type: p.type, agentId: p.agentId })));
+          setRoutePoints(parsedPoints);
+          routePointsRef.current = parsedPoints;
+          handleCalculateRoute(parsedPoints, routeMode).then(() => {
+            setShowDirectionsPanel(true);
+            setIsDirectionsPanelCollapsed(false);
+          });
+        } else {
+          console.warn('Invalid route points in local storage, clearing:', parsedPoints);
+          localStorage.removeItem('savedRoutePoints');
+        }
+      } catch (err) {
+        console.error('Error parsing saved route points:', err);
+        localStorage.removeItem('savedRoutePoints');
+      }
+    }
+  }, [routeMode, handleCalculateRoute, isTimesheetModal]);
 
   useEffect(() => {
     const maxRetries = 3;
@@ -1385,6 +1414,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
         console.log('New routePoints after adding stop:', newPoints.map(p => ({ id: p.id, type: p.type, agentId: p.agentId })));
         setRoutePoints([...newPoints]);
         routePointsRef.current = [...newPoints];
+        // Save to local storage
+        localStorage.setItem('savedRoutePoints', JSON.stringify(newPoints));
         await handleCalculateRoute(newPoints, routeMode);
         setMapCenter({ lat: marker.lat, lng: marker.lng });
         setZoom(16);
@@ -1424,6 +1455,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
       if (optimizedPoints !== currentPoints && optimizedPoints.length === currentPoints.length) {
         setRoutePoints([...optimizedPoints]);
         routePointsRef.current = [...optimizedPoints];
+        // Save to local storage
+        localStorage.setItem('savedRoutePoints', JSON.stringify(optimizedPoints));
         toast.success('Route optimized successfully.');
       } else {
         console.warn('No changes in routePoints after optimization or length mismatch', { optimizedPoints, currentPoints });
@@ -1463,6 +1496,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
     setRoutePoints([]);
     routePointsRef.current = [];
     routeData.current = { points: [], response: null, path: [], traffic: [] };
+    // Clear from local storage
+    localStorage.removeItem('savedRoutePoints');
     setShowDirectionsPanel(false);
     setIsDirectionsPanelCollapsed(false);
   }, []);
@@ -1635,6 +1670,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
         console.log('New routePoints after drag:', newPoints);
         setRoutePoints([...newPoints]);
         routePointsRef.current = [...newPoints];
+        // Save to local storage
+        localStorage.setItem('savedRoutePoints', JSON.stringify(newPoints));
         if (newPoints.length >= 2) {
           await handleCalculateRoute(newPoints, routeMode);
           console.log('Route recalculated after drag');
@@ -1671,6 +1708,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
           for (let i = 1; i < newPoints.length - 1; i++) {
             newPoints[i].type = 'waypoint';
           }
+          // Save to local storage
+          localStorage.setItem('savedRoutePoints', JSON.stringify(newPoints));
           await handleCalculateRoute(newPoints, routeMode);
         } else {
           // Fewer than 2 points, clear route
@@ -1685,46 +1724,86 @@ const MapComponent: React.FC<MapComponentProps> = ({
     [routeMode, handleCalculateRoute, t, clearRoute]
   );
 
-const AgentCard = React.memo(
-  ({
-    marker,
-    onSelect,
-    onGetDirections,
-    onAddStop,
-  }: {
-    marker: AgentMarker;
-    onSelect: (marker: AgentMarker) => void;
-    onGetDirections: (marker: AgentMarker) => void;
-    onAddStop: (marker: AgentMarker) => void;
-  }) => {
-    const { t } = useTranslation();
-    const isInRoute = routeData.current.points.some((p) => p.agentId === marker.id);
-    return (
-      <div
-        className={`agent-card ${selectedAgents.includes(marker.id) ? 'selected' : ''} ${
-          selectedMarker?.id === marker.id ? 'info-active' : ''
-        } ${isInRoute ? 'route-agent' : ''}`}
-        onClick={() => {
-          setSelectedAgents((prev) => {
-            const newSelected = prev.includes(marker.id)
-              ? prev.filter((id) => id !== marker.id)
-              : [...prev, marker.id];
-            if (!newSelected.includes(marker.id)) {
-              setSelectedMarker((prev) => (prev?.id === marker.id ? null : prev));
-            }
-            return newSelected;
-          });
-          onSelect(marker);
-        }}
-      >
-        <h4>{`${marker.name} ${marker.lastname}`}</h4>
-        <p>{marker.address}</p>
-        <div className="agent-actions">
-          {isInRoute ? (
+  const AgentCard = React.memo(
+    ({
+      marker,
+      onSelect,
+      onGetDirections,
+      onAddStop,
+    }: {
+      marker: AgentMarker;
+      onSelect: (marker: AgentMarker) => void;
+      onGetDirections: (marker: AgentMarker) => void;
+      onAddStop: (marker: AgentMarker) => void;
+    }) => {
+      const { t } = useTranslation();
+      const isInRoute = routeData.current.points.some((p) => p.agentId === marker.id);
+      return (
+        <div
+          className={`agent-card ${selectedAgents.includes(marker.id) ? 'selected' : ''} ${selectedMarker?.id === marker.id ? 'info-active' : ''
+            } ${isInRoute ? 'route-agent' : ''}`}
+          onClick={() => {
+            setSelectedAgents((prev) => {
+              const newSelected = prev.includes(marker.id)
+                ? prev.filter((id) => id !== marker.id)
+                : [...prev, marker.id];
+              if (!newSelected.includes(marker.id)) {
+                setSelectedMarker((prev) => (prev?.id === marker.id ? null : prev));
+              }
+              return newSelected;
+            });
+            onSelect(marker);
+          }}
+        >
+          <h4>{`${marker.name} ${marker.lastname}`}</h4>
+          <p>{marker.address}</p>
+          <div className="agent-actions">
+            {isInRoute ? (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  removeAgentFromRoute(marker.id);
+                }}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M18 6L6 18M6 6l12 12" />
+                </svg>
+                {t('map.agentCard.remove')}
+              </button>
+            ) : (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  routeData.current.points.length >= 2 ? onAddStop(marker) : onGetDirections(marker);
+                }}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                  <circle cx="12" cy="10" r="3" />
+                </svg>
+                {routeData.current.points.length >= 2 ? t('map.agentCard.addStop') : t('map.agentCard.directions')}
+              </button>
+            )}
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                removeAgentFromRoute(marker.id);
+                window.location.href = `tel:${marker.phone}`;
               }}
             >
               <svg
@@ -1736,15 +1815,17 @@ const AgentCard = React.memo(
                 stroke="currentColor"
                 strokeWidth="2"
               >
-                <path d="M18 6L6 18M6 6l12 12" />
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
               </svg>
-              {t('map.agentCard.remove')}
+              {t('map.agentCard.call')}
             </button>
-          ) : routeData.current.response ? (
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                onAddStop(marker);
+                const now = new Date();
+                const date = now.toISOString().split('T')[0];
+                const time = now.toTimeString().slice(0, 5);
+                window.location.href = `/timesheet-form?agentId=${marker.id}&date=${date}&time=${time}`;
               }}
             >
               <svg
@@ -1756,79 +1837,15 @@ const AgentCard = React.memo(
                 stroke="currentColor"
                 strokeWidth="2"
               >
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                <circle cx="12" cy="10" r="3" />
+                <path d="M12 5v14M5 12h14" />
               </svg>
-              {t('map.agentCard.addStop')}
+              {t('map.infoWindow.addVisit')}
             </button>
-          ) : (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onGetDirections(marker);
-              }}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                <circle cx="12" cy="10" r="3" />
-              </svg>
-              {t('map.agentCard.directions')}
-            </button>
-          )}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              window.location.href = `tel:${marker.phone}`;
-            }}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-            </svg>
-            {t('map.agentCard.call')}
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              const now = new Date();
-              const date = now.toISOString().split('T')[0];
-              const time = now.toTimeString().slice(0, 5);
-              window.location.href = `/timesheet-form?agentId=${marker.id}&date=${date}&time=${time}`;
-            }}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M12 5v14M5 12h14" />
-            </svg>
-            {t('map.infoWindow.addVisit')}
-          </button>
+          </div>
         </div>
-      </div>
-    );
-  }
-);
+      );
+    }
+  );
 
   const WaypointList = React.memo(() => (
     <div className="waypoint-list">
@@ -1919,25 +1936,7 @@ const AgentCard = React.memo(
 
   return (
     <div className={`map-container ${addingAgentMode ? 'adding-agent' : ''}`}>
-      {isTimesheetModal && (
-        <button
-          className="close-modal-btn"
-          onClick={onClose}
-          style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 1000 }}
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <path d="M18 6L6 18M6 6l12 12" />
-          </svg>
-        </button>
-      )}
+
       <LoadScript googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY} libraries={libraries}>
         <GoogleMap
           mapContainerStyle={containerStyle}
@@ -2411,9 +2410,29 @@ const AgentCard = React.memo(
                 {isTimesheetModal ? (
                   <>
                     <h3>{selectedMarker.name} {selectedMarker.lastname}</h3>
-                    <p><strong>Location:</strong> {selectedMarker.address}</p>
-                    <p><strong>Time:</strong> {visits.find(v => v.visitID === selectedMarker.id)?.time || 'N/A'}</p>
-                    <p><strong>Reasons:</strong> {visits.find(v => v.visitID === selectedMarker.id)?.reasons || 'N/A'}</p>
+                    <p><strong>{t('map.infoWindow.location')}:</strong> {selectedMarker.address}</p>
+                    <p><strong>{t('map.infoWindow.time')}:</strong> {selectedMarker.time || 'N/A'}</p>
+                    <p><strong>{t('map.infoWindow.reasons')}:</strong> {selectedMarker.reasons || 'N/A'}</p>
+                    <div className="info-buttons">
+                      <button
+                        onClick={() => {
+                          window.location.href = `tel:${selectedMarker.phone}`;
+                        }}
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                        </svg>
+                        {t('map.agentCard.call')}
+                      </button>
+                    </div>
                   </>
                 ) : (
                   <>
@@ -2444,7 +2463,6 @@ const AgentCard = React.memo(
                           {t('map.infoWindow.edit')}
                         </button>
                       )}
-                      {/* Existing direction buttons */}
                       {routeData.current.points.some((p) => p.agentId === selectedMarker.id) ? (
                         <button
                           onClick={() => removeAgentFromRoute(selectedMarker.id)}
@@ -2462,24 +2480,10 @@ const AgentCard = React.memo(
                           </svg>
                           {t('map.agentCard.remove')}
                         </button>
-                      ) : routeData.current.response ? (
-                        <button onClick={() => handleAddStop(selectedMarker)}>
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="14"
-                            height="14"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                          >
-                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                            <circle cx="12" cy="10" r="3" />
-                          </svg>
-                          {t('map.infoWindow.addStop')}
-                        </button>
                       ) : (
-                        <button onClick={() => handleGetDirections(selectedMarker)}>
+                        <button
+                          onClick={() => routeData.current.points.length >= 2 ? handleAddStop(selectedMarker) : handleGetDirections(selectedMarker)}
+                        >
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
                             width="14"
@@ -2492,7 +2496,7 @@ const AgentCard = React.memo(
                             <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                             <circle cx="12" cy="10" r="3" />
                           </svg>
-                          {t('map.infoWindow.directions')}
+                          {routeData.current.points.length >= 2 ? t('map.agentCard.addStop') : t('map.infoWindow.directions')}
                         </button>
                       )}
                       <button
@@ -2838,9 +2842,9 @@ const AgentCard = React.memo(
             <div className="agent-scroll">
               {/* Render route agents first, in order of routePoints */}
               {routePoints
-                .filter((point) => point.agentId && point.type !== 'origin') // Exclude origin (user location)
+                .filter((point) => point.agentId && point.type !== 'origin')
                 .map((point) => {
-                  const marker = allMarkers.find((m) => m.id === point.agentId); // Use allMarkers to ensure we find the agent
+                  const marker = allMarkers.find((m) => m.id === point.agentId);
                   return marker ? (
                     <AgentCard
                       key={marker.id}

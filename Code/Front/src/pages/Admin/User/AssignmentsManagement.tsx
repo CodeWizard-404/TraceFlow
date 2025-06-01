@@ -443,19 +443,20 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                     return iKey === itemKey;
                 });
 
-                let updated;
                 if (exists) {
                     // Remove the item (revoke)
-                    updated = prev.filter((i) => {
+                    const newSelected = prev.filter((i) => {
                         const iKey = key === "agentID" ? `${i[key]}_${i.delegationID}` : i[key];
                         return iKey !== itemKey;
                     });
-                    console.debug(`Revoking item: ${itemKey}`, updated);
-                } else {
-                    // Add the item (assign)
-                    updated = multiple ? [...prev, item] : [item];
-                    console.debug(`Adding item: ${itemKey}`, updated);
+                    console.debug(`Revoking item: ${itemKey}`, newSelected);
+                    setHasUnsavedChanges(true);
+                    return newSelected;
                 }
+
+                // Add the item (assign)
+                const updated = multiple ? [...prev, item] : [item];
+                console.debug(`Adding item: ${itemKey}`, updated);
                 setHasUnsavedChanges(true);
                 return updated;
             });
@@ -1188,57 +1189,60 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                 return;
             }
 
-            if (role === ROLES.REGIONAL_MANAGER) {
-                // Handle Directors
+            if (role === ROLES.DIRECTOR) {
+                const currentRMs = (await getRegionalManagersByDirector(userID)).map((rm) => rm.userID);
+                const newRMs = tempRegionalManagers.map((rm) => rm.userID);
+                const toAssign = newRMs.filter((id) => !currentRMs.includes(id));
+                const toRevoke = currentRMs.filter((id) => !newRMs.includes(id));
+
+                await Promise.all([
+                    ...toAssign.map((id) => assignDirectorToRegionalManager(id, userID)),
+                    ...toRevoke.map((id) => revokeDirectorFromRegionalManager(id)),
+                ]);
+            } else if (role === ROLES.REGIONAL_MANAGER) {
                 const currentDirectors = await getDirectorByRegionalManager(userID);
                 const currentDirectorID = currentDirectors[0]?.userID || "";
                 const newDirectorID = tempDirectors[0]?.userID || "";
 
                 if (newDirectorID && newDirectorID !== currentDirectorID) {
-                    console.debug(`Assigning director ${newDirectorID} to regional manager ${userID}`);
                     await assignDirectorToRegionalManager(userID, newDirectorID);
                 } else if (currentDirectorID && !newDirectorID) {
-                    console.debug(`Revoking director ${currentDirectorID} from regional manager ${userID}`);
                     await revokeDirectorFromRegionalManager(userID);
                 }
 
-                // Handle Regions
                 const currentRegions = (await getRegionsByUser(userID)).map((r) => r.regionID);
                 const newRegions = tempRegions.map((r) => r.regionID);
-                console.debug("Current regions:", currentRegions);
-                console.debug("New regions:", newRegions);
-
+                console.log(`Current regions: ${currentRegions}`);
+                console.log(`New regions: ${newRegions}`);
                 const regionsToAssign = newRegions.filter((id) => !currentRegions.includes(id));
                 const regionsToRevoke = currentRegions.filter((id) => !newRegions.includes(id));
-                console.debug("Regions to assign:", regionsToAssign);
-                console.debug("Regions to revoke:", regionsToRevoke);
+                console.log(`Regions to assign: ${regionsToAssign}`);
+                console.log(`Regions to revoke: ${regionsToRevoke}`);
 
                 if (regionsToAssign.length) {
-                    console.debug(`Assigning regions to regional manager ${userID}:`, regionsToAssign);
                     await assignRegionsToRegionalManager(userID, regionsToAssign);
                 }
                 if (regionsToRevoke.length) {
-                    console.debug(`Triggering confirmation for revoking regions:`, regionsToRevoke);
                     await new Promise<void>((resolve, reject) => {
                         setShowConfirm({
                             message: `Revoking regions will remove all assigned supervisors. Apply cascade?`,
                             onConfirm: async (cascade) => {
                                 try {
-                                    console.debug(`Revoking regions from regional manager ${userID}:`, regionsToRevoke, { revokeSupervisors: cascade });
+                                    console.log(`Revoking regions: ${regionsToRevoke}, with cascade: ${cascade}`);
                                     await revokeRegionsFromRegionalManager(userID, regionsToRevoke, {
                                         revokeSupervisors: cascade,
                                     });
+                                    console.log(`Successfully revoked regions: ${regionsToRevoke}`);
                                     setShowConfirm(null);
                                     resolve();
                                 } catch (error) {
-                                    console.error("Error revoking regions:", error);
+                                    console.error(`Error revoking regions:`, error);
                                     setGlobalError("Failed to revoke regions.");
                                     setShowConfirm(null);
                                     reject(error);
                                 }
                             },
                             onCancel: () => {
-                                console.debug("Revocation cancelled by user");
                                 setShowConfirm(null);
                                 reject(new Error("Save operation cancelled"));
                             },
@@ -1246,17 +1250,13 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                     });
                 }
 
-                // Handle Supervisors
                 const currentSupervisors = (await getSupervisorsByRegionalManager(userID)).map((s) => s.userID);
                 const newSupervisors = tempSupervisors.map((s) => s.userID);
                 const supervisorsToAssign = newSupervisors.filter((id) => !currentSupervisors.includes(id));
                 const supervisorsToRevoke = currentSupervisors.filter((id) => !newSupervisors.includes(id));
 
                 await Promise.all([
-                    ...supervisorsToAssign.map((id) => {
-                        console.debug(`Assigning supervisor ${id} to regional manager ${userID}`);
-                        return assignRegionalManagerToSupervisor(id, userID);
-                    }),
+                    ...supervisorsToAssign.map((id) => assignRegionalManagerToSupervisor(id, userID)),
                     ...(supervisorsToRevoke.length
                         ? [
                             new Promise<void>((resolve, reject) => {
@@ -1265,22 +1265,19 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                                     onConfirm: async (cascade) => {
                                         try {
                                             await Promise.all(
-                                                supervisorsToRevoke.map((id) => {
-                                                    console.debug(`Revoking supervisor ${id} with cascade: ${cascade}`);
-                                                    return revokeRegionalManagerFromSupervisor(id, { revokeAll: cascade });
-                                                })
+                                                supervisorsToRevoke.map((id) =>
+                                                    revokeRegionalManagerFromSupervisor(id, { revokeAll: cascade })
+                                                )
                                             );
                                             setShowConfirm(null);
                                             resolve();
                                         } catch (error) {
-                                            console.error("Error revoking supervisors:", error);
                                             setGlobalError("Failed to revoke supervisors.");
                                             setShowConfirm(null);
                                             reject(error);
                                         }
                                     },
                                     onCancel: () => {
-                                        console.debug("Supervisor revocation cancelled");
                                         setShowConfirm(null);
                                         reject(new Error("Save operation cancelled"));
                                     },
@@ -1289,10 +1286,120 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                         ]
                         : []),
                 ]);
-            } else if (role === ROLES.DIRECTOR) {
-                // ... (unchanged code for DIRECTOR role)
             } else if (role === ROLES.SUPERVISOR) {
-                // ... (unchanged code for SUPERVISOR role)
+                const currentRMs = (await getRegionalManagerBySupervisor(userID)).map((rm) => rm.userID);
+                const newRM = tempRegionalManagers[0]?.userID || "";
+
+                if (newRM && !currentRMs.includes(newRM)) {
+                    await assignRegionalManagerToSupervisor(userID, newRM);
+                } else if (currentRMs.length > 0 && !newRM) {
+                    await new Promise<void>((resolve, reject) => {
+                        setShowConfirm({
+                            message: `Revoking regional manager will remove all assignments. Apply cascade?`,
+                            onConfirm: async (cascade) => {
+                                try {
+                                    await revokeRegionalManagerFromSupervisor(userID, { revokeAll: cascade });
+                                    setShowConfirm(null);
+                                    resolve();
+                                } catch (error) {
+                                    setGlobalError("Failed to revoke regional manager.");
+                                    setShowConfirm(null);
+                                    reject(error);
+                                }
+                            },
+                            onCancel: () => {
+                                setShowConfirm(null);
+                                reject(new Error("Save operation cancelled"));
+                            },
+                        });
+                    });
+                }
+
+                const currentGovs = (await getGovernoratesByUser(userID)).map((g) => g.governorateID);
+                const newGovs = tempGovernorates.map((g) => g.governorateID);
+                const govsToAssign = newGovs.filter((id) => !currentGovs.includes(id));
+                const govsToRevoke = currentGovs.filter((id) => !newGovs.includes(id));
+
+                if (govsToAssign.length) {
+                    await assignGovernoratesToSupervisor(userID, govsToAssign);
+                }
+                if (govsToRevoke.length) {
+                    await new Promise<void>((resolve, reject) => {
+                        setShowConfirm({
+                            message: `Revoking governorates can remove all assigned delegations and agents. approve?`,
+                            onConfirm: async (cascade) => {
+                                try {
+                                    await revokeGovernoratesFromSupervisor(userID, govsToRevoke, {
+                                        revokeAll: cascade,
+                                    });
+                                    setShowConfirm(null);
+                                    resolve();
+                                } catch (error) {
+                                    setGlobalError("Failed to revoke governorates.");
+                                    setShowConfirm(null);
+                                    reject(error);
+                                }
+                            },
+                            onCancel: () => {
+                                setShowConfirm(null);
+                                reject(new Error("Save operation cancelled"));
+                            },
+                        });
+                    });
+                }
+
+                const currentDels = (await getDelegationsByUser(userID)).map((d) => d.delegationID);
+                const newDels = tempDelegations.map((d) => d.delegationID);
+                const delsToAssign = newDels.filter((id) => !currentDels.includes(id));
+                const delsToRevoke = currentDels.filter((id) => !newDels.includes(id));
+
+                if (delsToAssign.length) {
+                    await assignDelegationsToSupervisor(userID, delsToAssign);
+                }
+                if (delsToRevoke.length) {
+                    await new Promise<void>((resolve, reject) => {
+                        setShowConfirm({
+                            message: `Revoking delegations will remove all assigned agents. Apply cascade?`,
+                            onConfirm: async (cascade) => {
+                                try {
+                                    await revokeDelegationsFromSupervisor(userID, delsToRevoke, {
+                                        revokeAgents: cascade,
+                                    });
+                                    setShowConfirm(null);
+                                    resolve();
+                                } catch (error) {
+                                    setGlobalError("Failed to revoke delegations.");
+                                    setShowConfirm(null);
+                                    reject(error);
+                                }
+                            },
+                            onCancel: () => {
+                                setShowConfirm(null);
+                                reject(new Error("Save operation cancelled"));
+                            },
+                        });
+                    });
+                }
+
+                const currentAgents = (await getAgentsByUser(userID)).agents.map((a) => ({
+                    agentID: a.agentID,
+                    delegationID: a.delegationID,
+                }));
+                const newAgents = tempAgents.map((a) => ({
+                    agentID: a.agentID,
+                    delegationID: a.delegationID,
+                }));
+                const agentsToAssign = tempAgents.filter(
+                    (a) => !currentAgents.some((ca) => ca.agentID === a.agentID && ca.delegationID === a.delegationID)
+                );
+                const agentsToRevoke = currentAgents
+                    .filter((ca) => !newAgents.some((na) => na.agentID === ca.agentID && na.delegationID === ca.delegationID))
+                    .map((ca) => ca.agentID);
+
+                await Promise.all([
+                    ...agentsToAssign.map((a) => assignSupervisorToAgent(a.agentID, userID, a.delegationID!)),
+                    ...agentsToRevoke.map((id) => revokeSupervisorFromAgent(id)),
+                ]);
             }
 
             const newUser = {
@@ -1560,10 +1667,10 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                     </>
 
                     {showConfirm && (
-                        <div className="sop-confirmation-modal" >
-                            <div className="sop-modal-content" >
-                                <p className="sop-modal-message" >{showConfirm.message}</p>
-                                <div className="sop-modal-buttons" >
+                        <div className="sop-confirmation-modal">
+                            <div className="sop-modal-content">
+                                <p className="sop-modal-message">{showConfirm.message}</p>
+                                <div className="sop-modal-buttons">
                                     <button
                                         className="sop-modal-button sop-modal-confirm"
                                         onClick={() => showConfirm.onConfirm(true)}

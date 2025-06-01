@@ -91,6 +91,53 @@ interface GeneratedVisit {
     } | null;
 }
 
+
+interface CustomMapModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    visits: {
+        visitID: string;
+        latitude: number;
+        longitude: number;
+        location: string;
+        time: string;
+        reasons: string;
+        agentName: string;
+    }[];
+    userLocation: { lat: number; lng: number } | null;
+}
+
+const CustomMapModal: React.FC<CustomMapModalProps> = ({
+    isOpen,
+    onClose,
+    visits,
+    userLocation,
+}) => {
+    if (!isOpen) return null;
+
+    return (
+        <div className="custom-map-modal-overlay">
+            <div className="custom-map-modal">
+                <button
+                    className="custom-map-modal-close"
+                    onClick={onClose}
+                    aria-label="Close map modal"
+                >
+                    ×
+                </button>
+                <div className="custom-map-modal-content">
+                    <MapComponent
+                        visits={visits}
+                        userLocation={userLocation}
+                        isTimesheetModal={true}
+                    />
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
 const TimesheetsSkeleton: React.FC = () => (
     <div className="timesheets-container">
         <header className="timesheets-header">
@@ -1748,16 +1795,17 @@ const Timesheets: React.FC = React.memo(() => {
 
                 {viewMode === "day" && (
                     <section className="day-view">
+                        {isSupervisor && (
+                            <button
+                                className="nav-btn"
+                                onClick={() => setIsMapModalOpen(true)}
+                                aria-label={t("timesheets.actions.viewDayOnMap")}
+                            >
+                                {t("timesheets.actions.viewDayOnMap")}
+                            </button>
+                        )}
                         <div className="day-header">
-                            {isSupervisor && (
-                                <button
-                                    className="nav-btn"
-                                    onClick={() => setIsMapModalOpen(true)}
-                                    aria-label={t("timesheets.actions.viewDayOnMap")}
-                                >
-                                    {t("timesheets.actions.viewDayOnMap")}
-                                </button>
-                            )}
+
                             {/* Existing navigation buttons */}
                             <button
                                 className="nav-btn"
@@ -1832,52 +1880,30 @@ const Timesheets: React.FC = React.memo(() => {
                 onSuggestionsGenerated={handleSuggestionsGenerated}
             />
             {isMapModalOpen && (
-                <Modal
+                <CustomMapModal
                     isOpen={isMapModalOpen}
-                    onRequestClose={() => setIsMapModalOpen(false)}
-                    style={{
-                        content: {
-                            top: '50%',
-                            left: '50%',
-                            right: 'auto',
-                            bottom: 'auto',
-                            marginRight: '-50%',
-                            transform: 'translate(-50%, -50%)',
-                            width: '80%',
-                            height: '80%',
-                            padding: '0',
-                        },
-                    }}
-                >
-                    <MapComponent
-                        visits={dayData
-                            .filter(
-                                (v) =>
-                                    v.Agent?.latitude != null &&
-                                    v.Agent?.longitude != null &&
-                                    v.location !== undefined &&
-                                    v.location !== null
-                            )
-                            .map((v) => ({
-                                visitID: 'visitID' in v ? v.visitID : (v as GeneratedVisit).visitID,
-                                latitude: v.Agent?.latitude!,
-                                longitude: v.Agent?.longitude!,
-                                location: v.location as string,
-                                time: v.time,
-                                reasons:
-                                    'reasons' in v
-                                        ? (v as GeneratedVisit).reasons.map((r) => r.item).join(', ')
-                                        : visitReasons[v.visitID]?.map((r) => r.item).join(', ') || '',
-                                agentName:
-                                    'Agent' in v && v.Agent
-                                        ? `${v.Agent.name} ${v.Agent.lastname}`
-                                        : '',
-                            }))}
-                        userLocation={userLocation}
-                        isTimesheetModal={true}
-                        onClose={() => setIsMapModalOpen(false)}
-                    />
-                </Modal>
+                    onClose={() => setIsMapModalOpen(false)}
+                    visits={dayData
+                        .filter(
+                            (v) =>
+                                !('selected' in v) &&
+                                v.status === "validated" &&
+                                v.Agent?.latitude != null &&
+                                v.Agent?.longitude != null &&
+                                v.location !== undefined &&
+                                v.location !== null
+                        )
+                        .map((v) => ({
+                            visitID: v.visitID,
+                            latitude: v.Agent?.latitude!,
+                            longitude: v.Agent?.longitude!,
+                            location: v.location as string,
+                            time: v.time,
+                            reasons: visitReasons[v.visitID]?.map((r) => r.item).join(', ') || '',
+                            agentName: v.Agent ? `${v.Agent.name} ${v.Agent.lastname}` : '',
+                        }))}
+                    userLocation={userLocation}
+                />
             )}
         </motion.div>
 

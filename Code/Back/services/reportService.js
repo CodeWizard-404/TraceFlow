@@ -115,10 +115,13 @@ class ReportService {
         }
 
         if (filters.visitType) {
-            if (typeof filters.visitType === 'string') {
-                where.visitType = filters.visitType; // Assumes visitType is a field in Visit model
-            } else {
+            if (typeof filters.visitType !== 'string') {
                 throw new Error('Invalid visitType: must be a string');
+            }
+            if (filters.visitType === 'recrutementVisits') {
+                where.agentID = { [Op.is]: null };
+            } else {
+                where.visitType = filters.visitType;
             }
         }
 
