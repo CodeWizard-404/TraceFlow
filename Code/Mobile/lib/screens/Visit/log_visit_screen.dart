@@ -10,7 +10,9 @@ import '../../providers/auth_provider.dart';
 import '../../providers/visit_provider.dart';
 import '../../providers/checklist_provider.dart';
 import '../../providers/agent_provider.dart';
+import '../../widgets/Visit/otp_validation_screen.dart';
 import '../../widgets/commen/snack_bar.dar.dart';
+import '../../widgets/qr_scanner/qr_scanner_widget.dart';
 import '../Error.dart';
 import '../../widgets/appbar/app_bar.dart';
 import '../../widgets/commen/button.dart';
@@ -53,14 +55,14 @@ class _LogVisitScreenState extends State<LogVisitScreen> with WidgetsBindingObse
   double? _nativeAspectRatio;
   bool _isMinimalView = false;
   bool _isFlippingCamera = false;
+  bool _isQRVerified = false;
+  bool _isOTPVerified = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _initializeCamera();
     _fetchVisitData();
-    _entryTime = DateTime.now();
   }
 
   @override
@@ -109,10 +111,19 @@ class _LogVisitScreenState extends State<LogVisitScreen> with WidgetsBindingObse
         checklistProvider.getChecklistsByVisitId(widget.visitID),
       ]);
       _visit = visitProvider.currentVisit;
-      if (_visit?.agentID != null) {
-        await agentProvider.fetchAgentById(_visit!.agentID);
+      if (_visit != null && _visit!.agentID != null) {
+        await agentProvider.fetchAgentById(_visit!.agentID!);
       }
-      setState(() => _checklists = checklistProvider.checklists);
+      setState(() {
+        _checklists = checklistProvider.checklists;
+        if (_visit?.agentID == null) {
+          // Recruitment visit: skip QR/OTP
+          _isQRVerified = true;
+          _isOTPVerified = true;
+          _entryTime = DateTime.now();
+          _initializeCamera();
+        }
+      });
     } catch (error) {
       _showError('Failed to load visit data: $error');
     }
@@ -121,7 +132,7 @@ class _LogVisitScreenState extends State<LogVisitScreen> with WidgetsBindingObse
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _cameraController.dispose();
+    if (_isCameraInitialized) _cameraController.dispose();
     super.dispose();
   }
 
@@ -140,8 +151,74 @@ class _LogVisitScreenState extends State<LogVisitScreen> with WidgetsBindingObse
     );
   }
 
+  Future<void> _startQRScan() async {
+    if (_visit?.agentID == null) return; // Recruitment visit, no QR needed
+
+    final qrResult = await Navigator.push<String?>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => QRScannerWidget(),
+      ),
+    );
+
+    if (qrResult != null && mounted) {
+      final visitProvider = Provider.of<VisitProvider>(context, listen: false);
+      try {
+        final qrResponse = await visitProvider.verifyQRCode(
+          qrData: qrResult,
+          visitId: widget.visitID,
+        );
+        if (qrResponse['valid'] == true) {
+          setState(() => _isQRVerified = true);
+          _promptOTP();
+        } else {
+          CustomSnackBar.show(
+            context: context,
+            message: qrResponse['message'] ?? 'Invalid QR code',
+            backgroundColor: Theme.of(context).colorScheme.error.withOpacity(0.9),
+          );
+        }
+      } catch (e) {
+        CustomSnackBar.show(
+          context: context,
+          message: 'QR verification failed: $e',
+          backgroundColor: Theme.of(context).colorScheme.error.withOpacity(0.9),
+        );
+      }
+    }
+  }
+
+  Future<void> _promptOTP() async {
+    final otpValidated = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => OTPValidationScreen(
+          visitId: widget.visitID,
+          onOTPValidated: (otp) async {
+            final visitProvider = Provider.of<VisitProvider>(context, listen: false);
+            final otpResponse = await visitProvider.validateOTP(
+              visitId: widget.visitID,
+              otpCode: otp,
+            );
+            if (otpResponse['valid'] != true) {
+              throw Exception(otpResponse['message'] ?? 'Invalid OTP');
+            }
+          },
+        ),
+      ),
+    );
+
+    if (otpValidated == true && mounted) {
+      setState(() {
+        _isOTPVerified = true;
+        _entryTime = DateTime.now();
+      });
+      await _initializeCamera();
+    }
+  }
+
   Future<void> _startCamera() async {
-    if (!_isCameraInitialized) return;
+    if (!_isCameraInitialized || !_isQRVerified || !_isOTPVerified) return;
     await _cameraController.setFlashMode(FlashMode.off);
     setState(() => _isCameraActive = true);
   }
@@ -350,6 +427,7 @@ class _LogVisitScreenState extends State<LogVisitScreen> with WidgetsBindingObse
         checklistUpdates: checklistUpdates,
         photoPaths: _photos.map((p) => p.path).toList(),
         comment: _comment,
+        status: 'visited',
       );
       Navigator.pop(context);
       CustomSnackBar.show(
@@ -403,8 +481,30 @@ class _LogVisitScreenState extends State<LogVisitScreen> with WidgetsBindingObse
           : CustomAppBar(title: 'Log Visit', showBackButton: true),
       body: (!_isCameraInitialized && _isCameraActive)
           ? Container(color: Colors.black)
-          : visitProvider.isLoading || checklistProvider.isLoading || agentProvider.isLoading || !_isCameraInitialized
+          : visitProvider.isLoading || checklistProvider.isLoading || agentProvider.isLoading
           ? Center(child: CustomProgressIndicator(color: theme.colorScheme.primary))
+          : !_isQRVerified || !_isOTPVerified
+          ? Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              _visit?.agentID == null
+                  ? 'Recruitment Visit: No QR/OTP Required'
+                  : 'Please Scan QR Code',
+              style: theme.textTheme.headlineSmall,
+              textAlign: TextAlign.center,
+            ),
+            const CustomSpacer(height: 24),
+            CustomButton(
+              label: 'Scan QR Code',
+              icon: Icons.qr_code_scanner,
+              onPressed: _startQRScan,
+              backgroundColor: theme.colorScheme.primary,
+            ),
+          ],
+        ),
+      )
           : _isCameraActive
           ? GestureDetector(
         onTapDown: _onTapFocus,
@@ -667,7 +767,7 @@ class _LogVisitScreenState extends State<LogVisitScreen> with WidgetsBindingObse
                       _buildSectionHeader(context, 'Visit Details', Icons.person),
                       const CustomSpacer(height: 16),
                       Text(
-                        'Agent: ${agentProvider.currentAgent != null ? '${agentProvider.currentAgent!.name} ${agentProvider.currentAgent!.lastname}' : 'Loading...'}',
+                        'Agent: ${agentProvider.currentAgent != null ? '${agentProvider.currentAgent!.name} ${agentProvider.currentAgent!.lastname}' : 'Recruitment Visit'}',
                         style: theme.textTheme.bodyMedium,
                       ),
                       const CustomSpacer(height: 8),
@@ -782,7 +882,7 @@ class _LogVisitScreenState extends State<LogVisitScreen> with WidgetsBindingObse
                           activeColor: theme.colorScheme.primary,
                           controlAffinity: ListTileControlAffinity.leading,
                           dense: true,
-                        )).toList(),
+                        )),
                     ],
                   ),
                 ),

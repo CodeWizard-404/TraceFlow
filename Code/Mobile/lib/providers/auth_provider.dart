@@ -55,13 +55,20 @@ class AuthProvider with ChangeNotifier {
 
   void _startProactiveRefreshTimer() {
     _refreshTimer?.cancel();
-    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) async {
-      if (_refreshToken != null &&
-          _tokenExpiry != null &&
-          _tokenExpiry! - DateTime.now().millisecondsSinceEpoch < 30000) {
+    _refreshTimer = Timer.periodic(const Duration(minutes: 14), (_) async {
+      if (_refreshToken != null) {
         await _refreshAccessToken();
+      } else {
+        if (kDebugMode) print('No refresh token available, stopping refresh timer');
+        _refreshTimer?.cancel();
       }
     });
+  }
+
+  Future<bool> _isTokenExpired() async {
+    if (_tokenExpiry == null) return true;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    return now >= _tokenExpiry! - 30000;
   }
 
   Future<void> _restoreSession() async {
@@ -73,6 +80,9 @@ class AuthProvider with ChangeNotifier {
       if (CookieManager.cookies.containsKey('accessToken') &&
           CookieManager.cookies.containsKey('refreshToken')) {
         _refreshToken = CookieManager.cookies['refreshToken'];
+        if (await _isTokenExpired()) {
+          await _refreshAccessToken();
+        }
         await _checkAuthStatus();
       } else {
         _errorMessage = 'Please log in to continue.';
@@ -149,8 +159,6 @@ class AuthProvider with ChangeNotifier {
               .toList();
           if (kDebugMode) print('Permissions loaded: $_permissions');
           return true;
-        } else if (response.statusCode == 401 && attempt < maxRetries - 1) {
-          await _refreshAccessToken();
         } else {
           if (kDebugMode) print('Permissions fetch failed with status: ${response.statusCode}');
           return false;

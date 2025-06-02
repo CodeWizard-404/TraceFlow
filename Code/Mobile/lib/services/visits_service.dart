@@ -55,9 +55,8 @@ class VisitService {
         throw Exception('Failed to log visit: $responseBody');
       },
     ).then((response) {
-      final data = json.decode(response.body);
-      if (data is Map<String, dynamic>) {
-        return Visit.fromJson(data['visit']);
+      if (response is Map<String, dynamic>) {
+        return Visit.fromJson(response['visit'] ?? response);
       }
       throw Exception('Invalid visit response format');
     });
@@ -81,9 +80,8 @@ class VisitService {
         throw Exception('Failed to fetch visit: ${response.body}');
       },
     ).then((response) {
-      final data = json.decode(response.body);
-      if (data is Map<String, dynamic>) {
-        return Visit.fromJson(data);
+      if (response is Map<String, dynamic>) {
+        return Visit.fromJson(response);
       }
       throw Exception('Invalid visit response format');
     });
@@ -149,9 +147,8 @@ class VisitService {
         throw Exception('Failed to update visit: $responseBody');
       },
     ).then((response) {
-      final data = json.decode(response.body);
-      if (data is Map<String, dynamic>) {
-        return Visit.fromJson(data['visit']);
+      if (response is Map<String, dynamic>) {
+        return Visit.fromJson(response['visit'] ?? response);
       }
       throw Exception('Invalid visit response format');
     });
@@ -199,9 +196,8 @@ class VisitService {
         throw Exception('Failed to verify QR code: ${response.body}');
       },
     ).then((response) {
-      final data = json.decode(response.body);
-      if (data is Map<String, dynamic>) {
-        return data;
+      if (response is Map<String, dynamic>) {
+        return response;
       }
       throw Exception('Invalid QR code response format');
     });
@@ -229,9 +225,8 @@ class VisitService {
         throw Exception('Failed to validate OTP: ${response.body}');
       },
     ).then((response) {
-      final data = json.decode(response.body);
-      if (data is Map<String, dynamic>) {
-        return data;
+      if (response is Map<String, dynamic>) {
+        return response;
       }
       throw Exception('Invalid OTP response format');
     });
@@ -255,9 +250,8 @@ class VisitService {
         throw Exception('Failed to sync visit to calendar: ${response.body}');
       },
     ).then((response) {
-      final data = json.decode(response.body);
-      if (data is Map<String, dynamic>) {
-        return data;
+      if (response is Map<String, dynamic>) {
+        return response;
       }
       throw Exception('Invalid calendar sync response format');
     });
@@ -281,9 +275,8 @@ class VisitService {
         throw Exception('Failed to list calendar events: ${response.body}');
       },
     ).then((response) {
-      final data = json.decode(response.body);
-      if (data is List) {
-        return data.cast<Map<String, dynamic>>();
+      if (response is List) {
+        return response.cast<Map<String, dynamic>>();
       }
       throw Exception('Invalid calendar events response format');
     });

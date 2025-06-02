@@ -381,8 +381,8 @@ const VisitCard: React.FC<VisitCardProps> = ({
         collect: (monitor) => ({
             isDragging: !!monitor.isDragging(),
         }),
-        canDrag: () => (userPermissions.canCreateTimesheets || userPermissions.canCreateSupervisorTimesheets),
-    }), [visitId, visit.date, visit.time, isGenerated, userPermissions]);
+        canDrag: () => (userPermissions.canCreateTimesheets || userPermissions.canCreateSupervisorTimesheets) && !isVisited,
+    }), [visitId, visit.date, visit.time, isGenerated, userPermissions, isVisited]);
 
     useEffect(() => {
         drag(visitRef);

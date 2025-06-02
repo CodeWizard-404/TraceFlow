@@ -40,6 +40,8 @@
         <meta-data
             android:name="com.google.android.gms.signin.client_id"
             android:value="1014557993742-4hoft2g32r8nr699iem2hlshot96ttte.apps.googleusercontent.com" />
+
+
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

@@ -280,17 +280,22 @@ const VisitDetailsView: React.FC = () => {
     };
 
     const handleReject = async () => {
-        if (!visit || !visit.timesheetID || !userPermissions.canValidateTimesheets)
+        if (!visit || !visit.timesheetID || !userPermissions.canValidateTimesheets) {
+            setError(t("visitDetails.error.noPermissionOrInvalidVisit"));
             return;
+        }
         try {
-            await validateTimesheet(visit.timesheetID, {
+            console.log("Attempting to reject visit:", { visitID: visit.visitID, timesheetID: visit.timesheetID });
+            const response = await validateTimesheet(visit.timesheetID, {
                 visitIDs: [visit.visitID],
                 status: "rejected",
             });
+            console.log("Reject API response:", response);
             setVisit((prev) =>
                 prev ? { ...prev, status: VisitStatus.REJECTED } : null
             );
         } catch (err: unknown) {
+            console.error("Reject API error:", err);
             const errorMessage =
                 err instanceof Error ? err.message : t("visitDetails.error.rejectFailed");
             setError(errorMessage);

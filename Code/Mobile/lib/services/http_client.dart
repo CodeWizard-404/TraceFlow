@@ -35,7 +35,11 @@ class CookieInterceptor implements InterceptorContract {
       _retryCount++;
       try {
         if (kDebugMode) print('401 detected: Attempting token refresh');
-        final refreshResult = await AuthService.refreshToken(CookieManager.cookies['refreshToken'] ?? '');
+        final refreshToken = CookieManager.cookies['refreshToken'];
+        if (refreshToken == null) {
+          throw Exception('No refresh token available');
+        }
+        final refreshResult = await AuthService.refreshToken(refreshToken);
         if (kDebugMode) print('Token refresh result: $refreshResult');
 
         final request = httpResponse.request!;
@@ -131,9 +135,6 @@ class CustomHttpClient {
     final response = await _client.get(
       url,
       headers: updatedHeaders,
-      // Ensure cookies are sent
-      // Note: withCredentials is not directly supported in Dart's http package,
-      // but cookies are automatically included if properly stored in CookieManager
     );
     if (kDebugMode) print('GET response: ${response.statusCode}');
     return response;
