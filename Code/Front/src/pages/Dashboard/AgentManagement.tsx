@@ -8,9 +8,7 @@ import {
     deleteAgent,
     uploadAgents,
 } from '../../apis/agentAPI';
-import {
-    getUsersByRole,
-} from '../../apis/userAPI';
+import { getUsersByRole } from '../../apis/userAPI';
 import {
     getAllRegions,
     getAllGovernorates,
@@ -36,6 +34,8 @@ import {
     Popconfirm,
     Tabs,
     Card,
+    Row,
+    Col,
 } from 'antd';
 import type { TableProps } from 'antd';
 import {
@@ -50,6 +50,34 @@ import { saveAs } from 'file-saver';
 import './AgentManagement.css';
 import { debounce } from 'lodash';
 import { useInView } from 'react-intersection-observer';
+import { Bar, Doughnut, Line, Pie } from 'react-chartjs-2';
+import {
+    Chart as ChartJS,
+    ArcElement,
+    Tooltip as ChartTooltip,
+    Legend,
+    CategoryScale,
+    LinearScale,
+    BarElement,
+    LineElement,
+    PointElement,
+    RadialLinearScale,
+    PolarAreaController,
+} from 'chart.js';
+
+// Register Chart.js components
+ChartJS.register(
+    ArcElement,
+    ChartTooltip,
+    Legend,
+    CategoryScale,
+    LinearScale,
+    BarElement,
+    LineElement,
+    PointElement,
+    RadialLinearScale,
+    PolarAreaController
+);
 
 interface Agent {
     agentID: string;
@@ -65,7 +93,15 @@ interface Agent {
     createdAt: string;
     updatedAt: string;
     Supervisor?: { userID: string; firstname: string; lastname: string; phone: string };
-    Delegation: { delegationID: string; name: string; Governorate: { governorateID: string; name: string } };
+    Delegation: {
+        delegationID: string;
+        name: string;
+        Governorate?: {
+            governorateID: string;
+            name: string;
+            regionID?: string
+        }
+    };
 }
 
 interface User {
@@ -139,6 +175,13 @@ const AgentManagement: React.FC = () => {
         delegation: '',
         supervisor: '',
     });
+    const [chartFilters, setChartFilters] = useState({
+        timeRange: 'all',
+        governorate: '',
+        delegation: '',
+        supervisor: '',
+        hasLocation: 'all',
+    });
     const [isEditModalVisible, setIsEditModalVisible] = useState(false);
     const [isBulkAssignModalVisible, setIsBulkAssignModalVisible] = useState(false);
     const [editingAgent, setEditingAgent] = useState<Agent | null>(null);
@@ -153,6 +196,221 @@ const AgentManagement: React.FC = () => {
     const [filterDelegationIds, setFilterDelegationIds] = useState<string[]>([]);
     const [editModalDelegations, setEditModalDelegations] = useState<Delegation[]>([]);
     const { ref, inView } = useInView({ triggerOnce: false });
+    const [currentView, setCurrentView] = useState<'overview' | 'agents' | 'map' | 'activityLog'>('overview');
+
+    // Check for dark mode
+    const isDarkMode = document.body.classList.contains('dark');
+
+    // Chart Filter Options
+    const timeRangeOptions = [
+        { label: 'Last Week', value: '1w' },
+        { label: 'Last Month', value: '1m' },
+        { label: 'Last 3 Months', value: '3m' },
+        { label: 'Last 6 Months', value: '6m' },
+        { label: 'Last Year', value: '1y' },
+        { label: 'All Time', value: 'all' },
+    ];
+
+    const locationFilterOptions = [
+        { label: 'All', value: 'all' },
+        { label: 'With Location', value: 'with' },
+        { label: 'Without Location', value: 'without' },
+    ];
+
+    // Filter Agents by Chart Filters
+    const FilteredChartAgents = useMemo(() => {
+        return agents.filter(agent => {
+            const matchesGovernorate = chartFilters.governorate ? agent.Delegation?.Governorate?.governorateID === chartFilters.governorate : true;
+            const matchesDelegation = chartFilters.delegation ? agent.delegationID === chartFilters.delegation : true;
+            const matchesSupervisor = chartFilters.supervisor ? agent.supervisorID === chartFilters.supervisor : true;
+            const matchesLocation = chartFilters.hasLocation === 'all' ? true :
+                chartFilters.hasLocation === 'with' ? agent.latitude && agent.longitude :
+                    !agent.latitude || !agent.longitude;
+            const matchesTimeRange = chartFilters.timeRange === 'all' ? true :
+                (() => {
+                    const updatedAt = new Date(agent.updatedAt);
+                    const now = new Date();
+                    const daysAgo = {
+                        '1w': 7,
+                        '1m': 30,
+                        '3m': 90,
+                        '6m': 180,
+                        '1y': 365,
+                    }[chartFilters.timeRange];
+                    if (daysAgo) {
+                        return updatedAt > new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
+                    }
+                    return true;
+                })();
+            return matchesGovernorate && matchesDelegation && matchesSupervisor && matchesLocation && matchesTimeRange;
+        });
+    }, [agents, chartFilters]);
+
+    // Chart Data Preparations
+    const agentsPerGovernorate = useMemo(() => {
+        return governorates
+            .map(gov => ({
+                name: gov.name,
+                count: FilteredChartAgents.filter(a => a.Delegation?.Governorate?.governorateID === gov.governorateID).length,
+            }))
+            .filter(g => g.count > 0);
+    }, [FilteredChartAgents, governorates]);
+
+    const barGovernorateData = useMemo(() => ({
+        labels: agentsPerGovernorate.map(g => g.name),
+        datasets: [{
+            label: 'Agents per Governorate',
+            data: agentsPerGovernorate.map(g => g.count),
+            backgroundColor: isDarkMode ? '#63b3ed' : '#42A5F5',
+        }],
+    }), [agentsPerGovernorate, isDarkMode]);
+
+    const agentsPerSupervisor = useMemo(() => {
+        const supervisorCounts = supervisors.map(sup => ({
+            name: `${sup.firstname} ${sup.lastname}`,
+            count: FilteredChartAgents.filter(a => a.supervisorID === sup.userID).length,
+        }));
+        const noSupervisorCount = FilteredChartAgents.filter(a => !a.supervisorID).length;
+        if (noSupervisorCount > 0) {
+            supervisorCounts.push({ name: 'No Supervisor', count: noSupervisorCount });
+        }
+        return supervisorCounts.filter(item => item.count > 0);
+    }, [FilteredChartAgents, supervisors]);
+
+    const doughnutSupervisorData = useMemo(() => ({
+        labels: agentsPerSupervisor.map(s => s.name),
+        datasets: [{
+            data: agentsPerSupervisor.map(s => s.count),
+            backgroundColor: isDarkMode ?
+                ['#ff7f7f', '#63b3ed', '#ffd700', '#66cdaa', '#ba55d3', '#ffa07a'] :
+                ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'],
+        }],
+    }), [agentsPerSupervisor, isDarkMode]);
+
+    const locationPieData = useMemo(() => {
+        const withLocations = FilteredChartAgents.filter(a => a.latitude && a.longitude).length;
+        const withoutLocations = FilteredChartAgents.length - withLocations;
+        return {
+            labels: ['With Location', 'Without Location'],
+            datasets: [{
+                data: [withLocations, withoutLocations],
+                backgroundColor: isDarkMode ? ['#63b3ed', '#ff7f7f'] : ['#36A2EB', '#FF6384'],
+            }],
+        };
+    }, [FilteredChartAgents, isDarkMode]);
+
+    const agentsPerDelegation = useMemo(() => {
+        return delegations
+            .filter(del => chartFilters.governorate ? del.governorateID === chartFilters.governorate : true)
+            .map(del => ({
+                name: del.name,
+                count: FilteredChartAgents.filter(a => a.delegationID === del.delegationID).length,
+            }))
+            .filter(d => d.count > 0);
+    }, [FilteredChartAgents, delegations, chartFilters.governorate]);
+
+    const barDelegationData = useMemo(() => ({
+        labels: agentsPerDelegation.map(d => d.name),
+        datasets: [{
+            label: 'Agents per Delegation',
+            data: agentsPerDelegation.map(d => d.count),
+            backgroundColor: isDarkMode ? '#66cdaa' : '#4BC0C0',
+        }],
+    }), [agentsPerDelegation, isDarkMode]);
+
+    const now = new Date();
+    const last24Hours = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const last7Days = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const last30Days = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    const staleData = useMemo(() => {
+        return {
+            'Last 24h': FilteredChartAgents.filter(a => new Date(a.updatedAt) > last24Hours).length,
+            'Last 7d': FilteredChartAgents.filter(a => new Date(a.updatedAt) > last7Days && new Date(a.updatedAt) <= last24Hours).length,
+            'Last 30d': FilteredChartAgents.filter(a => new Date(a.updatedAt) > last30Days && new Date(a.updatedAt) <= last7Days).length,
+            'Older': FilteredChartAgents.filter(a => new Date(a.updatedAt) <= last30Days).length,
+        };
+    }, [FilteredChartAgents]);
+
+    const staleBarData = useMemo(() => ({
+        labels: Object.keys(staleData),
+        datasets: [{
+            label: 'Agents by Last Update',
+            data: Object.values(staleData),
+            backgroundColor: isDarkMode ? '#ffa07a' : '#FF9F40',
+        }],
+    }), [staleData, isDarkMode]);
+
+    const updateFrequency = useMemo(() => {
+        const bins = {
+            'Daily': 0,
+            'Weekly': 0,
+            'Monthly': 0,
+            'Rarely': 0,
+        };
+        FilteredChartAgents.forEach(agent => {
+            const daysSinceUpdate = (now.getTime() - new Date(agent.updatedAt).getTime()) / (1000 * 60 * 60 * 24);
+            if (daysSinceUpdate <= 1) bins.Daily++;
+            else if (daysSinceUpdate <= 7) bins.Weekly++;
+            else if (daysSinceUpdate <= 30) bins.Monthly++;
+            else bins.Rarely++;
+        });
+        return bins;
+    }, [FilteredChartAgents]);
+
+    const updateFrequencyBarData = useMemo(() => ({
+        labels: Object.keys(updateFrequency),
+        datasets: [{
+            label: 'Agent Update Frequency',
+            data: Object.values(updateFrequency),
+            backgroundColor: isDarkMode ? '#ba55d3' : '#9966FF',
+        }],
+    }), [updateFrequency, isDarkMode]);
+
+    const agentsByRegionAndGov = useMemo(() => {
+        return regions.map(region => ({
+            region: region.name,
+            governorates: governorates
+                .filter(gov => gov.regionID === region.regionID)
+                .map(gov => ({
+                    name: gov.name,
+                    count: FilteredChartAgents.filter(a => a.Delegation?.Governorate?.governorateID === gov.governorateID).length,
+                }))
+                .filter(g => g.count > 0),
+        })).filter(r => r.governorates.length > 0);
+    }, [FilteredChartAgents, regions, governorates]);
+
+    const stackedRegionGovData = useMemo(() => {
+        const labels = agentsByRegionAndGov.map(r => r.region);
+        const govNames = [...new Set(agentsByRegionAndGov.flatMap(r => r.governorates.map(g => g.name)))];
+        const datasets = govNames.map((govName, idx) => ({
+            label: govName,
+            data: agentsByRegionAndGov.map(r => {
+                const gov = r.governorates.find(g => g.name === govName);
+                return gov ? gov.count : 0;
+            }),
+            backgroundColor: isDarkMode ?
+                ['#ff7f7f', '#63b3ed', '#ffd700', '#66cdaa', '#ba55d3', '#ffa07a'][idx % 6] :
+                ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'][idx % 6],
+        }));
+        return { labels, datasets };
+    }, [agentsByRegionAndGov, isDarkMode]);
+
+    const supervisorWorkload = useMemo(() => {
+        return supervisors.map(sup => ({
+            name: `${sup.firstname} ${sup.lastname}`,
+            count: FilteredChartAgents.filter(a => a.supervisorID === sup.userID).length,
+        })).filter(s => s.count > 0);
+    }, [FilteredChartAgents, supervisors]);
+
+    const workloadBarData = useMemo(() => ({
+        labels: supervisorWorkload.map(s => s.name),
+        datasets: [{
+            label: 'Agents per Supervisor',
+            data: supervisorWorkload.map(s => s.count),
+            backgroundColor: isDarkMode ? '#ba55d3' : '#9966FF',
+        }],
+    }), [supervisorWorkload, isDarkMode]);
 
     useEffect(() => {
         if (inView) {
@@ -219,14 +477,14 @@ const AgentManagement: React.FC = () => {
 
     const handleRegionChange = async (regionId: string) => {
         setFilters(prev => ({ ...prev, region: regionId, governorate: '', delegation: '' }));
+        setChartFilters(prev => ({ ...prev, governorate: '', delegation: '' }));
         try {
             let delegationIds: string[] = [];
             if (regionId) {
                 const govData = await getGovernoratesByRegion(regionId);
                 setFilteredGovernorates(govData);
                 const delPromises = govData.map(gov => getDelegationsByGovernorate(gov.governorateID));
-                const delDataArrays = await Promise.all(delPromises);
-                const delData = delDataArrays.flat();
+                const delData = (await Promise.all(delPromises)).flat();
                 setFilteredDelegations(delData);
                 delegationIds = delData.map(d => d.delegationID);
             } else {
@@ -242,6 +500,7 @@ const AgentManagement: React.FC = () => {
 
     const handleGovernorateChange = async (governorateId: string) => {
         setFilters(prev => ({ ...prev, governorate: governorateId, delegation: '' }));
+        setChartFilters(prev => ({ ...prev, governorate: governorateId, delegation: '' }));
         try {
             let delegationIds: string[] = [];
             if (governorateId) {
@@ -260,6 +519,7 @@ const AgentManagement: React.FC = () => {
 
     const handleSupervisorChange = async (supervisorId: string) => {
         setFilters(prev => ({ ...prev, supervisor: supervisorId, region: '', governorate: '', delegation: '' }));
+        setChartFilters(prev => ({ ...prev, supervisor: supervisorId, governorate: '', delegation: '' }));
         try {
             let delegationIds: string[] = [];
             if (supervisorId) {
@@ -503,10 +763,38 @@ const AgentManagement: React.FC = () => {
 
     return (
         <div className="agent-management-container" ref={ref}>
-            <h1 className="text-2xl font-bold mb-4">Agent Management Dashboard</h1>
 
-            <Tabs defaultActiveKey="1">
-                <Tabs.TabPane tab="Overview" key="1">
+            <header className="agent-management-header">
+                <h1>Agent Management Dashboard</h1>
+                <div className="view-toggle">
+                    <button
+                        className={`toggle-btn ${currentView === 'overview' ? 'active' : ''}`}
+                        onClick={() => setCurrentView('overview')}
+                    >
+                        Overview
+                    </button>
+                    <button
+                        className={`toggle-btn ${currentView === 'agents' ? 'active' : ''}`}
+                        onClick={() => setCurrentView('agents')}
+                    >
+                        Agents
+                    </button>
+                    <button
+                        className={`toggle-btn ${currentView === 'map' ? 'active' : ''}`}
+                        onClick={() => setCurrentView('map')}
+                    >
+                        Map
+                    </button>
+                    <button
+                        className={`toggle-btn ${currentView === 'activityLog' ? 'active' : ''}`}
+                        onClick={() => setCurrentView('activityLog')}
+                    >
+                        Activity Log
+                    </button>
+                </div>
+            </header>
+            {currentView === 'overview' && (
+                <div className="overview-content">
                     <div className="metrics-container">
                         {Object.entries(metrics).map(([key, value]) => (
                             <Card key={key} className="metric-card">
@@ -515,14 +803,171 @@ const AgentManagement: React.FC = () => {
                             </Card>
                         ))}
                     </div>
-                </Tabs.TabPane>
+                    <div className="chart-filters" style={{ marginBottom: '1.25rem' }}>
+                        <Space wrap>
+                            <Select
+                                placeholder="Select Time Range"
+                                value={chartFilters.timeRange}
+                                onChange={(value) => setChartFilters(prev => ({ ...prev, timeRange: value }))}
+                                style={{ width: 150 }}
+                            >
+                                {timeRangeOptions.map(option => (
+                                    <Select.Option key={option.value} value={option.value}>
+                                        {option.label}
+                                    </Select.Option>
+                                ))}
+                            </Select>
+                            <Select
+                                placeholder="Filter by Governorate"
+                                value={chartFilters.governorate}
+                                onChange={handleGovernorateChange}
+                                style={{ width: 150 }}
+                                allowClear
+                            >
+                                <Select.Option value="">All Governorates</Select.Option>
+                                {filteredGovernorates.map(g => (
+                                    <Select.Option key={g.governorateID} value={g.governorateID}>
+                                        {g.name}
+                                    </Select.Option>
+                                ))}
+                            </Select>
+                            <Select
+                                placeholder="Filter by Delegation"
+                                value={chartFilters.delegation}
+                                onChange={(value) => setChartFilters(prev => ({ ...prev, delegation: value }))}
+                                style={{ width: 150 }}
+                                allowClear
+                            >
+                                <Select.Option value="">All Delegations</Select.Option>
+                                {filteredDelegations.map(d => (
+                                    <Select.Option key={d.delegationID} value={d.delegationID}>
+                                        {d.name}
+                                    </Select.Option>
+                                ))}
+                            </Select>
+                            <Select
+                                placeholder="Filter by Supervisor"
+                                value={chartFilters.supervisor}
+                                onChange={(value) => setChartFilters(prev => ({ ...prev, supervisor: value }))}
+                                style={{ width: 150 }}
+                                allowClear
+                            >
+                                <Select.Option value="">All Supervisors</Select.Option>
+                                {supervisors.map(s => (
+                                    <Select.Option key={s.userID} value={s.userID}>
+                                        {s.firstname} {s.lastname}
+                                    </Select.Option>
+                                ))}
+                            </Select>
+                            <Select
+                                placeholder="Location Status"
+                                value={chartFilters.hasLocation}
+                                onChange={(value) => setChartFilters(prev => ({ ...prev, hasLocation: value }))}
+                                style={{ width: 150 }}
+                                allowClear
+                            >
+                                {locationFilterOptions.map(option => (
+                                    <Select.Option key={option.value} value={option.value}>
+                                        {option.label}
+                                    </Select.Option>
+                                ))}
+                            </Select>
+                        </Space>
+                    </div>
+                    <div className="charts-container">
+                        <Row gutter={[16, 16]}>
+                            <Col span={12}>
+                                <Card title="Agents per Governorate">
+                                    <Bar data={barGovernorateData} options={{
+                                        plugins: { legend: { labels: { color: isDarkMode ? '#e5e7eb' : '#1f2937' } } },
+                                        scales: {
+                                            x: { ticks: { color: isDarkMode ? '#e5e7eb' : '#1f2937' } },
+                                            y: { ticks: { color: isDarkMode ? '#e5e7eb' : '#1f2937' } },
+                                        },
+                                    }} />
+                                </Card>
+                            </Col>
+                            <Col span={12}>
+                                <Card title="Stale Agent Data">
+                                    <Line data={staleBarData} options={{
+                                        plugins: { legend: { labels: { color: isDarkMode ? '#e5e7eb' : '#1f2937' } } },
+                                        scales: {
+                                            x: { ticks: { color: isDarkMode ? '#e5e7eb' : '#1f2937' } },
+                                            y: { ticks: { color: isDarkMode ? '#e5e7eb' : '#1f2937' } },
+                                        },
+                                    }} />
+                                </Card>
+                            </Col>
+                            <Col span={24}>
+                                <Card title="Agents per Delegation">
+                                    <Bar data={barDelegationData} options={{
+                                        plugins: { legend: { labels: { color: isDarkMode ? '#e5e7eb' : '#1f2937' } } },
+                                        scales: {
+                                            x: { ticks: { color: isDarkMode ? '#e5e7eb' : '#1f2937' } },
+                                            y: { ticks: { color: isDarkMode ? '#e5e7eb' : '#1f2937' } },
+                                        },
+                                    }} />
+                                </Card>
+                            </Col>
+                            <Col span={12}>
+                                <Card title="Agent Update Frequency">
+                                    <Line data={updateFrequencyBarData} options={{
+                                        plugins: { legend: { labels: { color: isDarkMode ? '#e5e7eb' : '#1f2937' } } },
+                                        scales: {
+                                            x: { ticks: { color: isDarkMode ? '#e5e7eb' : '#1f2937' } },
+                                            y: { ticks: { color: isDarkMode ? '#e5e7eb' : '#1f2937' } },
+                                        },
+                                    }} />
+                                </Card>
+                            </Col>
+                            <Col span={12}>
+                                <Card title="Agent Distribution by Region and Governorate">
+                                    <Bar data={stackedRegionGovData} options={{
+                                        plugins: { legend: { labels: { color: isDarkMode ? '#e5e7eb' : '#1f2937' } } },
+                                        scales: {
+                                            x: { stacked: true, ticks: { color: isDarkMode ? '#e5e7eb' : '#1f2937' } },
+                                            y: { stacked: true, ticks: { color: isDarkMode ? '#e5e7eb' : '#1f2937' } },
+                                        },
+                                    }} />
+                                </Card>
+                            </Col>
+                            <Col span={9}>
+                                <Card title="Agents per Supervisor">
+                                    <Doughnut data={doughnutSupervisorData} options={{
+                                        plugins: { legend: { labels: { color: isDarkMode ? '#e5e7eb' : '#1f2937' } } },
+                                    }} />
+                                </Card>
+                            </Col>
+                            <Col span={10}>
+                                <Card title="Supervisor Workload Balance">
+                                    <Line data={workloadBarData} options={{
+                                        plugins: { legend: { labels: { color: isDarkMode ? '#e5e7eb' : '#1f2937' } } },
+                                        scales: {
+                                            x: { ticks: { color: isDarkMode ? '#e5e7eb' : '#1f2937' } },
+                                            y: { ticks: { color: isDarkMode ? '#e5e7eb' : '#1f2937' } },
+                                        },
+                                    }} />
+                                </Card>
+                            </Col>
+                            <Col span={5}>
+                                <Card title="Agents with/without Locations">
+                                    <Pie data={locationPieData} options={{
+                                        plugins: { legend: { labels: { color: isDarkMode ? '#e5e7eb' : '#1f2937' } } },
+                                    }} />
+                                </Card>
+                            </Col>
+                        </Row>
+                    </div>
+                </div>
+            )}
 
-                <Tabs.TabPane tab="Agents" key="2">
+            {currentView === 'agents' && (
+                <div className="agents-content">
                     <Space direction="vertical" style={{ width: '100%', marginBottom: 16 }}>
                         <Space wrap>
                             <Input.Search
                                 placeholder="Search by name, lastname, phone..."
-                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => debouncedSearch(e.target.value)}
+                                onChange={(e) => debouncedSearch(e.target.value)}
                                 style={{ width: 200 }}
                             />
                             <Select
@@ -532,7 +977,9 @@ const AgentManagement: React.FC = () => {
                                 style={{ width: 150 }}
                             >
                                 <Select.Option value="">All Regions</Select.Option>
-                                {regions.map(r => <Select.Option key={r.regionID} value={r.regionID}>{r.name}</Select.Option>)}
+                                {regions.map(r => (
+                                    <Select.Option key={r.regionID} value={r.regionID}>{r.name}</Select.Option>
+                                ))}
                             </Select>
                             <Select
                                 placeholder="Filter by Governorate"
@@ -541,16 +988,20 @@ const AgentManagement: React.FC = () => {
                                 style={{ width: 150 }}
                             >
                                 <Select.Option value="">All Governorates</Select.Option>
-                                {filteredGovernorates.map(g => <Select.Option key={g.governorateID} value={g.governorateID}>{g.name}</Select.Option>)}
+                                {filteredGovernorates.map(g => (
+                                    <Select.Option key={g.governorateID} value={g.governorateID}>{g.name}</Select.Option>
+                                ))}
                             </Select>
                             <Select
                                 placeholder="Filter by Delegation"
                                 value={filters.delegation}
-                                onChange={(value: string) => setFilters({ ...filters, delegation: value })}
+                                onChange={(value) => setFilters({ ...filters, delegation: value })}
                                 style={{ width: 150 }}
                             >
                                 <Select.Option value="">All Delegations</Select.Option>
-                                {filteredDelegations.map(d => <Select.Option key={d.delegationID} value={d.delegationID}>{d.name}</Select.Option>)}
+                                {filteredDelegations.map(d => (
+                                    <Select.Option key={d.delegationID} value={d.delegationID}>{d.name}</Select.Option>
+                                ))}
                             </Select>
                             <Select
                                 placeholder="Filter by Supervisor"
@@ -559,10 +1010,11 @@ const AgentManagement: React.FC = () => {
                                 style={{ width: 150 }}
                             >
                                 <Select.Option value="">All Supervisors</Select.Option>
-                                {filteredSupervisors.map(s => <Select.Option key={s.userID} value={s.userID}>{s.firstname} {s.lastname}</Select.Option>)}
+                                {filteredSupervisors.map(s => (
+                                    <Select.Option key={s.userID} value={s.userID}>{s.firstname} {s.lastname}</Select.Option>
+                                ))}
                             </Select>
                         </Space>
-
                         <Space>
                             <Button
                                 type="primary"
@@ -580,7 +1032,6 @@ const AgentManagement: React.FC = () => {
                             </Button>
                         </Space>
                     </Space>
-
                     <Table
                         rowSelection={rowSelection}
                         columns={columns}
@@ -589,13 +1040,15 @@ const AgentManagement: React.FC = () => {
                         pagination={{ pageSize: 10 }}
                         loading={loading}
                     />
-                </Tabs.TabPane>
+                </div>
+            )}
 
-                <Tabs.TabPane tab="Map" key="3">
-                    <MapComponent />
-                </Tabs.TabPane>
+            {currentView === 'map' && (
+                <MapComponent />
+            )}
 
-                <Tabs.TabPane tab="Activity Logs" key="4">
+            {currentView === 'activityLog' && (
+                <div className="activity-log-content">
                     <Table
                         columns={[
                             { title: 'Action', dataIndex: 'action', key: 'action' },
@@ -605,8 +1058,8 @@ const AgentManagement: React.FC = () => {
                         rowKey="id"
                         pagination={{ pageSize: 5 }}
                     />
-                </Tabs.TabPane>
-            </Tabs>
+                </div>
+            )}
 
             <Modal
                 title="Edit Agent"
@@ -636,7 +1089,7 @@ const AgentManagement: React.FC = () => {
                             ))}
                         </Select>
                     </Form.Item>
-                    <Form.Item name="delegationID" label="Delegation">
+                    <Form.Item name="delegationID" label="Delegation" rules={[{ required: true }]}>
                         <Select>
                             {editModalDelegations.map(d => (
                                 <Select.Option key={d.delegationID} value={d.delegationID}>

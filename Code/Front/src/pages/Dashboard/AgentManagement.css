@@ -23,9 +23,6 @@ body.dark .agent-management-container {
     color: #4cb1c7 !important;
 }
 
-
-
-
 body.dark .ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn, .ant-tabs-tab-active {
     color: #63b3ed !important;
 }
@@ -57,12 +54,6 @@ body.dark .metric-card {
 .metric-card:hover {
     transform: translateY(-5px);
     box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.1);
-}
-
-/* Dark mode for metric card */
-body.dark .metric-card {
-    background: #333;
-    box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.3);
 }
 
 body.dark .metric-card:hover {
@@ -133,6 +124,26 @@ body.dark .chart-card h3 {
     color: #e5e7eb;
 }
 
+/* Chart-specific styles for dark mode and responsiveness */
+.chart-card canvas {
+    max-width: 100%;
+    height: auto !important;
+}
+
+/* Dark mode chart text and labels */
+body.dark .chart-card canvas {
+    color: #e5e7eb !important;
+}
+
+body.dark .chart-card .chartjs-text {
+    color: #e5e7eb !important;
+}
+
+body.dark .chart-card .chartjs-legend-text,
+body.dark .chart-card .chartjs-tick {
+    color: #e5e7eb !important;
+}
+
 /* Last updated text */
 .last-updated {
     font-size: 0.875rem;
@@ -176,10 +187,8 @@ body.dark .ant-table-tbody>tr>td {
     color: #e5e7eb;
 }
 
-
 body.dark .ant-table-cell-row-hover {
     background-color: #595959 !important;
-
 }
 
 /* Button styles */
@@ -200,7 +209,6 @@ body.dark .ant-btn-primary {
     background-color: #63b3ed;
     border-color: #63b3ed;
     color: #63b3ed;
-
 }
 
 body.dark .ant-btn-primary:hover {
@@ -230,9 +238,6 @@ body.dark :where(.css-dev-only-do-not-override-mc1tut).ant-btn-variant-outlined,
 }
 
 /* Input and select styles */
-
-
-
 body.dark .ant-btn-variant-outlined span {
     border-color: #4cb1c7 !important;
 }
@@ -250,8 +255,6 @@ body.dark .ant-input-outlined {
     background-color: #333 !important;
     color: #fff !important;
 }
-
-
 
 .ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn {
     color: #4cb1c7;
@@ -281,6 +284,11 @@ body.dark .ant-tabs-ink-bar {
 
     .charts-container {
         grid-template-columns: 1fr;
+    }
+
+    .chart-card canvas {
+        max-width: 100%;
+        height: auto !important;
     }
 
     .ant-table-wrapper {
@@ -336,8 +344,6 @@ body.dark .ant-table-column-sort {
     background-color: #c2c2c217 !important;
 }
 
-
-
 /* Enhance modal for better UX */
 .ant-modal {
     border-radius: 1rem;
@@ -354,4 +360,79 @@ body.dark .ant-table-column-sort {
 
 .ant-modal-body {
     padding: 1.5rem;
+}
+
+
+
+.agent-management-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid rgba(76, 177, 199, 0.2);
+    margin-bottom: 1rem;
+}
+
+.view-toggle {
+    display: flex;
+    gap: 0.5rem;
+    background: #fff;
+    padding: 0.25rem;
+    border-radius: 3.125rem;
+    box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.05);
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.toggle-btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03125rem;
+    color: #6b7280;
+    background: transparent;
+    border: none;
+    border-radius: 3.125rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.toggle-btn.active {
+    background: #4cb1c7;
+    color: #fff;
+    box-shadow: 0 0.125rem 0.375rem rgba(76, 177, 199, 0.3);
+}
+
+/* Dark mode styles */
+body.dark .view-toggle {
+    background: #262626;
+}
+
+body.dark .toggle-btn {
+    color: #e5e7eb;
+}
+
+body.dark .toggle-btn.active {
+    background: #63b3ed;
+    color: #fff;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .agent-management-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1.25rem;
+    }
+
+    .view-toggle {
+        margin-bottom: 0.9375rem;
+        padding: 0.375rem;
+    }
+
+    .toggle-btn {
+        padding: 0.625rem 1.125rem;
+        font-size: 0.875rem;
+    }
 }
