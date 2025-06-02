@@ -22,77 +22,75 @@ class _ReceiptBooksScreenState extends State<ReceiptBooksScreen> {
   @override
   void initState() {
     super.initState();
-    _fetchFuture = Future(() {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _fetchReceiptBooks();
-      });
-    });
+    _fetchFuture = _fetchReceiptBooks();
   }
 
   Future<void> _fetchReceiptBooks() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final receiptBookProvider = Provider.of<ReceiptBookProvider>(context, listen: false);
-    await receiptBookProvider.fetchAndFilterReceiptBooksByHolder(
-      authProvider.user!.userID!
-    );
+    await Future.wait([
+      receiptBookProvider.fetchReceiptBooksByHolder(authProvider.user!.userID!),
+      receiptBookProvider.fetchAllReceiptBookTypes(),
+    ]);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: CustomAppBar(title: 'Receipt Books', showBackButton: true),
-      drawer: const AppSidebar(), // Add the sidebar here
-      body: Builder( // Wrap body in Builder for correct Scaffold context
-        builder: (BuildContext scaffoldContext) {
-          return FutureBuilder(
-            future: _fetchFuture,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CustomProgressIndicator());
-              if (snapshot.hasError) return Center(child: Text('Error: ${snapshot.error}'));
-
-              return Consumer2<ReceiptBookProvider, AuthProvider>(
-                builder: (context, receiptBookProvider, authProvider, child) {
-                  if (receiptBookProvider.isLoading) return const Center(child: CustomProgressIndicator());
-                  return ReceiptBookController(
-                    books: receiptBookProvider.receiptBooks,
-                    child: Builder(builder: (context) {
-                      final scope = ReceiptBookScope.of(context);
-                      final filteredBooks = scope.filteredBooks;
-                      return RefreshIndicator(
-                        onRefresh: _fetchReceiptBooks,
-                        child: Column(
-                          children: [
-                            FilterSortHeader(
-                              searchController: scope.searchController,
-                              onSort: scope.showSortMenu,
-                              onFilter: () {},
-                              typeOptions: receiptBookProvider.receiptBooks.map((b) => b.type).toSet(),
-                              initialFilters: scope.filters,
-                              onApplyFilters: (filters) => scope.setFilters(filters),
-                            ),
-                            Expanded(
-                              child: ListView.builder(
-                                padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-                                itemCount: filteredBooks.isEmpty ? 1 : filteredBooks.length,
-                                itemBuilder: (context, index) {
-                                  if (filteredBooks.isEmpty) {
-                                    return const Center(
-                                      child: Padding(
-                                        padding: EdgeInsets.all(16.0),
-                                        child: Text('No receipt books found.'),
-                                      ),
-                                    );
-                                  }
-                                  return ReceiptBookCard(book: filteredBooks[index]);
-                                },
-                              ),
-                            ),
-                          ],
+      drawer: const AppSidebar(),
+      body: FutureBuilder(
+        future: _fetchFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CustomProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          }
+          return Consumer2<ReceiptBookProvider, AuthProvider>(
+            builder: (context, receiptBookProvider, authProvider, child) {
+              if (receiptBookProvider.isLoading) {
+                return const Center(child: CustomProgressIndicator());
+              }
+              return ReceiptBookController(
+                books: receiptBookProvider.receiptBooks,
+                child: Builder(builder: (context) {
+                  final scope = ReceiptBookScope.of(context);
+                  final filteredBooks = scope.filteredBooks;
+                  return RefreshIndicator(
+                    onRefresh: _fetchReceiptBooks,
+                    child: Column(
+                      children: [
+                        FilterSortHeader(
+                          searchController: scope.searchController,
+                          onSort: scope.showSortMenu,
+                          onFilter: () {},
+                          typeOptions: receiptBookProvider.receiptBookTypes.map((t) => t.name).toSet(),
+                          initialFilters: scope.filters,
+                          onApplyFilters: (filters) => scope.setFilters(filters),
                         ),
-                      );
-                    }),
+                        Expanded(
+                          child: ListView.builder(
+                            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                            itemCount: filteredBooks.isEmpty ? 1 : filteredBooks.length,
+                            itemBuilder: (context, index) {
+                              if (filteredBooks.isEmpty) {
+                                return const Center(
+                                  child: Padding(
+                                    padding: EdgeInsets.all(16.0),
+                                    child: Text('No receipt books found.'),
+                                  ),
+                                );
+                              }
+                              return ReceiptBookCard(book: filteredBooks[index]);
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
                   );
-                },
+                }),
               );
             },
           );

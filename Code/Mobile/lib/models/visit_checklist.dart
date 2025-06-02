@@ -1,19 +1,19 @@
 class VisitChecklist {
-  final bool? checked;
-  final String? visitID;
-  final String? checklistID;
+  final bool checked;
+  final String visitID;
+  final String checklistID;
 
   VisitChecklist({
-    this.checked,
-    this.visitID,
-    this.checklistID,
+    required this.checked,
+    required this.visitID,
+    required this.checklistID,
   });
 
   factory VisitChecklist.fromJson(Map<String, dynamic> json) {
     return VisitChecklist(
-      checked: json['checked'],
-      visitID: json['visitID'],
-      checklistID: json['checklistID'],
+      checked: json['checked'] as bool,
+      visitID: json['visitID'] as String,
+      checklistID: json['checklistID'] as String,
     );
   }
 

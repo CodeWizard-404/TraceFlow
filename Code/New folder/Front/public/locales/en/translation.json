@@ -1,0 +1,2145 @@
+{
+  "common": {
+    "months": {
+      "0": "January",
+      "1": "February",
+      "2": "March",
+      "3": "April",
+      "4": "May",
+      "5": "June",
+      "6": "July",
+      "7": "August",
+      "8": "September",
+      "9": "October",
+      "10": "November",
+      "11": "December"
+    },
+    "weekdays": {
+      "short": {
+        "0": "Sun",
+        "1": "Mon",
+        "2": "Tue",
+        "3": "Wed",
+        "4": "Thu",
+        "5": "Fri",
+        "6": "Sat"
+      }
+    },
+    "statuses": {
+      "pending": "Pending",
+      "visited": "Visited",
+      "validated": "Validated",
+      "rejected": "Rejected",
+      "notScheduled": "Not Scheduled"
+    },
+    "receiptBookStatuses": {
+      "inStock": "In Stock",
+      "sentToSupplier": "Sent to Supplier",
+      "collectFromSupplier": "Collect from Supplier",
+      "withRegionalManager": "With Regional Manager",
+      "stubCollected": "Stub Collected",
+      "withSupervisor": "With Supervisor",
+      "assignedToAgent": "Assigned to Agent",
+      "withStockManager": "With Stock Manager",
+      "stubCollectedStatus": "collected",
+      "archived": "Archived"
+    },
+    "durationUnit": "m"
+  },
+  "header": {
+    "logoAlt": "Company Logo",
+    "aria": {
+      "toggleMenu": "Toggle navigation menu",
+      "themeToggle": "Switch to {mode} mode",
+      "notifications": "Notifications",
+      "logout": "Log out"
+    },
+    "theme": "Theme",
+    "selectLanguage": "Select language",
+    "notifications": "Notifications",
+    "logout": "Logout",
+    "darkMode": "dark",
+    "lightMode": "light",
+    "navbar": {
+      "dashboard": "Dashboard",
+      "admin": "Admin",
+      "timesheets": "Timesheets",
+      "receiptBooks": "Receipt Books",
+      "agents": "Agents",
+      "reports": "Reports"
+    },
+    "profile": "Profile"
+  },
+  "footer": {
+    "aria": {
+      "label": "Footer"
+    },
+    "copyright": "© {{year}} TraceFlow. All rights reserved.",
+    "links": {
+      "privacy": "Privacy Policy",
+      "terms": "Terms of Service",
+      "contact": "Contact Us"
+    }
+  },
+  "visitValidation": {
+    "title": "Validate Visit",
+    "description": "Complete the checklist, add photos, and validate the visit.",
+    "loading": "Loading Visit Details...",
+    "error": {
+      "title": "Error",
+      "missingData": "Missing visit ID or authentication token.",
+      "fetchFailed": "Failed to load visit or agent data.",
+      "accessDenied": "Visit not found or access denied.",
+      "cameraAccess": "Failed to access camera. Please ensure permissions are granted.",
+      "cameraInUse": "Camera is in use by another app or unavailable. Please close other apps or check your device.",
+      "cameraPlayFailed": "Failed to play camera stream.",
+      "validationFailed": "Failed to validate visit.",
+      "noPhotos": "At least one photo is required.",
+      "noChecklists": "No checklists available for this visit.",
+      "missingChecklists": "Please complete all checklist items before submitting."
+    },
+    "visitDetails": {
+      "title": "Visit Details",
+      "agent": "Agent",
+      "phone": "Phone",
+      "na": "N/A",
+      "recruitmentVisit": "Recruitment Visit (No Agent)",
+      "location": "Location"
+    },
+    "reasons": {
+      "title": "Reasons",
+      "noData": "No reasons specified."
+    },
+    "checklist": {
+      "title": "Checklist",
+      "noData": "No checklist items available.",
+      "itemLabel": "{{item}}",
+      "count": "{{completed}} of {{total}} completed"
+    },
+    "photos": {
+      "title": "Photos",
+      "startCamera": "Start Camera",
+      "note": "At least one photo is required.",
+      "alt": "Visit photo {{index}}",
+      "count": "{{count}} photos"
+    },
+    "comment": {
+      "title": "Comment (Optional)",
+      "label": "Comment",
+      "placeholder": "Add a comment about the visit..."
+    },
+    "actions": {
+      "validate": "Validate Visit",
+      "validating": "Validating...",
+      "back": "Back",
+      "cancel": "Cancel",
+      "submit": "Submit Validation",
+      "correctLocation": "Correct Location"
+    },
+    "success": {
+      "title": "Success",
+      "message": "Visit validated successfully."
+    }
+  },
+  "visitDetails": {
+    "title": "Visit Details",
+    "loading": "Loading visit details...",
+    "error": {
+      "title": "Oops!",
+      "notFound": "Visit not found.",
+      "loadSupervisors": "Failed to load supervisors.",
+      "fetchFailed": "Failed to load visit details.",
+      "validateFailed": "Failed to validate visit.",
+      "rejectFailed": "Failed to reject visit.",
+      "updateFailed": "Failed to update visit.",
+      "deleteFailed": "Failed to delete visit.",
+      "cameraAccess": "Failed to access camera. Please ensure permissions are granted.",
+      "cameraPlayFailed": "Failed to play camera stream.",
+      "agentNotFound": "Agent not found with this phone number.",
+      "supervisorNotFound": "Supervisor not found with this phone number.",
+      "agentsLoadFailed": "Failed to load agents for {{location}}."
+    },
+    "whenWhere": {
+      "title": "When & Where",
+      "date": "Date",
+      "time": "Time",
+      "location": "Location",
+      "na": "N/A"
+    },
+    "agent": {
+      "title": "Agent",
+      "noData": "No agent assigned",
+      "phone": "Phone",
+      "recruitmentVisit": "Recruitment Visit (No Agent)"
+    },
+    "reasons": {
+      "title": "Reasons",
+      "noData": "No reasons listed"
+    },
+    "checklist": {
+      "title": "Checklist",
+      "noData": "No checklist items"
+    },
+    "photos": {
+      "title": "Photos",
+      "count": "({{count}})",
+      "startCamera": "Start Camera",
+      "alt": "Visit photo {{index}}"
+    },
+    "comment": {
+      "title": "Comment",
+      "label": "Comment",
+      "placeholder": "Add a comment..."
+    },
+    "supervisor": {
+      "title": "Supervisor",
+      "searchNamePlaceholder": "Search supervisors by name...",
+      "searchPhonePlaceholder": "Or enter supervisor phone number...",
+      "selectPlaceholder": "Select a supervisor",
+      "ariaLabel": "Select a supervisor"
+    },
+    "form": {
+      "agentPhone": {
+        "label": "Agent Phone (Optional)",
+        "placeholder": "Enter agent's phone number"
+      },
+      "region": {
+        "label": "Region",
+        "selectPlaceholder": "Select a region"
+      },
+      "governorate": {
+        "label": "Governorate",
+        "selectPlaceholder": "Select a governorate"
+      },
+      "delegation": {
+        "label": "Delegation",
+        "selectPlaceholder": "Select a delegation"
+      },
+      "location": {
+        "label": "Location",
+        "searchPlaceholder": "Search locations...",
+        "selectPlaceholder": "Select a location"
+      },
+      "agent": {
+        "label": "Agent",
+        "searchPlaceholder": "Search agents...",
+        "selectPlaceholder": "Select an agent"
+      },
+      "reasons": {
+        "label": "Reasons",
+        "searchPlaceholder": "Search reasons...",
+        "selectPlaceholder": "Select a reason"
+      },
+      "checklists": {
+        "label": "Checklists",
+        "searchPlaceholder": "Search checklists...",
+        "selectPlaceholder": "Select a checklist"
+      },
+      "photos": {
+        "title": "Photos",
+        "startCamera": "Start Camera",
+        "lastCapturedAlt": "Last captured photo",
+        "existingAlt": "Photo {{index}}",
+        "newAlt": "New photo {{index}}",
+        "count": "{{count}} photos"
+      },
+      "comment": {
+        "label": "Comment",
+        "placeholder": "Add a comment..."
+      },
+      "supervisor": {
+        "label": "Supervisor",
+        "searchPlaceholder": "Search supervisors by name...",
+        "phonePlaceholder": "Or enter supervisor phone number...",
+        "selectPlaceholder": "Select a supervisor",
+        "ariaLabel": "Select a supervisor"
+      },
+      "date": {
+        "label": "Date"
+      },
+      "time": {
+        "label": "Time"
+      },
+      "permissionDenied": "Permission denied",
+      "actions": {
+        "save": "Save",
+        "cancel": "Cancel"
+      }
+    },
+    "actions": {
+      "edit": "Edit",
+      "delete": "Delete",
+      "back": "Back",
+      "logVisit": "Log Visit",
+      "validate": "Validate",
+      "reject": "Reject",
+      "save": "Save",
+      "cancel": "Cancel",
+      "deleteConfirm": "Are you sure you want to delete this visit?"
+    },
+    "duration": "{{duration}}m",
+    "fullscreenAlt": "Fullscreen preview",
+    "aria": {
+      "backButton": "Return to previous page",
+      "logVisit": "Log this visit",
+      "editVisit": "Edit visit details",
+      "deleteVisit": "Delete this visit",
+      "cancelVisit": "Cancel this visit",
+      "validateVisit": "Validate this visit",
+      "tabGeneral": "View general visit information",
+      "tabTimesheet": "View timesheet information",
+      "tabHistory": "View visit history",
+      "errorMessage": "Error message",
+      "supervisorSelect": "Select a supervisor for the visit"
+    }
+  },
+  "qrScan": {
+    "title": "Scan QR Code",
+    "description": "Scan the QR code provided by the agent to verify the visit.",
+    "recruitmentDescription": "This is a recruitment visit. No QR code scan required.",
+    "status": {
+      "scanning": "Scanning for QR code...",
+      "detected": "QR code detected!",
+      "checking": "Verifying QR code...",
+      "validating": "QR code verified!",
+      "recruitmentVisit": "Recruitment visit detected. Proceeding...",
+      "startingCamera": "Starting camera..."
+    },
+    "error": {
+      "title": "Error",
+      "noVisit": "No visit data provided.",
+      "accessDenied": "You do not have permission to scan visits.",
+      "mismatch": "Invalid QR code. Please try again.",
+      "cameraAccessDenied": "Camera access denied. Please allow camera permissions.",
+      "noCamera": "No camera found on this device.",
+      "cameraFailed": "Failed to start camera. Please try again.",
+      "noOTP": "Please enter the OTP code.",
+      "invalidOTP": "Invalid OTP code. Please try again.",
+      "otpExpired": "OTP has expired. Please scan the QR code again."
+    },
+    "form": {
+      "otp": "Enter OTP sent to the agent's phone",
+      "placeholders": {
+        "enterOTP": "Enter OTP code"
+      }
+    },
+    "otpTimer": "OTP expires in",
+    "actions": {
+      "back": "Back",
+      "validateOTP": "Validate OTP"
+    },
+    "aria": {
+      "qrReader": "QR code scanner, current status: {{status}}",
+      "errorMessage": "Error message",
+      "backButton": "Back button",
+      "validateOTP": "Validate OTP button"
+    },
+    "loading": "Loading..."
+  },
+  "timesheets": {
+    "viewModes": {
+      "year": "Year",
+      "month": "Month",
+      "week": "Week",
+      "day": "Day"
+    },
+    "navigation": {
+      "previousYear": "Previous Year",
+      "nextYear": "Next Year",
+      "previousMonth": "Previous Month",
+      "nextMonth": "Next Month",
+      "previousWeek": "Previous Week",
+      "nextWeek": "Next Week",
+      "previousDay": "Previous Day",
+      "nextDay": "Next Day"
+    },
+    "actions": {
+      "scheduleVisit": "Schedule Visit",
+      "scrollToCurrent": "Go to Current {{view}}",
+      "generateSuggestions": "Generate Suggestions",
+      "validate": "Validate Timesheet",
+      "toggleSelectAll": "Toggle Select All",
+      "selectAll": "Select All",
+      "deselectAll": "Deselect All",
+      "cancelSuggestions": "Cancel Suggestions",
+      "saveSuggestions": "Save Suggestions",
+      "saving": "Saving...",
+      "viewDayOnMap": "View Visits on Map"
+    },
+    "filter": {
+      "toggle": "Filter",
+      "searchPlaceholder": "Search Supervisors",
+      "supervisorSelect": "Select Supervisor",
+      "allSupervisors": "All Supervisors",
+      "visitStatusSelect": "Select Visit Status",
+      "allStatuses": "All Statuses",
+      "reasonPlaceholder": "Search by Reason"
+    },
+    "yearView": {
+      "week": "Week",
+      "visits": "Visits",
+      "supervisors": "Supervisors",
+      "weekTile": "Week {{weekNumber}}"
+    },
+    "monthView": {
+      "week": "Week",
+      "visits": "Visits",
+      "status": "Status",
+      "supervisors": "{{count}} Supervisor(s)",
+      "weekCard": "Week {{weekNumber}}"
+    },
+    "weekView": {
+      "week": "Week",
+      "status": "Status",
+      "visits": "Visits",
+      "visitCard": "Visit at {{time}}"
+    },
+    "dayView": {
+      "noVisits": "No visits scheduled for this day"
+    },
+    "errors": {
+      "fetchTimesheets": "Failed to fetch timesheets. Please try again.",
+      "fetchUsers": "Failed to fetch users. Please try again.",
+      "noPendingVisits": "No pending visits to validate.",
+      "validateTimesheet": "Failed to validate timesheet. Please try again.",
+      "updateVisit": "Failed to update visit date. Please try again.",
+      "saveSuggestions": "Failed to save suggestions. Please try again.",
+      "partialSuccessGoogleSync": "Timesheet saved, but Google Calendar sync failed."
+    },
+    "warnings": {
+      "unsavedChanges": "You have unsaved changes. Are you sure you want to leave?"
+    },
+    "confirmValidate": "Are you sure you want to validate {{count}} visit(s)?",
+    "suggestions": {
+      "title": "Generate Timesheet Suggestions",
+      "close": "Close",
+      "delegationIds": "Delegations",
+      "agentIds": "Agents",
+      "preferredDays": "Preferred Days",
+      "timeInterval": "Time Interval",
+      "maxVisitsPerAgentPerWeek": "Max Visits per Agent per Week",
+      "includeRecruitmentVisits": "Include Recruitment Visits",
+      "recruitmentAreas": "Recruitment Areas",
+      "description": "Description",
+      "descriptionPlaceholder": "Enter a description for the suggestions",
+      "selectDelegations": "Select Delegations",
+      "selectAgents": "Select Agents",
+      "selectDays": "Select Preferred Days",
+      "generate": "Generate Suggestions",
+      "generating": "Generating...",
+      "cancel": "Cancel Suggestion",
+      "canceled": "Suggestion generation canceled.",
+      "fetchError": "Failed to fetch data. Please try again.",
+      "locationError": "Unable to retrieve your location. Please ensure location services are enabled.",
+      "geolocationUnsupported": "Geolocation is not supported by your browser.",
+      "noSupervisor": "No supervisor ID provided.",
+      "invalidCoordinates": "Invalid coordinates provided.",
+      "cancelError": "Failed to cancel suggestion. Please try again.",
+      "generateError": "Failed to generate suggestions. Please try again."
+    }
+  },
+  "timesheetForm": {
+    "title": "Create Visit",
+    "loading": "Loading...",
+    "form": {
+      "supervisor": "Supervisor",
+      "date": "Date",
+      "time": "Time",
+      "agentPhone": "Agent Phone (Optional)",
+      "location": "Location",
+      "agent": "Agent",
+      "reasons": "Reasons",
+      "checklists": "Checklists",
+      "recruitmentVisit": "Recruitment Visit",
+      "agentLocation": "- Location",
+      "placeholders": {
+        "location": "Enter visit location (optional)",
+        "supervisorSearch": "Search supervisors by name...",
+        "supervisorPhone": "Or enter supervisor phone number...",
+        "supervisorSelect": "supervisor",
+        "agentPhone": "Enter agent's phone number",
+        "permissionDenied": "Permission denied",
+        "locationSearch": "Search locations...",
+        "locationSelect": "location",
+        "agentSearch": "Search agents...",
+        "agentSearchPlaceholder": "Search agents...",
+        "agentSelect": " agent",
+        "reasonSearch": "Search reasons...",
+        "reasonSelect": "reason",
+        "checklistSearch": "Search checklists...",
+        "checklistSelect": "checklist",
+        "regionalManagerSearch": "Search regional managers...",
+        "regionalManagerSelect": "regional manager",
+        "regionSelect": "Select a region",
+        "governorateSelect": "governorate",
+        "delegationSelect": "delegation"
+      },
+      "regionalManager": "Regional Manager",
+      "region": "Region",
+      "governorate": "Governorate",
+      "delegation": "Delegation"
+    },
+    "actions": {
+      "back": "Back",
+      "create": "Create Visit",
+      "submitting": "Submitting..."
+    },
+    "errors": {
+      "loadInitialData": "Failed to load initial data. Please try again.",
+      "loadAgents": "Failed to load agents for {{location}}",
+      "agentNotFound": "Agent not found with this phone number",
+      "supervisorNotFound": "Supervisor not found with this phone number",
+      "createFailed": "Failed to create timesheet. Please try again.",
+      "formIncomplete": "Please fill out all required fields."
+    },
+    "accessibility": {
+      "removeReason": "Remove reason {{item}}",
+      "removeChecklist": "Remove checklist {{item}}",
+      "errorAnnouncement": "Error: {{message}}"
+    }
+  },
+  "transferReceiptBook": {
+    "title": "Transfer Receipt Books ({{roles}})",
+    "loading": "Loading...",
+    "form": {
+      "agentSelection": "Agent Selection",
+      "recipientType": "Recipient Type",
+      "supplierEmail": "Supplier Email",
+      "selectBooks": "Select Books to Transfer",
+      "selectedAgent": "Selected Agent",
+      "selectedUser": "Selected User",
+      "selectedBooks": "Selected Books ({{count}})",
+      "scanCollect": "Scan Books to Collect from Supplier",
+      "scanQR": "Scan QR Codes",
+      "scanStub": "Scan Stub",
+      "otp": "Enter OTP (Sent to {{type}} {{details}})",
+      "searchAgents": "Search Agents",
+      "selectAgent": "Select Agent",
+      "recipientSelection": "Recipient Selection ({{type}})",
+      "selectRecipient": "Select {{type}}",
+      "noBooksAvailable": "No Books Available",
+      "or": "or",
+      "regionalManager": "Regional Manager",
+      "supervisor": "Supervisor",
+      "region": "Region",
+      "governorate": "Governorate",
+      "delegation": "Delegation",
+      "multipleAgents": "Multiple Agents Selected",
+      "placeholders": {
+        "selectRecipientType": "Select Recipient Type",
+        "enterAgentPhone": "Enter agent phone number",
+        "searchAgents": "Search agents by name or phone",
+        "selectAgent": "Select Agent",
+        "enterSupplierEmail": "Enter supplier email",
+        "searchBooks": "Search books by number or type",
+        "searchRecipient": "Search by name or phone",
+        "selectRecipient": "Select {{type}}",
+        "enterOTP": "Enter OTP",
+        "regionalManagerSearch": "Search regional managers by name or phone",
+        "regionalManagerSelect": "Select Regional Manager",
+        "supervisorSearch": "Search supervisors by name",
+        "supervisorPhone": "Enter supervisor phone number",
+        "supervisorSelect": "Select Supervisor",
+        "selectRegion": "Select Region",
+        "selectGovernorate": "Select Governorate",
+        "selectDelegation": "Select Delegation"
+      }
+    },
+    "actions": {
+      "back": "Back",
+      "initiate": "Initiate Transfer",
+      "initiateStub": "Initiate Stub Collection",
+      "collect": "Collect from Supplier",
+      "validateTransfer": "Validate Transfer",
+      "validateStubCollection": "Validate Stub Collection",
+      "selectAll": "Select All",
+      "deselectAll": "Deselect All",
+      "dismissError": "Dismiss Error",
+      "aria": {
+        "back": "Back to previous step",
+        "initiate": "Initiate transfer of receipt books",
+        "initiateStub": "Initiate stub collection",
+        "collect": "Collect books from supplier",
+        "validateTransfer": "Validate transfer",
+        "validateStubCollection": "Validate stub collection",
+        "removeBook": "Remove book {{number}}",
+        "selectAll": "Select all books",
+        "deselectAll": "Deselect all books",
+        "dismissError": "Dismiss error message"
+      }
+    },
+    "types": {
+      "unknown": "Unknown Type"
+    },
+    "pagination": {
+      "pageInfo": "Page {{currentPage}} of {{totalPages}}",
+      "aria": {
+        "previous": "Go to previous page",
+        "next": "Go to next page"
+      }
+    },
+    "otpTimer": "OTP expires in",
+    "list": {
+      "scannedQRs": "{{count}} QR codes scanned"
+    },
+    "recipientTypes": {
+      "agent": "Agent",
+      "supplier": "Supplier",
+      "archive": "Archive",
+      "stubCollection": "Stub Collection",
+      "collectFromSupplier": "Collect from Supplier",
+      "regionalManager": "Regional Manager",
+      "supervisor": "Supervisor",
+      "stockManager": "Stock Manager",
+      "tosupplier": "To Supplier",
+      "fromsupplier": "From Supplier",
+      "toregionalmanager": "Regional Manager",
+      "tosupervisor": "Supervisor",
+      "toagent": "Agent",
+      "stubtosupervisor": "Stub Collection",
+      "toregionalmanagerfromsupervisor": "Stub Collection",
+      "tostockmanager": "Stock Manager",
+      "archived": " To Archive"
+    },
+    "errors": {
+      "accessDenied": "Access Denied - Missing required permissions",
+      "fetchDataFailed": "Failed to fetch initial data",
+      "fetchUsersFailed": "Failed to fetch users",
+      "fetchAgentFailed": "Failed to fetch agent details",
+      "cameraAccessDenied": "Camera access denied or unavailable",
+      "qrNotFound": "QR code \"{{number}}\" not found in receipt books",
+      "bookNotTransferable": "Book \"{{number}}\" cannot be transferred to the selected recipient",
+      "supervisorLimit": "Supervisors can only assign one receipt book to an agent",
+      "invalidQR": "Invalid QR code format",
+      "otpExpired": "OTP has expired. Please initiate the transfer again",
+      "noBooksSelected": "Please select at least one book",
+      "noRecipientType": "Please select a recipient type",
+      "noSupplierEmail": "Please enter a supplier email",
+      "noAgentSelected": "Please select an agent",
+      "noRecipientSelected": "Please select a recipient",
+      "initiateFailed": "Failed to initiate transfer: {{message}}",
+      "noOTP": "Please enter the OTP",
+      "validateFailed": "Invalid OTP or transfer validation failed: {{message}}",
+      "noAgentFound": "No agent found with phone {{phone}}",
+      "loadRegionalManagers": "Failed to load regional managers",
+      "loadSupervisors": "Failed to load supervisors",
+      "loadAgents": "Failed to load agents",
+      "loadRegions": "Failed to load regions",
+      "loadGovernorates": "Failed to load governorates",
+      "loadDelegations": "Failed to load delegations",
+      "noTypesAvailable": "No receipt book types available",
+      "typeNotFound": "Receipt book type \"{{typeName}}\" not found",
+      "invalidStubStatusForArchive": "Cannot archive book \"{{number}}\" due to invalid stub status",
+      "unknown": "An unknown error occurred"
+    }
+  },
+  "receiptBooks": {
+    "title": {
+      "list": "Receipt Books",
+      "create": "Create",
+      "edit": "Edit",
+      "bulkUpload": "Bulk Upload Receipt Books"
+    },
+    "sidebar": {
+      "manager": "Manage"
+    },
+    "loading": "Loading...",
+    "form": {
+      "createTitle": "New Receipt",
+      "editTitle": "Edit Receipt #{{number}}",
+      "labels": {
+        "number": "Number",
+        "type": "Type"
+      },
+      "placeholders": {
+        "number": "000001",
+        "type": "Select Type"
+      }
+    },
+    "search": {
+      "placeholder": "Search receipts...",
+      "ariaLabel": "Search receipt books by number, type, or status"
+    },
+    "sort": {
+      "title": "Sort By",
+      "ariaLabel": "Sort receipt books",
+      "field": {
+        "number": "Number",
+        "type": "Type",
+        "bookStatus": "Book Status",
+        "stubStatus": "Stub Status",
+        "holder": "Holder"
+      },
+      "order": {
+        "asc": "Asc",
+        "desc": "Desc"
+      }
+    },
+    "filter": {
+      "title": "Filters",
+      "ariaLabel": "Filter receipt books",
+      "type": {
+        "label": "Type",
+        "all": "All Types"
+      },
+      "status": {
+        "label": "Status",
+        "all": "All Statuses"
+      }
+    },
+    "table": {
+      "noData": "No receipt books found",
+      "headers": {
+        "number": "Number",
+        "type": "Type",
+        "bookStatus": "Book Status",
+        "stubStatus": "Stub Status",
+        "holder": "Holder",
+        "qrCode": "QR Code",
+        "actions": "Actions"
+      },
+      "na": "N/A",
+      "holderLoading": "Loading..."
+    },
+    "pagination": {
+      "pageInfo": "Page {{currentPage}} of {{totalPages}}",
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "actions": {
+      "aria": {
+        "save": "Save receipt book changes",
+        "create": "Create new receipt book",
+        "cancel": "Cancel receipt book action",
+        "edit": "Edit receipt book {{number}}",
+        "delete": "Delete receipt book {{number}}",
+        "history": "View history for receipt book {{number}}",
+        "retry": "Retry fetching receipt books",
+        "viewBooks": "View receipt books list",
+        "viewTypes": "View receipt book types list",
+        "newReceipt": "Create a new receipt book",
+        "transferBooks": "Transfer receipt books",
+        "importBooks": "Import receipt books via CSV",
+        "refresh": "Refresh receipt books list"
+      },
+      "refresh": "Refresh",
+      "viewBooks": "View Books",
+      "viewTypes": "View Types",
+      "retry": "Retry",
+      "newReceipt": "New Receipt",
+      "transferBooks": "Transfer",
+      "importBooks": "Import Books",
+      "create": "Create",
+      "save": "Save",
+      "cancel": "Cancel",
+      "deleteConfirm": "Are you sure?",
+      "uploading": "Uploading",
+      "saving": "Saving"
+    },
+    "errors": {
+      "requiredFields": "Please fill in all required fields.",
+      "invalidNumber": "Number must be exactly 6 digits.",
+      "createFailed": "Failed to create receipt book: {message}",
+      "updateFailed": "Failed to update receipt book: {message}",
+      "deleteFailed": "Failed to delete receipt book: {error}",
+      "fetchFailed": "Failed to fetch receipt books.",
+      "unknown": "An unknown error occurred.",
+      "fetchHeadersFailed": "Failed to fetch CSV header mappings.",
+      "saveHeadersFailed": "Failed to save CSV header mappings.",
+      "emptyCSV": "The CSV file is empty.",
+      "noHeaders": "No headers found in the CSV file.",
+      "invalidCSVFormat": "Invalid CSV format.",
+      "invalidFileType": "Please upload a valid CSV file.",
+      "fileTooLarge": "File size exceeds 5MB limit.",
+      "fileReadError": "Error reading the file.",
+      "noFileSelected": "No file selected.",
+      "invalidCSVBeforeUpload": "Please fix CSV header mappings before uploading.",
+      "uploadFailed": "Failed to upload receipt books.",
+      "emptyHeaders": "All header fields must be filled.",
+      "duplicateExpectedHeaders": "Duplicate system headers are not allowed.",
+      "duplicateHeaders": "Duplicate CSV headers are not allowed.",
+      "unmappedMandatoryBackendHeaders": "Mandatory headers missing: {{headers}}",
+      "invalidMappedHeaders": "Invalid CSV headers: {{headers}}",
+      "validationFailedAfterSave": "CSV validation failed after saving headers."
+    },
+    "types": {
+      "title": {
+        "list": "Receipt Book Types",
+        "create": "Create Type",
+        "edit": "Edit Type"
+      },
+      "table": {
+        "headers": {
+          "name": "Name",
+          "actions": "Actions"
+        },
+        "noData": "No receipt book types found"
+      },
+      "actions": {
+        "newType": "New Type",
+        "deleteConfirm": "Are you sure you want to delete this type?",
+        "retry": "Retry",
+        "aria": {
+          "newType": "Create a new receipt book type",
+          "edit": "Edit receipt book type {{name}}",
+          "delete": "Delete receipt book type {{name}}",
+          "save": "Save receipt book type changes",
+          "create": "Create new receipt book type",
+          "cancel": "Cancel receipt book type action",
+          "retry": "Retry fetching receipt book types"
+        },
+        "save": "Save",
+        "create": "Create",
+        "cancel": "Cancel"
+      },
+      "form": {
+        "createTitle": "New Receipt Book Type",
+        "editTitle": "Edit Receipt Book Type {{name}}",
+        "labels": {
+          "name": "Name"
+        },
+        "placeholders": {
+          "name": "Enter type name"
+        }
+      },
+      "errors": {
+        "requiredFields": "Please fill in all required fields.",
+        "createFailed": "Failed to create receipt book type: {{message}}",
+        "updateFailed": "Failed to update receipt book type: {{message}}",
+        "deleteFailed": "Failed to delete receipt book type: {{message}}",
+        "fetchFailed": "Failed to fetch receipt book types."
+      }
+    },
+    "bulkUpload": {
+      "title": "Bulk Upload Receipt Books",
+      "requiredHeaders": "Required Headers",
+      "optionalHeaders": "Optional Headers",
+      "none": "None",
+      "selectCSV": "Select CSV File",
+      "editHeaders": "Edit Headers",
+      "addHeader": "Add Header",
+      "mappingInstructions": "Map CSV headers to system fields",
+      "mismatchWarning": "Header mismatch detected. Please map headers correctly.",
+      "required": "Required",
+      "remove": "Remove",
+      "selectSystemHeader": "Select System Header",
+      "selectHeader": "Select CSV Header",
+      "systemHeader": "System Header",
+      "csvHeader": "CSV Header",
+      "actions": "Actions",
+      "upload": "Upload",
+      "uploadResults": "Upload Results",
+      "totalRecords": "Total Records: {{count}}",
+      "created": "Created: {{count}}",
+      "updated": "Updated: {{count}}",
+      "skipped": "Skipped: {{count}}",
+      "skippedRecords": "Skipped Records",
+      "skipReason": "Reason",
+      "errors": "Errors",
+      "unknownOperation": "Unknown Operation",
+      "selectedFile": "Selected File: {{fileName}}",
+      "fileHeaders": "File Headers: {{headers}}",
+      "progress": "Processed {{processed}} of {{total}} books"
+    }
+  },
+  "receiptBookHistory": {
+    "title": "Receipt Book #{{number}} History",
+    "loading": "Tracking History...",
+    "error": {
+      "accessDenied": "Access Denied or Invalid Book ID",
+      "fetchFailed": "Failed to fetch history or details.",
+      "notFound": "Receipt book not found."
+    },
+    "actions": {
+      "back": "Back to Receipts"
+    },
+    "footer": {
+      "currentStatus": "Current Status: ",
+      "currentHolder": "Current Holder: ",
+      "na": "N/A"
+    },
+    "timeline": {
+      "from": "From",
+      "to": "To",
+      "date": "Date",
+      "status": "Status",
+      "initialStock": "Initial Stock",
+      "supplier": "Supplier"
+    },
+    "transferTypes": {
+      "toSupplier": "To Supplier",
+      "toRegionalManager": "To Regional Manager",
+      "toSupervisor": "To Supervisor",
+      "toAgent": "To Agent",
+      "stubToSupervisor": "Stub To Supervisor",
+      "toStockManager": "To Stock Manager",
+      "toRegionalManagerFromSupervisor": "To Regional Manager From Supervisor",
+      "archive": "Archive"
+    }
+  },
+  "pageNotFound": {
+    "title": "404",
+    "subtitle": "Page Not Found",
+    "error": {
+      "message": "Oops!",
+      "description": "This page doesn’t exist or has been moved."
+    },
+    "actions": {
+      "back": "Return to Previous Page"
+    }
+  },
+  "errorDisplay": {
+    "title": "Error",
+    "dismiss": "Dismiss error",
+    "actions": {
+      "dismiss": "Dismiss"
+    }
+  },
+  "accessDenied": {
+    "title": "Access Denied",
+    "subtitle": "You don’t have permission to view this page.",
+    "warning": {
+      "message": "Restricted Area",
+      "description": "Please contact an administrator if you believe this is an error."
+    },
+    "actions": {
+      "back": "Return to Previous Page"
+    }
+  },
+  "entry": {
+    "charts": {
+      "title": "Charts",
+      "timesheetStatus": "Timesheet Status",
+      "visitStatus": "Visit Status",
+      "timesheetsPerSupervisor": "Timesheets per Supervisor",
+      "timesheetStatusPending": "Pending",
+      "timesheetStatusValidated": "Validated",
+      "visitStatusPending": "Pending",
+      "visitStatusValidated": "Validated"
+    },
+    "maps": {
+      "title": "Today's Visits",
+      "noVisits": "No visits today"
+    },
+    "stats": {
+      "supervisorsCount": {
+        "title": "Supervisors Count",
+        "value": "{{count}} supervisors"
+      },
+      "activeSupervisors": {
+        "title": "Active Supervisors",
+        "value": "{{count}} active"
+      }
+    },
+    "unfinishedVisits": {
+      "title": "Unfinished Visits"
+    },
+    "emails": {
+      "title": "Emails"
+    },
+    "todoList": {
+      "title": "To Do List"
+    }
+  },
+  "navbar": {
+    "monitoring": "Monitoring",
+    "reporting": "Reporting",
+    "help": "Help"
+  },
+  "profilePage": {
+    "loading": "Loading Profile...",
+    "error": {
+      "noProfile": "Failed to load profile. Please try again later.",
+      "noToken": "No authentication token found",
+      "fetchFailed": "Failed to load user profile",
+      "updateFailed": "Failed to update profile",
+      "pictureFailed": "Failed to update profile picture",
+      "passwordFailed": "Failed to update password"
+    },
+    "header": {
+      "userId": "User ID: {{userId}}",
+      "firstNameNotSet": "First Name Not Set",
+      "lastNameNotSet": "Last Name Not Set"
+    },
+    "nav": {
+      "info": "Profile Info",
+      "settings": "Settings",
+      "activity": "Activity"
+    },
+    "info": {
+      "title": "Profile Information",
+      "email": "Email",
+      "phone": "Phone",
+      "wallet": "Wallet",
+      "notSet": "Not set",
+      "notLinked": "Not linked"
+    },
+    "settings": {
+      "title": "Account Settings",
+      "password": {
+        "title": "Change Password",
+        "newPassword": "New Password",
+        "confirmPassword": "Confirm Password",
+        "newPasswordPlaceholder": "Enter new password",
+        "confirmPasswordPlaceholder": "Confirm new password",
+        "update": "Update Password"
+      },
+      "twoFactor": {
+        "title": "Two-Factor Authentication",
+        "status": "Status: {{status}}",
+        "enabled": "Enabled",
+        "enable": "Enable 2FA"
+      }
+    },
+    "activity": {
+      "title": "Recent Activity",
+      "visitLogged": {
+        "title": "Visit Logged",
+        "subtext": "Agent: {{agent}} | Location: {{location}}",
+        "amount": "+1 Visit"
+      },
+      "timesheetSubmitted": {
+        "title": "Timesheet Submitted",
+        "subtext": "Duration: {{duration}}",
+        "amount": "Pending Approval"
+      },
+      "carnetDistributed": {
+        "title": "Carnet Distributed",
+        "subtext": "Carnet ID: {{carnetId}} | Agent: {{agent}}",
+        "amount": "+1 Carnet"
+      },
+      "soucheCollected": {
+        "title": "Souche Collected",
+        "subtext": "Carnet ID: {{carnetId}} | Status: {{status}}",
+        "amount": "+1 Souche"
+      }
+    },
+    "validation": {
+      "firstnameRequired": "Firstname is required",
+      "firstnameLengthMin": "Firstname must be at least 3 characters",
+      "firstnameLengthMax": "Firstname must be 20 characters or less",
+      "firstnameFormat": "Firstname can only contain letters, spaces, hyphens, or apostrophes",
+      "lastnameRequired": "Lastname is required",
+      "lastnameLengthMin": "Lastname must be at least 3 characters",
+      "lastnameLengthMax": "Lastname must be 20 characters or less",
+      "lastnameFormat": "Lastname can only contain letters, spaces, hyphens, or apostrophes",
+      "emailRequired": "Email is required",
+      "emailLength": "Email must be 70 characters or less",
+      "emailFormat": "Invalid email format",
+      "phoneRequired": "Phone is required",
+      "phoneLength": "Phone must be 8 digits",
+      "walletLength": "Wallet must be exactly 16 digits",
+      "passwordLengthMin": "Password must be at least 8 characters",
+      "passwordLengthMax": "Password must be 128 characters or less",
+      "passwordFormat": "Password must include uppercase, lowercase, digit, and special character, no spaces",
+      "passwordConfirmRequired": "Password confirmation is required",
+      "passwordMismatch": "Passwords do not match"
+    },
+    "success": {
+      "profileUpdated": "Profile updated successfully",
+      "pictureUpdated": "Profile picture updated successfully",
+      "passwordUpdated": "Password updated successfully"
+    }
+  },
+  "login": {
+    "header": {
+      "title": "TraceFlow",
+      "subtitle": "Securely Track. Optimize. Succeed."
+    },
+    "login": {
+      "title": "Sign In",
+      "identifier": "Email or Phone",
+      "password": "Password",
+      "identifierPlaceholder": "Enter your email or phone",
+      "passwordPlaceholder": "Enter your password",
+      "forgotPassword": "Forgot Password?",
+      "submit": "Sign In"
+    },
+    "verify2FA": {
+      "title": "Enter OTP",
+      "otpPlaceholder": "6-digit code",
+      "phoneMessage": "We sent a code to your phone number.",
+      "emailMessage": "We sent a code to your email.",
+      "timer": "Time remaining: {{minutes}}:{{seconds}}",
+      "trustDevice": "Trust this device",
+      "resend": "Resend OTP",
+      "resendCooldown": "Resend in {{seconds}}s",
+      "switchToEmail": "Can’t access your phone? Send to email instead.",
+      "switchToPhone": "Send to phone instead.",
+      "submit": "Verify OTP",
+      "back": "Back to Sign In"
+    },
+    "forgot": {
+      "title": "Send Reset OTP",
+      "identifier": "Email or Phone",
+      "identifierPlaceholder": "Enter your email or phone",
+      "submit": "Send Reset OTP",
+      "back": "Back to Sign In"
+    },
+    "verifyReset": {
+      "title": "Enter Reset OTP",
+      "otpPlaceholder": "6-digit code",
+      "timer": "Time remaining: {{minutes}}:{{seconds}}",
+      "resend": "Resend OTP",
+      "resendCooldown": "Resend in {{seconds}}s",
+      "submit": "Verify OTP",
+      "back": "Back to Sign In"
+    },
+    "reset": {
+      "title": "Reset Password",
+      "newPassword": "New Password",
+      "confirmPassword": "Confirm Password",
+      "newPasswordPlaceholder": "Enter new password",
+      "confirmPasswordPlaceholder": "Confirm new password",
+      "submit": "Reset Password",
+      "back": "Back to Sign In"
+    },
+    "validation": {
+      "identifierRequired": "Please enter your email or phone number.",
+      "identifierFormat": "Invalid email or phone format.",
+      "passwordRequired": "Please enter a password.",
+      "passwordLengthMin": "Password must be at least 8 characters long.",
+      "passwordLengthMax": "Password cannot exceed 128 characters.",
+      "passwordFormat": "Password must include an uppercase letter, lowercase letter, number, and special character (no spaces).",
+      "confirmPasswordRequired": "Please confirm your password.",
+      "passwordMismatch": "Passwords do not match.",
+      "otpRequired": "Please enter the 6-digit OTP.",
+      "otpFormat": "OTP must be exactly 6 digits."
+    },
+    "error": {
+      "loginFailed": "Login failed. Please check your email/phone and password.",
+      "networkError": "Unable to connect to the server. Please check your internet connection.",
+      "invalidOtp": "Invalid OTP. Please try again.",
+      "resetOtpFailed": "Failed to send reset OTP. Please check your email/phone and try again.",
+      "verifyResetOtpFailed": "Invalid reset OTP. Please try again or request a new one.",
+      "resetFailed": "Failed to reset password. Please try again.",
+      "resendFailed": "Failed to resend OTP. Please try again later."
+    },
+    "success": {
+      "resetSuccess": "Password reset successfully! Please log in with your new password."
+    }
+  },
+  "adminDashboard": {
+    "loading": {
+      "userDetails": "Loading user details..."
+    },
+    "header": {
+      "users": "Users Management",
+      "roles": "Roles Management",
+      "agents": "Agents Management",
+      "permissions": "Permissions Management",
+      "addUser": "Add New User",
+      "addRole": "Create New Role",
+      "addPermission": "Create New Permission",
+      "userDetails": "{{firstName}} {{lastName}}",
+      "checklists": "Checklists Management",
+      "addChecklist": "Add New Checklist",
+      "checklistDetails": "Checklist: {{item}}",
+      "reasons": "Reasons Management",
+      "addReason": "Add New Reason",
+      "reasonDetails": "Reason: {{item}}",
+      "notifications": "Notifications Management",
+      "addNotificationRule": "Add New Notification Rule",
+      "notificationRuleDetails": "Notification Rule: {{event}}",
+      "addAgent": "Add New Agent",
+      "agentDetails": "Agent: {{item}}"
+    },
+    "sidebar": {
+      "management": "Management",
+      "data": "Data",
+      "system": "System",
+      "agents": "Agents",
+      "sortNotificationsBy": "Sort Notifications By",
+      "filterNotifications": "Filter Notifications",
+      "filterByNotificationType": "Filter by Notification Type",
+      "filterByNotificationChannel": "Filter by Notification Channel",
+      "filterByNotificationStatus": "Filter by Notification Status",
+      "allTypes": "All Types",
+      "allChannels": "All Channels",
+      "allStatuses": "All Statuses",
+      "websocket": "Websocket",
+      "email": "Email",
+      "sms": "SMS",
+      "inApp": "In-App",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "addNotificationRule": "Add Notification Rule",
+      "notifications": "Notifications",
+      "view": "View",
+      "users": "Users",
+      "roles": "Roles",
+      "permissions": "Permissions",
+      "checklists": "Checklists",
+      "reasons": "Reasons",
+      "sortUsersBy": "Sort Users By",
+      "sortAgentsBy": "Sort Agents By",
+      "sortOptions": {
+        "name": "Name",
+        "email": "Email",
+        "role": "Role",
+        "event": "Event",
+        "type": "Type",
+        "status": "Status",
+        "phone": "Phone",
+        "lastname": "Last name",
+        "supervisor": "Supervisor",
+        "location": "Location",
+        "date": "Date"
+      },
+      "sortOrder": {
+        "asc": "Asc",
+        "desc": "Desc"
+      },
+      "filterByRole": "Filter by Role",
+      "allGovernorates": "All Governorates",
+      "allDelegations": "All Delegations",
+      "filterAgents": "Filter Agents",
+      "noRoles": "No Roles",
+      "allRoles": "All Roles",
+      "addUser": "Add User",
+      "addRole": "Add Role",
+      "resetRoles": "Reset Roles",
+      "resetting": "Resetting Roles",
+      "addPermission": "Add Permission",
+      "addChecklist": "Add Checklist",
+      "addReason": "Add Reason",
+      "importAgents": "Import Agents",
+      "addAgent": "Add Agent"
+    },
+    "search": {
+      "placeholder": "Search {{view}}..."
+    },
+    "error": {
+      "noToken": "Please log in to access the dashboard.",
+      "fetchFailed": "Failed to load dashboard data.",
+      "createReasonFailed": "Failed to create reason.",
+      "updateChecklistFailed": "Failed to update checklist.",
+      "deleteChecklistFailed": "Failed to delete checklist.",
+      "createChecklistFailed": "Failed to create checklist.",
+      "duplicateExpectedHeaders": "System headers must be unique"
+    },
+    "actions": {
+      "back": "Back",
+      "next": "Next",
+      "previous": "Previous",
+      "first": "First",
+      "last": "Last",
+      "resetRolesConfirm": "Are you sure you want to reset roles?",
+      "modifyPreMadeRolesWarning": "Warning: Modifying pre-made roles may affect system functionality.",
+      "confirm": "Confirm",
+      "cancel": "Cancel",
+      "edit": "Edit",
+      "delete": "Delete",
+      "refreshUsers": "Refresh Users",
+      "refreshRoles": "Refresh Roles",
+      "refreshPermissions": "Refresh Permissions",
+      "refreshChecklists": "Refresh Checklists",
+      "refreshReasons": "Refresh Reasons",
+      "refreshNotifications": "Refresh Notifications",
+      "refreshAgents": "Refresh Agents",
+      "close": "Close",
+      "uploading": "Uploading",
+      "save": "Save",
+      "saving": "Saving",
+      "loading": "Loading...",
+      "invalidCSVHeaders": "Invalid CSV headers. Missing: {{headers}}",
+      "invalidCSVFormat": "Invalid CSV file format. Please ensure it has valid headers.",
+      "noFileSelected": "No file selected.",
+      "uploadFailed": "Failed to upload agents.",
+      "fetchHeadersFailed": "Failed to fetch CSV headers.",
+      "saveHeadersFailed": "Failed to save CSV headers.",
+      "emptyHeaders": "All CSV headers must be non-empty.",
+      "duplicateHeaders": "CSV headers must be unique.",
+      "invalidHeaderMapping": "All mappings must correspond to headers in the CSV file.",
+      "invalidResponse": "Invalid response from server.",
+      "createAgent": "Create a New Agent"
+    },
+    "agents": {
+      "viewAgent": "View Agent",
+      "editAgent": "Edit Agent",
+      "date": "Date",
+      "region": "Region",
+      "selectRegion": "Select Region",
+      "governorate": "Governorate",
+      "selectGovernorate": "Select Governorate",
+      "delegation": "Delegation",
+      "selectDelegation": "Select Delegation",
+      "supervisor": "Supervisor",
+      "selectSupervisor": "Select Supervisor",
+      "addAgent": "Add Agent",
+      "enterName": "Enter agent's name",
+      "enterLastname": "Enter agent's lastname",
+      "enterEmail": "Enter agent's email",
+      "createAgent": "Create Agent",
+      "location": "Location",
+      "failed": "Failed",
+      "uploading": "Uploading...",
+      "title": "Agents",
+      "noAgents": "No agents found",
+      "name": "Name",
+      "lastname": "Lastname",
+      "email": "Email",
+      "phone": "Phone",
+      "actions": "Actions",
+      "bulkUpload": "Bulk Upload Agents",
+      "uploadInstructions": "Upload a CSV file containing agent data.",
+      "csvFormat": "The CSV must include the required headers.",
+      "expectedHeaders": "Expected headers: {{headers}}",
+      "selectCSV": "Select CSV file",
+      "selectedFile": "Selected file: {{fileName}}",
+      "upload": "Upload",
+      "uploadResults": "Upload Results",
+      "totalRecords": "Total Records Processed: {{count}}",
+      "created": "Agents created: {{count}}",
+      "updated": "Agents updated: {{count}}",
+      "skipped": "Records skipped: {{count}}",
+      "errors": "Errors Encountered",
+      "pagination": {
+        "previous": "Previous",
+        "next": "Next",
+        "pageInfo": "Page {{currentPage}} sur {{totalPages}}"
+      },
+      "skippedRecords": "Skipped Records",
+      "requiredHeaders": "Required Headers",
+      "optionalHeaders": "Optional Headers",
+      "skipReason": "Skip Reason",
+      "deleteConfirm": "Are you sure you want to delete this agent?"
+    },
+    "csvHeaders": {
+      "title": "Manage CSV Headers",
+      "instructions": "Edit the CSV header names to match your file's format.",
+      "mappingInstructions": "Map each system header to the corresponding header in your CSV file.",
+      "systemHeader": "System Header",
+      "csvHeader": "CSV Header",
+      "noHeaders": "No headers found.",
+      "editHeader": "Edit CSV header for {{header}}",
+      "selectHeader": "Select a header",
+      "editHeaders": "Edit Headers",
+      "mismatchWarning": "Update the mappings below to proceed.",
+      "fileHeaders": "Headers in your CSV: {{headers}}",
+      "addHeader": "Add New Header",
+      "editSystemHeader": "Edit system header {{header}}",
+      "actions": "Actions",
+      "remove": "Remove",
+      "required": "Required*",
+      "selectSystemHeader": "Select a system header"
+    },
+    "tableHeaders": {
+      "name": "Name",
+      "email": "Email",
+      "phone": "Phone",
+      "wallet": "Wallet",
+      "status": "Status",
+      "actions": "Actions",
+      "agents": "Agents"
+    }
+  },
+  "reasonAdd": {
+    "title": "Add New Reason",
+    "form": {
+      "labels": {
+        "item": "Item"
+      },
+      "placeholders": {
+        "item": "Enter reason item (5-100 chars)"
+      }
+    },
+    "actions": {
+      "create": "Create Reason",
+      "creating": "Creating..."
+    },
+    "validation": {
+      "empty": "Item cannot be empty.",
+      "minLength": "Item must be at least 5 characters.",
+      "maxLength": "Item cannot exceed 100 characters.",
+      "duplicate": "Item already exists."
+    }
+  },
+  "checklistView": {
+    "actions": {
+      "edit": "Edit",
+      "delete": "Delete",
+      "save": "Save",
+      "saving": "Saving...",
+      "cancel": "Cancel"
+    }
+  },
+  "checklistsList": {
+    "title": "Checklists",
+    "noItems": "No checklists found",
+    "pagination": {
+      "previous": "Previous",
+      "next": "Next",
+      "pageInfo": "Page {{currentPage}} of {{totalPages}}"
+    },
+    "validation": {
+      "empty": "Item cannot be empty.",
+      "minLength": "Item must be at least 5 characters.",
+      "maxLength": "Item cannot exceed 100 characters.",
+      "duplicate": "Item already exists."
+    }
+  },
+  "checklistAdd": {
+    "title": "Add New Checklist",
+    "form": {
+      "labels": {
+        "item": "Item"
+      },
+      "placeholders": {
+        "item": "Enter checklist item (5-100 chars)"
+      }
+    },
+    "actions": {
+      "create": "Create Checklist",
+      "creating": "Creating..."
+    }
+  },
+  "pagination": "Page {{currentPage}} of {{totalPages}}",
+  "usersList": {
+    "title": "Users",
+    "tableHeaders": {
+      "name": "Name",
+      "email": "Email",
+      "phone": "Phone",
+      "roles": "Roles",
+      "createdAt": "Created At"
+    },
+    "noUsers": "No users found",
+    "pagination": {
+      "previous": "Previous",
+      "next": "Next",
+      "pageInfo": "Page {{currentPage}} of {{totalPages}}"
+    },
+    "error": {
+      "fetchFailed": "Failed to load user details."
+    }
+  },
+  "userView": {
+    "title": {
+      "details": "User Details",
+      "edit": "Edit User"
+    },
+    "basicInfo": {
+      "title": "Basic Information",
+      "name": "Name",
+      "email": "Email",
+      "phone": "Phone",
+      "wallet": "Wallet",
+      "na": "N/A"
+    },
+    "form": {
+      "placeholders": {
+        "firstName": "First Name *",
+        "lastName": "Last Name *",
+        "email": "Email *",
+        "phone": "XX XXX XXX",
+        "wallet": "XXXX-XXXX-XXXX-XXXX",
+        "password": "Password (optional)",
+        "passwordConfirm": "Confirm Password (optional)"
+      }
+    },
+    "roleManagement": {
+      "title": "Role Management",
+      "noDescription": "No description available",
+      "noPermissions": "No permissions assigned"
+    },
+    "permissionOverrides": {
+      "title": "Permission Overrides",
+      "filter": "Filter Permissions",
+      "searchPlaceholder": "Search permissions...",
+      "allCategories": "All Categories",
+      "effectivePermissions": "Effective Permissions",
+      "noPermissions": "No permissions available"
+    },
+    "assignments": {
+      "title": "Assignments",
+      "supervisors": "Supervisors Assigned to This Manager",
+      "managers": "Managers Assigned to This Supervisor",
+      "searchSupervisorsPlaceholder": "Search supervisors...",
+      "searchManagersPlaceholder": "Search managers..."
+    },
+    "actions": {
+      "edit": "Edit",
+      "delete": "Delete",
+      "save": "Save",
+      "cancel": "Cancel",
+      "saveChanges": "Save Changes",
+      "saveAssignments": "Save Assignments",
+      "grantPermission": "Grant Permission",
+      "revokePermission": "Revoke Permission",
+      "removeOverride": "Remove Override"
+    },
+    "pagination": {
+      "previous": "Previous",
+      "next": "Next",
+      "pageInfo": "Page {{currentPage}} of {{totalPages}}"
+    },
+    "validation": {
+      "firstnameRequired": "First Name is required",
+      "firstnameLengthMin": "First Name must be at least 3 characters",
+      "firstnameLengthMax": "First Name must be 20 characters or less",
+      "firstnameFormat": "First Name can only contain letters, spaces, hyphens, or apostrophes",
+      "lastnameRequired": "Last Name is required",
+      "lastnameLengthMin": "Last Name must be at least 3 characters",
+      "lastnameLengthMax": "Last Name must be 20 characters or less",
+      "lastnameFormat": "Last Name can only contain letters, spaces, hyphens, or apostrophes",
+      "emailRequired": "Email is required",
+      "emailLength": "Email must be 70 characters or less",
+      "emailFormat": "Invalid email format",
+      "phoneRequired": "Phone is required",
+      "phoneLength": "Phone must be 8 digits",
+      "walletLength": "Wallet must be exactly 16 digits",
+      "passwordLengthMin": "Password must be at least 8 characters",
+      "passwordLengthMax": "Password must be 128 characters or less",
+      "passwordFormat": "Password must include uppercase, lowercase, digit, and special character, no spaces",
+      "passwordConfirmRequired": "Password confirmation is required",
+      "passwordMismatch": "Passwords do not match"
+    },
+    "error": {
+      "updateFailed": "Failed to update user.",
+      "deleteFailed": "Failed to delete user.",
+      "fetchPermissionsFailed": "Failed to load user permissions.",
+      "fetchRolePermissionsFailed": "Failed to load role permissions.",
+      "toggleRoleFailed": "Failed to toggle role.",
+      "saveAssignmentsFailed": "Failed to save assignments.",
+      "saveOverridesFailed": "Failed to save permission overrides.",
+      "noRoleSelected": "No role selected for override",
+      "superAdminRestricted": "The Super Admin role cannot be assigned or revoked.",
+      "adminSelfRevoke": "You cannot revoke your own Admin role."
+    },
+    "loading": {
+      "default": "Loading...",
+      "saving": "Saving..."
+    }
+  },
+  "userAdd": {
+    "title": "Add New User",
+    "sections": {
+      "personalInfo": "Personal Information",
+      "contactInfo": "Contact Information",
+      "credentials": "Credentials",
+      "roleAssignment": "Role Assignment"
+    },
+    "form": {
+      "labels": {
+        "firstName": "First Name *",
+        "lastName": "Last Name *",
+        "email": "Email *",
+        "phone": "Phone *",
+        "password": "Password *",
+        "confirmPassword": "Confirm Password *",
+        "wallet": "Wallet *",
+        "assignRoles": "Assign Roles *"
+      },
+      "placeholders": {
+        "firstName": "First Name *",
+        "lastName": "Last Name *",
+        "email": "Email *",
+        "phone": "XX XXX XXX",
+        "wallet": "XXXX-XXXX-XXXX-XXXX",
+        "password": "Password *",
+        "confirmPassword": "Confirm Password *"
+      }
+    },
+    "roleManagement": {
+      "noDescription": "No description available",
+      "noPermissions": "No permissions assigned"
+    },
+    "actions": {
+      "create": "Create User",
+      "cancel": "Cancel",
+      "creating": "Creating..."
+    },
+    "validation": {
+      "firstnameRequired": "First Name is required",
+      "firstnameLengthMin": "First Name must be at least 3 characters",
+      "firstnameLengthMax": "First Name must be 20 characters or less",
+      "firstnameFormat": "First Name can only contain letters, spaces, hyphens, or apostrophes",
+      "lastnameRequired": "Last Name is required",
+      "lastnameLengthMin": "Last Name must be at least 3 characters",
+      "lastnameLengthMax": "Last Name must be 20 characters or less",
+      "lastnameFormat": "Last Name can only contain letters, spaces, hyphens, or apostrophes",
+      "emailRequired": "Email is required",
+      "emailLength": "Email must be 70 characters or less",
+      "emailFormat": "Invalid email format",
+      "phoneRequired": "Phone is required",
+      "phoneLength": "Phone must be 8 digits",
+      "walletRequired": "Wallet is required",
+      "walletLength": "Wallet must be exactly 16 digits",
+      "passwordRequired": "Password is required",
+      "passwordLengthMin": "Password must be at least 8 characters",
+      "passwordLengthMax": "Password must be 128 characters or less",
+      "passwordFormat": "Password must include uppercase, lowercase, digit, and special character, no spaces",
+      "passwordConfirmRequired": "Password confirmation is required",
+      "passwordMismatch": "Passwords do not match"
+    },
+    "error": {
+      "createFailed": "Failed to create user.",
+      "superAdminRestricted": "Only Super Admins can assign the Super Admin role."
+    }
+  },
+  "roleView": {
+    "title": "{{roleName}}",
+    "descriptionPlaceholder": "Role Description",
+    "permissions": {
+      "title": "Permissions",
+      "filter": {
+        "label": "Filter Permissions",
+        "searchPlaceholder": "Search permissions...",
+        "categoryPlaceholder": "All Categories"
+      },
+      "noPermissions": "No permissions available"
+    },
+    "form": {
+      "labels": {
+        "name": "Role Name",
+        "description": "Role Description"
+      },
+      "placeholders": {
+        "name": "Role Name",
+        "description": "Role Description"
+      }
+    },
+    "actions": {
+      "edit": "Edit",
+      "delete": "Delete",
+      "save": "Save",
+      "cancel": "Cancel",
+      "saveChanges": "Save Changes",
+      "saving": "Saving...",
+      "toggleAll": "Select All",
+      "toggleAllOff": "Deselect All",
+      "deleteConfirm": "Are you sure you want to delete the \"{{roleName}}\" role? This action cannot be undone."
+    },
+    "validation": {
+      "nameRequired": "Role name is required",
+      "nameLengthMin": "Role name must be at least 3 characters",
+      "nameLengthMax": "Role name must be 20 characters or less",
+      "nameFormat": "Role name can only contain letters, spaces, or hyphens",
+      "descriptionLengthMax": "Description must be 150 characters or less"
+    },
+    "error": {
+      "updateFailed": "Failed to update role.",
+      "deleteFailed": "Failed to delete role.",
+      "savePermissionsFailed": "Failed to save permissions.",
+      "superAdminRestricted": "The Super Admin role cannot be modified or deleted."
+    }
+  },
+  "rolesList": {
+    "title": "Roles",
+    "categories": {
+      "fixed": "Fixed Roles",
+      "premade": "Pre-made Roles",
+      "custom": "Custom Roles"
+    },
+    "roleCard": {
+      "permissionCount": "{{count}} Permissions"
+    },
+    "popup": {
+      "noDescription": "No description available",
+      "permissionsTitle": "Permissions by Class",
+      "noPermissions": "No permissions assigned",
+      "loading": "Loading..."
+    },
+    "confirmation": {
+      "unsavedChanges": "You have unsaved changes. Are you sure you want to switch roles?",
+      "premadeWarning": "Warning: Modifying pre-made roles may affect system functionality. Are you sure you want to proceed?"
+    },
+    "actions": {
+      "confirm": "Confirm",
+      "cancel": "Cancel"
+    },
+    "error": {
+      "fetchPermissionsFailed": "Failed to load role permissions.",
+      "superAdminRestricted": "The Super Admin role cannot be modified.",
+      "adminRestricted": "Only Super Admins can modify the Admin role."
+    }
+  },
+  "roleAdd": {
+    "title": "Create New Role",
+    "sections": {
+      "roleDetails": "Role Details",
+      "permissions": "Permissions"
+    },
+    "form": {
+      "labels": {
+        "name": "Name *",
+        "description": "Description",
+        "assignPermissions": "Assign Permissions"
+      },
+      "placeholders": {
+        "name": "Enter role name",
+        "description": "Enter role description",
+        "permissionSearch": "Search permissions..."
+      }
+    },
+    "permissions": {
+      "filter": {
+        "label": "Filter Permissions",
+        "categoryPlaceholder": "All Categories"
+      },
+      "noPermissions": "No permissions available"
+    },
+    "actions": {
+      "create": "Create Role",
+      "toggleAll": "Select All",
+      "toggleAllOff": "Deselect All"
+    },
+    "validation": {
+      "nameRequired": "Role name is required",
+      "nameLengthMin": "Role name must be at least 3 characters",
+      "nameLengthMax": "Role name must be 20 characters or less",
+      "nameFormat": "Role name can only contain letters, spaces, or hyphens",
+      "descriptionLengthMax": "Description must be 150 characters or less"
+    },
+    "error": {
+      "createFailed": "Failed to create role.",
+      "validationFailed": "Please correct the errors before submitting."
+    }
+  },
+  "permsList": {
+    "title": "Permissions",
+    "filter": {
+      "label": "Filter Permissions",
+      "searchPlaceholder": "Search permissions...",
+      "categoryPlaceholder": "All Classes"
+    },
+    "permissionCard": {
+      "noDescription": "No description"
+    }
+  },
+  "permView": {
+    "title": {
+      "view": "{permissionName}",
+      "edit": "Edit Permission"
+    },
+    "fields": {
+      "class": "Class",
+      "description": "Description",
+      "noDescription": "No description"
+    },
+    "form": {
+      "labels": {
+        "name": "Permission Name *",
+        "class": "Class *",
+        "description": "Permission Description"
+      },
+      "placeholders": {
+        "name": "Permission Name",
+        "class": "Select a class",
+        "description": "Permission Description"
+      }
+    },
+    "actions": {
+      "edit": "Edit",
+      "delete": "Delete",
+      "save": "Save",
+      "cancel": "Cancel",
+      "close": "Close",
+      "saving": "Saving..."
+    },
+    "validation": {
+      "nameRequired": "Permission name is required",
+      "nameLengthMin": "Permission name must be at least 10 characters",
+      "nameLengthMax": "Permission name must be 30 characters or less",
+      "nameFormat": "Permission name must contain only lowercase letters and underscores (e.g., read_users)",
+      "classRequired": "Permission class is required",
+      "classLengthMin": "Class must be at least 3 characters",
+      "classLengthMax": "Class must be 20 characters or less",
+      "classFormat": "Class can only contain letters",
+      "descriptionLengthMax": "Description must be 150 characters or less"
+    },
+    "error": {
+      "updateFailed": "Failed to update permission.",
+      "deleteFailed": "Failed to delete permission.",
+      "validationFailed": "Please correct the errors before saving."
+    }
+  },
+  "permAdd": {
+    "title": "Create New Permission",
+    "form": {
+      "labels": {
+        "name": "Name *",
+        "class": "Class *",
+        "description": "Description"
+      },
+      "placeholders": {
+        "name": "Enter permission name",
+        "class": "Select a class",
+        "description": "Enter permission description"
+      }
+    },
+    "actions": {
+      "create": "Create Permission"
+    },
+    "validation": {
+      "nameRequired": "Permission name is required",
+      "nameLengthMin": "Permission name must be at least 10 characters",
+      "nameLengthMax": "Permission name must be 30 characters or less",
+      "nameFormat": "Permission name must contain only lowercase letters and underscores (e.g., read_users)",
+      "classRequired": "Permission class is required",
+      "classLengthMin": "Class must be at least 3 characters",
+      "classLengthMax": "Class must be 20 characters or less",
+      "classFormat": "Class can only contain letters",
+      "descriptionLengthMax": "Description must be 150 characters or less"
+    },
+    "error": {
+      "createFailed": "Failed to create permission.",
+      "validationFailed": "Please correct the errors before submitting."
+    }
+  },
+  "reasonView": {
+    "title": {
+      "view": "{{reasonItem}}",
+      "edit": "Edit Reason"
+    },
+    "actions": {
+      "edit": "Edit",
+      "delete": "Delete",
+      "save": "Save",
+      "cancel": "Cancel",
+      "saving": "Saving..."
+    },
+    "error": {
+      "updateFailed": "Failed to update reason.",
+      "deleteFailed": "Failed to delete reason."
+    }
+  },
+  "agents": {
+    "pagination": {
+      "previous": "Previous",
+      "next": "Next",
+      "pageInfo": "Page {{currentPage}} of {{totalPages}}"
+    }
+  },
+  "map": {
+    "loading": "Loading...",
+    "geolocationError": "Unable to retrieve your location",
+    "initialDataError": "Failed to load initial data",
+    "searchPlaceholder": "Search agents...",
+    "filter": "Filter",
+    "directions": "Directions",
+    "carModeOn": "Car Mode On",
+    "carModeOff": "Car Mode Off",
+    "showControls": "Show Controls",
+    "hideControls": "Hide Controls",
+    "mapStyles": {
+      "standard": "Standard",
+      "platformDark": "Dark",
+      "platformLight": "Light",
+      "satellite": "Satellite",
+      "night": "Night",
+      "dark": "Black",
+      "light": "Light",
+      "minimal": "Minimal",
+      "silver": "Silver",
+      "retro": "Retro",
+      "aubergine": "Aubergine"
+    },
+    "filters": {
+      "title": "Filters",
+      "allRegions": "All Regions",
+      "allGovernorates": "All Governorates",
+      "allDelegations": "All Delegations",
+      "allSupervisors": "All Supervisors"
+    },
+    "directionsPanel": {
+      "title": "Directions",
+      "originPlaceholder": "Enter origin",
+      "destinationPlaceholder": "Enter destination",
+      "myLocation": "My Location",
+      "centerRoute": "Center",
+      "startNavigation": "Start in Maps",
+      "modes": {
+        "driving": "Driving",
+        "walking": "Walking"
+      },
+      "go": "Go",
+      "clear": "Clear"
+    },
+    "routes": {
+      "title": "Route Stops",
+      "noStops": "No stops added",
+      "optimize": "Optimize Route",
+      "distance": "Distance",
+      "duration": "Duration",
+      "steps": "Steps",
+      "stops": "Stops",
+      "step": "Step {{number}}"
+    },
+    "agentsList": {
+      "title": "Agents",
+      "noAgents": "No agents found"
+    },
+    "agentCard": {
+      "directions": "Directions",
+      "addStop": "Add_Stop",
+      "call": "Call",
+      "remove": "Remove"
+    },
+    "infoWindow": {
+      "edit": "Edit",
+      "addStop": "Add_Stop",
+      "directions": "Directions",
+      "phone": "Phone",
+      "addVisit": "Visit",
+      "location": "Location",
+      "time": "Time",
+      "reasons": "Reasons"
+    },
+    "addAgent": "Add Agent",
+    "addAgentPrompt": "Click on the map to select a location for the new agent",
+    "refreshAgents": "Refresh Agents",
+    "refreshAgentsError": "Failed to refresh agents",
+    "addAgentPanel": {
+      "title": "Add New Agent",
+      "name": "Name",
+      "lastname": "Last Name",
+      "email": "Email",
+      "phone": "Phone",
+      "supervisor": "Select Supervisor",
+      "governorate": "Select Governorate",
+      "delegation": "Select Delegation",
+      "address": "Address",
+      "save": "Save",
+      "cancel": "Cancel"
+    },
+    "editAgentPanel": {
+      "title": "Edit",
+      "name": "Name",
+      "lastname": "Last Name",
+      "email": "Email",
+      "phone": "Phone",
+      "supervisor": "Select Supervisor",
+      "governorate": "Select Governorate",
+      "delegation": "Select Delegation",
+      "address": "Address",
+      "save": "Save",
+      "cancel": "Cancel"
+    },
+    "phone": "Phone",
+    "returnToMyLocation": "Return to My Location",
+    "userLocationError": "User location not available",
+    "routePointsError": "At least two points are required for a route",
+    "invalidRouteData": "Invalid route data received",
+    "calculateRouteError": "Failed to calculate route",
+    "locationUpdateError": "Failed to update location",
+    "trackLocationError": "Failed to track location: {{message}}",
+    "retryLocation": "Retrying location update ({{retry}}/{{maxRetries}})",
+    "searchError": "Failed to search agents",
+    "addressError": "Failed to retrieve address",
+    "allFieldsRequired": "All fields are required",
+    "agentCreated": "Agent created successfully",
+    "createAgentError": "Failed to create agent",
+    "noAgentSelected": "No agent selected",
+    "agentUpdated": "Agent updated successfully",
+    "editAgentError": "Failed to update agent",
+    "invalidMarkerPosition": "Invalid marker position",
+    "updateLocationConfirm": "Update location for {{name}} {{lastname}} to {{address}}?",
+    "locationUpdated": "Location updated successfully",
+    "directionsError": "Failed to get directions",
+    "addStopError": "Failed to add stop",
+    "optimizeRouteError": "At least three points are required to optimize",
+    "locationAccessDenied": "Location access denied",
+    "permissionCheckError": "Failed to check location permission",
+    "agentDetailsError": "Failed to retrieve agent details",
+    "confirm": "Confirm",
+    "cancel": "Cancel"
+  },
+  "reports": {
+    "scheduled": {
+      "title": "Scheduled Reports",
+      "listTitle": "Scheduled Reports List"
+    },
+    "generated": {
+      "title": "Generated Reports",
+      "listTitle": "Generated Reports List"
+    },
+    "generate": {
+      "title": "Generate Report"
+    },
+    "modal": {
+      "title": "Report Generated",
+      "message": "The {{reportType}} report has been generated. What would you like to do?",
+      "download": "Download",
+      "delete": "Delete",
+      "keep": "Keep"
+    },
+    "schedule": {
+      "title": "Schedule Report",
+      "period": "Period",
+      "customPeriod": "Custom Period",
+      "unit": "Unit",
+      "minutes": "Minutes",
+      "hours": "Hours",
+      "days": "Days",
+      "cron": "Period",
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "monthly": "Monthly",
+      "yearly": "Yearly",
+      "custom": "Custom",
+      "placeholders": {
+        "cron": "Enter Period ",
+        "customPeriod": "Enter period (e.g., 30)",
+        "unit": "Select unit",
+        "period": "Period"
+      }
+    },
+    "manager": {
+      "title": "Report Manager",
+      "scheduled": "Scheduled Reports",
+      "generated": "Generated Reports",
+      "generate": "Generate New Report",
+      "schedule": "Schedule New Report"
+    },
+    "filter": {
+      "title": "Filter Reports",
+      "toggle": "Filters",
+      "options": "Filter Options",
+      "reportType": "Report Type",
+      "format": "Format",
+      "dateRange": "Date Range",
+      "to": "to",
+      "placeholders": {
+        "type": "Report Type",
+        "startDate": "Start Date",
+        "endDate": "End Date",
+        "supervisor": "Supervisor",
+        "regionalManager": "Regional Manager",
+        "director": "Director",
+        "agent": "Agent",
+        "region": "Region",
+        "governorate": "Governorate",
+        "delegation": "Delegation",
+        "status": "Status",
+        "visitReasons": "Visit Reasons",
+        "visitStatus": "Visit Status",
+        "bookType": "Book Type",
+        "currentHolder": "Current Holder",
+        "role": "Role",
+        "activityType": "Activity Type",
+        "user": "User",
+        "ipAddress": "Enter IP Address",
+        "anomalyType": "Anomaly Type",
+        "affectedEntity": "Affected Entity",
+        "severity": "Severity",
+        "route": "Route",
+        "weekNumber": "Enter Week Number (1-52)",
+        "min": "Min",
+        "max": "Max"
+      }
+    },
+    "accordion": {
+      "daterange": "Date Range",
+      "userselection": "User Selection",
+      "location": "Location",
+      "otherfilters": "Other Filters"
+    },
+    "types": {
+      "visitsummary": "Visit Summary",
+      "timesheet": "Timesheet",
+      "receiptbookinventory": "Receipt Book Inventory",
+      "stubcollection": "Stub Collection",
+      "useractivity": "User Activity",
+      "anomaly": "Anomaly",
+      "agentperformance": "Agent Performance",
+      "regionperformance": "Region Performance",
+      "full": "Full Report"
+    },
+    "formats": {
+      "pdf": "PDF",
+      "excel": "Excel"
+    },
+    "statuses": {
+      "pending": "Pending",
+      "visited": "Visited",
+      "validated": "Validated",
+      "rejected": "Rejected",
+      "collected": "Collected",
+      "archived": "Archived",
+      "instock": "In Stock",
+      "senttosupplier": "Sent to Supplier",
+      "collectfromsupplier": "Collect from Supplier",
+      "withregionalmanager": "With Regional Manager",
+      "withsupervisor": "With Supervisor",
+      "assignedtoagent": "Assigned to Agent",
+      "stubcollected": "Stub Collected",
+      "withstockmanager": "With Stock Manager"
+    },
+    "filters": {
+      "supervisor": "Supervisor",
+      "regionalManager": "Regional Manager",
+      "director": "Director",
+      "agent": "Agent",
+      "region": "Region",
+      "governorate": "Governorate",
+      "delegation": "Delegation",
+      "visitType": "Visit Type (Recruitment)",
+      "status": "Status",
+      "visitReasons": "Visit Reasons",
+      "checklistCompleted": "Checklist Completed",
+      "visitDuration": "Visit Duration (minutes)",
+      "Anomalies": "Anomalies Detected",
+      "numberOfVisits": "Number of Visits",
+      "totalHours": "Total Hours",
+      "aiSuggestions": "AI Suggestions",
+      "anomaliesDetected": "Anomalies Detected",
+      "visitStatus": "Visit Status",
+      "weekNumber": "Week Number",
+      "bookType": "Book Type",
+      "currentHolder": "Current Holder",
+      "assignmentStatus": "Assignment Status",
+      "role": "Role",
+      "activityType": "Activity Type",
+      "user": "User",
+      "suspiciousActivity": "Suspicious Activity",
+      "ipAddress": "IP Address",
+      "anomalyType": "Anomaly Type",
+      "affectedEntity": "Affected Entity",
+      "severity": "Severity",
+      "route": "Route",
+      "performanceScore": "Performance Score",
+      "stubsCollected": "Stubs Collected",
+      "receiptBooksAssigned": "Receipt Books Assigned",
+      "visitCompletionRate": "Visit Completion Rate (%)",
+      "locationUpdated": "Location Updated"
+    },
+    "table": {
+      "headers": {
+        "scheduleID": "Schedule ID",
+        "reportID": "Report ID",
+        "reportType": "Report Type",
+        "format": "Format",
+        "cronExpression": "Period",
+        "createdAt": "Created At",
+        "generatedAt": "Generated At",
+        "actions": "Actions"
+      },
+      "noScheduled": "No scheduled reports found.",
+      "noGenerated": "No generated reports found."
+    },
+    "actions": {
+      "cancel": "Cancel",
+      "generate": "Generate Report",
+      "generating": "Generating...",
+      "schedule": "Schedule Report",
+      "scheduling": "Scheduling..."
+    },
+    "errors": {
+      "fetchFilterData": "Failed to fetch filter data.",
+      "fetchAgents": "Failed to fetch agents.",
+      "fetchGovernorates": "Failed to fetch governorates.",
+      "fetchDelegations": "Failed to fetch delegations.",
+      "fetchData": "Failed to fetch report data.",
+      "generateReport": "Failed to generate report.",
+      "scheduleReport": "Failed to schedule report.",
+      "cronRequired": "Period is required.",
+      "downloadReport": "Failed to download report.",
+      "deleteSchedule": "Failed to delete schedule.",
+      "deleteReport": "Failed to delete report.",
+      "invalidIP": "Invalid IP address format."
+    },
+    "loading": "Loading Reports..."
+  }
+}

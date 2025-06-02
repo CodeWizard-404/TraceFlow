@@ -6,6 +6,7 @@ import 'package:TraceFlow/providers/user_provider.dart';
 import 'package:TraceFlow/widgets/commen/progress_indicator.dart';
 import 'package:TraceFlow/widgets/commen/spacer.dart';
 import 'package:TraceFlow/widgets/commen/text_field.dart';
+import '../../models/receipt_book_type.dart';
 import '../../providers/auth_provider.dart';
 import '../commen/dropdown.dar.dart';
 
@@ -54,6 +55,12 @@ class TransferForm extends StatelessWidget {
     required this.formatTime,
     super.key,
   });
+
+  String _getTypeName(String typeID, ReceiptBookProvider provider) {
+    return provider.receiptBookTypes
+        .firstWhere((t) => t.typeID == typeID, orElse: () => ReceiptBookType(typeID: '', name: 'Unknown Type'))
+        .name;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -109,7 +116,6 @@ class TransferForm extends StatelessWidget {
                       }
                       if (snapshot.hasError) {
                         if (snapshot.error.toString().contains('401')) {
-                          // Session expired, redirect to login
                           Provider.of<AuthProvider>(context, listen: false).logout();
                           Navigator.pushReplacementNamed(context, '/login');
                           return const SizedBox.shrink();
@@ -177,7 +183,7 @@ class TransferForm extends StatelessWidget {
                     receiptBookProvider.receiptBooks.firstWhere((b) => b.bookID == bookID);
                     return ListTile(
                       title: Text('Receipt #${book.number}'),
-                      subtitle: Text('Type: ${book.type} | Status: ${book.status}'),
+                      subtitle: Text('Type: ${_getTypeName(book.typeID, receiptBookProvider)} | Status: ${book.status}'),
                       trailing: IconButton(
                         icon: const Icon(Icons.remove_circle, color: Colors.red),
                         onPressed: () => onRemoveBook(bookID),

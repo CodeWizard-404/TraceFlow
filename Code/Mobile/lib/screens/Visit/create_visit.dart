@@ -4,15 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
+import '../../models/agent.dart';
 import '../../models/checklist.dart';
 import '../../models/reason.dart';
-import '../../models/agent.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/timesheet_provider.dart';
 import '../../providers/agent_provider.dart';
 import '../../providers/checklist_provider.dart';
 import '../../providers/reason_provider.dart';
-import '../../services/cookie_manager.dart';
+import '../../providers/location_provider.dart';
 import '../../widgets/appbar/app_bar.dart';
 import '../../widgets/appbar/sidebar.dart';
 import '../../widgets/commen/button.dart';
@@ -39,7 +39,9 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
   String? _selectedAgentId;
   List<Checklist> _selectedChecklists = [];
   List<Reason> _selectedReasons = [];
-  String? _location;
+  String? _selectedRegionId;
+  String? _selectedGovernorateId;
+  String? _selectedDelegationId;
   String _agentPhone = '';
   String? _phoneError;
   Timer? _debounce;
@@ -53,9 +55,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
     final calculatedDate = DateTime(widget.year, 1, 1).add(Duration(days: (widget.weekNumber - 1) * 7));
     final now = DateTime.now();
     _selectedDate = calculatedDate.isBefore(now) ? now : calculatedDate;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadInitialData();
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadInitialData());
   }
 
   @override
@@ -69,18 +69,18 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
   Future<void> _loadInitialData() async {
     if (kDebugMode) print('Loading initial data');
     setState(() => _isLoading = true);
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
     try {
-      if (!CookieManager.cookies.containsKey('accessToken')) {
-        if (kDebugMode) print('No accessToken, loading cookies');
-        await CookieManager.loadCookies();
-      }
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final agentProvider = Provider.of<AgentProvider>(context, listen: false);
       final checklistProvider = Provider.of<ChecklistProvider>(context, listen: false);
       final reasonProvider = Provider.of<ReasonProvider>(context, listen: false);
+      final locationProvider = Provider.of<LocationProvider>(context, listen: false);
 
       await Future.wait([
-        agentProvider.fetchUniqueLocations(),
+        locationProvider.getAllRegions(),
+        locationProvider.getAllGovernorates(),
+        locationProvider.getAllDelegations(),
+        agentProvider.getAgentsBySupervisor(authProvider.user!.userID),
         checklistProvider.getAllChecklists(),
         reasonProvider.getAllReasons(),
       ]);
@@ -88,10 +88,6 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
     } catch (e) {
       if (kDebugMode) print('Error loading initial data: $e');
       _showSnackBar('Failed to load initial data: $e');
-      if (e.toString().contains('401')) {
-        await authProvider.logout();
-        Navigator.pushReplacementNamed(context, '/login');
-      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -104,32 +100,27 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
     final yearStart = DateTime.utc(adjustedDate.year, 1, 1);
     final diffMillis = adjustedDate.millisecondsSinceEpoch - yearStart.millisecondsSinceEpoch;
     final diffDays = diffMillis / 86400000;
-    final weekNumber = ((diffDays + 1) / 7).ceil();
-    if (kDebugMode) print('Calculated week number: $weekNumber for date: $date');
-    return weekNumber;
+    return ((diffDays + 1) / 7).ceil();
   }
 
   Future<void> _selectDate(BuildContext context) async {
-    if (kDebugMode) print('Selecting date');
     final now = DateTime.now();
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: _selectedDate ?? DateTime.now(),
-      firstDate: DateTime(now.year, now.month, now.day),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: Theme.of(context).colorScheme.copyWith(
-              primary: Theme.of(context).colorScheme.primary,
-              onPrimary: Theme.of(context).colorScheme.onPrimary,
-              surface: Theme.of(context).colorScheme.surface,
-              onSurface: Theme.of(context).colorScheme.onSurface,
-            ),
+      initialDate: _selectedDate ?? now,
+      firstDate: now,
+      lastDate: now.add(const Duration(days: 365)),
+      builder: (context, child) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: Theme.of(context).colorScheme.copyWith(
+            primary: Theme.of(context).colorScheme.primary,
+            onPrimary: Theme.of(context).colorScheme.onPrimary,
+            surface: Theme.of(context).colorScheme.surface,
+            onSurface: Theme.of(context).colorScheme.onSurface,
           ),
-          child: child!,
-        );
-      },
+        ),
+        child: child!,
+      ),
     );
     if (picked != null && picked != _selectedDate) {
       setState(() {
@@ -140,22 +131,19 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
   }
 
   Future<void> _selectTime(BuildContext context) async {
-    if (kDebugMode) print('Selecting time');
     final now = DateTime.now();
     final TimeOfDay? picked = await showTimePicker(
       context: context,
       initialTime: _selectedTime ?? TimeOfDay.now(),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: Theme.of(context).colorScheme.copyWith(
-              primary: Theme.of(context).colorScheme.primary,
-              onPrimary: Theme.of(context).colorScheme.onPrimary,
-            ),
+      builder: (context, child) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: Theme.of(context).colorScheme.copyWith(
+            primary: Theme.of(context).colorScheme.primary,
+            onPrimary: Theme.of(context).colorScheme.onPrimary,
           ),
-          child: child!,
-        );
-      },
+        ),
+        child: child!,
+      ),
     );
     if (picked != null && picked != _selectedTime) {
       final selectedDate = _selectedDate ?? now;
@@ -166,13 +154,10 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
         picked.hour,
         picked.minute,
       );
-
       if (selectedDate.day == now.day && selectedDateTime.isBefore(now)) {
-        if (kDebugMode) print('Invalid time: before now for today');
         _showSnackBar('Time cannot be before now for today');
         return;
       }
-
       setState(() {
         _selectedTime = picked;
         if (kDebugMode) print('Time selected: ${_selectedTime!.format(context)}');
@@ -180,164 +165,166 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
     }
   }
 
-  Future<void> _showLocationDialog(BuildContext context, AgentProvider agentProvider) async {
-    if (kDebugMode) print('Showing location dialog');
-    final locations = agentProvider.uniqueLocations;
+  Future<void> _showLocationDialog(BuildContext context, String type) async {
+    final locationProvider = Provider.of<LocationProvider>(context, listen: false);
+    List<dynamic> items;
+    String? selectedValue;
+    switch (type) {
+      case 'region':
+        items = locationProvider.regions;
+        selectedValue = _selectedRegionId;
+        break;
+      case 'governorate':
+        items = locationProvider.governorates.where((g) => g.regionID == _selectedRegionId).toList();
+        selectedValue = _selectedGovernorateId;
+        break;
+      case 'delegation':
+        items = locationProvider.delegations.where((d) => _selectedGovernorateId != null).toList();
+        selectedValue = _selectedDelegationId;
+        break;
+      default:
+        return;
+    }
+
     final TextEditingController searchController = TextEditingController();
-    List<String> filteredLocations = List.from(locations);
+    List<dynamic> filteredItems = List.from(items);
 
     await showDialog(
       context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              backgroundColor: Theme.of(context).cardTheme.color,
-              title: Text('Select Location', style: Theme.of(context).textTheme.headlineSmall),
-              content: SizedBox(
-                width: double.maxFinite,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(
-                      controller: searchController,
-                      decoration: InputDecoration(
-                        hintText: 'Search locations...',
-                        prefixIcon: Icon(Icons.search, color: Theme.of(context).colorScheme.primary),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      onChanged: (value) {
-                        setDialogState(() {
-                          filteredLocations = locations
-                              .where((location) => location.toLowerCase().contains(value.toLowerCase()))
-                              .toList();
-                        });
-                      },
-                    ),
-                    const CustomSpacer(height: 12),
-                    SizedBox(
-                      height: 300,
-                      child: ListView.builder(
-                        itemCount: filteredLocations.length,
-                        itemBuilder: (context, index) {
-                          final location = filteredLocations[index];
-                          return RadioListTile<String>(
-                            title: Text(location),
-                            value: location,
-                            groupValue: _location,
-                            onChanged: (value) {
-                              if (kDebugMode) print('Location selected: $value');
-                              setState(() {
-                                _location = value;
-                                _selectedAgentId = null;
-                                agentProvider.fetchAgentsByLocation(value!);
-                              });
-                              Navigator.pop(context);
-                            },
-                            activeColor: Theme.of(context).colorScheme.primary,
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    if (kDebugMode) print('Location dialog cancelled');
-                    Navigator.pop(context);
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: Theme.of(context).cardTheme.color,
+          title: Text('Select $type', style: Theme.of(context).textTheme.headlineSmall),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Search ${type}s...',
+                    prefixIcon: Icon(Icons.search, color: Theme.of(context).colorScheme.primary),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onChanged: (value) {
+                    setDialogState(() {
+                      filteredItems = items.where((item) => item.name.toLowerCase().contains(value.toLowerCase())).toList();
+                    });
                   },
-                  child: Text('Cancel',
-                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
+                ),
+                const CustomSpacer(height: 12),
+                SizedBox(
+                  height: 300,
+                  child: ListView.builder(
+                    itemCount: filteredItems.length,
+                    itemBuilder: (context, index) {
+                      final item = filteredItems[index];
+                      return RadioListTile<String>(
+                        title: Text(item.name),
+                        value: item.id,
+                        groupValue: selectedValue,
+                        onChanged: (value) {
+                          setState(() {
+                            if (type == 'region') {
+                              _selectedRegionId = value;
+                              _selectedGovernorateId = null;
+                              _selectedDelegationId = null;
+                            } else if (type == 'governorate') {
+                              _selectedGovernorateId = value;
+                              _selectedDelegationId = null;
+                            } else {
+                              _selectedDelegationId = value;
+                            }
+                            _selectedAgentId = null;
+                          });
+                          Navigator.pop(context);
+                        },
+                        activeColor: Theme.of(context).colorScheme.primary,
+                      );
+                    },
+                  ),
                 ),
               ],
-            );
-          },
-        );
-      },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cancel', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
   Future<void> _showAgentDialog(BuildContext context, AgentProvider agentProvider) async {
-    if (kDebugMode) print('Showing agent dialog');
-    final agents = agentProvider.agents;
+    final agents = agentProvider.agents.where((a) => _selectedDelegationId == null || a.delegationID == _selectedDelegationId).toList();
     final TextEditingController searchController = TextEditingController();
     List<Agent> filteredAgents = List.from(agents);
 
     await showDialog(
       context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              backgroundColor: Theme.of(context).cardTheme.color,
-              title: Text('Select Agent', style: Theme.of(context).textTheme.headlineSmall),
-              content: SizedBox(
-                width: double.maxFinite,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(
-                      controller: searchController,
-                      decoration: InputDecoration(
-                        hintText: 'Search agents...',
-                        prefixIcon: Icon(Icons.search, color: Theme.of(context).colorScheme.primary),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      onChanged: (value) {
-                        setDialogState(() {
-                          filteredAgents = agents
-                              .where((agent) =>
-                          '${agent.name} ${agent.lastname}'.toLowerCase().contains(value.toLowerCase()) ||
-                              agent.agentID.toLowerCase().contains(value.toLowerCase()))
-                              .toList();
-                        });
-                      },
-                    ),
-                    const CustomSpacer(height: 12),
-                    SizedBox(
-                      height: 300,
-                      child: ListView.builder(
-                        itemCount: filteredAgents.length,
-                        itemBuilder: (context, index) {
-                          final agent = filteredAgents[index];
-                          return RadioListTile<String>(
-                            title: Text('${agent.name} ${agent.lastname}'),
-                            value: agent.agentID,
-                            groupValue: _selectedAgentId,
-                            onChanged: (value) {
-                              if (kDebugMode) print('Agent selected: $value');
-                              setState(() => _selectedAgentId = value);
-                              Navigator.pop(context);
-                            },
-                            activeColor: Theme.of(context).colorScheme.primary,
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    if (kDebugMode) print('Agent dialog cancelled');
-                    Navigator.pop(context);
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: Theme.of(context).cardTheme.color,
+          title: Text('Select Agent', style: Theme.of(context).textTheme.headlineSmall),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Search agents...',
+                    prefixIcon: Icon(Icons.search, color: Theme.of(context).colorScheme.primary),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onChanged: (value) {
+                    setDialogState(() {
+                      filteredAgents = agents.where((agent) =>
+                      '${agent.name} ${agent.lastname}'.toLowerCase().contains(value.toLowerCase()) ||
+                          agent.agentID.toLowerCase().contains(value.toLowerCase())).toList();
+                    });
                   },
-                  child: Text('Cancel',
-                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
+                ),
+                const CustomSpacer(height: 12),
+                SizedBox(
+                  height: 300,
+                  child: ListView.builder(
+                    itemCount: filteredAgents.length,
+                    itemBuilder: (context, index) {
+                      final agent = filteredAgents[index];
+                      return RadioListTile<String>(
+                        title: Text('${agent.name} ${agent.lastname}'),
+                        value: agent.agentID,
+                        groupValue: _selectedAgentId,
+                        onChanged: (value) {
+                          setState(() => _selectedAgentId = value);
+                          Navigator.pop(context);
+                        },
+                        activeColor: Theme.of(context).colorScheme.primary,
+                      );
+                    },
+                  ),
                 ),
               ],
-            );
-          },
-        );
-      },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cancel', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
   Future<void> _showChecklistDialog(BuildContext context, ChecklistProvider checklistProvider) async {
-    if (kDebugMode) print('Showing checklist dialog');
     final allChecklists = checklistProvider.allChecklists;
     final selectedChecklists = List<Checklist>.from(_selectedChecklists);
     final TextEditingController searchController = TextEditingController();
@@ -345,87 +332,76 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
 
     await showDialog(
       context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              backgroundColor: Theme.of(context).cardTheme.color,
-              title: Text('Select Checklists', style: Theme.of(context).textTheme.headlineSmall),
-              content: SizedBox(
-                width: double.maxFinite,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(
-                      controller: searchController,
-                      decoration: InputDecoration(
-                        hintText: 'Search checklists...',
-                        prefixIcon: Icon(Icons.search, color: Theme.of(context).colorScheme.primary),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      onChanged: (value) {
-                        setDialogState(() {
-                          filteredChecklists = allChecklists
-                              .where((checklist) => checklist.item.toLowerCase().contains(value.toLowerCase()))
-                              .toList();
-                        });
-                      },
-                    ),
-                    const CustomSpacer(height: 12),
-                    SizedBox(
-                      height: 300,
-                      child: ListView.builder(
-                        itemCount: filteredChecklists.length,
-                        itemBuilder: (context, index) {
-                          final checklist = filteredChecklists[index];
-                          final isSelected = selectedChecklists.any((c) => c.checklistID == checklist.checklistID);
-                          return CheckboxListTile(
-                            title: Text(checklist.item),
-                            value: isSelected,
-                            onChanged: (value) {
-                              setDialogState(() {
-                                if (value == true) {
-                                  selectedChecklists.add(checklist);
-                                } else {
-                                  selectedChecklists.removeWhere((c) => c.checklistID == checklist.checklistID);
-                                }
-                              });
-                            },
-                            activeColor: Theme.of(context).colorScheme.primary,
-                          );
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: Theme.of(context).cardTheme.color,
+          title: Text('Select Checklists', style: Theme.of(context).textTheme.headlineSmall),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Search checklists...',
+                    prefixIcon: Icon(Icons.search, color: Theme.of(context).colorScheme.primary),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onChanged: (value) {
+                    setDialogState(() {
+                      filteredChecklists = allChecklists.where((checklist) =>
+                          checklist.item.toLowerCase().contains(value.toLowerCase())).toList();
+                    });
+                  },
+                ),
+                const CustomSpacer(height: 12),
+                SizedBox(
+                  height: 300,
+                  child: ListView.builder(
+                    itemCount: filteredChecklists.length,
+                    itemBuilder: (context, index) {
+                      final checklist = filteredChecklists[index];
+                      final isSelected = selectedChecklists.any((c) => c.checklistID == checklist.checklistID);
+                      return CheckboxListTile(
+                        title: Text(checklist.item),
+                        value: isSelected,
+                        onChanged: (value) {
+                          setDialogState(() {
+                            if (value == true) {
+                              selectedChecklists.add(checklist);
+                            } else {
+                              selectedChecklists.removeWhere((c) => c.checklistID == checklist.checklistID);
+                            }
+                          });
                         },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    if (kDebugMode) print('Checklist dialog cancelled');
-                    Navigator.pop(context);
-                  },
-                  child: Text('Cancel',
-                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
-                ),
-                CustomButton(
-                  label: 'Confirm',
-                  onPressed: () {
-                    if (kDebugMode) print('Checklists confirmed: ${selectedChecklists.length} selected');
-                    setState(() => _selectedChecklists = selectedChecklists);
-                    Navigator.pop(context);
-                  },
+                        activeColor: Theme.of(context).colorScheme.primary,
+                      );
+                    },
+                  ),
                 ),
               ],
-            );
-          },
-        );
-      },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cancel', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
+            ),
+            CustomButton(
+              label: 'Confirm',
+              onPressed: () {
+                setState(() => _selectedChecklists = selectedChecklists);
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 
   Future<void> _showReasonDialog(BuildContext context, ReasonProvider reasonProvider) async {
-    if (kDebugMode) print('Showing reason dialog');
     final allReasons = reasonProvider.allReasons;
     final selectedReasons = List<Reason>.from(_selectedReasons);
     final TextEditingController searchController = TextEditingController();
@@ -433,139 +409,113 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
 
     await showDialog(
       context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              backgroundColor: Theme.of(context).cardTheme.color,
-              title: Text('Select Reasons', style: Theme.of(context).textTheme.headlineSmall),
-              content: SizedBox(
-                width: double.maxFinite,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(
-                      controller: searchController,
-                      decoration: InputDecoration(
-                        hintText: 'Search reasons...',
-                        prefixIcon: Icon(Icons.search, color: Theme.of(context).colorScheme.primary),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      onChanged: (value) {
-                        setDialogState(() {
-                          filteredReasons = allReasons
-                              .where((reason) => reason.item.toLowerCase().contains(value.toLowerCase()))
-                              .toList();
-                        });
-                      },
-                    ),
-                    const CustomSpacer(height: 12),
-                    SizedBox(
-                      height: 300,
-                      child: ListView.builder(
-                        itemCount: filteredReasons.length,
-                        itemBuilder: (context, index) {
-                          final reason = filteredReasons[index];
-                          final isSelected = selectedReasons.any((r) => r.reasonID == reason.reasonID);
-                          return CheckboxListTile(
-                            title: Text(reason.item),
-                            value: isSelected,
-                            onChanged: (value) {
-                              setDialogState(() {
-                                if (value == true) {
-                                  selectedReasons.add(reason);
-                                } else {
-                                  selectedReasons.removeWhere((r) => r.reasonID == reason.reasonID);
-                                }
-                              });
-                            },
-                            activeColor: Theme.of(context).colorScheme.primary,
-                          );
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: Theme.of(context).cardTheme.color,
+          title: Text('Select Reasons', style: Theme.of(context).textTheme.headlineSmall),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Search reasons...',
+                    prefixIcon: Icon(Icons.search, color: Theme.of(context).colorScheme.primary),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onChanged: (value) {
+                    setDialogState(() {
+                      filteredReasons = allReasons.where((reason) =>
+                          reason.item.toLowerCase().contains(value.toLowerCase())).toList();
+                    });
+                  },
+                ),
+                const CustomSpacer(height: 12),
+                SizedBox(
+                  height: 300,
+                  child: ListView.builder(
+                    itemCount: filteredReasons.length,
+                    itemBuilder: (context, index) {
+                      final reason = filteredReasons[index];
+                      final isSelected = selectedReasons.any((r) => r.reasonID == reason.reasonID);
+                      return CheckboxListTile(
+                        title: Text(reason.item),
+                        value: isSelected,
+                        onChanged: (value) {
+                          setDialogState(() {
+                            if (value == true) {
+                              selectedReasons.add(reason);
+                            } else {
+                              selectedReasons.removeWhere((r) => r.reasonID == reason.reasonID);
+                            }
+                          });
                         },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    if (kDebugMode) print('Reason dialog cancelled');
-                    Navigator.pop(context);
-                  },
-                  child: Text('Cancel',
-                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
-                ),
-                CustomButton(
-                  label: 'Confirm',
-                  onPressed: () {
-                    if (kDebugMode) print('Reasons confirmed: ${selectedReasons.length} selected');
-                    setState(() => _selectedReasons = selectedReasons);
-                    Navigator.pop(context);
-                  },
+                        activeColor: Theme.of(context).colorScheme.primary,
+                      );
+                    },
+                  ),
                 ),
               ],
-            );
-          },
-        );
-      },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cancel', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
+            ),
+            CustomButton(
+              label: 'Confirm',
+              onPressed: () {
+                setState(() => _selectedReasons = selectedReasons);
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 
   void _onPhoneChanged(String value, AgentProvider agentProvider) {
-    if (kDebugMode) print('Phone number changed: $value');
     setState(() {
       _agentPhone = value;
       _phoneError = null;
     });
-
     if (_debounce?.isActive ?? false) _debounce!.cancel();
     _debounce = Timer(const Duration(milliseconds: 500), () async {
       if (value.isEmpty) {
-        if (kDebugMode) print('Phone cleared');
         setState(() {
           _selectedAgentId = null;
-          _location = null;
-          agentProvider.agents.clear();
+          _selectedRegionId = null;
+          _selectedGovernorateId = null;
+          _selectedDelegationId = null;
+          agentProvider.clearAgents();
         });
       } else if (value.length >= 8) {
         try {
-          if (!CookieManager.cookies.containsKey('accessToken')) {
-            if (kDebugMode) print('No accessToken, loading cookies');
-            await CookieManager.loadCookies();
-          }
           await agentProvider.fetchAgentByPhone(value);
           final agent = agentProvider.currentAgent;
           if (agent != null) {
             setState(() {
               _selectedAgentId = agent.agentID;
-              _location = agent.location;
-              agentProvider.agents.clear();
-              agentProvider.agents.add(agent);
-              if (kDebugMode) print('Agent found by phone: ${_selectedAgentId}');
+              _selectedDelegationId = agent.delegationID;
+              _phoneError = null;
             });
           } else {
             setState(() {
-              _phoneError = 'Agent not found with this phone number';
+              _phoneError = 'Agent not found';
               _selectedAgentId = null;
-              _location = null;
-              agentProvider.agents.clear();
-              if (kDebugMode) print('No agent found for phone');
+              _selectedDelegationId = null;
             });
           }
         } catch (e) {
-          if (kDebugMode) print('Error fetching agent by phone: $e');
           setState(() {
             _phoneError = 'Error fetching agent: $e';
             _selectedAgentId = null;
-            _location = null;
-            agentProvider.agents.clear();
+            _selectedDelegationId = null;
           });
-          if (e.toString().contains('401')) {
-            final authProvider = Provider.of<AuthProvider>(context, listen: false);
-            await authProvider.logout();
-            Navigator.pushReplacementNamed(context, '/login');
-          }
         }
       }
     });
@@ -584,93 +534,71 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
     );
 
     if (selectedDate.isBefore(DateTime(now.year, now.month, now.day))) {
-      if (kDebugMode) print('Invalid date: before today');
       _showSnackBar('Date cannot be before today');
       return false;
     }
     if (selectedDate.day == now.day && selectedDateTime.isBefore(now)) {
-      if (kDebugMode) print('Invalid time: before now for today');
       _showSnackBar('Time cannot be before now for today');
       return false;
     }
-
     if (_selectedAgentId == null) {
-      if (kDebugMode) print('Validation failed: no agent selected');
       _showSnackBar('An agent must be selected');
       return false;
     }
-    if (_location == null) {
-      if (kDebugMode) print('Validation failed: no location selected');
-      _showSnackBar('A location must be selected');
+    if (_selectedDelegationId == null) {
+      _showSnackBar('A delegation must be selected');
       return false;
     }
     if (_selectedChecklists.isEmpty) {
-      if (kDebugMode) print('Validation failed: no checklists selected');
-      _showSnackBar('At least one checklist item is required');
+      _showSnackBar('At least one checklist is required');
       return false;
     }
     if (_selectedReasons.isEmpty) {
-      if (kDebugMode) print('Validation failed: no reasons selected');
       _showSnackBar('At least one reason is required');
       return false;
     }
-
     return true;
   }
 
   void _submitVisit() async {
-    if (_isLoading) {
-      if (kDebugMode) print('Submit blocked: already loading');
-      return;
-    }
+    if (_isLoading || !_formKey.currentState!.validate() || !_validateInputs()) return;
+    setState(() => _isLoading = true);
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final timesheetProvider = Provider.of<TimesheetProvider>(context, listen: false);
+    final locationProvider = Provider.of<LocationProvider>(context, listen: false);
 
-    if (_formKey.currentState!.validate() && _validateInputs()) {
-      if (kDebugMode) print('Submitting visit');
-      setState(() => _isLoading = true);
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final timesheetProvider = Provider.of<TimesheetProvider>(context, listen: false);
+    try {
+      final region = locationProvider.regions.firstWhere((r) => r.regionID == _selectedRegionId, orElse: () => null);
+      final governorate = locationProvider.governorates.firstWhere((g) => g.governorateID == _selectedGovernorateId, orElse: () => null);
+      final delegation = locationProvider.delegations.firstWhere((d) => d.delegationID == _selectedDelegationId, orElse: () => null);
+      final location = [region?.name, governorate?.name, delegation?.name].where((e) => e != null).join(', ');
 
-      try {
-        if (!CookieManager.cookies.containsKey('accessToken')) {
-          if (kDebugMode) print('No accessToken, loading cookies');
-          await CookieManager.loadCookies();
-        }
-        final supervisorID = authProvider.user?.userID;
+      final checklistUpdates = _selectedChecklists.map((c) => {'id': c.checklistID}).toList();
+      final reasonUpdates = _selectedReasons.map((r) => {'id': r.reasonID}).toList();
 
-        final checklistUpdates = _selectedChecklists.map((c) => {'id': c.checklistID}).toList();
-        final reasonUpdates = _selectedReasons.map((r) => {'id': r.reasonID}).toList();
+      final visit = {
+        'date': _selectedDate!.toIso8601String().split('T')[0],
+        'time': _selectedTime!.format(context).toLowerCase().replaceAll(' ', ''),
+        'agentID': _selectedAgentId!,
+        'location': location,
+        'reasons': reasonUpdates,
+        'checklists': checklistUpdates,
+      };
 
-        final visit = {
-          'date': _selectedDate!.toIso8601String().split('T')[0],
-          'time': _selectedTime!.format(context).toLowerCase().replaceAll(' ', ''),
-          'agentID': _selectedAgentId!,
-          'location': _location!,
-          'reasons': reasonUpdates,
-          'checklists': checklistUpdates,
-        };
+      await timesheetProvider.createTimesheetForSupervisor(
+        weekNumber: _getWeekNumber(_selectedDate!),
+        year: _selectedDate!.year,
+        supervisorID: authProvider.user!.userID,
+        visits: [visit],
+        status: 'pending',
+      );
 
-        if (kDebugMode) print('Submitting visit payload: ${json.encode(visit)}');
-
-        await timesheetProvider.createTimesheet(
-          weekNumber: _getWeekNumber(_selectedDate!),
-          year: _selectedDate!.year,
-          supervisorID: supervisorID!,
-          visits: [visit],
-        );
-
-        if (kDebugMode) print('Visit created successfully');
-        Navigator.pop(context);
-        _showSnackBar('Visit created successfully');
-      } catch (e) {
-        if (kDebugMode) print('Error creating visit: $e');
-        _showSnackBar('Failed to create visit: $e');
-        if (e.toString().contains('401')) {
-          await authProvider.logout();
-          Navigator.pushReplacementNamed(context, '/login');
-        }
-      } finally {
-        if (mounted) setState(() => _isLoading = false);
-      }
+      Navigator.pop(context);
+      _showSnackBar('Visit created successfully');
+    } catch (e) {
+      _showSnackBar('Failed to create visit: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -684,17 +612,13 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
               : Theme.of(context).colorScheme.error,
         ),
       );
-      if (kDebugMode) print('SnackBar shown: $message');
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: CustomAppBar(
-        title: 'Create Visit',
-        showBackButton: true,
-      ),
+      appBar: CustomAppBar(title: 'Create Visit', showBackButton: true),
       drawer: const AppSidebar(),
       body: Container(
         color: Theme.of(context).scaffoldBackgroundColor,
@@ -731,8 +655,8 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                 const CustomSpacer(height: 16),
                 _buildSectionCard(
                   title: 'Location & Agent',
-                  child: Consumer<AgentProvider>(
-                    builder: (context, agentProvider, child) {
+                  child: Consumer2<AgentProvider, LocationProvider>(
+                    builder: (context, agentProvider, locationProvider, child) {
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -741,8 +665,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                             decoration: BoxDecoration(
                               color: Theme.of(context).colorScheme.surface,
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
+                              border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
                             ),
                             child: Row(
                               children: [
@@ -757,12 +680,10 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                                     decoration: InputDecoration(
                                       hintText: 'Enter agent\'s phone number',
                                       border: InputBorder.none,
-                                      hintStyle: TextStyle(
-                                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                                      hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
                                       counterText: '',
                                     ),
-                                    style:
-                                    TextStyle(fontSize: 16, color: Theme.of(context).colorScheme.onSurface),
+                                    style: TextStyle(fontSize: 16, color: Theme.of(context).colorScheme.onSurface),
                                     onChanged: (value) => _onPhoneChanged(value, agentProvider),
                                   ),
                                 ),
@@ -778,16 +699,13 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                           ],
                           const CustomSpacer(height: 12),
                           GestureDetector(
-                            onTap: _agentPhone.isNotEmpty
-                                ? null
-                                : () => _showLocationDialog(context, agentProvider),
+                            onTap: _agentPhone.isNotEmpty ? null : () => _showLocationDialog(context, 'region'),
                             child: Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
                                 color: Theme.of(context).colorScheme.surface,
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
+                                border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
                                 backgroundBlendMode: _agentPhone.isNotEmpty ? BlendMode.saturation : null,
                               ),
                               child: Row(
@@ -801,10 +719,9 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                                   const CustomSpacer(width: 12),
                                   Expanded(
                                     child: Text(
-                                      _location ??
-                                          (_agentPhone.isNotEmpty
-                                              ? 'Selected via phone'
-                                              : 'Select Location'),
+                                      _selectedRegionId == null
+                                          ? 'Select Region'
+                                          : locationProvider.regions.firstWhere((r) => r.regionID == _selectedRegionId).name,
                                       style: TextStyle(
                                         color: _agentPhone.isNotEmpty
                                             ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
@@ -812,17 +729,92 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                                       ),
                                     ),
                                   ),
-                                  Icon(
-                                    Icons.arrow_drop_down,
-                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                                  ),
+                                  Icon(Icons.arrow_drop_down, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
                                 ],
                               ),
                             ),
                           ),
                           const CustomSpacer(height: 12),
                           GestureDetector(
-                            onTap: _agentPhone.isNotEmpty || _location == null
+                            onTap: _agentPhone.isNotEmpty || _selectedRegionId == null
+                                ? null
+                                : () => _showLocationDialog(context, 'governorate'),
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.surface,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
+                                backgroundBlendMode: _agentPhone.isNotEmpty || _selectedRegionId == null ? BlendMode.saturation : null,
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.location_city,
+                                    color: _agentPhone.isNotEmpty || _selectedRegionId == null
+                                        ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
+                                        : Theme.of(context).colorScheme.primary,
+                                  ),
+                                  const CustomSpacer(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      _selectedGovernorateId == null
+                                          ? 'Select Governorate'
+                                          : locationProvider.governorates.firstWhere((g) => g.governorateID == _selectedGovernorateId).name,
+                                      style: TextStyle(
+                                        color: _agentPhone.isNotEmpty || _selectedRegionId == null
+                                            ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
+                                            : Theme.of(context).colorScheme.onSurface,
+                                      ),
+                                    ),
+                                  ),
+                                  Icon(Icons.arrow_drop_down, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const CustomSpacer(height: 12),
+                          GestureDetector(
+                            onTap: _agentPhone.isNotEmpty || _selectedGovernorateId == null
+                                ? null
+                                : () => _showLocationDialog(context, 'delegation'),
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.surface,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
+                                backgroundBlendMode: _agentPhone.isNotEmpty || _selectedGovernorateId == null ? BlendMode.saturation : null,
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.place,
+                                    color: _agentPhone.isNotEmpty || _selectedGovernorateId == null
+                                        ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
+                                        : Theme.of(context).colorScheme.primary,
+                                  ),
+                                  const CustomSpacer(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      _selectedDelegationId == null
+                                          ? 'Select Delegation'
+                                          : locationProvider.delegations.firstWhere((d) => d.delegationID == _selectedDelegationId).name,
+                                      style: TextStyle(
+                                        color: _agentPhone.isNotEmpty || _selectedGovernorateId == null
+                                            ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
+                                            : Theme.of(context).colorScheme.onSurface,
+                                      ),
+                                    ),
+                                  ),
+                                  Icon(Icons.arrow_drop_down, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const CustomSpacer(height: 12),
+                          GestureDetector(
+                            onTap: _agentPhone.isNotEmpty || _selectedDelegationId == null
                                 ? null
                                 : () => _showAgentDialog(context, agentProvider),
                             child: Container(
@@ -830,16 +822,14 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                               decoration: BoxDecoration(
                                 color: Theme.of(context).colorScheme.surface,
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
-                                backgroundBlendMode:
-                                _agentPhone.isNotEmpty || _location == null ? BlendMode.saturation : null,
+                                border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
+                                backgroundBlendMode: _agentPhone.isNotEmpty || _selectedDelegationId == null ? BlendMode.saturation : null,
                               ),
                               child: Row(
                                 children: [
                                   Icon(
                                     Icons.person,
-                                    color: _agentPhone.isNotEmpty || _location == null
+                                    color: _agentPhone.isNotEmpty || _selectedDelegationId == null
                                         ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
                                         : Theme.of(context).colorScheme.primary,
                                   ),
@@ -849,35 +839,18 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                                       _selectedAgentId == null
                                           ? (_agentPhone.isNotEmpty
                                           ? 'Selected via phone'
-                                          : _location == null
-                                          ? 'Select a location first'
+                                          : _selectedDelegationId == null
+                                          ? 'Select a delegation first'
                                           : 'Select Agent')
-                                          : '${agentProvider.agents.firstWhere(
-                                            (agent) => agent.agentID == _selectedAgentId,
-                                        orElse: () => Agent(
-                                            agentID: _selectedAgentId!,
-                                            name: 'Loading',
-                                            lastname: '...',
-                                            location: ''),
-                                      ).name} ${agentProvider.agents.firstWhere(
-                                            (agent) => agent.agentID == _selectedAgentId,
-                                        orElse: () => Agent(
-                                            agentID: _selectedAgentId!,
-                                            name: 'Loading',
-                                            lastname: '...',
-                                            location: ''),
-                                      ).lastname}',
+                                          : '${agentProvider.agents.firstWhere((agent) => agent.agentID == _selectedAgentId).name} ${agentProvider.agents.firstWhere((agent) => agent.agentID == _selectedAgentId).lastname}',
                                       style: TextStyle(
-                                        color: _agentPhone.isNotEmpty || _location == null
+                                        color: _agentPhone.isNotEmpty || _selectedDelegationId == null
                                             ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
                                             : Theme.of(context).colorScheme.onSurface,
                                       ),
                                     ),
                                   ),
-                                  Icon(
-                                    Icons.arrow_drop_down,
-                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                                  ),
+                                  Icon(Icons.arrow_drop_down, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
                                 ],
                               ),
                             ),
@@ -902,8 +875,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                               decoration: BoxDecoration(
                                 color: Theme.of(context).colorScheme.surface,
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
+                                border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
                               ),
                               child: Row(
                                 children: [
@@ -917,8 +889,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                                       style: Theme.of(context).textTheme.bodyMedium,
                                     ),
                                   ),
-                                  Icon(Icons.arrow_drop_down,
-                                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                                  Icon(Icons.arrow_drop_down, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
                                 ],
                               ),
                             ),
@@ -928,18 +899,13 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                             Wrap(
                               spacing: 8,
                               runSpacing: 8,
-                              children: _selectedChecklists.map((checklist) {
-                                return Chip(
-                                  label: Text(checklist.item),
-                                  deleteIcon: const Icon(Icons.close, size: 18),
-                                  onDeleted: () {
-                                    setState(() => _selectedChecklists.remove(checklist));
-                                    if (kDebugMode) print('Removed checklist: ${checklist.checklistID}');
-                                  },
-                                  backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                                  labelStyle: TextStyle(color: Theme.of(context).colorScheme.primary),
-                                );
-                              }).toList(),
+                              children: _selectedChecklists.map((checklist) => Chip(
+                                label: Text(checklist.item),
+                                deleteIcon: const Icon(Icons.close, size: 18),
+                                onDeleted: () => setState(() => _selectedChecklists.remove(checklist)),
+                                backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                labelStyle: TextStyle(color: Theme.of(context).colorScheme.primary),
+                              )).toList(),
                             ),
                           ],
                         ],
@@ -962,8 +928,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                               decoration: BoxDecoration(
                                 color: Theme.of(context).colorScheme.surface,
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
+                                border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
                               ),
                               child: Row(
                                 children: [
@@ -977,8 +942,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                                       style: Theme.of(context).textTheme.bodyMedium,
                                     ),
                                   ),
-                                  Icon(Icons.arrow_drop_down,
-                                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                                  Icon(Icons.arrow_drop_down, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
                                 ],
                               ),
                             ),
@@ -988,18 +952,13 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                             Wrap(
                               spacing: 8,
                               runSpacing: 8,
-                              children: _selectedReasons.map((reason) {
-                                return Chip(
-                                  label: Text(reason.item),
-                                  deleteIcon: const Icon(Icons.close, size: 18),
-                                  onDeleted: () {
-                                    setState(() => _selectedReasons.remove(reason));
-                                    if (kDebugMode) print('Removed reason: ${reason.reasonID}');
-                                  },
-                                  backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                                  labelStyle: TextStyle(color: Theme.of(context).colorScheme.primary),
-                                );
-                              }).toList(),
+                              children: _selectedReasons.map((reason) => Chip(
+                                label: Text(reason.item),
+                                deleteIcon: const Icon(Icons.close, size: 18),
+                                onDeleted: () => setState(() => _selectedReasons.remove(reason)),
+                                backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                labelStyle: TextStyle(color: Theme.of(context).colorScheme.primary),
+                              )).toList(),
                             ),
                           ],
                         ],
@@ -1050,11 +1009,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
     );
   }
 
-  Widget _buildTile({
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-  }) {
+  Widget _buildTile({required IconData icon, required String title, required VoidCallback onTap}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -1068,14 +1023,8 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
           children: [
             Icon(icon, color: Theme.of(context).colorScheme.primary),
             const CustomSpacer(width: 12),
-            Expanded(
-              child: Text(
-                title,
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-            ),
-            Icon(Icons.arrow_drop_down,
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+            Expanded(child: Text(title, style: Theme.of(context).textTheme.bodyMedium)),
+            Icon(Icons.arrow_drop_down, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
           ],
         ),
       ),

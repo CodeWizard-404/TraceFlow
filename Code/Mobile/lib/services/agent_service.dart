@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../models/agent.dart';
+import '../models/user.dart';
 import '../utils/constants.dart';
 import '../services/cookie_manager.dart';
 
@@ -9,7 +10,7 @@ class AgentService {
   Future<Agent?> fetchAgentById(String id) async {
     if (kDebugMode) print('AgentService: Fetching agent by ID: $id');
     try {
-      final headers = await CookieManager.getHeaders();
+      final headers = CookieManager.getHeaders();
       if (kDebugMode) print('Headers prepared: $headers');
       final response = await http.get(
         Uri.parse('$baseUrl/agents/$id'),
@@ -44,7 +45,7 @@ class AgentService {
   Future<Agent?> fetchAgentByPhone(String phone) async {
     if (kDebugMode) print('AgentService: Fetching agent by phone: $phone');
     try {
-      final headers = await CookieManager.getHeaders();
+      final headers = CookieManager.getHeaders();
       if (kDebugMode) print('Headers prepared: $headers');
       final response = await http.get(
         Uri.parse('$baseUrl/agents/phone/$phone'),
@@ -84,7 +85,7 @@ class AgentService {
   Future<List<Agent>> fetchAgentsByLocation(String location) async {
     if (kDebugMode) print('AgentService: Fetching agents for location: $location');
     try {
-      final headers = await CookieManager.getHeaders();
+      final headers = CookieManager.getHeaders();
       if (kDebugMode) print('Headers prepared: $headers');
       final response = await http.get(
         Uri.parse('$baseUrl/agents/location?location=$location'),
@@ -116,7 +117,7 @@ class AgentService {
   Future<List<String>> fetchUniqueLocations() async {
     if (kDebugMode) print('AgentService: Fetching unique locations');
     try {
-      final headers = await CookieManager.getHeaders();
+      final headers = CookieManager.getHeaders();
       if (kDebugMode) print('Headers prepared: $headers');
       final response = await http.get(
         Uri.parse('$baseUrl/agents/locations'),
@@ -142,6 +143,62 @@ class AgentService {
     } catch (e) {
       if (kDebugMode) print('Error fetching unique locations: $e');
       throw Exception('Error fetching locations: $e');
+    }
+  }
+
+  Future<List<Agent>> getAgentsBySupervisor(String supervisorID) async {
+    if (kDebugMode) print('AgentService: Fetching agents by supervisor ID: $supervisorID');
+    try {
+      final headers = CookieManager.getHeaders();
+      final response = await http.get(
+        Uri.parse('$baseUrl/agents/supervisor/$supervisorID'),
+        headers: headers,
+      );
+
+      if (kDebugMode) print('Response status: ${response.statusCode}');
+      CookieManager.extractCookies(response);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final agents = (data['agents'] as List).map((json) => Agent.fromJson(json)).toList();
+        if (kDebugMode) print('Agents fetched: ${agents.length}');
+        return agents;
+      } else {
+        final error = 'Failed to fetch agents: ${response.statusCode}';
+        if (kDebugMode) print(error);
+        throw Exception(error);
+      }
+    } catch (e) {
+      if (kDebugMode) print('Error fetching agents by supervisor: $e');
+      throw Exception('Error fetching agents: $e');
+    }
+  }
+
+  Future<User> getSupervisorByAgent(String agentID) async {
+    if (kDebugMode) print('AgentService: Fetching supervisor by agent ID: $agentID');
+    try {
+      final headers = CookieManager.getHeaders();
+      final response = await http.get(
+        Uri.parse('$baseUrl/agents/agent/$agentID/supervisor'),
+        headers: headers,
+      );
+
+      if (kDebugMode) print('Response status: ${response.statusCode}');
+      CookieManager.extractCookies(response);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final supervisor = User.fromJson(data);
+        if (kDebugMode) print('Supervisor fetched: ${supervisor.userID}');
+        return supervisor;
+      } else {
+        final error = 'Failed to fetch supervisor: ${response.statusCode}';
+        if (kDebugMode) print(error);
+        throw Exception(error);
+      }
+    } catch (e) {
+      if (kDebugMode) print('Error fetching supervisor by agent: $e');
+      throw Exception('Error fetching supervisor: $e');
     }
   }
 }

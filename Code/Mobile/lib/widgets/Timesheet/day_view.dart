@@ -43,14 +43,13 @@ class DayView extends StatelessWidget {
         )
             : ListView.separated(
           shrinkWrap: true,
-          physics: NeverScrollableScrollPhysics(), // Disables internal scrolling
-
+          physics: const NeverScrollableScrollPhysics(),
           itemCount: visits.length,
           separatorBuilder: (context, index) => const SizedBox(height: 0),
           itemBuilder: (context, index) => AnimatedOpacity(
             opacity: 1.0,
             duration: const Duration(milliseconds: 300),
-            child: VisitItem(visits[index]),
+            child: VisitItem(visit: visits[index]),
           ),
         );
       },

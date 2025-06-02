@@ -19,6 +19,9 @@ class VisitProvider with ChangeNotifier {
     required int duration,
     required List<Map<String, dynamic>> checklistUpdates,
     String? comment,
+    String? date,
+    String? time,
+    String? status,
     List<String>? photoPaths,
   }) async {
     if (kDebugMode) print('VisitProvider.logVisit called for visitId: $visitId');
@@ -30,11 +33,17 @@ class VisitProvider with ChangeNotifier {
         if (kDebugMode) print('No accessToken, attempting to load cookies');
         await CookieManager.loadCookies();
       }
+      if (photoPaths == null || photoPaths.isEmpty) {
+        throw Exception('At least one photo is required to log a visit');
+      }
       _currentVisit = await VisitService.logVisit(
         visitId: visitId,
         duration: duration,
         checklistUpdates: checklistUpdates,
         comment: comment,
+        date: date,
+        time: time,
+        status: status,
         photoPaths: photoPaths,
       );
       if (kDebugMode) print('Logged visit: $visitId');
@@ -86,9 +95,11 @@ class VisitProvider with ChangeNotifier {
     String? status,
     String? comment,
     String? agentID,
+    String? supervisorID,
     List<Map<String, dynamic>>? checklists,
     List<Map<String, dynamic>>? reasons,
     List<String>? photoPaths,
+    List<String>? photosToRemove,
   }) async {
     if (kDebugMode) print('VisitProvider.updateVisit called for visitId: $visitId');
     _isLoading = true;
@@ -108,9 +119,11 @@ class VisitProvider with ChangeNotifier {
         status: status,
         comment: comment,
         agentID: agentID,
+        supervisorID: supervisorID,
         checklists: checklists,
         reasons: reasons,
         photoPaths: photoPaths,
+        photosToRemove: photosToRemove,
       );
       if (kDebugMode) print('Updated visit: $visitId');
     } catch (e) {
@@ -184,6 +197,90 @@ class VisitProvider with ChangeNotifier {
     }
   }
 
+  Future<Map<String, dynamic>> validateOTP({
+    required String visitId,
+    required String otpCode,
+  }) async {
+    if (kDebugMode) print('VisitProvider.validateOTP called for visitId: $visitId');
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      if (!CookieManager.cookies.containsKey('accessToken')) {
+        if (kDebugMode) print('No accessToken, attempting to load cookies');
+        await CookieManager.loadCookies();
+      }
+      final result = await VisitService.validateOTP(
+        visitId: visitId,
+        otpCode: otpCode,
+      );
+      if (kDebugMode) print('Validated OTP for visit: $visitId');
+      return result;
+    } catch (e) {
+      _errorMessage = 'Failed to validate OTP: $e';
+      if (kDebugMode) print(_errorMessage);
+      if (e.toString().contains('Invalid or expired token') || e.toString().contains('401')) {
+        await AuthService.logout();
+      }
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<Map<String, dynamic>> syncVisitToCalendar(String visitId) async {
+    if (kDebugMode) print('VisitProvider.syncVisitToCalendar called for visitId: $visitId');
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      if (!CookieManager.cookies.containsKey('accessToken')) {
+        if (kDebugMode) print('No accessToken, attempting to load cookies');
+        await CookieManager.loadCookies();
+      }
+      final result = await VisitService.syncVisitToCalendar(visitId);
+      if (kDebugMode) print('Synced visit to calendar: $visitId');
+      return result;
+    } catch (e) {
+      _errorMessage = 'Failed to sync visit to calendar: $e';
+      if (kDebugMode) print(_errorMessage);
+      if (e.toString().contains('Invalid or expired token') || e.toString().contains('401')) {
+        await AuthService.logout();
+      }
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> listCalendarEvents(String timesheetId) async {
+    if (kDebugMode) print('VisitProvider.listCalendarEvents called for timesheetId: $timesheetId');
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      if (!CookieManager.cookies.containsKey('accessToken')) {
+        if (kDebugMode) print('No accessToken, attempting to load cookies');
+        await CookieManager.loadCookies();
+      }
+      final result = await VisitService.listCalendarEvents(timesheetId);
+      if (kDebugMode) print('Listed calendar events for timesheet: $timesheetId');
+      return result;
+    } catch (e) {
+      _errorMessage = 'Failed to list calendar events: $e';
+      if (kDebugMode) print(_errorMessage);
+      if (e.toString().contains('Invalid or expired token') || e.toString().contains('401')) {
+        await AuthService.logout();
+      }
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   void startVisitTimer() {
     if (kDebugMode) print('VisitProvider.startVisitTimer called');
     _startTime = DateTime.now();
@@ -192,7 +289,7 @@ class VisitProvider with ChangeNotifier {
 
   int? getElapsedTimeInMinutes() {
     final elapsed = _startTime != null ? DateTime.now().difference(_startTime!).inMinutes : null;
-    if (kDebugMode && elapsed != null) {}
+    if (kDebugMode && elapsed != null) print('Elapsed time: $elapsed minutes');
     return elapsed;
   }
 

@@ -1,3 +1,4 @@
+import 'package:TraceFlow/providers/location_provider.dart';
 import 'package:TraceFlow/screens/Auth/ProfileScreen.dart';
 import 'package:TraceFlow/screens/Auth/Verify2FAScreen.dart';
 import 'package:flutter/foundation.dart';
@@ -33,28 +34,28 @@ void main() {
   // Suppress specific debug logs
   debugPrint = (String? message, {int? wrapWidth}) {
     if (message != null && (message.contains("EGL_emulation") || message.contains("libEGL"))) return;
-    print(message);
   };
 
   runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => AgentProvider()),
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => NotificationProvider()),
-        ChangeNotifierProvider(create: (_) => ChecklistProvider()),
-        ChangeNotifierProvider(create: (_) => ReasonProvider()),
-        ChangeNotifierProvider(create: (_) => ReceiptBookProvider()),
-        ChangeNotifierProvider(create: (_) => ReceiptStubProvider()),
-        ChangeNotifierProvider(create: (_) => TimesheetProvider()),
-        ChangeNotifierProvider(create: (_) => VisitProvider()),
-        ChangeNotifierProvider(create: (_) => UserProvider()),
-        ChangeNotifierProvider(create: (_) => RoleProvider()),
-        ChangeNotifierProvider(create: (_) => PermissionProvider()),
-        ChangeNotifierProvider(create: (_) => ThemeProvider()),
-      ],
-      child: const MyApp(),
-    ),
+      MultiProvider(
+          providers: [
+          ChangeNotifierProvider(create: (_) => AgentProvider()),
+  ChangeNotifierProvider(create: (_) => AuthProvider()),
+  ChangeNotifierProvider(create: (_) => NotificationProvider()),
+  ChangeNotifierProvider(create: (_) => ChecklistProvider()),
+  ChangeNotifierProvider(create: (_) => ReasonProvider()),
+  ChangeNotifierProvider(create: (_) => ReceiptBookProvider()),
+  ChangeNotifierProvider(create: (_) => ReceiptStubProvider()),
+  ChangeNotifierProvider(create: (_) => TimesheetProvider()),
+  ChangeNotifierProvider(create: (_) => VisitProvider()),
+  ChangeNotifierProvider(create: (_) => UserProvider()),
+  ChangeNotifierProvider(create: (_) => RoleProvider()),
+  ChangeNotifierProvider(create: (_) => PermissionProvider()),
+  ChangeNotifierProvider(create: (_) => ThemeProvider()),
+  ChangeNotifierProvider(create: (_) => LocationProvider()),
+  ],
+  child: const MyApp(),
+  ),
   );
 }
 
@@ -103,10 +104,10 @@ class AuthWrapper extends StatefulWidget {
   const AuthWrapper({super.key});
 
   @override
-  _AuthWrapperState createState() => _AuthWrapperState();
+  AuthWrapperState createState() => AuthWrapperState();
 }
 
-class _AuthWrapperState extends State<AuthWrapper> {
+class AuthWrapperState extends State<AuthWrapper> {
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
@@ -150,7 +151,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       notificationProvider.initialize(
-        authProvider.user!.userID!,
+        authProvider.user!.userID,
         authProvider.userRoles ?? [],
       );
     });
@@ -163,10 +164,10 @@ class NavigationShell extends StatefulWidget {
   const NavigationShell({super.key});
 
   @override
-  _NavigationShellState createState() => _NavigationShellState();
+  NavigationShellState createState() => NavigationShellState();
 }
 
-class _NavigationShellState extends State<NavigationShell> with RouteAware {
+class NavigationShellState extends State<NavigationShell> with RouteAware {
   int _selectedIndex = 0;
   String _currentRoute = '/timesheet-details';
   static const List<String> _mainRoutes = [

@@ -1,0 +1,20 @@
+// routes/timesheets.js
+const express = require('express');
+const router = express.Router();
+const { requirePermission } = require('../config/security');
+const TimesheetController = require('../controllers/timesheetController');
+
+router.post('/manager', requirePermission('create_timesheets_for_supervisor'), TimesheetController.createTimesheet);
+router.post('/supervisor', requirePermission('create_self_timesheets'), TimesheetController.createTimesheet);
+router.put('/:id/validate', requirePermission('validate_timesheets'), TimesheetController.validateTimesheet);
+router.get('/', requirePermission('access_all_timesheets'), TimesheetController.getAllTimesheets);
+router.get('/:id', requirePermission('access_timesheet_details'), TimesheetController.getTimesheetById);
+router.get('/supervisor/:supervisorID', requirePermission('access_supervisor_timesheets'), TimesheetController.getTimesheetsBySupervisor);
+router.get('/week/:weekNumber/year/:year/supervisor/:supervisorID', requirePermission('access_timesheets_by_week_and_year'), TimesheetController.getTimesheetByWeekNumberAndYear);
+
+
+router.post('/suggest', requirePermission('suggest_timesheets'), TimesheetController.suggestTimesheet);
+router.post('/:id/sync-calendar', requirePermission('sync_timesheet_to_calendar'), TimesheetController.syncTimesheetToCalendar);
+router.post('/suggest/cancel/:requestId', requirePermission('suggest_timesheets'), TimesheetController.cancelTimesheetSuggestion);
+
+module.exports = router;

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../providers/timesheet_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../commen/empty_state.dart';
 
 class MonthView extends StatelessWidget {
@@ -15,13 +16,11 @@ class MonthView extends StatelessWidget {
     final lastDay = DateTime(month.year, month.month + 1, 0);
     final days = <DateTime>[];
 
-    // Calculate the offset to start the week on Monday
-    int weekdayOffset = (firstDay.weekday - 1) % 7; // Monday = 0, Tuesday = 1, ..., Sunday = 6
+    int weekdayOffset = (firstDay.weekday - 1) % 7;
     for (int i = 0; i < weekdayOffset; i++) {
-      days.add(DateTime(0)); // Placeholder for empty cells before the 1st
+      days.add(DateTime(0));
     }
 
-    // Add all days of the month
     for (int i = 0; i < lastDay.day; i++) {
       days.add(firstDay.add(Duration(days: i)));
     }
@@ -38,8 +37,7 @@ class MonthView extends StatelessWidget {
           ? DateTime(visit.date!.year, visit.date!.month, visit.date!.day)
           : null;
       return visitDate != null && visitDate.isAtSameMomentAs(localDayStart);
-    })
-        .toList();
+    }).toList();
     return {
       'count': visits.length,
       'preview': visits.isNotEmpty ? visits.take(1).map((v) => v.location ?? 'N/A').join(', ') : '',
@@ -56,15 +54,12 @@ class MonthView extends StatelessWidget {
       return visitDate != null &&
           visitDate.isAfter(firstDay.subtract(const Duration(days: 1))) &&
           visitDate.isBefore(lastDay.add(const Duration(days: 1)));
-    })
-        .length;
+    }).length;
   }
 
   bool _isToday(DateTime day) {
     final today = DateTime.now();
-    return day.year == today.year &&
-        day.month == today.month &&
-        day.day == today.day;
+    return day.year == today.year && day.month == today.month && day.day == today.day;
   }
 
   @override
@@ -72,6 +67,8 @@ class MonthView extends StatelessWidget {
     final theme = Theme.of(context);
     final days = _getMonthDays(date);
     final dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    final authProvider = Provider.of<AuthProvider>(context);
+    final isSupervisor = authProvider.user?.roles?.contains('SUPERVISOR') ?? false;
 
     return Consumer<TimesheetProvider>(
       builder: (context, provider, child) {
@@ -81,7 +78,36 @@ class MonthView extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Day names header
+            if (isSupervisor)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.calendar_today),
+                    onPressed: () async {
+                      final timesheet = provider.timesheets.firstWhere(
+                            (ts) => ts.year == date.year && ts.weekNumber == _getWeekNumber(date),
+                        orElse: () => provider.timesheets.first,
+                      );
+                      await provider.syncTimesheetToCalendar(timesheet.timesheetID);
+                    },
+                    tooltip: 'Sync to Calendar',
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.map),
+                    onPressed: () {
+                      // Navigate to a map screen with month’s visits
+                      Navigator.pushNamed(context, '/visits_map', arguments: {
+                        'visits': provider.timesheets
+                            .expand((t) => t.visits ?? [])
+                            .where((v) => v.date.month == date.month)
+                            .toList(),
+                      });
+                    },
+                    tooltip: 'View Visits on Map',
+                  ),
+                ],
+              ),
             Row(
               children: dayNames.map((name) {
                 final isWeekend = name == 'Sat' || name == 'Sun';
@@ -101,7 +127,6 @@ class MonthView extends StatelessWidget {
                 );
               }).toList(),
             ),
-            // Calendar grid
             GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -115,12 +140,12 @@ class MonthView extends StatelessWidget {
               itemBuilder: (context, index) {
                 final day = days[index];
                 if (day.year == 0) {
-                  return Container(); // Empty placeholder
+                  return Container();
                 }
 
                 final visitData = _getDayVisits(day, provider.timesheets);
                 final hasVisits = visitData['count'] > 0;
-                final isWeekend = day.weekday == 6 || day.weekday == 7; // Sat or Sun
+                final isWeekend = day.weekday == 6 || day.weekday == 7;
                 final isToday = _isToday(day);
 
                 return GestureDetector(
@@ -215,11 +240,13 @@ class MonthView extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text('Total Visits', style: theme.textTheme.bodySmall),
-                  Text('$totalVisits',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.primary,
-                        fontWeight: FontWeight.bold,
-                      )),
+                  Text(
+                    '$totalVisits',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -227,5 +254,13 @@ class MonthView extends StatelessWidget {
         );
       },
     );
+  }
+
+  int _getWeekNumber(DateTime date) {
+    final startOfYear = DateTime(date.year, 1, 1);
+    final firstMonday = startOfYear.weekday <= 4
+        ? startOfYear.subtract(Duration(days: startOfYear.weekday - 1))
+        : startOfYear.add(Duration(days: 8 - startOfYear.weekday));
+    return (date.difference(firstMonday).inDays ~/ 7) + 1;
   }
 }

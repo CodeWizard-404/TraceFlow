@@ -13,6 +13,9 @@ class VisitService {
     required int duration,
     required List<Map<String, dynamic>> checklistUpdates,
     String? comment,
+    String? date,
+    String? time,
+    String? status,
     List<String>? photoPaths,
   }) async {
     if (kDebugMode) print('VisitService.logVisit called for visitId: $visitId');
@@ -26,6 +29,9 @@ class VisitService {
         request.fields['duration'] = duration.toString();
         request.fields['checklistUpdates'] = json.encode(checklistUpdates);
         if (comment != null) request.fields['comment'] = comment;
+        if (date != null) request.fields['date'] = date;
+        if (time != null) request.fields['time'] = time;
+        if (status != null) request.fields['status'] = status;
         if (photoPaths != null && photoPaths.isNotEmpty) {
           for (var path in photoPaths) {
             request.files.add(
@@ -48,9 +54,10 @@ class VisitService {
         }
         throw Exception('Failed to log visit: $responseBody');
       },
-    ).then((data) {
+    ).then((response) {
+      final data = json.decode(response.body);
       if (data is Map<String, dynamic>) {
-        return Visit.fromJson(data);
+        return Visit.fromJson(data['visit']);
       }
       throw Exception('Invalid visit response format');
     });
@@ -73,7 +80,8 @@ class VisitService {
         }
         throw Exception('Failed to fetch visit: ${response.body}');
       },
-    ).then((data) {
+    ).then((response) {
+      final data = json.decode(response.body);
       if (data is Map<String, dynamic>) {
         return Visit.fromJson(data);
       }
@@ -90,9 +98,11 @@ class VisitService {
     String? status,
     String? comment,
     String? agentID,
+    String? supervisorID,
     List<Map<String, dynamic>>? checklists,
     List<Map<String, dynamic>>? reasons,
     List<String>? photoPaths,
+    List<String>? photosToRemove,
   }) async {
     if (kDebugMode) print('VisitService.updateVisit called for visitId: $visitId');
     return await AuthService.makeAuthenticatedRequest(
@@ -110,22 +120,20 @@ class VisitService {
         if (status != null) request.fields['status'] = status;
         if (comment != null) request.fields['comment'] = comment;
         if (agentID != null) request.fields['agentID'] = agentID;
+        if (supervisorID != null) request.fields['supervisorID'] = supervisorID;
         if (checklists != null) request.fields['checklists'] = json.encode(checklists);
         if (reasons != null) request.fields['reasons'] = json.encode(reasons);
+        if (photosToRemove != null) request.fields['photosToRemove'] = json.encode(photosToRemove);
 
         if (photoPaths != null && photoPaths.isNotEmpty) {
-          if (photoPaths.any((path) => !path.startsWith('/uploads/photos'))) {
-            for (var path in photoPaths) {
-              request.files.add(
-                await http.MultipartFile.fromPath(
-                  'photos',
-                  path,
-                  contentType: MediaType('image', 'jpeg'),
-                ),
-              );
-            }
-          } else {
-            request.fields['photosToRemove'] = json.encode(photoPaths);
+          for (var path in photoPaths.where((path) => !path.startsWith('/uploads/photos'))) {
+            request.files.add(
+              await http.MultipartFile.fromPath(
+                'photos',
+                path,
+                contentType: MediaType('image', 'jpeg'),
+              ),
+            );
           }
         }
 
@@ -140,9 +148,10 @@ class VisitService {
         }
         throw Exception('Failed to update visit: $responseBody');
       },
-    ).then((data) {
+    ).then((response) {
+      final data = json.decode(response.body);
       if (data is Map<String, dynamic>) {
-        return Visit.fromJson(data);
+        return Visit.fromJson(data['visit']);
       }
       throw Exception('Invalid visit response format');
     });
@@ -184,16 +193,99 @@ class VisitService {
         );
         if (kDebugMode) print('Response: ${response.statusCode}, ${response.body}');
         CookieManager.extractCookies(response);
-        if (response.statusCode == 200) {
+        if (response.statusCode == 200 || response.statusCode == 400) {
           return response;
         }
         throw Exception('Failed to verify QR code: ${response.body}');
       },
-    ).then((data) {
+    ).then((response) {
+      final data = json.decode(response.body);
       if (data is Map<String, dynamic>) {
         return data;
       }
       throw Exception('Invalid QR code response format');
+    });
+  }
+
+  static Future<Map<String, dynamic>> validateOTP({
+    required String visitId,
+    required String otpCode,
+  }) async {
+    if (kDebugMode) print('VisitService.validateOTP called for visitId: $visitId');
+    return await AuthService.makeAuthenticatedRequest(
+      request: () async {
+        final url = Uri.parse('$baseUrl/visits/$visitId/validate-otp');
+        if (kDebugMode) print('POST $url');
+        final response = await http.post(
+          url,
+          headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
+          body: json.encode({'visitId': visitId, 'otpCode': otpCode}),
+        );
+        if (kDebugMode) print('Response: ${response.statusCode}, ${response.body}');
+        CookieManager.extractCookies(response);
+        if (response.statusCode == 200) {
+          return response;
+        }
+        throw Exception('Failed to validate OTP: ${response.body}');
+      },
+    ).then((response) {
+      final data = json.decode(response.body);
+      if (data is Map<String, dynamic>) {
+        return data;
+      }
+      throw Exception('Invalid OTP response format');
+    });
+  }
+
+  static Future<Map<String, dynamic>> syncVisitToCalendar(String visitId) async {
+    if (kDebugMode) print('VisitService.syncVisitToCalendar called for visitId: $visitId');
+    return await AuthService.makeAuthenticatedRequest(
+      request: () async {
+        final url = Uri.parse('$baseUrl/visits/$visitId/sync-calendar');
+        if (kDebugMode) print('POST $url');
+        final response = await http.post(
+          url,
+          headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
+        );
+        if (kDebugMode) print('Response: ${response.statusCode}, ${response.body}');
+        CookieManager.extractCookies(response);
+        if (response.statusCode == 200) {
+          return response;
+        }
+        throw Exception('Failed to sync visit to calendar: ${response.body}');
+      },
+    ).then((response) {
+      final data = json.decode(response.body);
+      if (data is Map<String, dynamic>) {
+        return data;
+      }
+      throw Exception('Invalid calendar sync response format');
+    });
+  }
+
+  static Future<List<Map<String, dynamic>>> listCalendarEvents(String timesheetId) async {
+    if (kDebugMode) print('VisitService.listCalendarEvents called for timesheetId: $timesheetId');
+    return await AuthService.makeAuthenticatedRequest(
+      request: () async {
+        final url = Uri.parse('$baseUrl/visits/timesheet/$timesheetId/calendar-events');
+        if (kDebugMode) print('GET $url');
+        final response = await http.get(
+          url,
+          headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
+        );
+        if (kDebugMode) print('Response: ${response.statusCode}, ${response.body}');
+        CookieManager.extractCookies(response);
+        if (response.statusCode == 200) {
+          return response;
+        }
+        throw Exception('Failed to list calendar events: ${response.body}');
+      },
+    ).then((response) {
+      final data = json.decode(response.body);
+      if (data is List) {
+        return data.cast<Map<String, dynamic>>();
+      }
+      throw Exception('Invalid calendar events response format');
     });
   }
 }

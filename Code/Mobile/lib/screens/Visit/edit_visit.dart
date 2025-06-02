@@ -1,11 +1,10 @@
-import 'package:TraceFlow/widgets/appbar/sidebar.dart';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
-import 'dart:io';
 import '../../models/visit.dart';
 import '../../models/checklist.dart';
 import '../../models/reason.dart';
@@ -16,16 +15,12 @@ import '../../providers/visit_provider.dart';
 import '../../providers/checklist_provider.dart';
 import '../../providers/reason_provider.dart';
 import '../../providers/agent_provider.dart';
+import '../../providers/location_provider.dart';
 import '../../utils/constants.dart';
 import '../../widgets/appbar/app_bar.dart';
+import '../../widgets/appbar/sidebar.dart';
 import '../../widgets/commen/button.dart';
-import '../../widgets/commen/card.dart';
-import '../../widgets/commen/icon_button.dart';
-import '../../widgets/commen/progress_indicator.dart';
 import '../../widgets/commen/spacer.dart';
-import '../../widgets/commen/text_field.dart';
-import '../../widgets/commen/list_tile.dart';
-import '../../services/cookie_manager.dart';
 
 class EditVisitScreen extends StatefulWidget {
   final Visit visit;
@@ -42,7 +37,9 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
   late TextEditingController _timeController;
   late TextEditingController _agentPhoneController;
   late TextEditingController _commentController;
-  String? _selectedLocation;
+  String? _selectedRegionId;
+  String? _selectedGovernorateId;
+  String? _selectedDelegationId;
   String? _selectedAgentId;
   List<Checklist> _visitChecklists = [];
   List<Reason> _visitReasons = [];
@@ -56,15 +53,11 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
   @override
   void initState() {
     super.initState();
-    if (kDebugMode) print('EditVisitScreen initState for visit: ${widget.visit.visitID}');
     _visit = widget.visit;
-    _dateController = TextEditingController(
-      text: DateFormat('yyyy-MM-dd').format(_visit.date),
-    );
+    _dateController = TextEditingController(text: DateFormat('yyyy-MM-dd').format(_visit.date));
     _timeController = TextEditingController(text: _visit.time);
     _agentPhoneController = TextEditingController();
     _commentController = TextEditingController(text: _visit.comment ?? '');
-    _selectedLocation = _visit.location;
     _selectedAgentId = _visit.agentID;
     _visitChecklists = _visit.checklists != null ? List.from(_visit.checklists!) : [];
     _visitReasons = _visit.reasons != null ? List.from(_visit.reasons!) : [];
@@ -76,18 +69,13 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
     _commentController.addListener(_checkForChanges);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && !_isInitialized) {
-        _loadInitialData();
-      }
-      if (_visit.status == 'visited') {
-        _startEditTimer();
-      }
+      if (mounted && !_isInitialized) _loadInitialData();
+      if (_visit.status == 'visited') _startEditTimer();
     });
   }
 
   @override
   void dispose() {
-    if (kDebugMode) print('Disposing EditVisitScreen');
     _agentPhoneController.removeListener(_onPhoneNumberChanged);
     _dateController.removeListener(_checkForChanges);
     _timeController.removeListener(_checkForChanges);
@@ -101,16 +89,12 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
   }
 
   void _startEditTimer() {
-    if (kDebugMode) print('Starting edit timer');
     _editStartTime = DateTime.now();
   }
 
   void _onPhoneNumberChanged() {
     final phone = _agentPhoneController.text;
-    if (kDebugMode) print('Phone number changed: $phone');
-    if (phone.length == 8 && phone.contains(RegExp(r'^[0-9]+$'))) {
-      _fetchAgentByPhone(phone);
-    }
+    if (phone.length == 8 && phone.contains(RegExp(r'^[0-9]+$'))) _fetchAgentByPhone(phone);
     _checkForChanges();
   }
 
@@ -120,178 +104,127 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
           _timeController.text != _visit.time ||
           _agentPhoneController.text.isNotEmpty ||
           _commentController.text != (_visit.comment ?? '') ||
-          _selectedLocation != _visit.location ||
+          _selectedRegionId != null ||
+          _selectedGovernorateId != null ||
+          _selectedDelegationId != null ||
           _selectedAgentId != _visit.agentID ||
           _visitChecklists.length != (_visit.checklists?.length ?? 0) ||
           _visitReasons.length != (_visit.reasons?.length ?? 0) ||
           _photosToRemove.isNotEmpty ||
           _newPhotos.isNotEmpty ||
-          _visitChecklists.any((c) =>
-          c.visitChecklist?.checked !=
-              (_visit.checklists
-                  ?.firstWhere(
-                    (vc) => vc.checklistID == c.checklistID,
-                orElse: () => Checklist(checklistID: c.checklistID, item: c.item),
-              )
-                  .visitChecklist
-                  ?.checked ??
-                  false));
-      if (kDebugMode && _hasChanges) print('Changes detected');
+          _visitChecklists.any((c) => c.visitChecklist?.checked !=
+              (_visit.checklists?.firstWhere((vc) => vc.checklistID == c.checklistID, orElse: () => Checklist(checklistID: c.checklistID, item: c.item)).visitChecklist?.checked ?? false));
     });
   }
 
   Future<void> _fetchAgentByPhone(String phone) async {
-    if (kDebugMode) print('Fetching agent by phone: $phone');
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final agentProvider = Provider.of<AgentProvider>(context, listen: false);
-
     setState(() => _isLoading = true);
     try {
-      if (!CookieManager.cookies.containsKey('accessToken')) {
-        if (kDebugMode) print('No accessToken, loading cookies');
-        await CookieManager.loadCookies();
-      }
       await agentProvider.fetchAgentByPhone(phone);
       final newAgent = agentProvider.currentAgent;
       if (newAgent != null && newAgent.agentID != null) {
         setState(() {
           _selectedAgentId = newAgent.agentID;
-          if (kDebugMode) print('Agent found: ${newAgent.agentID}');
+          _selectedDelegationId = newAgent.delegationID;
         });
       } else {
         _showSnackBar('No agent found with this phone number');
       }
     } catch (e) {
-      if (kDebugMode) print('Error fetching agent: $e');
       _showSnackBar('Error fetching agent: $e');
-      if (e.toString().contains('401')) {
-        await authProvider.logout();
-        Navigator.pushReplacementNamed(context, '/login');
-      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
   Future<void> _loadInitialData() async {
-    if (kDebugMode) print('Loading initial data');
     setState(() => _isLoading = true);
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     try {
-      if (!CookieManager.cookies.containsKey('accessToken')) {
-        if (kDebugMode) print('No accessToken, loading cookies');
-        await CookieManager.loadCookies();
-      }
       final checklistProvider = Provider.of<ChecklistProvider>(context, listen: false);
       final reasonProvider = Provider.of<ReasonProvider>(context, listen: false);
       final agentProvider = Provider.of<AgentProvider>(context, listen: false);
+      final locationProvider = Provider.of<LocationProvider>(context, listen: false);
 
       await Future.wait([
+        locationProvider.getAllRegions(),
+        locationProvider.getAllGovernorates(),
+        locationProvider.getAllDelegations(),
+        agentProvider.getAgentsBySupervisor(authProvider.user!.userID),
         checklistProvider.getAllChecklists(),
         reasonProvider.getAllReasons(),
-        agentProvider.fetchUniqueLocations(),
-        if (_selectedLocation != null) agentProvider.fetchAgentsByLocation(_selectedLocation!),
       ]);
 
-      if (agentProvider.agents.isNotEmpty &&
-          !agentProvider.agents.any((a) => a.agentID == _selectedAgentId)) {
-        setState(() {
-          _selectedAgentId = agentProvider.agents.first.agentID;
-          if (kDebugMode) print('Selected first agent: $_selectedAgentId');
-        });
+      final location = _visit.location;
+      if (location != null) {
+        final parts = location.split(', ');
+        if (parts.length == 3) {
+          _selectedRegionId = locationProvider.regions.firstWhere((r) => r.name == parts[0], orElse: () => null)?.regionID;
+          _selectedGovernorateId = locationProvider.governorates.firstWhere((g) => g.name == parts[1], orElse: () => null)?.governorateID;
+          _selectedDelegationId = locationProvider.delegations.firstWhere((d) => d.name == parts[2], orElse: () => null)?.delegationID;
+        }
       }
 
       _isInitialized = true;
     } catch (e) {
-      if (kDebugMode) print('Error loading initial data: $e');
       _showSnackBar('Failed to load initial data: $e');
-      if (e.toString().contains('401')) {
-        await authProvider.logout();
-        Navigator.pushReplacementNamed(context, '/login');
-      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
   Future<void> _saveChanges() async {
-    if (_isLoading || !_hasChanges) {
-      if (kDebugMode) print('No changes to save or loading');
-      return;
-    }
-
-    if (!_validateInputs()) {
-      if (kDebugMode) print('Validation failed');
-      return;
-    }
-
-    if (kDebugMode) print('Saving changes for visit: ${_visit.visitID}');
+    if (_isLoading || !_hasChanges || !_validateInputs()) return;
     setState(() => _isLoading = true);
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final visitProvider = Provider.of<VisitProvider>(context, listen: false);
-    final agentProvider = Provider.of<AgentProvider>(context, listen: false);
+    final locationProvider = Provider.of<LocationProvider>(context, listen: false);
 
     try {
-      if (!CookieManager.cookies.containsKey('accessToken')) {
-        if (kDebugMode) print('No accessToken, loading cookies');
-        await CookieManager.loadCookies();
-      }
-      String? agentId = _selectedAgentId;
-      if (_agentPhoneController.text.isNotEmpty && _visit.status != 'visited') {
-        await agentProvider.fetchAgentByPhone(_agentPhoneController.text);
-        agentId = agentProvider.currentAgent?.agentID ?? _selectedAgentId;
-        if (kDebugMode) print('Agent ID from phone: $agentId');
+      String? location;
+      if (_selectedRegionId != null && _selectedGovernorateId != null && _selectedDelegationId != null) {
+        final region = locationProvider.regions.firstWhere((r) => r.regionID == _selectedRegionId);
+        final governorate = locationProvider.governorates.firstWhere((g) => g.governorateID == _selectedGovernorateId);
+        final delegation = locationProvider.delegations.firstWhere((d) => d.delegationID == _selectedDelegationId);
+        location = '${region.name}, ${governorate.name}, ${delegation.name}';
+      } else {
+        location = _visit.location;
       }
 
-      final checklistUpdates = _visitChecklists
-          .map((c) => {
+      final checklistUpdates = _visitChecklists.map((c) => {
         'id': c.checklistID,
         'checked': c.visitChecklist?.checked ?? false,
-      })
-          .toList();
+      }).toList();
 
       final reasonUpdates = _visitReasons.map((r) => {'id': r.reasonID}).toList();
 
       int? updatedDuration = _visit.duration;
       if (_visit.status == 'visited' && _editStartTime != null) {
-        final editDuration = DateTime.now().difference(_editStartTime!).inMinutes;
-        updatedDuration = (_visit.duration ?? 0) + editDuration;
-        if (kDebugMode) print('Updated duration: $updatedDuration minutes');
+        updatedDuration = (_visit.duration ?? 0) + DateTime.now().difference(_editStartTime!).inMinutes;
       }
 
       final newStatus = _visit.status == 'visited' ? 'visited' : 'pending';
-      final formattedDate = _visit.status == 'visited'
-          ? DateFormat('yyyy-MM-dd').format(_visit.date)
-          : _dateController.text;
+      final formattedDate = _visit.status == 'visited' ? DateFormat('yyyy-MM-dd').format(_visit.date) : _dateController.text;
 
       await visitProvider.updateVisit(
         visitId: _visit.visitID!,
         date: formattedDate,
         time: _visit.status == 'visited' ? _visit.time : _timeController.text,
-        location: _visit.status == 'visited' ? _visit.location : _selectedLocation,
+        location: _visit.status == 'visited' ? _visit.location : location,
         status: newStatus,
         duration: updatedDuration,
-        comment: _visit.status == 'visited' && _commentController.text.isNotEmpty
-            ? _commentController.text
-            : _visit.comment,
-        agentID: _visit.status == 'visited' ? _visit.agentID : agentId,
+        comment: _visit.status == 'visited' && _commentController.text.isNotEmpty ? _commentController.text : _visit.comment,
+        agentID: _visit.status == 'visited' ? _visit.agentID : _selectedAgentId,
         checklists: checklistUpdates,
-        reasons: reasonUpdates,
-        photoPaths: _newPhotos.isNotEmpty
-            ? _newPhotos.map((p) => p.path).toList()
-            : (_photosToRemove.isNotEmpty ? _photosToRemove : null),
+        reasons: _visit.status == 'visited' ? null : reasonUpdates,
+        photoPaths: _newPhotos.isNotEmpty ? _newPhotos.map((p) => p.path).toList() : null,
+        photosToRemove: _photosToRemove.isNotEmpty ? _photosToRemove : null,
       );
 
-      if (kDebugMode) print('Visit updated successfully');
       _showSnackBar('Visit updated successfully');
       if (mounted) Navigator.pop(context);
     } catch (e) {
-      if (kDebugMode) print('Error updating visit: $e');
       _showSnackBar('Failed to update visit: $e');
-      if (e.toString().contains('401')) {
-        await authProvider.logout();
-        Navigator.pushReplacementNamed(context, '/login');
-      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -311,34 +244,26 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
       );
 
       if (selectedDate.isBefore(DateTime(now.year, now.month, now.day))) {
-        if (kDebugMode) print('Invalid date: before today');
         _showSnackBar('Date cannot be before today');
         return false;
       }
       if (selectedDate.day == now.day && selectedDateTime.isBefore(now)) {
-        if (kDebugMode) print('Invalid time: before now for today');
         _showSnackBar('Time cannot be before now for today');
         return false;
       }
-
       if (_selectedAgentId == null) {
-        if (kDebugMode) print('Validation failed: no agent selected');
         _showSnackBar('An agent must be selected');
         return false;
       }
     }
-
     if (_visitChecklists.isEmpty) {
-      if (kDebugMode) print('Validation failed: no checklists');
-      _showSnackBar('At least one checklist item is required');
+      _showSnackBar('At least one checklist is required');
       return false;
     }
-    if (_visitReasons.isEmpty) {
-      if (kDebugMode) print('Validation failed: no reasons');
+    if (_visitReasons.isEmpty && _visit.status != 'visited') {
       _showSnackBar('At least one reason is required');
       return false;
     }
-
     return true;
   }
 
@@ -352,13 +277,11 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
               : Theme.of(context).colorScheme.error,
         ),
       );
-      if (kDebugMode) print('SnackBar shown: $message');
     }
   }
 
   void _toggleChecklist(Checklist checklist, bool? value) {
     if (_visit.status != 'visited') return;
-    if (kDebugMode) print('Toggling checklist: ${checklist.checklistID} to $value');
     setState(() {
       final index = _visitChecklists.indexWhere((c) => c.checklistID == checklist.checklistID);
       if (index != -1) {
@@ -378,7 +301,6 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
 
   void _addChecklist(Checklist checklist) {
     if (!_visitChecklists.any((c) => c.checklistID == checklist.checklistID)) {
-      if (kDebugMode) print('Adding checklist: ${checklist.checklistID}');
       setState(() {
         _visitChecklists.add(
           Checklist(
@@ -397,7 +319,7 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
   }
 
   void _removeChecklist(String checklistId) {
-    if (kDebugMode) print('Removing checklist: $checklistId');
+    if (_visit.status == 'visited') return;
     setState(() {
       _visitChecklists.removeWhere((c) => c.checklistID == checklistId);
       _checkForChanges();
@@ -406,7 +328,6 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
 
   void _addReason(Reason reason) {
     if (!_visitReasons.any((r) => r.reasonID == reason.reasonID)) {
-      if (kDebugMode) print('Adding reason: ${reason.reasonID}');
       setState(() {
         _visitReasons.add(reason);
         _checkForChanges();
@@ -415,7 +336,7 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
   }
 
   void _removeReason(String reasonId) {
-    if (kDebugMode) print('Removing reason: $reasonId');
+    if (_visit.status == 'visited') return;
     setState(() {
       _visitReasons.removeWhere((r) => r.reasonID == reasonId);
       _checkForChanges();
@@ -423,7 +344,7 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
   }
 
   void _removePhoto(String photo) {
-    if (kDebugMode) print('Removing photo: $photo');
+    if (_visit.status != 'visited') return;
     setState(() {
       _photosToRemove.add(photo);
       _checkForChanges();
@@ -432,20 +353,17 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
 
   Future<void> _addNewPhoto() async {
     if (_visit.status != 'visited') return;
-    if (kDebugMode) print('Adding new photo');
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.camera);
     if (pickedFile != null) {
       setState(() {
         _newPhotos.add(File(pickedFile.path));
-        if (kDebugMode) print('New photo added: ${pickedFile.path}');
         _checkForChanges();
       });
     }
   }
 
   void _viewPhotoFullScreen(String photoPath) {
-    if (kDebugMode) print('Viewing photo: $photoPath');
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -455,10 +373,7 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
             child: Image.network(
               photoPath.startsWith('http') ? photoPath : '$baseUrl$photoPath',
               fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) {
-                if (kDebugMode) print('Error loading photo: $error');
-                return const Icon(Icons.error, color: Colors.white, size: 50);
-              },
+              errorBuilder: (context, error, stackTrace) => const Icon(Icons.error, color: Colors.white, size: 50),
             ),
           ),
           backgroundColor: Colors.black,
@@ -468,56 +383,49 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
   }
 
   Future<void> _pickDate() async {
-    if (kDebugMode) print('Picking date');
+    if (_visit.status == 'visited') return;
     final now = DateTime.now();
     final date = await showDatePicker(
       context: context,
       initialDate: _visit.date,
-      firstDate: DateTime(now.year, now.month, now.day),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-      selectableDayPredicate: (DateTime date) =>
-      date.weekday != DateTime.saturday && date.weekday != DateTime.sunday,
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: Theme.of(context).colorScheme.copyWith(
-              primary: Theme.of(context).colorScheme.primary,
-              onPrimary: Theme.of(context).colorScheme.onPrimary,
-              surface: Theme.of(context).colorScheme.surface,
-              onSurface: Theme.of(context).colorScheme.onSurface,
-            ),
+      firstDate: now,
+      lastDate: now.add(const Duration(days: 365)),
+      builder: (context, child) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: Theme.of(context).colorScheme.copyWith(
+            primary: Theme.of(context).colorScheme.primary,
+            onPrimary: Theme.of(context).colorScheme.onPrimary,
+            surface: Theme.of(context).colorScheme.surface,
+            onSurface: Theme.of(context).colorScheme.onSurface,
           ),
-          child: child!,
-        );
-      },
+        ),
+        child: child!,
+      ),
     );
     if (date != null && mounted) {
       setState(() {
         _dateController.text = DateFormat('yyyy-MM-dd').format(date);
-        if (kDebugMode) print('Date selected: ${_dateController.text}');
         _checkForChanges();
       });
     }
   }
 
   Future<void> _pickTime() async {
-    if (kDebugMode) print('Picking time');
+    if (_visit.status == 'visited') return;
     final now = DateTime.now();
     final initialTime = TimeOfDay.fromDateTime(DateFormat('HH:mm').parse(_timeController.text));
     final time = await showTimePicker(
       context: context,
       initialTime: initialTime,
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: Theme.of(context).colorScheme.copyWith(
-              primary: Theme.of(context).colorScheme.primary,
-              onPrimary: Theme.of(context).colorScheme.onPrimary,
-            ),
+      builder: (context, child) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: Theme.of(context).colorScheme.copyWith(
+            primary: Theme.of(context).colorScheme.primary,
+            onPrimary: Theme.of(context).colorScheme.onPrimary,
           ),
-          child: child!,
-        );
-      },
+        ),
+        child: child!,
+      ),
     );
     if (time != null && mounted) {
       final selectedDate = DateTime.parse(_dateController.text);
@@ -528,346 +436,344 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
         time.hour,
         time.minute,
       );
-      final isToday = selectedDate.day == now.day;
-
-      if (time.hour < 8 || time.hour >= 17 || (time.hour == 17 && time.minute > 0)) {
-        if (kDebugMode) print('Invalid time: outside 08:00-17:00');
-        _showSnackBar('Time must be between 08:00 and 17:00');
-        return;
-      }
-      if (isToday && selectedDateTime.isBefore(now)) {
-        if (kDebugMode) print('Invalid time: before now for today');
+      if (selectedDate.day == now.day && selectedDateTime.isBefore(now)) {
         _showSnackBar('Time cannot be before now for today');
         return;
       }
-
       setState(() {
         _timeController.text = '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
-        if (kDebugMode) print('Time selected: ${_timeController.text}');
         _checkForChanges();
       });
     }
   }
 
-  Future<void> _showLocationDialog(BuildContext context, AgentProvider agentProvider) async {
-    if (kDebugMode) print('Showing location dialog');
-    final locations = agentProvider.uniqueLocations;
+  Future<void> _showLocationDialog(BuildContext context, String type) async {
+    if (_visit.status == 'visited') return;
+    final locationProvider = Provider.of<LocationProvider>(context, listen: false);
+    List<dynamic> items;
+    String? selectedValue;
+    switch (type) {
+      case 'region':
+        items = locationProvider.regions;
+        selectedValue = _selectedRegionId;
+        break;
+      case 'governorate':
+        items = locationProvider.governorates.where((g) => g.regionID == _selectedRegionId).toList();
+        selectedValue = _selectedGovernorateId;
+        break;
+      case 'delegation':
+        items = locationProvider.delegations.where((d) => _selectedGovernorateId != null).toList();
+        selectedValue = _selectedDelegationId;
+        break;
+      default:
+        return;
+    }
+
     final TextEditingController searchController = TextEditingController();
-    List<String> filteredLocations = List.from(locations);
+    List<dynamic> filteredItems = List.from(items);
 
     await showDialog(
       context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              backgroundColor: Theme.of(context).cardTheme.color,
-              title: Text('Select Location', style: Theme.of(context).textTheme.headlineSmall),
-              content: SizedBox(
-                width: double.maxFinite,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CustomTextField(
-                      controller: searchController,
-                      label: 'Search locations...',
-                      prefixIcon: Icons.search,
-                      onSuffixPressed: null,
-                      onChanged: (value) {
-                        setDialogState(() {
-                          filteredLocations = locations
-                              .where((location) => location.toLowerCase().contains(value.toLowerCase()))
-                              .toList();
-                        });
-                      },
-                    ),
-                    const CustomSpacer(height: 12),
-                    SizedBox(
-                      height: 300,
-                      child: ListView.builder(
-                        itemCount: filteredLocations.length,
-                        itemBuilder: (context, index) {
-                          final location = filteredLocations[index];
-                          return CustomListTile(
-                            title: location,
-                            leadingIcon: Icons.location_on,
-                            onTap: () {
-                              if (kDebugMode) print('Location selected: $location');
-                              setState(() {
-                                _selectedLocation = location;
-                                _selectedAgentId = null;
-                                agentProvider.fetchAgentsByLocation(location);
-                                _checkForChanges();
-                              });
-                              Navigator.pop(context);
-                            },
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                CustomButton(
-                  label: 'Cancel',
-                  onPressed: () {
-                    if (kDebugMode) print('Location dialog cancelled');
-                    Navigator.pop(context);
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: Theme.of(context).cardTheme.color,
+          title: Text('Select $type', style: Theme.of(context).textTheme.headlineSmall),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Search ${type}s...',
+                    prefixIcon: Icon(Icons.search, color: Theme.of(context).colorScheme.primary),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onChanged: (value) {
+                    setDialogState(() {
+                      filteredItems = items.where((item) => item.name.toLowerCase().contains(value.toLowerCase())).toList();
+                    });
                   },
-                  backgroundColor: Theme.of(context).cardTheme.color,
+                ),
+                const CustomSpacer(height: 12),
+                SizedBox(
+                  height: 300,
+                  child: ListView.builder(
+                    itemCount: filteredItems.length,
+                    itemBuilder: (context, index) {
+                      final item = filteredItems[index];
+                      return RadioListTile<String>(
+                        title: Text(item.name),
+                        value: item.id,
+                        groupValue: selectedValue,
+                        onChanged: (value) {
+                          setState(() {
+                            if (type == 'region') {
+                              _selectedRegionId = value;
+                              _selectedGovernorateId = null;
+                              _selectedDelegationId = null;
+                            } else if (type == 'governorate') {
+                              _selectedGovernorateId = value;
+                              _selectedDelegationId = null;
+                            } else {
+                              _selectedDelegationId = value;
+                            }
+                            _selectedAgentId = null;
+                            _checkForChanges();
+                          });
+                          Navigator.pop(context);
+                        },
+                        activeColor: Theme.of(context).colorScheme.primary,
+                      );
+                    },
+                  ),
                 ),
               ],
-            );
-          },
-        );
-      },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cancel', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
   Future<void> _showAgentDialog(BuildContext context, AgentProvider agentProvider) async {
-    if (kDebugMode) print('Showing agent dialog');
-    final agents = agentProvider.agents;
+    if (_visit.status == 'visited') return;
+    final agents = agentProvider.agents.where((a) => _selectedDelegationId == null || a.delegationID == _selectedDelegationId).toList();
     final TextEditingController searchController = TextEditingController();
     List<Agent> filteredAgents = List.from(agents);
 
     await showDialog(
       context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              backgroundColor: Theme.of(context).cardTheme.color,
-              title: Text('Select Agent', style: Theme.of(context).textTheme.headlineSmall),
-              content: SizedBox(
-                width: double.maxFinite,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CustomTextField(
-                      controller: searchController,
-                      label: 'Search agents...',
-                      prefixIcon: Icons.search,
-                      onSuffixPressed: null,
-                      onChanged: (value) {
-                        setDialogState(() {
-                          filteredAgents = agents
-                              .where((agent) =>
-                          '${agent.name} ${agent.lastname}'.toLowerCase().contains(value.toLowerCase()) ||
-                              agent.agentID!.toLowerCase().contains(value.toLowerCase()))
-                              .toList();
-                        });
-                      },
-                    ),
-                    const CustomSpacer(height: 12),
-                    SizedBox(
-                      height: 300,
-                      child: ListView.builder(
-                        itemCount: filteredAgents.length,
-                        itemBuilder: (context, index) {
-                          final agent = filteredAgents[index];
-                          return CustomListTile(
-                            title: '${agent.name} ${agent.lastname}',
-                            leadingIcon: Icons.person,
-                            onTap: () {
-                              if (kDebugMode) print('Agent selected: ${agent.agentID}');
-                              setState(() {
-                                _selectedAgentId = agent.agentID;
-                                _checkForChanges();
-                              });
-                              Navigator.pop(context);
-                            },
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                CustomButton(
-                  label: 'Cancel',
-                  onPressed: () {
-                    if (kDebugMode) print('Agent dialog cancelled');
-                    Navigator.pop(context);
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: Theme.of(context).cardTheme.color,
+          title: Text('Select Agent', style: Theme.of(context).textTheme.headlineSmall),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Search agents...',
+                    prefixIcon: Icon(Icons.search, color: Theme.of(context).colorScheme.primary),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onChanged: (value) {
+                    setDialogState(() {
+                      filteredAgents = agents.where((agent) =>
+                      '${agent.name} ${agent.lastname}'.toLowerCase().contains(value.toLowerCase()) ||
+                          agent.agentID!.toLowerCase().contains(value.toLowerCase())).toList();
+                    });
                   },
-                  backgroundColor: Theme.of(context).cardTheme.color,
+                ),
+                const CustomSpacer(height: 12),
+                SizedBox(
+                  height: 300,
+                  child: ListView.builder(
+                    itemCount: filteredAgents.length,
+                    itemBuilder: (context, index) {
+                      final agent = filteredAgents[index];
+                      return RadioListTile<String>(
+                        title: Text('${agent.name} ${agent.lastname}'),
+                        value: agent.agentID,
+                        groupValue: _selectedAgentId,
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedAgentId = value;
+                            _checkForChanges();
+                          });
+                          Navigator.pop(context);
+                        },
+                        activeColor: Theme.of(context).colorScheme.primary,
+                      );
+                    },
+                  ),
                 ),
               ],
-            );
-          },
-        );
-      },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cancel', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
   Future<void> _showChecklistDialog(BuildContext context, ChecklistProvider checklistProvider) async {
-    if (kDebugMode) print('Showing checklist dialog');
     final allChecklists = checklistProvider.allChecklists;
     final selectedChecklists = List<Checklist>.from(_visitChecklists);
 
     await showDialog(
       context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              backgroundColor: Theme.of(context).cardTheme.color,
-              title: Text('Select Checklists', style: Theme.of(context).textTheme.headlineSmall),
-              content: SizedBox(
-                width: double.maxFinite,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CustomTextField(
-                      controller: TextEditingController(),
-                      label: 'Search checklists...',
-                      prefixIcon: Icons.search,
-                      onSuffixPressed: null,
-                    ),
-                    const CustomSpacer(height: 12),
-                    SizedBox(
-                      height: 300,
-                      child: ListView.builder(
-                        itemCount: allChecklists.length,
-                        itemBuilder: (context, index) {
-                          final checklist = allChecklists[index];
-                          final isSelected = selectedChecklists.any((c) => c.checklistID == checklist.checklistID);
-                          return CheckboxListTile(
-                            title: Text(checklist.item),
-                            value: isSelected,
-                            onChanged: (value) {
-                              setDialogState(() {
-                                if (value == true) {
-                                  selectedChecklists.add(
-                                    Checklist(
-                                      checklistID: checklist.checklistID,
-                                      item: checklist.item,
-                                      visitChecklist: VisitChecklist(
-                                        checked: false,
-                                        visitID: _visit.visitID,
-                                        checklistID: checklist.checklistID,
-                                      ),
-                                    ),
-                                  );
-                                } else {
-                                  selectedChecklists.removeWhere((c) => c.checklistID == checklist.checklistID);
-                                }
-                              });
-                            },
-                            activeColor: Theme.of(context).colorScheme.primary,
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                CustomButton(
-                  label: 'Cancel',
-                  onPressed: () {
-                    if (kDebugMode) print('Checklist dialog cancelled');
-                    Navigator.pop(context);
-                  },
-                  backgroundColor: Theme.of(context).cardTheme.color,
-                ),
-                CustomButton(
-                  label: 'Confirm',
-                  onPressed: () {
-                    if (kDebugMode) print('Checklists confirmed: ${selectedChecklists.length} selected');
-                    setState(() {
-                      _visitChecklists = selectedChecklists;
-                      _checkForChanges();
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: Theme.of(context).cardTheme.color,
+          title: Text('Select Checklists', style: Theme.of(context).textTheme.headlineSmall),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: TextEditingController(),
+                  decoration: InputDecoration(
+                    hintText: 'Search checklists...',
+                    prefixIcon: Icon(Icons.search, color: Theme.of(context).colorScheme.primary),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onChanged: (value) {
+                    setDialogState(() {
+                      selectedChecklists.retainWhere((c) => c.item.toLowerCase().contains(value.toLowerCase()));
                     });
-                    Navigator.pop(context);
                   },
+                ),
+                const CustomSpacer(height: 12),
+                SizedBox(
+                  height: 300,
+                  child: ListView.builder(
+                    itemCount: allChecklists.length,
+                    itemBuilder: (context, index) {
+                      final checklist = allChecklists[index];
+                      final isSelected = selectedChecklists.any((c) => c.checklistID == checklist.checklistID);
+                      return CheckboxListTile(
+                        title: Text(checklist.item),
+                        value: isSelected,
+                        onChanged: (value) {
+                          setDialogState(() {
+                            if (value == true) {
+                              selectedChecklists.add(
+                                Checklist(
+                                  checklistID: checklist.checklistID,
+                                  item: checklist.item,
+                                  visitChecklist: VisitChecklist(
+                                    checked: false,
+                                    visitID: _visit.visitID,
+                                    checklistID: checklist.checklistID,
+                                  ),
+                                ),
+                              );
+                            } else {
+                              selectedChecklists.removeWhere((c) => c.checklistID == checklist.checklistID);
+                            }
+                          });
+                        },
+                        activeColor: Theme.of(context).colorScheme.primary,
+                      );
+                    },
+                  ),
                 ),
               ],
-            );
-          },
-        );
-      },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cancel', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
+            ),
+            CustomButton(
+              label: 'Confirm',
+              onPressed: () {
+                setState(() {
+                  _visitChecklists = selectedChecklists;
+                  _checkForChanges();
+                });
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 
   Future<void> _showReasonDialog(BuildContext context, ReasonProvider reasonProvider) async {
-    if (kDebugMode) print('Showing reason dialog');
+    if (_visit.status == 'visited') return;
     final allReasons = reasonProvider.allReasons;
     final selectedReasons = List<Reason>.from(_visitReasons);
 
     await showDialog(
       context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              backgroundColor: Theme.of(context).cardTheme.color,
-              title: Text('Select Reasons', style: Theme.of(context).textTheme.headlineSmall),
-              content: SizedBox(
-                width: double.maxFinite,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CustomTextField(
-                      controller: TextEditingController(),
-                      label: 'Search reasons...',
-                      prefixIcon: Icons.search,
-                      onSuffixPressed: null,
-                    ),
-                    const CustomSpacer(height: 12),
-                    SizedBox(
-                      height: 300,
-                      child: ListView.builder(
-                        itemCount: allReasons.length,
-                        itemBuilder: (context, index) {
-                          final reason = allReasons[index];
-                          final isSelected = selectedReasons.any((r) => r.reasonID == reason.reasonID);
-                          return CheckboxListTile(
-                            title: Text(reason.item),
-                            value: isSelected,
-                            onChanged: (value) {
-                              setDialogState(() {
-                                if (value == true) {
-                                  selectedReasons.add(reason);
-                                } else {
-                                  selectedReasons.removeWhere((r) => r.reasonID == reason.reasonID);
-                                }
-                              });
-                            },
-                            activeColor: Theme.of(context).colorScheme.primary,
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                CustomButton(
-                  label: 'Cancel',
-                  onPressed: () {
-                    if (kDebugMode) print('Reason dialog cancelled');
-                    Navigator.pop(context);
-                  },
-                  backgroundColor: Theme.of(context).cardTheme.color,
-                ),
-                CustomButton(
-                  label: 'Confirm',
-                  onPressed: () {
-                    if (kDebugMode) print('Reasons confirmed: ${selectedReasons.length} selected');
-                    setState(() {
-                      _visitReasons = selectedReasons;
-                      _checkForChanges();
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: Theme.of(context).cardTheme.color,
+          title: Text('Select Reasons', style: Theme.of(context).textTheme.headlineSmall),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: TextEditingController(),
+                  decoration: InputDecoration(
+                    hintText: 'Search reasons...',
+                    prefixIcon: Icon(Icons.search, color: Theme.of(context).colorScheme.primary),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onChanged: (value) {
+                    setDialogState(() {
+                      selectedReasons.retainWhere((r) => r.item.toLowerCase().contains(value.toLowerCase()));
                     });
-                    Navigator.pop(context);
                   },
+                ),
+                const CustomSpacer(height: 12),
+                SizedBox(
+                  height: 300,
+                  child: ListView.builder(
+                    itemCount: allReasons.length,
+                    itemBuilder: (context, index) {
+                      final reason = allReasons[index];
+                      final isSelected = selectedReasons.any((r) => r.reasonID == reason.reasonID);
+                      return CheckboxListTile(
+                        title: Text(reason.item),
+                        value: isSelected,
+                        onChanged: (value) {
+                          setDialogState(() {
+                            if (value == true) {
+                              selectedReasons.add(reason);
+                            } else {
+                              selectedReasons.removeWhere((r) => r.reasonID == reason.reasonID);
+                            }
+                          });
+                        },
+                        activeColor: Theme.of(context).colorScheme.primary,
+                      );
+                    },
+                  ),
                 ),
               ],
-            );
-          },
-        );
-      },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cancel', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
+            ),
+            CustomButton(
+              label: 'Confirm',
+              onPressed: () {
+                setState(() {
+                  _visitReasons = selectedReasons;
+                  _checkForChanges();
+                });
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -882,71 +788,209 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
       body: RefreshIndicator(
         onRefresh: _loadInitialData,
         child: _isLoading && !_isInitialized
-            ? const Center(child: CustomProgressIndicator())
+            ? const Center(child: CircularProgressIndicator())
             : Padding(
           padding: const EdgeInsets.all(16.0),
           child: ListView(
             children: [
               if (_visit.status != 'visited') ...[
-                CustomCard(
+                _buildSectionCard(
                   title: 'Date & Time',
                   child: Column(
                     children: [
-                      CustomListTile(
+                      _buildTile(
+                        icon: Icons.calendar_today,
                         title: _dateController.text,
-                        leadingIcon: Icons.calendar_today,
                         onTap: _pickDate,
                       ),
                       const CustomSpacer(height: 12),
-                      CustomListTile(
+                      _buildTile(
+                        icon: Icons.access_time,
                         title: _timeController.text,
-                        leadingIcon: Icons.access_time,
                         onTap: _pickTime,
                       ),
                     ],
                   ),
                 ),
                 const CustomSpacer(height: 16),
-                CustomCard(
+                _buildSectionCard(
                   title: 'Location & Agent',
-                  child: Consumer<AgentProvider>(
-                    builder: (context, agentProvider, child) {
+                  child: Consumer2<AgentProvider, LocationProvider>(
+                    builder: (context, agentProvider, locationProvider, child) {
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          CustomTextField(
+                          TextField(
                             controller: _agentPhoneController,
-                            label: 'Enter agent\'s phone number',
-                            prefixIcon: Icons.phone,
                             keyboardType: TextInputType.number,
-                            validator: (value) {
-                              if (value!.length != 8 || !RegExp(r'^[0-9]+$').hasMatch(value)) {
-                                return 'Enter a valid 8-digit phone number';
-                              }
-                              return null;
-                            },
+                            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                            maxLength: 8,
+                            decoration: InputDecoration(
+                              hintText: 'Enter agent\'s phone number',
+                              prefixIcon: Icon(Icons.phone, color: Theme.of(context).colorScheme.primary),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                              counterText: '',
+                            ),
                           ),
                           const CustomSpacer(height: 12),
-                          CustomListTile(
-                            title: _selectedLocation ?? 'Select Location',
-                            leadingIcon: Icons.location_on,
+                          GestureDetector(
                             onTap: _agentPhoneController.text.isNotEmpty
                                 ? null
-                                : () => _showLocationDialog(context, agentProvider),
+                                : () => _showLocationDialog(context, 'region'),
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.surface,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
+                                backgroundBlendMode: _agentPhoneController.text.isNotEmpty ? BlendMode.saturation : null,
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.location_on,
+                                    color: _agentPhoneController.text.isNotEmpty
+                                        ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
+                                        : Theme.of(context).colorScheme.primary,
+                                  ),
+                                  const CustomSpacer(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      _selectedRegionId == null
+                                          ? 'Select Region'
+                                          : locationProvider.regions.firstWhere((r) => r.regionID == _selectedRegionId).name,
+                                      style: TextStyle(
+                                        color: _agentPhoneController.text.isNotEmpty
+                                            ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
+                                            : Theme.of(context).colorScheme.onSurface,
+                                      ),
+                                    ),
+                                  ),
+                                  Icon(Icons.arrow_drop_down, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                                ],
+                              ),
+                            ),
                           ),
                           const CustomSpacer(height: 12),
-                          CustomListTile(
-                            title: _selectedAgentId == null
-                                ? (_agentPhoneController.text.isNotEmpty
-                                ? 'Selected via phone'
-                                : _selectedLocation == null
-                                ? 'Select a location first'
-                                : 'Select Agent')
-                                : '${agentProvider.agents.firstWhere((agent) => agent.agentID == _selectedAgentId, orElse: () => Agent(agentID: _selectedAgentId!, name: 'Loading', lastname: '...', location: '')).name} ${agentProvider.agents.firstWhere((agent) => agent.agentID == _selectedAgentId, orElse: () => Agent(agentID: _selectedAgentId!, name: 'Loading', lastname: '...', location: '')).lastname}',
-                            leadingIcon: Icons.person,
-                            onTap: _agentPhoneController.text.isNotEmpty || _selectedLocation == null
+                          GestureDetector(
+                            onTap: _agentPhoneController.text.isNotEmpty || _selectedRegionId == null
+                                ? null
+                                : () => _showLocationDialog(context, 'governorate'),
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.surface,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
+                                backgroundBlendMode: _agentPhoneController.text.isNotEmpty || _selectedRegionId == null ? BlendMode.saturation : null,
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.location_city,
+                                    color: _agentPhoneController.text.isNotEmpty || _selectedRegionId == null
+                                        ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
+                                        : Theme.of(context).colorScheme.primary,
+                                  ),
+                                  const CustomSpacer(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      _selectedGovernorateId == null
+                                          ? 'Select Governorate'
+                                          : locationProvider.governorates.firstWhere((g) => g.governorateID == _selectedGovernorateId).name,
+                                      style: TextStyle(
+                                        color: _agentPhoneController.text.isNotEmpty || _selectedRegionId == null
+                                            ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
+                                            : Theme.of(context).colorScheme.onSurface,
+                                      ),
+                                    ),
+                                  ),
+                                  Icon(Icons.arrow_drop_down, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const CustomSpacer(height: 12),
+                          GestureDetector(
+                            onTap: _agentPhoneController.text.isNotEmpty || _selectedGovernorateId == null
+                                ? null
+                                : () => _showLocationDialog(context, 'delegation'),
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.surface,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
+                                backgroundBlendMode: _agentPhoneController.text.isNotEmpty || _selectedGovernorateId == null ? BlendMode.saturation : null,
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.place,
+                                    color: _agentPhoneController.text.isNotEmpty || _selectedGovernorateId == null
+                                        ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
+                                        : Theme.of(context).colorScheme.primary,
+                                  ),
+                                  const CustomSpacer(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      _selectedDelegationId == null
+                                          ? 'Select Delegation'
+                                          : locationProvider.delegations.firstWhere((d) => d.delegationID == _selectedDelegationId).name,
+                                      style: TextStyle(
+                                        color: _agentPhoneController.text.isNotEmpty || _selectedGovernorateId == null
+                                            ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
+                                            : Theme.of(context).colorScheme.onSurface,
+                                      ),
+                                    ),
+                                  ),
+                                  Icon(Icons.arrow_drop_down, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const CustomSpacer(height: 12),
+                          GestureDetector(
+                            onTap: _agentPhoneController.text.isNotEmpty || _selectedDelegationId == null
                                 ? null
                                 : () => _showAgentDialog(context, agentProvider),
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.surface,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
+                                backgroundBlendMode: _agentPhoneController.text.isNotEmpty || _selectedDelegationId == null ? BlendMode.saturation : null,
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.person,
+                                    color: _agentPhoneController.text.isNotEmpty || _selectedDelegationId == null
+                                        ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
+                                        : Theme.of(context).colorScheme.primary,
+                                  ),
+                                  const CustomSpacer(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      _selectedAgentId == null
+                                          ? (_agentPhoneController.text.isNotEmpty
+                                          ? 'Selected via phone'
+                                          : _selectedDelegationId == null
+                                          ? 'Select a delegation first'
+                                          : 'Select Agent')
+                                          : '${agentProvider.agents.firstWhere((agent) => agent.agentID == _selectedAgentId).name} ${agentProvider.agents.firstWhere((agent) => agent.agentID == _selectedAgentId).lastname}',
+                                      style: TextStyle(
+                                        color: _agentPhoneController.text.isNotEmpty || _selectedDelegationId == null
+                                            ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
+                                            : Theme.of(context).colorScheme.onSurface,
+                                      ),
+                                    ),
+                                  ),
+                                  Icon(Icons.arrow_drop_down, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                                ],
+                              ),
+                            ),
                           ),
                         ],
                       );
@@ -956,46 +1000,64 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
               ],
               if (_visit.status == 'visited' && _visit.comment != null) ...[
                 const CustomSpacer(height: 16),
-                CustomCard(
+                _buildSectionCard(
                   title: 'Details',
-                  child: CustomTextField(
+                  child: TextField(
                     controller: _commentController,
-                    label: 'Enter comment',
-                    prefixIcon: Icons.comment,
+                    decoration: InputDecoration(
+                      hintText: 'Enter comment',
+                      prefixIcon: Icon(Icons.comment, color: Theme.of(context).colorScheme.primary),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
                   ),
                 ),
               ],
               const CustomSpacer(height: 16),
-              CustomCard(
+              _buildSectionCard(
                 title: 'Checklists',
                 child: Consumer<ChecklistProvider>(
                   builder: (context, checklistProvider, child) {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        CustomListTile(
-                          title: _visitChecklists.isEmpty
-                              ? 'Select Checklists'
-                              : '${_visitChecklists.length} selected',
-                          leadingIcon: Icons.checklist,
-                          onTap: () => _showChecklistDialog(context, checklistProvider),
+                        GestureDetector(
+                          onTap: _visit.status != 'visited' ? () => _showChecklistDialog(context, checklistProvider) : null,
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surface,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.checklist, color: Theme.of(context).colorScheme.primary),
+                                const CustomSpacer(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    _visitChecklists.isEmpty
+                                        ? 'Select Checklists'
+                                        : '${_visitChecklists.length} selected',
+                                    style: Theme.of(context).textTheme.bodyMedium,
+                                  ),
+                                ),
+                                Icon(Icons.arrow_drop_down, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                              ],
+                            ),
+                          ),
                         ),
                         if (_visitChecklists.isNotEmpty) ...[
                           const CustomSpacer(height: 8),
                           Column(
-                            children: _visitChecklists.map((checklist) {
-                              return CheckboxListTile(
-                                title: Text(checklist.item),
-                                value: checklist.visitChecklist?.checked ?? false,
-                                onChanged: _visit.status == 'visited'
-                                    ? (value) => _toggleChecklist(checklist, value)
-                                    : null,
-                                activeColor: Theme.of(context).colorScheme.primary,
-                                enabled: _visit.status == 'visited',
-                                controlAffinity: ListTileControlAffinity.leading,
-                                dense: true,
-                              );
-                            }).toList(),
+                            children: _visitChecklists.map((checklist) => CheckboxListTile(
+                              title: Text(checklist.item),
+                              value: checklist.visitChecklist?.checked ?? false,
+                              onChanged: _visit.status == 'visited' ? (value) => _toggleChecklist(checklist, value) : null,
+                              activeColor: Theme.of(context).colorScheme.primary,
+                              enabled: _visit.status == 'visited',
+                              controlAffinity: ListTileControlAffinity.leading,
+                              dense: true,
+                            )).toList(),
                           ),
                         ],
                       ],
@@ -1004,32 +1066,51 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
                 ),
               ),
               const CustomSpacer(height: 16),
-              CustomCard(
+              _buildSectionCard(
                 title: 'Reasons',
                 child: Consumer<ReasonProvider>(
                   builder: (context, reasonProvider, child) {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        CustomListTile(
-                          title: _visitReasons.isEmpty ? 'Select Reasons' : '${_visitReasons.length} selected',
-                          leadingIcon: Icons.list_alt,
-                          onTap: () => _showReasonDialog(context, reasonProvider),
-                        ),
+                        if (_visit.status != 'visited') ...[
+                          GestureDetector(
+                            onTap: () => _showReasonDialog(context, reasonProvider),
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.surface,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.list_alt, color: Theme.of(context).colorScheme.primary),
+                                  const CustomSpacer(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      _visitReasons.isEmpty ? 'Select Reasons' : '${_visitReasons.length} selected',
+                                      style: Theme.of(context).textTheme.bodyMedium,
+                                    ),
+                                  ),
+                                  Icon(Icons.arrow_drop_down, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                         if (_visitReasons.isNotEmpty) ...[
                           const CustomSpacer(height: 8),
                           Wrap(
                             spacing: 8,
                             runSpacing: 8,
-                            children: _visitReasons.map((reason) {
-                              return Chip(
-                                label: Text(reason.item),
-                                deleteIcon: const Icon(Icons.close, size: 18),
-                                onDeleted: () => _removeReason(reason.reasonID!),
-                                backgroundColor: Theme.of(context).cardTheme.color,
-                                labelStyle: TextStyle(color: Theme.of(context).colorScheme.primary),
-                              );
-                            }).toList(),
+                            children: _visitReasons.map((reason) => Chip(
+                              label: Text(reason.item),
+                              deleteIcon: _visit.status != 'visited' ? const Icon(Icons.close, size: 18) : null,
+                              onDeleted: _visit.status != 'visited' ? () => _removeReason(reason.reasonID!) : null,
+                              backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                              labelStyle: TextStyle(color: Theme.of(context).colorScheme.primary),
+                            )).toList(),
                           ),
                         ],
                       ],
@@ -1039,7 +1120,7 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
               ),
               if (_visit.photos != null && _visit.photos!.isNotEmpty || _newPhotos.isNotEmpty) ...[
                 const CustomSpacer(height: 16),
-                CustomCard(
+                _buildSectionCard(
                   title: 'Photos',
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1055,46 +1136,12 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
                         runSpacing: 8,
                         children: [
                           if (_visit.photos != null)
-                            ..._visit.photos!.where((p) => !_photosToRemove.contains(p)).map((photo) {
-                              return GestureDetector(
-                                onTap: () => _viewPhotoFullScreen(photo),
-                                child: Stack(
-                                  children: [
-                                    Image.network(
-                                      photo.startsWith('http') ? photo : '$baseUrl$photo',
-                                      width: 100,
-                                      height: 100,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) => const Icon(Icons.error, size: 100),
-                                    ),
-                                    Positioned(
-                                      top: 0,
-                                      right: 0,
-                                      child: CustomIconButton(
-                                        icon: Icons.close,
-                                        onPressed: () => _removePhoto(photo),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }).toList(),
-                          ..._newPhotos.map((photo) {
-                            return GestureDetector(
-                              onTap: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => Scaffold(
-                                    appBar: CustomAppBar(title: 'Photo Preview', showBackButton: true),
-                                    body: Center(child: Image.file(photo, fit: BoxFit.contain)),
-                                    backgroundColor: Colors.black,
-                                  ),
-                                ),
-                              ),
+                            ..._visit.photos!.where((p) => !_photosToRemove.contains(p)).map((photo) => GestureDetector(
+                              onTap: () => _viewPhotoFullScreen(photo),
                               child: Stack(
                                 children: [
-                                  Image.file(
-                                    photo,
+                                  Image.network(
+                                    photo.startsWith('http') ? photo : '$baseUrl$photo',
                                     width: 100,
                                     height: 100,
                                     fit: BoxFit.cover,
@@ -1103,18 +1150,48 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
                                   Positioned(
                                     top: 0,
                                     right: 0,
-                                    child: CustomIconButton(
-                                      icon: Icons.close,
-                                      onPressed: () => setState(() {
-                                        _newPhotos.remove(photo);
-                                        _checkForChanges();
-                                      }),
+                                    child: IconButton(
+                                      icon: const Icon(Icons.close),
+                                      onPressed: () => _removePhoto(photo),
                                     ),
                                   ),
                                 ],
                               ),
-                            );
-                          }).toList(),
+                            )).toList(),
+                          ..._newPhotos.map((photo) => GestureDetector(
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => Scaffold(
+                                  appBar: CustomAppBar(title: 'Photo Preview', showBackButton: true),
+                                  body: Center(child: Image.file(photo, fit: BoxFit.contain)),
+                                  backgroundColor: Colors.black,
+                                ),
+                              ),
+                            ),
+                            child: Stack(
+                              children: [
+                                Image.file(
+                                  photo,
+                                  width: 100,
+                                  height: 100,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => const Icon(Icons.error, size: 100),
+                                ),
+                                Positioned(
+                                  top: 0,
+                                  right: 0,
+                                  child: IconButton(
+                                    icon: const Icon(Icons.close),
+                                    onPressed: () => setState(() {
+                                      _newPhotos.remove(photo);
+                                      _checkForChanges();
+                                    }),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )).toList(),
                         ],
                       ),
                     ],
@@ -1125,28 +1202,74 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  SizedBox(
-                    child: CustomButton(
-                      label: 'Cancel',
-                      onPressed: () {
-                        if (kDebugMode) print('Cancelling edit');
-                        _editStartTime = null;
-                        Navigator.pop(context);
-                      },
-                    ),
+                  CustomButton(
+                    label: 'Cancel',
+                    onPressed: () {
+                      _editStartTime = null;
+                      Navigator.pop(context);
+                    },
                   ),
                   const CustomSpacer(width: 8),
-                  SizedBox(
-                    child: CustomButton(
-                      label: 'Save Changes',
-                      onPressed: _hasChanges ? () => _saveChanges() : () {},
-                      isLoading: _isLoading,
-                    ),
+                  CustomButton(
+                    label: 'Save Changes',
+                    onPressed: _hasChanges ? _saveChanges : () {},
+                    isLoading: _isLoading,
                   ),
                 ],
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionCard({required String title, required Widget child}) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            child: Text(
+              title,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: child,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTile({required IconData icon, required String title, required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: Theme.of(context).colorScheme.primary),
+            const CustomSpacer(width: 12),
+            Expanded(child: Text(title, style: Theme.of(context).textTheme.bodyMedium)),
+            Icon(Icons.arrow_drop_down, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+          ],
         ),
       ),
     );

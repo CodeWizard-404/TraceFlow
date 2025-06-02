@@ -1,15 +1,15 @@
 class ReceiptBookTransfer {
-  final String? transferID;
-  final String bookID;         // Required
+  final String transferID;
+  final String bookID;
   final String? fromUserID;
   final String? toUserID;
   final String? toAgentID;
-  final String status;         // Required
-  final String transferType;   // Required
-  final DateTime transferDate; // Required
+  final String status;
+  final String transferType;
+  final DateTime transferDate;
 
   ReceiptBookTransfer({
-    this.transferID,
+    required this.transferID,
     required this.bookID,
     this.fromUserID,
     this.toUserID,
@@ -21,7 +21,7 @@ class ReceiptBookTransfer {
 
   factory ReceiptBookTransfer.fromJson(Map<String, dynamic> json) {
     return ReceiptBookTransfer(
-      transferID: json['transferID'] as String?,
+      transferID: json['transferID'] as String,
       bookID: json['bookID'] as String,
       fromUserID: json['fromUserID'] as String?,
       toUserID: json['toUserID'] as String?,

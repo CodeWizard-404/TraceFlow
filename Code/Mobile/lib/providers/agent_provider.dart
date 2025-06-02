@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import '../models/agent.dart';
 import '../services/agent_service.dart';
@@ -12,7 +11,7 @@ class AgentProvider with ChangeNotifier {
   String? _errorMessage;
 
   AgentProvider({AgentService? agentService})
-      : _agentService = agentService ?? AgentService();
+    : _agentService = agentService ?? AgentService();
 
   List<Agent> get agents => _agents;
   List<String> get uniqueLocations => _uniqueLocations;
@@ -27,12 +26,13 @@ class AgentProvider with ChangeNotifier {
     notifyListeners();
     try {
       _currentAgent = await _agentService.fetchAgentById(id);
-      if (kDebugMode) print('Fetched agent: ${_currentAgent?.agentID ?? "null"}');
+      if (kDebugMode) {
+        print('Fetched agent: ${_currentAgent?.agentID ?? "null"}');
+      }
     } catch (e) {
       _currentAgent = null;
       _errorMessage = 'Failed to fetch agent: $e';
       if (kDebugMode) print(_errorMessage);
-      // Do not rethrow to prevent Future.wait errors in VisitDetailsScreen
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -50,12 +50,13 @@ class AgentProvider with ChangeNotifier {
     notifyListeners();
     try {
       _uniqueLocations = await _agentService.fetchUniqueLocations();
-      if (kDebugMode) print('Fetched ${_uniqueLocations.length} unique locations');
+      if (kDebugMode) {
+        print('Fetched ${_uniqueLocations.length} unique locations');
+      }
     } catch (e) {
       _uniqueLocations = [];
       _errorMessage = 'Failed to fetch locations: $e';
       if (kDebugMode) print(_errorMessage);
-      rethrow;
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -69,12 +70,13 @@ class AgentProvider with ChangeNotifier {
     notifyListeners();
     try {
       _agents = await _agentService.fetchAgentsByLocation(location);
-      if (kDebugMode) print('Fetched ${_agents.length} agents for location: $location');
+      if (kDebugMode) {
+        print('Fetched ${_agents.length} agents for location: $location');
+      }
     } catch (e) {
       _agents = [];
       _errorMessage = 'Failed to fetch agents: $e';
       if (kDebugMode) print(_errorMessage);
-      rethrow;
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -100,7 +102,56 @@ class AgentProvider with ChangeNotifier {
       _agents = [];
       _errorMessage = 'Failed to fetch agent by phone: $e';
       if (kDebugMode) print(_errorMessage);
-      // Do not rethrow
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> getAgentsBySupervisor(String supervisorID) async {
+    if (kDebugMode) print('Fetching agents by supervisor ID: $supervisorID');
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      _agents = await _agentService.getAgentsBySupervisor(supervisorID);
+      if (kDebugMode) {
+        print('Fetched ${_agents.length} agents for supervisor: $supervisorID');
+      }
+    } catch (e) {
+      _agents = [];
+      _errorMessage = 'Failed to fetch agents: $e';
+      if (kDebugMode) print(_errorMessage);
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> getSupervisorByAgent(String agentID) async {
+    if (kDebugMode) print('Fetching supervisor by agent ID: $agentID');
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      final supervisor = await _agentService.getSupervisorByAgent(agentID);
+      if (supervisor != null) {
+        _currentAgent = Agent(
+          agentID: 'N/A',
+          name: 'N/A',
+          lastname: 'N/A',
+          delegationID: 'N/A',
+          Supervisor: supervisor,
+        );
+        if (kDebugMode) print('Supervisor fetched: ${supervisor.userID}');
+      } else {
+        _currentAgent = null;
+        if (kDebugMode) print('No supervisor found for agent: $agentID');
+      }
+    } catch (e) {
+      _currentAgent = null;
+      _errorMessage = 'Failed to fetch supervisor: $e';
+      if (kDebugMode) print(_errorMessage);
     } finally {
       _isLoading = false;
       notifyListeners();

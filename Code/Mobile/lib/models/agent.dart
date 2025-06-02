@@ -1,11 +1,18 @@
-// models/agent.dart
+import 'package:TraceFlow/models/user.dart';
+
 class Agent {
   final String agentID;
   final String name;
   final String lastname;
   final String? email;
   final String? phone;
-  final String location;
+  final String? location;
+  final double? latitude;
+  final double? longitude;
+  final String? supervisorID;
+  final String delegationID;
+  final User? Supervisor;
+
 
   Agent({
     required this.agentID,
@@ -13,22 +20,31 @@ class Agent {
     required this.lastname,
     this.email,
     this.phone,
-    required this.location,
+    this.location,
+    this.latitude,
+    this.longitude,
+    this.supervisorID,
+    required this.delegationID,
+    this.Supervisor,
+
   });
 
-  // Convert JSON to Agent object
   factory Agent.fromJson(Map<String, dynamic> json) {
     return Agent(
-      agentID: json['agentID'],
-      name: json['name'],
-      lastname: json['lastname'],
-      email: json['email'],
-      phone: json['phone'],
-      location: json['location'],
+      agentID: json['agentID'] as String,
+      name: json['name'] as String,
+      lastname: json['lastname'] as String,
+      email: json['email'] as String?,
+      phone: json['phone'] as String?,
+      location: json['location'] as String?,
+      latitude: json['latitude'] != null ? double.parse(json['latitude'].toString()) : null,
+      longitude: json['longitude'] != null ? double.parse(json['longitude'].toString()) : null,
+      supervisorID: json['supervisorID'] as String?,
+      delegationID: json['delegationID'] as String,
+      Supervisor: json['Supervisor'] != null ? User.fromJson(json['Supervisor']) : null,
     );
   }
 
-  // Convert Agent object to JSON
   Map<String, dynamic> toJson() {
     return {
       'agentID': agentID,
@@ -37,6 +53,11 @@ class Agent {
       'email': email,
       'phone': phone,
       'location': location,
+      'latitude': latitude,
+      'longitude': longitude,
+      'supervisorID': supervisorID,
+      'delegationID': delegationID,
+      'Supervisor': Supervisor?.toJson(),
     };
   }
 }
