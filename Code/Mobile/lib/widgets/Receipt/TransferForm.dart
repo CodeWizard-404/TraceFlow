@@ -69,7 +69,7 @@ class TransferForm extends StatelessWidget {
       "Stub Collection"
     ];
     final filteredUsers = userProvider.users
-        .where((u) => u.roles.any((r) => r.name.toLowerCase() == recipientType?.toLowerCase()))
+        .where((u) => u.roles.any((r) => r.name?.toLowerCase() == recipientType?.toLowerCase()))
         .toList();
     final filteredAgents = agentProvider.agents.where((a) =>
     (a.name.toLowerCase().contains(searchController.text.toLowerCase()) ||

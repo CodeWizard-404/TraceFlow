@@ -63,6 +63,7 @@ router.post(
 
 // Google OAuth routes
 router.get('/callback', AuthController.googleCallback);
+router.post('/google', AuthController.googleIdTokenLogin);
 
 router.get('/google-calendar-auth', authenticateCookie, AuthController.googleCalendarAuth);
 router.get('/google-calendar-auth/callback', authenticateCookie, AuthController.googleCalendarCallback);

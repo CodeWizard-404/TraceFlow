@@ -1,33 +1,35 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
-import '../services/role_service.dart';
+import 'package:TraceFlow/models/role.dart';
+import 'package:TraceFlow/services/role_service.dart';
+import 'package:TraceFlow/services/auth_service.dart';
 
 class RoleProvider with ChangeNotifier {
   final RoleService _roleService;
-  List<dynamic> _roles = []; // Use Role model if defined
+  List<Role> _roles = [];
   bool _isLoading = false;
   String? _errorMessage;
 
-  RoleProvider({RoleService? roleService})
-      : _roleService = roleService ?? RoleService();
+  RoleProvider({RoleService? roleService}) : _roleService = roleService ?? RoleService();
 
-  List<dynamic> get roles => _roles;
+  List<Role> get roles => _roles;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
   Future<void> getRolesByUser(String userID) async {
-    if (kDebugMode) print('Fetching roles for user ID: $userID');
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
     try {
       _roles = await _roleService.getRolesByUser(userID);
-      if (kDebugMode) print('Fetched ${_roles.length} roles for user: $userID');
+      if (!_roles.any((role) => role.name?.toLowerCase() == 'supervisor')) {
+        throw Exception('Access denied: Supervisor role required');
+      }
     } catch (e) {
       _roles = [];
-      _errorMessage = 'Failed to fetch roles: $e';
-      if (kDebugMode) print(_errorMessage);
-      rethrow;
+      _errorMessage = _parseError(e);
+      if (e.toString().contains('401')) {
+        await AuthService.logout();
+      }
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -35,8 +37,14 @@ class RoleProvider with ChangeNotifier {
   }
 
   void clearError() {
-    if (kDebugMode) print('Clearing error message');
     _errorMessage = null;
     notifyListeners();
+  }
+
+  String _parseError(dynamic error) {
+    if (error is Exception) {
+      return error.toString().replaceFirst('Exception: ', '');
+    }
+    return error.toString();
   }
 }

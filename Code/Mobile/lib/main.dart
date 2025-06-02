@@ -146,16 +146,6 @@ class _AuthWrapperState extends State<AuthWrapper> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    /*if (!authProvider.isSupervisor) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Access denied: Only Supervisors can log in.')),
-        );
-      });
-      return const LoginScreen();
-    }*/
-
     // Initialize notifications for authenticated Supervisor
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;

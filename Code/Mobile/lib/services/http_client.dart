@@ -8,11 +8,17 @@ import 'cookie_manager.dart';
 
 class CookieInterceptor implements InterceptorContract {
   bool _isRetrying = false;
+  int _retryCount = 0;
+  static const int maxRetries = 2;
 
   @override
   Future<BaseRequest> interceptRequest({required BaseRequest request}) async {
-    final headers = CookieManager.getHeaders({'Content-Type': 'application/json'});
+    final headers = CookieManager.getHeaders();
     request.headers.addAll(headers);
+    if (request is Request || request is MultipartRequest) {
+      request.followRedirects = true;
+      request.persistentConnection = true;
+    }
     if (kDebugMode) {
       print('Intercepting request: ${request.url}, headers: ${request.headers}');
     }
@@ -24,16 +30,13 @@ class CookieInterceptor implements InterceptorContract {
     http.Response httpResponse = await _normalizeResponse(response);
     CookieManager.extractCookies(httpResponse);
 
-    if (httpResponse.statusCode == 401 && !_isRetrying) {
+    if (httpResponse.statusCode == 401 && !_isRetrying && _retryCount < maxRetries) {
       _isRetrying = true;
+      _retryCount++;
       try {
-        if (kDebugMode) {
-          print('401 detected: Attempting token refresh');
-        }
-        final refreshResult = await AuthService.refreshToken();
-        if (kDebugMode) {
-          print('Token refresh result: $refreshResult');
-        }
+        if (kDebugMode) print('401 detected: Attempting token refresh');
+        final refreshResult = await AuthService.refreshToken(CookieManager.cookies['refreshToken'] ?? '');
+        if (kDebugMode) print('Token refresh result: $refreshResult');
 
         final request = httpResponse.request!;
         final retryRequest = _copyRequest(request);
@@ -52,17 +55,13 @@ class CookieInterceptor implements InterceptorContract {
             reasonPhrase: retryResponse.reasonPhrase,
           );
           CookieManager.extractCookies(newResponse);
-          if (kDebugMode) {
-            print('Retry response: ${newResponse.statusCode}');
-          }
+          if (kDebugMode) print('Retry response: ${newResponse.statusCode}');
           return newResponse;
         } finally {
           client.close();
         }
       } catch (e) {
-        if (kDebugMode) {
-          print('Token refresh failed: $e');
-        }
+        if (kDebugMode) print('Token refresh failed: $e');
         if (e.toString().contains('Invalid refresh token') || e.toString().contains('401')) {
           await CookieManager.clearCookies();
         }
@@ -71,7 +70,7 @@ class CookieInterceptor implements InterceptorContract {
         _isRetrying = false;
       }
     }
-
+    _retryCount = 0;
     return httpResponse;
   }
 
@@ -89,18 +88,26 @@ class CookieInterceptor implements InterceptorContract {
     return response as http.Response;
   }
 
-  http.Request _copyRequest(http.BaseRequest original) {
+  http.BaseRequest _copyRequest(http.BaseRequest original) {
+    if (original is http.MultipartRequest) {
+      final request = http.MultipartRequest(original.method, original.url)
+        ..headers.addAll(original.headers)
+        ..fields.addAll(original.fields)
+        ..files.addAll(original.files)
+        ..followRedirects = original.followRedirects
+        ..maxRedirects = original.maxRedirects
+        ..persistentConnection = original.persistentConnection;
+      return request;
+    }
     final request = http.Request(original.method, original.url)
       ..headers.addAll(original.headers)
       ..followRedirects = original.followRedirects
       ..maxRedirects = original.maxRedirects
       ..persistentConnection = original.persistentConnection;
-
     if (original is http.Request) {
       request.body = original.body;
       request.encoding = original.encoding;
     }
-
     return request;
   }
 
@@ -119,13 +126,16 @@ class CustomHttpClient {
   );
 
   static Future<http.Response> get(Uri url, {Map<String, String>? headers}) async {
-    if (kDebugMode) {
-      print('GET $url');
-    }
-    final response = await _client.get(url, headers: headers);
-    if (kDebugMode) {
-      print('GET response: ${response.statusCode}');
-    }
+    final updatedHeaders = {...?headers, 'Content-Type': 'application/json'};
+    if (kDebugMode) print('GET $url');
+    final response = await _client.get(
+      url,
+      headers: updatedHeaders,
+      // Ensure cookies are sent
+      // Note: withCredentials is not directly supported in Dart's http package,
+      // but cookies are automatically included if properly stored in CookieManager
+    );
+    if (kDebugMode) print('GET response: ${response.statusCode}');
     return response;
   }
 
@@ -135,18 +145,18 @@ class CustomHttpClient {
         Object? body,
         Encoding? encoding,
       }) async {
-    if (kDebugMode) {
-      print('POST $url');
+    final updatedHeaders = headers != null ? Map<String, String>.from(headers) : <String, String>{};
+    if (body != null && !updatedHeaders.containsKey('Content-Type')) {
+      updatedHeaders['Content-Type'] = 'application/json';
     }
+    if (kDebugMode) print('POST $url');
     final response = await _client.post(
       url,
-      headers: headers,
+      headers: updatedHeaders,
       body: body,
       encoding: encoding,
     );
-    if (kDebugMode) {
-      print('POST response: ${response.statusCode}');
-    }
+    if (kDebugMode) print('POST response: ${response.statusCode}');
     return response;
   }
 
@@ -156,18 +166,15 @@ class CustomHttpClient {
         Object? body,
         Encoding? encoding,
       }) async {
-    if (kDebugMode) {
-      print('PUT $url');
-    }
+    final updatedHeaders = {...?headers, 'Content-Type': 'application/json'};
+    if (kDebugMode) print('PUT $url');
     final response = await _client.put(
       url,
-      headers: headers,
+      headers: updatedHeaders,
       body: body,
       encoding: encoding,
     );
-    if (kDebugMode) {
-      print('PUT response: ${response.statusCode}');
-    }
+    if (kDebugMode) print('PUT response: ${response.statusCode}');
     return response;
   }
 
@@ -177,18 +184,15 @@ class CustomHttpClient {
         Object? body,
         Encoding? encoding,
       }) async {
-    if (kDebugMode) {
-      print('DELETE $url');
-    }
+    final updatedHeaders = {...?headers, 'Content-Type': 'application/json'};
+    if (kDebugMode) print('DELETE $url');
     final response = await _client.delete(
       url,
-      headers: headers,
+      headers: updatedHeaders,
       body: body,
       encoding: encoding,
     );
-    if (kDebugMode) {
-      print('DELETE response: ${response.statusCode}');
-    }
+    if (kDebugMode) print('DELETE response: ${response.statusCode}');
     return response;
   }
 }

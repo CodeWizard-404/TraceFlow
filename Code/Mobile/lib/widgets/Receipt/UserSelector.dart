@@ -66,7 +66,7 @@ class _UserSelectorState extends State<UserSelector> {
         ? usersToShow.firstWhere(
           (user) => user.userID == widget.recipientID,
       orElse: () => userProvider.currentUser ??
-          User(userID: '', firstName: 'Unknown', lastName: '', phone: ''),
+          User(userID: '', firstName: 'Unknown', lastName: '', phone: '', email: ''),
     )
         : null;
 

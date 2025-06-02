@@ -13,10 +13,10 @@ class Permission {
 
   factory Permission.fromJson(Map<String, dynamic> json) {
     return Permission(
-      permissionID: json['permissionID']?.toString() ?? '',
-      name: json['name']?.toString() ?? '',
-      className: json['class']?.toString(),
-      description: json['description']?.toString(),
+      permissionID: json['permissionID'] as String? ?? '',
+      name: json['name'] as String? ?? '',
+      className: json['class'] as String?,
+      description: json['description'] as String?,
     );
   }
 

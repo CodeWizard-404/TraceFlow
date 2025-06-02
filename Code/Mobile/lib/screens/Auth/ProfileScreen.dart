@@ -19,7 +19,6 @@ import '../../widgets/commen/divider.dart';
 import '../../widgets/commen/list_tile.dart';
 import 'login_screen.dart';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
 import 'package:mime/mime.dart'; // Add this package for MIME type detection
 import 'package:http_parser/http_parser.dart'; // For MediaType
 

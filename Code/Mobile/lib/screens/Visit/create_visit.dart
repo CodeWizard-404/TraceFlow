@@ -290,7 +290,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                           filteredAgents = agents
                               .where((agent) =>
                           '${agent.name} ${agent.lastname}'.toLowerCase().contains(value.toLowerCase()) ||
-                              agent.agentID!.toLowerCase().contains(value.toLowerCase()))
+                              agent.agentID.toLowerCase().contains(value.toLowerCase()))
                               .toList();
                         });
                       },
@@ -304,7 +304,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                           final agent = filteredAgents[index];
                           return RadioListTile<String>(
                             title: Text('${agent.name} ${agent.lastname}'),
-                            value: agent.agentID!,
+                            value: agent.agentID,
                             groupValue: _selectedAgentId,
                             onChanged: (value) {
                               if (kDebugMode) print('Agent selected: $value');
@@ -530,7 +530,6 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
         });
       } else if (value.length >= 8) {
         try {
-          final authProvider = Provider.of<AuthProvider>(context, listen: false);
           if (!CookieManager.cookies.containsKey('accessToken')) {
             if (kDebugMode) print('No accessToken, loading cookies');
             await CookieManager.loadCookies();
