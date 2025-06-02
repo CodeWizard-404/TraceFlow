@@ -1355,7 +1355,7 @@ body.dark .visit-card.visited:hover {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.852);
   /* Semi-transparent overlay */
   display: flex;
   justify-content: center;
@@ -1368,7 +1368,7 @@ body.dark .visit-card.visited:hover {
   position: relative;
   width: 100%;
   /* Adjustable width */
-  height: 100vh;
+  height: 80vh;
   /* Adjustable height */
   background-color: #fff;
   /* White background for the modal */

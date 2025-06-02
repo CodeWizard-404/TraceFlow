@@ -28,7 +28,6 @@ import CalendarSyncButton from "../../components/Google/CalendarSyncButton";
 import TimesheetSuggestionsModal from "../Timesheet/TimesheetSuggestionsModal";
 import { io } from "socket.io-client";
 import MapComponent from '../../components/Google/MapComponent';
-import Modal from 'react-modal';
 
 const PERMISSIONS = {
     ACCESS_TIMESHEETS: import.meta.env.VITE_PERMISSIONS_ACCESS_TIMESHEETS,
@@ -1795,7 +1794,7 @@ const Timesheets: React.FC = React.memo(() => {
 
                 {viewMode === "day" && (
                     <section className="day-view">
-                        {isSupervisor && (
+                        {(
                             <button
                                 className="nav-btn"
                                 onClick={() => setIsMapModalOpen(true)}
