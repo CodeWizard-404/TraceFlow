@@ -49,6 +49,9 @@ import {
     listAIConfigs,
 } from "../../apis/aiAPI";
 import { AIConfig } from "../../models/AI";
+import { Log } from "../../models/log";
+import LogsList from "./LogsList";
+import { getLogs } from "../../apis/logAPI";
 
 const AIConfigsList = lazy(() => import("./AI/AIConfigsList"));
 const AIConfigAdd = lazy(() => import("./AI/AIConfigAdd"));
@@ -167,6 +170,13 @@ const AdminDashboard: React.FC = React.memo(() => {
     const [isBulkUploadModalOpen, setIsBulkUploadModalOpen] = useState(false);
     const [governorateFilter, setGovernorateFilter] = useState<string>("all");
     const [delegationFilter, setDelegationFilter] = useState<string>("all");
+
+    const [logs, setLogs] = useState<Log[]>([]);
+    const [logsPage, setLogsPage] = useState(1);
+    const [totalLogs, setTotalLogs] = useState(0);
+    const [logSortField, setLogSortField] = useState<string>('timestamp');
+    const [logSortOrder, setLogSortOrder] = useState<SortOrder>('desc');
+    const [logsLoading, setLogsLoading] = useState(false);
 
     const [aiConfigs, setAIConfigs] = useState<AIConfig[]>([]);
     const [aiConfigsLoading, setAIConfigsLoading] = useState(false);
@@ -614,14 +624,17 @@ const AdminDashboard: React.FC = React.memo(() => {
         else if (newView === "reasons") setReasonsPage(1);
         else if (newView === "agents") setAgentsPage(1);
         else if (newView === "ai-configs") setAIConfigsPage(1);
-
-
+        else if (newView === "logs") {
+            setLogsPage(1);
+            setLogSortField('timestamp');
+            setLogSortOrder('desc');
+        }
 
         const sortConfig = defaultSortConfig[newView];
         if (sortConfig) {
             setSortField(sortConfig.sortField);
             setSortOrder(sortConfig.sortOrder);
-        } else {
+        } else if (newView !== "logs") {
             setSortField("name");
             setSortOrder("asc");
         }
@@ -632,7 +645,7 @@ const AdminDashboard: React.FC = React.memo(() => {
         }
 
         if (newView === "ai-configs") {
-            setNotificationSortField("modelName")
+            setNotificationSortField("modelName");
         }
 
         localStorage.setItem("adminView", newView);
@@ -761,6 +774,20 @@ const AdminDashboard: React.FC = React.memo(() => {
                         setCachedData("all_ai_configs", configsData);
                     }
                     setAIConfigs(configsData as AIConfig[]);
+                } else if (view === "logs") { // New logs fetch logic
+                    setLogsLoading(true);
+                    const params = {
+                        page: logsPage,
+                        pageSize: ITEMS_PER_PAGE,
+                        search: searchQuery,
+                        sortBy: logSortField,
+                        sortOrder: logSortOrder,
+                    };
+                    const response = await getLogs(params);
+                    setLogs(response.data);
+                    setTotalLogs(response.total);
+                    setLocalError(null);
+                    clearError();
                 }
                 clearError();
             } catch (err: unknown) {
@@ -778,7 +805,7 @@ const AdminDashboard: React.FC = React.memo(() => {
                 setNotificationsLoading(false);
                 setRoleLoading(false);
                 setAIConfigsLoading(false);
-
+                setLogsLoading(false);
             }
         };
 
@@ -791,6 +818,10 @@ const AdminDashboard: React.FC = React.memo(() => {
         agentsPage,
         userPermissions,
         aiConfigsPage,
+        logsPage,          
+    searchQuery,       
+    logSortField,      
+    logSortOrder,
         t,
         setGlobalError,
         clearError,
@@ -963,7 +994,8 @@ const AdminDashboard: React.FC = React.memo(() => {
                     view === "reasons" ||
                     view === "agents" ||
                     view === "notifications" ||
-                    view === "ai-configs"
+                    view === "ai-configs" ||
+                    view === "logs"
                 ) && (
                         <div className="search-container">
                             <FaSearch className="search-icon" aria-hidden="true" />
@@ -1140,6 +1172,13 @@ const AdminDashboard: React.FC = React.memo(() => {
                                     {t("adminDashboard.sidebar.aiConfigs")}
                                 </button>
                             )}
+                            <button
+                                className={view === "logs" ? "active" : ""}
+                                onClick={() => handleViewChange("logs")}
+                                aria-current={view === "logs" ? "page" : undefined}
+                            >
+                                {t("adminDashboard.sidebar.logs")}
+                            </button>
                         </div>
                     </div>
                     {userPermissions.canViewUsers && view === "users" && (
@@ -1783,6 +1822,20 @@ const AdminDashboard: React.FC = React.memo(() => {
                                 view={view}
                                 setView={setView}
                                 setError={setLocalError}
+                            />
+                        )}
+                        {view === "logs" && (
+                            <LogsList
+                                logs={logs}
+                                totalLogs={totalLogs}
+                                logsPage={logsPage}
+                                setLogsPage={setLogsPage}
+                                logSortField={logSortField}
+                                setLogSortField={setLogSortField}
+                                logSortOrder={logSortOrder}
+                                setLogSortOrder={setLogSortOrder}
+                                itemsPerPage={ITEMS_PER_PAGE}
+                                logsLoading={logsLoading}
                             />
                         )}
                     </Suspense>

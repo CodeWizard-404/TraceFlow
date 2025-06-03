@@ -28,3 +28,4 @@ export type ViewMode =
     | "add-ai-config"
     | "ai-config-details"
     | "edit-ai-config"
+    | "logs"

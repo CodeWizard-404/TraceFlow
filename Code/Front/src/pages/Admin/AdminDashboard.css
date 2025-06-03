@@ -368,6 +368,11 @@ body.dark .table-head .table-row {
 
 }
 
+.table-row-44 {
+    grid-template-columns: 1fr 0.35fr 3fr 1.1fr 1.3fr;
+
+}
+
 .table-body .table-row {
     background: #f8fafc;
     border-radius: 0.5rem;

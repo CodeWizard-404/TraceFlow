@@ -1148,7 +1148,8 @@
       "page": "Page {{page}} of {{total}}"
     },
     "loading": {
-      "userDetails": "Loading user details..."
+      "userDetails": "Loading user details...",
+      "logs": "Loading logs..."
     },
     "header": {
       "users": "Users Management",
@@ -1173,7 +1174,8 @@
       "aiConfigs": "AI Configurations",
       "addAIConfig": "Add AI Configuration",
       "aiConfigDetails": "AI Configuration Details: {{modelName}}",
-      "anomalyDetection": "Anomaly Detection"
+      "anomalyDetection": "Anomaly Detection",
+      "logs": "Logs"
     },
     "sidebar": {
       "management": "Management",
@@ -1204,6 +1206,7 @@
       "reasons": "Reasons",
       "sortUsersBy": "Sort Users By",
       "sortAgentsBy": "Sort Agents By",
+      "logs": "Logs",
       "sortOptions": {
         "name": "Name",
         "email": "Email",
@@ -1384,6 +1387,9 @@
       "status": "Status",
       "actions": "Actions",
       "agents": "Agents"
+    },
+    "noItems": {
+      "logs": "No logs found."
     }
   },
   "reasonAdd": {
@@ -2204,5 +2210,12 @@
       "invalidIP": "Invalid IP address format."
     },
     "loading": "Loading Reports..."
+  },
+  "logs": {
+    "timestamp": "Timestamp",
+    "level": "Level",
+    "message": "Message",
+    "userId": "User ID",
+    "traceId": "Trace ID"
   }
 }

@@ -33,7 +33,7 @@ class SystemService {
         endDate,
         search,
         sortBy = 'timestamp',
-        sortOrder = 'DESC',
+        sortOrder = 'desc',
     }) {
         try {
             pageSize = Math.min(pageSize, config.maxPageSize);
@@ -125,7 +125,7 @@ class SystemService {
                 ],
                 where,
                 group: [category],
-                order: [[this.Log.sequelize.literal('count'), 'DESC']],
+                order: [[this.Log.sequelize.literal('count'), 'desc']],
             });
 
             return results.map(row => row.toJSON());

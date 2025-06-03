@@ -920,36 +920,36 @@ const Timesheets: React.FC = React.memo(() => {
                 setLoading(false);
                 return;
             }
-            const visits = selectedVisits.map(visit => ({
-                date: visit.date, // YYYY-MM-DD
-                time: visit.time, // HH:MM
-                agentID: visit.agentID,
-                location: visit.location,
-                reasons: visit.reasons.map(r => ({ id: r.reasonID, item: r.item })),
-                checklists: visit.checklists.map(c => ({ id: c.checklistID, item: c.item })),
-                status: VisitStatus.PENDING,
-            }));
-            await createTimesheet({
-                weekNumber: currentWeek,
-                year: currentYear,
-                supervisorID,
-                visits,
-                status: TimesheetStatus.PENDING,
-            });
+
+            for (const visit of selectedVisits) {
+                const weekNumber = getWeekNumber(new Date(visit.date));
+                await createTimesheet({
+                    weekNumber,
+                    year: currentYear,
+                    supervisorID,
+                    visits: [{
+                        date: visit.date,
+                        time: `${visit.time}:00`,
+                        agentID: visit.agentID,
+                        location: visit.location,
+                        reasons: visit.reasons.map(r => ({ id: r.reasonID, item: r.item })),
+                        checklists: visit.checklists.map(c => ({ id: c.checklistID, item: c.item })),
+                        status: userPermissions.canValidateTimesheets || userPermissions.canCreateSupervisorTimesheets ? "validated" : "pending",
+                    }],
+                    status: userPermissions.canValidateTimesheets || userPermissions.canCreateSupervisorTimesheets ? "validated" : "pending",
+                });
+            }
+
             setGeneratedVisits([]);
             setHasUnsavedChanges(false);
             await fetchTimesheets();
         } catch (err: any) {
             console.error("Error saving suggestions:", err);
-            if (err.message.includes("Google Calendar sync failed")) {
-                setError(t("timesheets.errors.partialSuccessGoogleSync"));
-            } else {
-                setError(err.message || t("timesheets.errors.saveSuggestions"));
-            }
+            setError(err.message || t("timesheetForm.errors.createFailed"));
         } finally {
             setLoading(false);
         }
-    }, [supervisorID, generatedVisits, currentWeek, currentYear, fetchTimesheets, t]);
+    }, [supervisorID, generatedVisits, currentYear, fetchTimesheets, t, userPermissions, getWeekNumber]);
 
     const generateYearData = useCallback(() => {
         const weeksInYear = getWeeksInYear(currentYear);

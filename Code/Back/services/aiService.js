@@ -1,6 +1,6 @@
 const { makeOllamaApiCall } = require('../utils/apiClient');
 const { initializeAI } = require('../config/ai');
-const { AIConfig, User, Role, Agent, Reason, Checklist, Delegation } = require('../models');
+const { AIConfig, User, Role, Agent, Reason, Checklist, Delegation, sequelize } = require('../models');
 const GoogleMapsService = require('./googleMapsService');
 const { Op } = require('sequelize');
 const NodeCache = require('node-cache');
@@ -101,27 +101,43 @@ class AIService {
         return checklists;
     }
 
+
+
+
     static async generateTimesheetSuggestions(supervisorId, weekNumber, year, timesheetData, controller = new AbortController()) {
         try {
-            cache.flushAll();
+            console.log('Starting generateTimesheetSuggestions', { supervisorId, weekNumber, year });
 
+            // Clear cache
+            cache.flushAll();
+            console.log('Cache flushed');
+
+            // Fetch supervisor
             const supervisor = await User.findByPk(supervisorId, { attributes: ['userID'] });
+            console.log('Supervisor fetched', { supervisor: supervisor?.userID });
             if (!supervisor) {
                 const error = new Error(ERROR_MESSAGES.INVALID_SUPERVISOR);
                 error.status = 404;
                 throw error;
             }
 
+            // Calculate week start
             const weekStart = this.getWeekStartDate(weekNumber, year);
             const weekStartString = weekStart.toISOString().split('T')[0];
+            console.log('Week start calculated', { weekStartString });
 
+            // Get current time
             const today = new Date();
-            const currentHour = today.getUTCHours() + 1;
+            const currentHour = today.getUTCHours() + 1; // Adjust for CET
             const currentMinutes = today.getUTCMinutes();
             const currentTimeString = `${currentHour.toString().padStart(2, '0')}:${currentMinutes.toString().padStart(2, '0')}`;
+            console.log('Current time', { today: today.toISOString(), currentTimeString });
 
+            // Check if current week
             const isCurrentWeek = year === today.getUTCFullYear() && weekNumber === Math.floor((today - new Date(Date.UTC(today.getUTCFullYear(), 0, 4 - ((new Date(Date.UTC(today.getUTCFullYear(), 0, 4)).getUTCDay() || 7) - 1)))) / (7 * 24 * 60 * 60 * 1000)) + 1;
+            console.log('Is current week?', { isCurrentWeek });
 
+            // Destructure timesheetData
             const {
                 delegationIds = [],
                 agentIds = [],
@@ -132,23 +148,31 @@ class AIService {
                 includeRecruitmentVisits = false,
                 coordinates
             } = timesheetData;
+            console.log('Timesheet data destructured', { delegationIds, agentIds, timeInterval, includeRecruitmentVisits, coordinates });
 
+            // Validate time interval
             if (!timeInterval || !Number.isInteger(timeInterval.startHour) || !Number.isInteger(timeInterval.endHour) ||
                 timeInterval.startHour < 0 || timeInterval.endHour > 24 || timeInterval.startHour >= timeInterval.endHour) {
                 const error = new Error(ERROR_MESSAGES.INVALID_TIME_INTERVAL);
                 error.status = 400;
                 throw error;
             }
+            console.log('Time interval validated', { startHour: timeInterval.startHour, endHour: timeInterval.endHour });
 
+            // Adjust start hour for current day
             let adjustedStartHour = timeInterval.startHour;
             if (isCurrentWeek && weekStartString === today.toISOString().split('T')[0]) {
                 adjustedStartHour = Math.max(timeInterval.startHour, Math.ceil((currentHour * 60 + currentMinutes) / 60));
             }
+            console.log('Adjusted start hour', { adjustedStartHour });
 
+            // Validate coordinates
             if (!coordinates || !coordinates.lat || !coordinates.lng) {
                 throw Object.assign(new Error(ERROR_MESSAGES.MISSING_COORDINATES), { status: 400 });
             }
+            console.log('Coordinates validated', { coordinates });
 
+            // Fetch supervisor location
             let supervisorLocation = { latitude: coordinates.lat, longitude: coordinates.lng, formattedAddress: 'Unknown' };
             try {
                 const locationData = await GoogleMapsService.getCurrentUserLocation(supervisorId, coordinates);
@@ -157,29 +181,40 @@ class AIService {
                     longitude: locationData.longitude,
                     formattedAddress: locationData.address
                 };
+                console.log('Supervisor location fetched', { supervisorLocation });
             } catch (error) {
                 console.warn('Warning: Google API failed, continuing with provided coordinates');
+                console.log('Using fallback coordinates', { supervisorLocation });
             }
 
+            // Determine days of week
             let daysOfWeek = preferredDays.length > 0
                 ? preferredDays
                 : Array.from({ length: 7 }, (_, i) => this.getDateString(weekStart, i));
+            console.log('Days of week determined', { daysOfWeek });
 
+            // Filter past dates
             const todayDate = today.toISOString().split('T')[0];
             daysOfWeek = daysOfWeek.filter(date => date >= todayDate);
+            console.log('Filtered past dates', { daysOfWeek });
 
+            // Filter current day if time has passed
             if (isCurrentWeek && daysOfWeek.includes(todayDate)) {
                 const currentMinutesTotal = currentHour * 60 + currentMinutes;
                 const endMinutes = timeInterval.endHour * 60;
                 if (currentMinutesTotal >= endMinutes) {
                     daysOfWeek = daysOfWeek.filter(date => date !== todayDate);
                 }
+                console.log('Filtered current day if time passed', { daysOfWeek });
             }
 
+            // Check if any days remain
             if (daysOfWeek.length === 0) {
+                console.log('No valid days remaining, returning empty array');
                 return [];
             }
 
+            // Fetch agents, reasons, and checklists
             const [agents, reasons, checklists] = await Promise.all([
                 Agent.findAll({
                     where: {
@@ -193,11 +228,15 @@ class AIService {
                 this.getCachedReasons(),
                 this.getCachedChecklists()
             ]);
+            console.log('Fetched agents, reasons, and checklists', { agentCount: agents.length, reasonCount: reasons.length, checklistCount: checklists.length });
 
+            // Validate agents
             if (agents.length === 0 && !includeRecruitmentVisits) {
                 throw Object.assign(new Error(ERROR_MESSAGES.NO_AGENTS_AVAILABLE), { status: 400 });
             }
+            console.log('Agent validation passed');
 
+            // Process agent data
             const agentData = agents.map(agent => ({
                 agentID: agent.agentID,
                 location: agent.location || agent.Delegation?.name || 'Unknown',
@@ -206,7 +245,9 @@ class AIService {
                 delegationID: agent.delegationID,
                 delegationName: agent.Delegation?.name || 'Unknown'
             }));
+            console.log('Agent data processed', { agentData: agentData.map(a => a.agentID) });
 
+            // Sort agents by proximity
             const sortedAgents = agentData.sort((a, b) => {
                 const distA = this.calculateDistance(
                     supervisorLocation.latitude,
@@ -224,19 +265,23 @@ class AIService {
                 if (distB === Infinity && distA !== Infinity) return -1;
                 return distA - distB;
             });
+            console.log('Agents sorted by proximity', { sortedAgentIds: sortedAgents.map(a => a.agentID) });
 
+            // Handle recruitment visit locations
             let recruitmentVisitLocations = [];
             if (includeRecruitmentVisits && Array.isArray(criteria.recruitmentAreas) && criteria.recruitmentAreas.length > 0) {
                 recruitmentVisitLocations = await Promise.all(
                     criteria.recruitmentAreas.map(async area => {
                         try {
                             const geocode = await GoogleMapsService.geocodeAddress(`${area}, Tunisia`, 'tn');
+                            console.log('Geocoded recruitment area', { area, geocode });
                             return {
                                 latitude: geocode.latitude,
                                 longitude: geocode.longitude,
                                 formattedAddress: geocode.formattedAddress
                             };
                         } catch (error) {
+                            console.log('Failed to geocode area', { area, error: error.message });
                             return { latitude: null, longitude: null, formattedAddress: 'Recruitment Location' };
                         }
                     })
@@ -244,29 +289,67 @@ class AIService {
             } else if (includeRecruitmentVisits) {
                 recruitmentVisitLocations = [{ latitude: null, longitude: null, formattedAddress: 'Recruitment Location' }];
             }
+            console.log('Recruitment visit locations processed', { recruitmentVisitLocations });
 
+            // Map reasons and checklists
             const reasonMap = {};
             reasons.forEach(r => { reasonMap[r.reasonID] = { id: r.reasonID, item: r.item }; });
-
             const checklistMap = {};
             checklists.forEach(c => { checklistMap[c.checklistID] = { id: c.checklistID, item: c.item }; });
+            console.log('Reason and checklist maps created', { reasonCount: Object.keys(reasonMap).length, checklistCount: Object.keys(checklistMap).length });
 
-            const aiConfig = await initializeAI();
-            let config = await AIConfig.findOne({ where: { supervisorId }, attributes: ['modelName', 'timesheetMaxSuggestions'] });
-
-            if (!config) {
-                config = await AIConfig.create({
-                    modelName: aiConfig.modelName || 'mistral',
-                    timesheetMaxSuggestions: aiConfig.timesheetMaxSuggestions || 5,
-                    supervisorId
+            // Initialize AI config with transaction
+            const transaction = await sequelize.transaction();
+            try {
+                const aiConfig = await initializeAI();
+                let config = await AIConfig.findOne(
+                    { where: { supervisorId }, attributes: ['configID', 'modelName', 'timesheetMaxSuggestions'] },
+                    { transaction }
+                );
+                console.log('AI config fetched', {
+                    configID: config?.configID,
+                    modelName: config?.modelName,
+                    timesheetMaxSuggestions: config?.timesheetMaxSuggestions
                 });
-            }
 
-            if (config.timesheetMaxSuggestions <= 0) {
-                throw Object.assign(new Error(ERROR_MESSAGES.MAX_SUGGESTIONS_REACHED), { status: 429 });
-            }
+                if (!config) {
+                    // Validate supervisorId before creating
+                    if (supervisorId) {
+                        const supervisorExists = await User.findByPk(supervisorId, { transaction });
+                        if (!supervisorExists) {
+                            throw Object.assign(new Error(ERROR_MESSAGES.INVALID_SUPERVISOR), { status: 400 });
+                        }
+                    }
 
-            const prompt = `Generate timesheet visit suggestions for supervisor ${supervisorId} for week ${weekNumber} of ${year} starting ${weekStartString}.
+                    config = await AIConfig.create(
+                        {
+                            modelName: aiConfig.modelName || 'mistral',
+                            timesheetMaxSuggestions: aiConfig.timesheetMaxSuggestions || 5,
+                            supervisorId
+                        },
+                        { transaction }
+                    );
+                    console.log('AI config created', {
+                        configID: config.configID,
+                        modelName: config.modelName,
+                        timesheetMaxSuggestions: config.timesheetMaxSuggestions,
+                        supervisorId: config.supervisorId
+                    });
+                }
+
+                // Check if config is a valid instance
+                if (!(config instanceof AIConfig) || !config.configID) {
+                    throw Object.assign(new Error('Invalid AIConfig instance or missing configID'), { status: 500 });
+                }
+
+                // Check max suggestions
+                if (config.timesheetMaxSuggestions <= 0) {
+                    throw Object.assign(new Error(ERROR_MESSAGES.MAX_SUGGESTIONS_REACHED), { status: 429 });
+                }
+                console.log('Max suggestions validated', { timesheetMaxSuggestions: config.timesheetMaxSuggestions });
+
+                // Build prompt
+                const prompt = `Generate timesheet visit suggestions for supervisor ${supervisorId} for week ${weekNumber} of ${year} starting ${weekStartString}.
 - Dates: ${daysOfWeek.join(',')}
 - Time Interval: ${adjustedStartHour}:00-${timeInterval.endHour}:00
 - Current Date: ${todayDate}
@@ -289,92 +372,130 @@ Return a JSON array of visit objects: [{"date":"YYYY-MM-DD","time":"HH:MM","agen
 - Ensure date is in YYYY-MM-DD format and time is in HH:MM (24-hour) format.
 - Ensure unique times on the same day with at least a 1-hour gap.
 - Return only the JSON array without additional text or formatting.`;
+                console.log('Prompt constructed', { promptLength: prompt.length });
 
-            const payload = {
-                model: config.modelName || 'mistral',
-                prompt,
-                stream: false
-            };
+                // Make AI API call
+                const payload = {
+                    model: config.modelName || 'mistral',
+                    prompt,
+                    stream: false
+                };
+                console.log('AI payload prepared', { model: payload.model });
 
-            let response;
-            try {
-                response = await makeOllamaApiCall('post', '/generate', payload, { signal: controller.signal });
+                let response;
+                try {
+                    response = await makeOllamaApiCall('post', '/generate', payload, { signal: controller.signal });
+                    console.log('AI API call successful', { response: !!response });
+                } catch (error) {
+                    console.error('AI API call failed', { error: error.message });
+                    throw Object.assign(new Error(ERROR_MESSAGES.AI_API_UNAVAILABLE), { status: 503, details: error.message });
+                }
+
+                // Validate AI response
+                if (!response || !response.response) {
+                    console.error('Invalid AI response', { response });
+                    throw Object.assign(new Error(ERROR_MESSAGES.INVALID_AI_RESPONSE), { status: 503, details: 'No response data from AI service.' });
+                }
+
+                // Parse AI response
+                let suggestionsRaw;
+                try {
+                    suggestionsRaw = JSON.parse(response.response.trim());
+                    console.log('AI response parsed', { suggestionCount: suggestionsRaw.length });
+                } catch (parseError) {
+                    console.error('Failed to parse AI JSON', { error: parseError.message });
+                    throw Object.assign(new Error(ERROR_MESSAGES.INVALID_AI_JSON), { status: 503, details: `Failed to parse JSON: ${parseError.message}` });
+                }
+
+                // Validate suggestions format
+                if (!Array.isArray(suggestionsRaw)) {
+                    console.log('AI response is not an array, returning empty array');
+                    return [];
+                }
+
+                // Filter valid suggestions
+                const validSuggestions = suggestionsRaw.filter((visit, index) => {
+                    if (!visit.date || !daysOfWeek.includes(visit.date) || visit.date < todayDate) {
+                        console.log('Invalid visit date', { visit, index });
+                        return false;
+                    }
+
+                    const timeMatch = visit.time && visit.time.match(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/);
+                    if (!timeMatch) {
+                        console.log('Invalid visit time format', { visit, index });
+                        return false;
+                    }
+
+                    const [hours, minutes] = visit.time.split(':').map(Number);
+                    const visitMinutes = hours * 60 + minutes;
+                    if (
+                        visitMinutes < adjustedStartHour * 60 ||
+                        visitMinutes >= timeInterval.endHour * 60 ||
+                        (visit.date === todayDate && visitMinutes <= (currentHour * 60 + currentMinutes))
+                    ) {
+                        console.log('Visit time out of bounds', { visit, index, visitMinutes, adjustedStartHour, endHour: timeInterval.endHour });
+                        return false;
+                    }
+
+                    const isRecruitment = visit.agentID === null;
+                    if (!isRecruitment && !sortedAgents.some(agent => agent.agentID === visit.agentID)) {
+                        console.log('Invalid agentID for non-recruitment visit', { visit, index });
+                        return false;
+                    }
+
+                    if (!Array.isArray(visit.reasons) || visit.reasons.length === 0 || !visit.reasons.every(r => r.id && reasonMap[r.id])) {
+                        console.log('Invalid reasons', { visit, index });
+                        return false;
+                    }
+
+                    if (!isRecruitment && (!Array.isArray(visit.checklists) || visit.checklists.length === 0 || !visit.checklists.every(c => c.id && checklistMap[c.id]))) {
+                        console.log('Invalid checklists for non-recruitment visit', { visit, index });
+                        return false;
+                    }
+
+                    console.log('Valid visit', { visit, index });
+                    return true;
+                });
+                console.log('Filtered valid suggestions', { validSuggestionCount: validSuggestions.length });
+
+                // Ensure recruitment visit if required
+                if (includeRecruitmentVisits && !validSuggestions.some(visit => visit.agentID === null)) {
+                    validSuggestions.push({
+                        date: daysOfWeek[0],
+                        time: `${adjustedStartHour.toString().padStart(2, '0')}:00`,
+                        agentID: null,
+                        reasons: [{ id: reasons[0].reasonID }],
+                        checklists: []
+                    });
+                    console.log('Added default recruitment visit');
+                }
+
+                // Update AI config only if valid suggestions exist and limit allows
+                if (validSuggestions.length > 0 && config.timesheetMaxSuggestions > 0) {
+                    await config.update(
+                        {
+                            timesheetMaxSuggestions: config.timesheetMaxSuggestions - 1
+                        },
+                        { transaction }
+                    );
+                    console.log('Updated AI config', { newTimesheetMaxSuggestions: config.timesheetMaxSuggestions - 1 });
+                }
+
+                // Cache results
+                const cacheKey = `${supervisorId}-${weekNumber}-${year}-${JSON.stringify(timesheetData)}`;
+                cache.set(cacheKey, validSuggestions);
+                console.log('Cached suggestions', { cacheKey, suggestionCount: validSuggestions.length });
+
+                await transaction.commit();
+                console.log('Returning valid suggestions', { validSuggestions });
+                return validSuggestions;
             } catch (error) {
-                throw Object.assign(new Error(ERROR_MESSAGES.AI_API_UNAVAILABLE), { status: 503, details: error.message });
+                await transaction.rollback();
+                console.error('Error in transaction', { error: error.message, status: error.status });
+                throw error;
             }
-
-            if (!response || !response.response) {
-                throw Object.assign(new Error(ERROR_MESSAGES.INVALID_AI_RESPONSE), { status: 503, details: 'No response data from AI service.' });
-            }
-
-            let suggestionsRaw;
-            try {
-                suggestionsRaw = JSON.parse(response.response.trim());
-            } catch (parseError) {
-                throw Object.assign(new Error(ERROR_MESSAGES.INVALID_AI_JSON), { status: 503, details: `Failed to parse JSON: ${parseError.message}` });
-            }
-
-            if (!Array.isArray(suggestionsRaw)) {
-                return [];
-            }
-
-            const validSuggestions = suggestionsRaw.filter((visit, index) => {
-                if (!visit.date || !daysOfWeek.includes(visit.date) || visit.date < todayDate) {
-                    return false;
-                }
-
-                const timeMatch = visit.time && visit.time.match(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/);
-                if (!timeMatch) {
-                    return false;
-                }
-
-                const [hours, minutes] = visit.time.split(':').map(Number);
-                const visitMinutes = hours * 60 + minutes;
-                if (
-                    visitMinutes < adjustedStartHour * 60 ||
-                    visitMinutes >= timeInterval.endHour * 60 ||
-                    (visit.date === todayDate && visitMinutes <= (currentHour * 60 + currentMinutes))
-                ) {
-                    return false;
-                }
-
-                const isRecruitment = visit.agentID === null;
-                if (!isRecruitment && !sortedAgents.some(agent => agent.agentID === visit.agentID)) {
-                    return false;
-                }
-
-                if (!Array.isArray(visit.reasons) || visit.reasons.length === 0 || !visit.reasons.every(r => r.id && reasonMap[r.id])) {
-                    return false;
-                }
-
-                if (!isRecruitment && (!Array.isArray(visit.checklists) || visit.checklists.length === 0 || !visit.checklists.every(c => c.id && checklistMap[c.id]))) {
-                    return false;
-                }
-
-                return true;
-            });
-
-            if (includeRecruitmentVisits && !validSuggestions.some(visit => visit.agentID === null)) {
-                validSuggestions.push({
-                    date: daysOfWeek[0],
-                    time: `${adjustedStartHour.toString().padStart(2, '0')}:00`,
-                    agentID: null,
-                    reasons: [{ id: reasons[0].reasonID }],
-                    checklists: []
-                });
-            }
-
-            if (validSuggestions.length > 0) {
-                await config.update({
-                    timesheetMaxSuggestions: config.timesheetMaxSuggestions - 1
-                });
-            }
-
-            const cacheKey = `${supervisorId}-${weekNumber}-${year}-${JSON.stringify(timesheetData)}`;
-            cache.set(cacheKey, validSuggestions);
-
-            return validSuggestions;
         } catch (error) {
+            console.error('Error in generateTimesheetSuggestions', { error: error.message, status: error.status });
             if (error.name === 'AbortError') {
                 const abortError = new Error(ERROR_MESSAGES.REQUEST_CANCELED);
                 abortError.status = 499;
@@ -385,10 +506,6 @@ Return a JSON array of visit objects: [{"date":"YYYY-MM-DD","time":"HH:MM","agen
                 : Object.assign(new Error(ERROR_MESSAGES.AI_API_UNAVAILABLE), { status: 503, details: error.message });
         }
     }
-
-
-
-
 
 
 
