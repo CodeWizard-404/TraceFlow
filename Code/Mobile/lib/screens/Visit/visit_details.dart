@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -7,12 +6,14 @@ import '../../providers/visit_provider.dart';
 import '../../providers/agent_provider.dart';
 import '../../providers/checklist_provider.dart';
 import '../../providers/timesheet_provider.dart';
+import '../../widgets/Visit/otp_validation_screen.dart';
 import '../../widgets/appbar/sidebar.dart';
 import '../../widgets/commen/button.dart';
 import '../../widgets/commen/icon_button.dart';
 import '../../widgets/commen/snack_bar.dar.dart';
 import '../../widgets/commen/spacer.dart';
 import '../../utils/constants.dart';
+import '../../widgets/qr_scanner/qr_scanner_widget.dart';
 import 'edit_visit.dart';
 import 'log_visit_screen.dart';
 
@@ -32,7 +33,11 @@ class _VisitDetailsScreenState extends State<VisitDetailsScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final visitProvider = Provider.of<VisitProvider>(context, listen: false);
       visitProvider.fetchVisitById(widget.visit.visitID).catchError((e) {
-        if (kDebugMode) print('Failed to fetch visit: $e');
+        CustomSnackBar.show(
+          context: context,
+          message: 'Failed to fetch visit: $e',
+          backgroundColor: Theme.of(context).colorScheme.error.withOpacity(0.9),
+        );
       });
     });
   }
@@ -44,18 +49,94 @@ class _VisitDetailsScreenState extends State<VisitDetailsScreen> {
     );
   }
 
-  void _navigateToLog(BuildContext context) {
+  Future<void> _navigateToLog(BuildContext context) async {
+    final visitProvider = Provider.of<VisitProvider>(context, listen: false);
     final timesheetProvider = Provider.of<TimesheetProvider>(context, listen: false);
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => LogVisitScreen(
-          visitID: widget.visit.visitID!,
-          weekNumber: timesheetProvider.currentTimesheet?.weekNumber ?? 1,
-          year: widget.visit.date.year,
+    final visit = visitProvider.currentVisit ?? widget.visit;
+
+    if (visit.agentID == null) {
+      // No agent: go directly to LogVisitScreen
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => LogVisitScreen(
+            visitID: visit.visitID!,
+            weekNumber: timesheetProvider.currentTimesheet?.weekNumber ?? 1,
+            year: visit.date.year,
+          ),
         ),
-      ),
+      );
+      return;
+    }
+
+    // Agent exists: start QR scanning
+    final qrResult = await Navigator.push<String?>(
+      context,
+      MaterialPageRoute(builder: (_) => const QRScannerWidget()),
     );
+
+    if (qrResult == null || !mounted) {
+      CustomSnackBar.show(
+        context: context,
+        message: 'QR scan cancelled or failed',
+        backgroundColor: Theme.of(context).colorScheme.error.withOpacity(0.9),
+      );
+      return;
+    }
+
+    try {
+      final qrResponse = await visitProvider.verifyQRCode(
+        qrData: qrResult,
+        visitId: visit.visitID!,
+      );
+      if (qrResponse['valid'] != true) {
+        CustomSnackBar.show(
+          context: context,
+          message: qrResponse['message'] ?? 'Invalid QR code',
+          backgroundColor: Theme.of(context).colorScheme.error.withOpacity(0.9),
+        );
+        return;
+      }
+
+      // QR verified, prompt for OTP
+      final otpValidated = await Navigator.push<bool>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => OTPValidationScreen(
+            visitId: visit.visitID!,
+            onOTPValidated: (otp) async {
+              final otpResponse = await visitProvider.validateOTP(
+                visitId: visit.visitID!,
+                otpCode: otp,
+              );
+              if (otpResponse['valid'] != true) {
+                throw Exception(otpResponse['message'] ?? 'Invalid OTP');
+              }
+            },
+          ),
+        ),
+      );
+
+      if (otpValidated == true && mounted) {
+        // OTP verified, navigate to LogVisitScreen
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => LogVisitScreen(
+              visitID: visit.visitID!,
+              weekNumber: timesheetProvider.currentTimesheet?.weekNumber ?? 1,
+              year: visit.date.year,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      CustomSnackBar.show(
+        context: context,
+        message: 'Verification failed: $e',
+        backgroundColor: Theme.of(context).colorScheme.error.withOpacity(0.9),
+      );
+    }
   }
 
   void _deleteVisit(BuildContext context) async {
@@ -82,11 +163,16 @@ class _VisitDetailsScreenState extends State<VisitDetailsScreen> {
       try {
         await visitProvider.deleteVisit(widget.visit.visitID);
         Navigator.pop(context);
+        CustomSnackBar.show(
+          context: context,
+          message: 'Visit deleted successfully',
+          backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.9),
+        );
       } catch (e) {
         CustomSnackBar.show(
           context: context,
           message: 'Failed to delete visit: $e',
-          backgroundColor: Colors.red,
+          backgroundColor: Theme.of(context).colorScheme.error.withOpacity(0.9),
         );
       }
     }
@@ -246,7 +332,7 @@ class _VisitDetailsScreenState extends State<VisitDetailsScreen> {
                           _buildDetailRow(
                             context: context,
                             label: 'Name',
-                            value: agent != null ? '${agent.name} ${agent.lastname}' : 'N/A',
+                            value: agent != null ? '${agent.name} ${agent.lastname}' : 'No Agent (Recruitment)',
                             icon: Icons.person_outline,
                           ),
                           _buildDetailRow(
@@ -330,11 +416,11 @@ class _VisitDetailsScreenState extends State<VisitDetailsScreen> {
                               Icon(
                                 Icons.check_circle_outline,
                                 color: theme.colorScheme.primary,
-                                size: 14,
+                                size: 16,
                               ),
-                              const SizedBox(width: 4),
+                              const SizedBox(width: 6),
                               Text(
-                                'No checklists assigned',
+                                'No checklists available',
                                 style: theme.textTheme.bodyMedium?.copyWith(
                                   color: Colors.grey,
                                 ),
@@ -344,14 +430,14 @@ class _VisitDetailsScreenState extends State<VisitDetailsScreen> {
                         ],
                       ),
                       if (visit.photos?.isNotEmpty ?? false) ...[
-                        const CustomSpacer(height: 8),
+                        const CustomSpacer(height: 16),
                         _buildSectionCard(
                           context,
                           title: 'Photos (${visit.photos!.length})',
                           children: [
                             Wrap(
-                              spacing: 4,
-                              runSpacing: 4,
+                              spacing: 8,
+                              runSpacing: 8,
                               children: visit.photos!.map((photo) => GestureDetector(
                                 onTap: () => _viewPhotoFullScreen(context, photo),
                                 child: Container(
@@ -359,19 +445,19 @@ class _VisitDetailsScreenState extends State<VisitDetailsScreen> {
                                     borderRadius: BorderRadius.circular(4),
                                     border: Border.all(
                                       color: theme.colorScheme.onSurface.withOpacity(0.4),
-                                      width: 0.5,
+                                      width: 1,
                                     ),
                                   ),
                                   child: ClipRRect(
                                     borderRadius: BorderRadius.circular(4),
                                     child: Image.network(
                                       photo.startsWith('http') ? photo : '$baseUrl$photo',
-                                      width: 80,
-                                      height: 80,
+                                      width: 100,
+                                      height: 100,
                                       fit: BoxFit.cover,
                                       errorBuilder: (_, __, ___) => const Icon(
                                         Icons.error,
-                                        size: 80,
+                                        size: 50,
                                       ),
                                     ),
                                   ),
@@ -382,7 +468,7 @@ class _VisitDetailsScreenState extends State<VisitDetailsScreen> {
                         ),
                       ],
                       if (visit.comment?.isNotEmpty ?? false) ...[
-                        const CustomSpacer(height: 8),
+                        const CustomSpacer(height: 16),
                         _buildSectionCard(
                           context,
                           title: 'Comment',
@@ -392,9 +478,9 @@ class _VisitDetailsScreenState extends State<VisitDetailsScreen> {
                                 Icon(
                                   Icons.comment_outlined,
                                   color: theme.colorScheme.primary,
-                                  size: 14,
+                                  size: 16,
                                 ),
-                                const SizedBox(width: 4),
+                                const SizedBox(width: 6),
                                 Expanded(
                                   child: Text(
                                     visit.comment!,
@@ -412,18 +498,19 @@ class _VisitDetailsScreenState extends State<VisitDetailsScreen> {
                   ),
                 ),
                 const CustomSpacer(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    CustomButton(
-                      label: 'Log Visit',
-                      onPressed: () => _navigateToLog(context),
-                      backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.8),
-                      textColor: Colors.white,
-                      isOutlined: false,
-                    ),
-                  ],
-                ),
+                if (visit.status?.toLowerCase() == 'validated') // Show button only if status is 'validated'
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CustomButton(
+                        label: 'Log Visit',
+                        onPressed: () => _navigateToLog(context),
+                        backgroundColor: theme.colorScheme.primary.withOpacity(0.8),
+                        textColor: Colors.white,
+                        isOutlined: false,
+                      ),
+                    ],
+                  ),
                 const CustomSpacer(height: 16),
               ],
             ),
@@ -463,9 +550,9 @@ class _VisitDetailsScreenState extends State<VisitDetailsScreen> {
                       Icon(
                         Icons.info_outline,
                         color: theme.colorScheme.primary,
-                        size: 14,
+                        size: 16,
                       ),
-                      const SizedBox(width: 4),
+                      const SizedBox(width: 6),
                       Text(
                         title,
                         style: theme.textTheme.titleMedium?.copyWith(
@@ -502,9 +589,9 @@ class _VisitDetailsScreenState extends State<VisitDetailsScreen> {
                 Icon(
                   icon,
                   color: theme.colorScheme.primary,
-                  size: 14,
+                  size: 16,
                 ),
-              if (icon != null) const SizedBox(width: 4),
+              if (icon != null) const SizedBox(width: 6),
               Text(
                 label,
                 style: theme.textTheme.bodyMedium?.copyWith(
