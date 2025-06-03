@@ -1570,6 +1570,14 @@ body.dark .modal-btn:disabled {
   .modal-btn {
     width: 100%;
   }
+
+  .dashboard-header {
+    flex-wrap: nowrap;
+  }
+
+  .reporting-container .action-btn {
+    width: auto;
+  }
 }
 
 @media (max-width: 480px) {
@@ -1581,4 +1589,105 @@ body.dark .modal-btn:disabled {
     padding: 0.625rem 1rem;
     font-size: 0.75rem;
   }
+}
+
+
+
+
+.report-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 1rem;
+}
+
+.report-card {
+  background: #fff;
+  border-radius: 0.75rem;
+  box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.1);
+  padding: 1rem;
+}
+
+body.dark .report-card {
+  background: #262626;
+  box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.3);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.card-header h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #4cb1c7;
+}
+
+body.dark .card-header h3 {
+  color: #63b3ed;
+}
+
+.card-body p {
+  font-size: 0.875rem;
+  color: #4b5563;
+  margin-bottom: 0.25rem;
+}
+
+body.dark .card-body p {
+  color: #9ca3af;
+}
+
+.card-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.pagination button {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  background: #f8fafc;
+  color: #4cb1c7;
+  border: 1px solid #4cb1c7;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+body.dark .pagination button {
+  background: #262626;
+  color: #f8fafc;
+  border-color: #63b3ed;
+}
+
+.pagination button:hover, .pagination button.active {
+  background: #4cb1c7;
+  color: #fff;
+}
+
+body.dark .pagination button:hover, body.dark .pagination button.active {
+  background: #63b3ed;
+}
+
+.action-btn.refresh {
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 1.25rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 50%;
+}
+
+.action-btn.refresh:hover {
+  background: rgba(255, 255, 255, 0.2);
 }

@@ -1,14 +1,21 @@
 enum PermissionsClass {
-    User = "User",
-    Role = "Role",
-    Timesheet = "Timesheet",
-    Visit = "Visit",
+    Agent = "Agent",
+    AI = "AI",
     Checklist = "Checklist",
+    CSV = "CSV",
+    CSVHeader = "CSVHeader",
+    Location = "Location",
+    Log = "Log",
+    Notification = "Notification",
+    Permission = "Permission",
     Reason = "Reason",
     ReceiptBook = "ReceiptBook",
     ReceiptStub = "ReceiptStub",
-    Agent = "Agent",
-    Other = "Other"
+    Report = "Report",
+    Role = "Role",
+    Timesheet = "Timesheet",
+    User = "User",
+    Visit = "Visit",
 }
 
-export default PermissionsClass
+export default PermissionsClass;

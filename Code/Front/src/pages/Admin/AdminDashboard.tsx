@@ -13,7 +13,6 @@ import {
     FaRedo,
     FaSearch,
     FaSort,
-    FaTimes,
     FaUserPlus,
     FaUpload,
 } from "react-icons/fa";
@@ -46,6 +45,17 @@ import "./AdminDashboard.css";
 import AddAgent from "./Agents/AddAgent";
 import EditAgent from "./Agents/EditAgent";
 import AgentView from "./Agents/AgentView";
+import {
+    listAIConfigs,
+} from "../../apis/aiAPI";
+import { AIConfig } from "../../models/AI";
+import { Log } from "../../models/log";
+import LogsList from "./LogsList";
+import { getLogs } from "../../apis/logAPI";
+
+const AIConfigsList = lazy(() => import("./AI/AIConfigsList"));
+const AIConfigAdd = lazy(() => import("./AI/AIConfigAdd"));
+const AIConfigView = lazy(() => import("./AI/AIConfigView"));
 
 const ChecklistAdd = lazy(() => import("./Items/Checklists/ChecklistAdd"));
 const ChecklistView = lazy(() => import("./Items/Checklists/ChecklistView"));
@@ -92,10 +102,13 @@ const validViews: ViewMode[] = [
     "add-agent",
     "agent-details",
     "edit-agent",
+    "ai-configs",
+    "add-ai-config",
+    "ai-config-details",
 ];
 
 interface CacheData {
-    data: User[] | Role[] | Permission[] | Checklist[] | Reason[] | Agent[] | NotificationRule[] | string[];
+    data: User[] | Role[] | Permission[] | Checklist[] | Reason[] | Agent[] | NotificationRule[] | string[] | AIConfig[];
     timestamp: number;
 }
 
@@ -157,6 +170,19 @@ const AdminDashboard: React.FC = React.memo(() => {
     const [isBulkUploadModalOpen, setIsBulkUploadModalOpen] = useState(false);
     const [governorateFilter, setGovernorateFilter] = useState<string>("all");
     const [delegationFilter, setDelegationFilter] = useState<string>("all");
+
+    const [logs, setLogs] = useState<Log[]>([]);
+    const [logsPage, setLogsPage] = useState(1);
+    const [totalLogs, setTotalLogs] = useState(0);
+    const [logSortField, setLogSortField] = useState<string>('timestamp');
+    const [logSortOrder, setLogSortOrder] = useState<SortOrder>('desc');
+    const [logsLoading, setLogsLoading] = useState(false);
+
+    const [aiConfigs, setAIConfigs] = useState<AIConfig[]>([]);
+    const [aiConfigsLoading, setAIConfigsLoading] = useState(false);
+    const [selectedAIConfig, setSelectedAIConfig] = useState<AIConfig | null>(null);
+    const [aiConfigsPage, setAIConfigsPage] = useState(1);
+
 
     const initialView = useMemo(() => {
         const savedView = Cookies.get(COOKIE_NAME);
@@ -226,6 +252,10 @@ const AdminDashboard: React.FC = React.memo(() => {
             canCreateAgents: effectivePermissions?.some(
                 (p) => p.name === import.meta.env.VITE_PERMISSIONS_CREATE_AGENTS
             ),
+            canManageAIConfigs: effectivePermissions?.some(
+                (p) => p.name === import.meta.env.VITE_PERMISSIONS_MANAGE_AI_CONFIG
+            ),
+
         }),
         [effectivePermissions]
     );
@@ -393,12 +423,34 @@ const AdminDashboard: React.FC = React.memo(() => {
         }
     }, [userPermissions.canViewNotificationRules, setCachedData, t, setGlobalError, clearError]);
 
+    const handleRefreshAIConfigs = useCallback(async () => {
+        if (!userPermissions.canManageAIConfigs) return;
+        cache.delete("all_ai_configs");
+        try {
+            setAIConfigsLoading(true);
+            const configsData = await listAIConfigs({});
+            setAIConfigs(configsData);
+            setCachedData("all_ai_configs", configsData);
+            setLocalError(null);
+            clearError();
+        } catch (err: unknown) {
+            console.error("Failed to refresh AI configs:", err);
+            const errorMessage = t("adminDashboard.error.fetchFailed");
+            setLocalError(errorMessage);
+            setGlobalError(errorMessage);
+        } finally {
+            setAIConfigsLoading(false);
+        }
+    }, [userPermissions.canManageAIConfigs, setCachedData, t, setGlobalError, clearError]);
+
+
+
     const handleResetConfirm = async () => {
         if (isResetting) return; // Prevent multiple resets
         setIsResetting(true);
         try {
             setResetLoading(true);
-            const response = await resetMainRoles();
+            await resetMainRoles();
             const updatedRoles = await getAllRoles();
             setCachedData("all_roles", updatedRoles);
             setRoles(updatedRoles);
@@ -565,17 +617,24 @@ const AdminDashboard: React.FC = React.memo(() => {
         setSelectedReason(null);
         setSelectedAgent(null);
         setSelectedNotificationRule(null);
+        setSelectedAIConfig(null);
 
         if (newView === "users") setUsersPage(1);
         else if (newView === "checklists") setChecklistsPage(1);
         else if (newView === "reasons") setReasonsPage(1);
         else if (newView === "agents") setAgentsPage(1);
+        else if (newView === "ai-configs") setAIConfigsPage(1);
+        else if (newView === "logs") {
+            setLogsPage(1);
+            setLogSortField('timestamp');
+            setLogSortOrder('desc');
+        }
 
         const sortConfig = defaultSortConfig[newView];
         if (sortConfig) {
             setSortField(sortConfig.sortField);
             setSortOrder(sortConfig.sortOrder);
-        } else {
+        } else if (newView !== "logs") {
             setSortField("name");
             setSortOrder("asc");
         }
@@ -583,6 +642,10 @@ const AdminDashboard: React.FC = React.memo(() => {
         if (newView === "notifications") {
             setNotificationSortField("type");
             setNotificationSortOrder("asc");
+        }
+
+        if (newView === "ai-configs") {
+            setNotificationSortField("modelName");
         }
 
         localStorage.setItem("adminView", newView);
@@ -699,6 +762,32 @@ const AdminDashboard: React.FC = React.memo(() => {
                         setCachedData("notification_types", typesData);
                     }
                     setNotificationTypes(typesData as string[]);
+                } else if (view === "ai-configs" && userPermissions.canManageAIConfigs) {
+                    setAIConfigsLoading(true);
+                    let configsData = getCachedData("all_ai_configs");
+                    if (!configsData) {
+                        const timeout = setTimeout(() => {
+                            if (!configsData) setAIConfigs([]);
+                        }, FALLBACK_TIMEOUT);
+                        configsData = await listAIConfigs({});
+                        clearTimeout(timeout);
+                        setCachedData("all_ai_configs", configsData);
+                    }
+                    setAIConfigs(configsData as AIConfig[]);
+                } else if (view === "logs") { // New logs fetch logic
+                    setLogsLoading(true);
+                    const params = {
+                        page: logsPage,
+                        pageSize: ITEMS_PER_PAGE,
+                        search: searchQuery,
+                        sortBy: logSortField,
+                        sortOrder: logSortOrder,
+                    };
+                    const response = await getLogs(params);
+                    setLogs(response.data);
+                    setTotalLogs(response.total);
+                    setLocalError(null);
+                    clearError();
                 }
                 clearError();
             } catch (err: unknown) {
@@ -715,6 +804,8 @@ const AdminDashboard: React.FC = React.memo(() => {
                 setAgentsLoading(false);
                 setNotificationsLoading(false);
                 setRoleLoading(false);
+                setAIConfigsLoading(false);
+                setLogsLoading(false);
             }
         };
 
@@ -726,6 +817,11 @@ const AdminDashboard: React.FC = React.memo(() => {
         reasonsPage,
         agentsPage,
         userPermissions,
+        aiConfigsPage,
+        logsPage,          
+    searchQuery,       
+    logSortField,      
+    logSortOrder,
         t,
         setGlobalError,
         clearError,
@@ -840,26 +936,6 @@ const AdminDashboard: React.FC = React.memo(() => {
                     onCancel={confirmation.onCancel}
                 />
             )}
-            {error && (
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="error-message"
-                    role="alert"
-                >
-                    <span>{error}</span>
-                    <button
-                        className="close-error"
-                        onClick={() => {
-                            setLocalError(null);
-                            clearError();
-                        }}
-                        aria-label={t("errorDisplay.actions.dismiss")}
-                    >
-                        <FaTimes aria-hidden="true" />
-                    </button>
-                </motion.div>
-            )}
             <header className="dashboard-header">
                 <h1 id="dashboard-title">
                     {view === "users" && t("adminDashboard.header.users")}
@@ -902,6 +978,14 @@ const AdminDashboard: React.FC = React.memo(() => {
                         t("adminDashboard.header.notificationRuleDetails", {
                             event: selectedNotificationRule.event,
                         })}
+                    {view === "ai-configs" && t("adminDashboard.header.aiConfigs")}
+                    {view === "add-ai-config" && t("adminDashboard.header.addAIConfig")}
+                    {view === "ai-config-details" &&
+                        selectedAIConfig &&
+                        t("adminDashboard.header.aiConfigDetails", {
+                            modelName: selectedAIConfig.modelName,
+                        })}
+
                 </h1>
                 {(view === "users" ||
                     view === "roles" ||
@@ -909,7 +993,10 @@ const AdminDashboard: React.FC = React.memo(() => {
                     view === "checklists" ||
                     view === "reasons" ||
                     view === "agents" ||
-                    view === "notifications") && (
+                    view === "notifications" ||
+                    view === "ai-configs" ||
+                    view === "logs"
+                ) && (
                         <div className="search-container">
                             <FaSearch className="search-icon" aria-hidden="true" />
                             <input
@@ -936,7 +1023,10 @@ const AdminDashboard: React.FC = React.memo(() => {
                     view === "add-agent" ||
                     view === "agent-details" ||
                     view === "add-notification-rule" ||
-                    view === "notification-rule-details") && (
+                    view === "notification-rule-details" ||
+                    view === "add-ai-config" ||
+                    view === "ai-config-details"
+                ) && (
                         <motion.button
                             className="back-button"
                             onClick={() =>
@@ -953,11 +1043,11 @@ const AdminDashboard: React.FC = React.memo(() => {
                                                         ? "reasons"
                                                         : view.includes("agent")
                                                             ? "agents"
-                                                            : "notifications"
+                                                            : view.includes("notification")
+                                                                ? "notifications"
+                                                                : "ai-configs"
                                 )
                             }
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
                             aria-label={t("adminDashboard.actions.back")}
                         >
                             <FaArrowLeft aria-hidden="true" />{" "}
@@ -1006,6 +1096,7 @@ const AdminDashboard: React.FC = React.memo(() => {
                                     {t("adminDashboard.sidebar.permissions")}
                                 </button>
                             )}
+
                         </div>
                         <div className="view-category">
                             <h4>{t("adminDashboard.sidebar.data")}</h4>
@@ -1068,6 +1159,26 @@ const AdminDashboard: React.FC = React.memo(() => {
                                     {t("adminDashboard.sidebar.notifications")}
                                 </button>
                             )}
+                            {userPermissions.canManageAIConfigs && (
+                                <button
+                                    className={
+                                        view === "ai-configs" || view === "add-ai-config" || view === "ai-config-details"
+                                            ? "active"
+                                            : ""
+                                    }
+                                    onClick={() => handleViewChange("ai-configs")}
+                                    aria-current={view === "ai-configs" ? "page" : undefined}
+                                >
+                                    {t("adminDashboard.sidebar.aiConfigs")}
+                                </button>
+                            )}
+                            <button
+                                className={view === "logs" ? "active" : ""}
+                                onClick={() => handleViewChange("logs")}
+                                aria-current={view === "logs" ? "page" : undefined}
+                            >
+                                {t("adminDashboard.sidebar.logs")}
+                            </button>
                         </div>
                     </div>
                     {userPermissions.canViewUsers && view === "users" && (
@@ -1085,8 +1196,6 @@ const AdminDashboard: React.FC = React.memo(() => {
                                 </select>
                                 <motion.button
                                     onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
-                                    whileHover={{ scale: 1.05 }}
-                                    whileTap={{ scale: 0.95 }}
                                     aria-label={t("adminDashboard.sidebar.sortOrder", {
                                         order: sortOrder === "asc" ? t("adminDashboard.sidebar.sortOrder.asc") : t("adminDashboard.sidebar.sortOrder.desc"),
                                     })}
@@ -1115,8 +1224,6 @@ const AdminDashboard: React.FC = React.memo(() => {
                                 className="action-button"
                                 onClick={handleRefreshUsers}
                                 disabled={usersLoading}
-                                whileHover={{ scale: usersLoading ? 1 : 1.05 }}
-                                whileTap={{ scale: usersLoading ? 1 : 0.95 }}
                                 aria-label={usersLoading ? t("adminDashboard.actions.loading") : t("adminDashboard.actions.refreshUsers")}
                             >
                                 <FaRedo aria-hidden="true" /> {usersLoading ? t("adminDashboard.actions.loading") : t("adminDashboard.actions.refreshUsers")}
@@ -1129,8 +1236,6 @@ const AdminDashboard: React.FC = React.memo(() => {
                                 className="action-button"
                                 onClick={handleRefreshRoles}
                                 disabled={rolesLoading}
-                                whileHover={{ scale: rolesLoading ? 1 : 1.05 }}
-                                whileTap={{ scale: rolesLoading ? 1 : 0.95 }}
                                 aria-label={rolesLoading ? t("adminDashboard.actions.loading") : t("adminDashboard.actions.refreshRoles")}
                             >
                                 <FaRedo aria-hidden="true" /> {rolesLoading ? t("adminDashboard.actions.loading") : t("adminDashboard.actions.refreshRoles")}
@@ -1143,8 +1248,6 @@ const AdminDashboard: React.FC = React.memo(() => {
                                 className="action-button"
                                 onClick={handleRefreshPermissions}
                                 disabled={permissionsLoading}
-                                whileHover={{ scale: permissionsLoading ? 1 : 1.05 }}
-                                whileTap={{ scale: permissionsLoading ? 1 : 0.95 }}
                                 aria-label={permissionsLoading ? t("adminDashboard.actions.loading") : t("adminDashboard.actions.refreshPermissions")}
                             >
                                 <FaRedo aria-hidden="true" /> {permissionsLoading ? t("adminDashboard.actions.loading") : t("adminDashboard.actions.refreshPermissions")}
@@ -1157,8 +1260,6 @@ const AdminDashboard: React.FC = React.memo(() => {
                                 className="action-button"
                                 onClick={handleRefreshChecklists}
                                 disabled={checklistsLoading}
-                                whileHover={{ scale: checklistsLoading ? 1 : 1.05 }}
-                                whileTap={{ scale: checklistsLoading ? 1 : 0.95 }}
                                 aria-label={checklistsLoading ? t("adminDashboard.actions.loading") : t("adminDashboard.actions.refreshChecklists")}
                             >
                                 <FaRedo aria-hidden="true" /> {checklistsLoading ? t("adminDashboard.actions.loading") : t("adminDashboard.actions.refreshChecklists")}
@@ -1171,8 +1272,6 @@ const AdminDashboard: React.FC = React.memo(() => {
                                 className="action-button"
                                 onClick={handleRefreshReasons}
                                 disabled={reasonsLoading}
-                                whileHover={{ scale: reasonsLoading ? 1 : 1.05 }}
-                                whileTap={{ scale: reasonsLoading ? 1 : 0.95 }}
                                 aria-label={reasonsLoading ? t("adminDashboard.actions.loading") : t("adminDashboard.actions.refreshReasons")}
                             >
                                 <FaRedo aria-hidden="true" /> {reasonsLoading ? t("adminDashboard.actions.loading") : t("adminDashboard.actions.refreshReasons")}
@@ -1198,8 +1297,6 @@ const AdminDashboard: React.FC = React.memo(() => {
                                 </select>
                                 <motion.button
                                     onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
-                                    whileHover={{ scale: 1.05 }}
-                                    whileTap={{ scale: 0.95 }}
                                     aria-label={t("adminDashboard.sidebar.sortOrder", {
                                         order: sortOrder === "asc" ? t("adminDashboard.sidebar.sortOrder.asc") : t("adminDashboard.sidebar.sortOrder.desc"),
                                     })}
@@ -1242,8 +1339,6 @@ const AdminDashboard: React.FC = React.memo(() => {
                                 className="action-button"
                                 onClick={handleRefreshAgents}
                                 disabled={agentsLoading}
-                                whileHover={{ scale: agentsLoading ? 1 : 1.05 }}
-                                whileTap={{ scale: agentsLoading ? 1 : 0.95 }}
                                 aria-label={agentsLoading ? t("adminDashboard.actions.loading") : t("adminDashboard.actions.refreshAgents")}
                             >
                                 <FaRedo aria-hidden="true" /> {agentsLoading ? t("adminDashboard.actions.loading") : t("adminDashboard.actions.refreshAgents")}
@@ -1253,8 +1348,6 @@ const AdminDashboard: React.FC = React.memo(() => {
                                     <motion.button
                                         className="action-button"
                                         onClick={() => handleViewChange("add-agent")}
-                                        whileHover={{ scale: 1.05 }}
-                                        whileTap={{ scale: 0.95 }}
                                         aria-label={t("adminDashboard.sidebar.addAgent")}
                                     >
                                         <FaPlus aria-hidden="true" />{" "}
@@ -1263,8 +1356,6 @@ const AdminDashboard: React.FC = React.memo(() => {
                                     <motion.button
                                         className="action-button"
                                         onClick={() => setIsBulkUploadModalOpen(true)}
-                                        whileHover={{ scale: 1.05 }}
-                                        whileTap={{ scale: 0.95 }}
                                         aria-label={t("adminDashboard.sidebar.importAgents")}
                                     >
                                         <FaUpload aria-hidden="true" />{" "}
@@ -1289,8 +1380,6 @@ const AdminDashboard: React.FC = React.memo(() => {
                                 </select>
                                 <motion.button
                                     onClick={() => setNotificationSortOrder(notificationSortOrder === "asc" ? "desc" : "asc")}
-                                    whileHover={{ scale: 1.05 }}
-                                    whileTap={{ scale: 0.95 }}
                                     aria-label={t("adminDashboard.sidebar.sortOrder", {
                                         order: notificationSortOrder === "asc" ? t("adminDashboard.sidebar.sortOrder.asc") : t("adminDashboard.sidebar.sortOrder.desc"),
                                     })}
@@ -1340,8 +1429,6 @@ const AdminDashboard: React.FC = React.memo(() => {
                                 className="action-button"
                                 onClick={handleRefreshNotifications}
                                 disabled={notificationsLoading}
-                                whileHover={{ scale: notificationsLoading ? 1 : 1.05 }}
-                                whileTap={{ scale: notificationsLoading ? 1 : 0.95 }}
                                 aria-label={notificationsLoading ? t("adminDashboard.actions.loading") : t("adminDashboard.actions.refreshNotifications")}
                             >
                                 <FaRedo aria-hidden="true" /> {notificationsLoading ? t("adminDashboard.actions.loading") : t("adminDashboard.actions.refreshNotifications")}
@@ -1352,7 +1439,6 @@ const AdminDashboard: React.FC = React.memo(() => {
                         <motion.button
                             className="action-button"
                             onClick={() => handleViewChange("add-user")}
-                            whileTap={{ scale: 0.95 }}
                             aria-label={t("adminDashboard.sidebar.addUser")}
                         >
                             <FaUserPlus aria-hidden="true" />{" "}
@@ -1365,8 +1451,6 @@ const AdminDashboard: React.FC = React.memo(() => {
                                 <motion.button
                                     className="action-button"
                                     onClick={() => handleViewChange("add-role")}
-                                    whileHover={{ scale: 1.05 }}
-                                    whileTap={{ scale: 0.95 }}
                                     aria-label={t("adminDashboard.sidebar.addRole")}
                                 >
                                     <FaPlus aria-hidden="true" />{" "}
@@ -1378,8 +1462,6 @@ const AdminDashboard: React.FC = React.memo(() => {
                                     className="action-button reset-button"
                                     onClick={debouncedShowResetConfirmation}
                                     disabled={resetLoading}
-                                    whileHover={{ scale: resetLoading ? 1 : 1.05 }}
-                                    whileTap={{ scale: resetLoading ? 1 : 0.95 }}
                                     aria-label={resetLoading ? t("adminDashboard.sidebar.resetting") : t("adminDashboard.sidebar.resetRoles")}
                                 >
                                     {resetLoading ? t("adminDashboard.sidebar.resetting") : t("adminDashboard.sidebar.resetRoles")}
@@ -1391,8 +1473,6 @@ const AdminDashboard: React.FC = React.memo(() => {
                         <motion.button
                             className="action-button"
                             onClick={() => handleViewChange("add-checklist")}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
                             aria-label={t("adminDashboard.sidebar.addChecklist")}
                         >
                             <FaPlus aria-hidden="true" />{" "}
@@ -1403,8 +1483,6 @@ const AdminDashboard: React.FC = React.memo(() => {
                         <motion.button
                             className="action-button"
                             onClick={() => handleViewChange("add-reason")}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
                             aria-label={t("adminDashboard.sidebar.addReason")}
                         >
                             <FaPlus aria-hidden="true" />{" "}
@@ -1415,12 +1493,48 @@ const AdminDashboard: React.FC = React.memo(() => {
                         <motion.button
                             className="action-button"
                             onClick={() => handleViewChange("add-notification-rule")}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
                             aria-label={t("adminDashboard.sidebar.addNotificationRule")}
                         >
                             <FaPlus aria-hidden="true" /> {t("adminDashboard.sidebar.addNotificationRule")}
                         </motion.button>
+                    )}
+                    {userPermissions.canManageAIConfigs && view === "ai-configs" && (
+                        <>
+                            <div className="sort-card">
+                                <h3>{t("adminDashboard.sidebar.sortAIConfigsBy")}</h3>
+                                <select
+                                    value={sortField}
+                                    onChange={(e) => setSortField(e.target.value as SortField)}
+                                    aria-label={t("adminDashboard.sidebar.sortAIConfigsBy")}
+                                >
+                                    <option value="modelName">{t("adminDashboard.sidebar.sortOptions.modelName")}</option>
+                                </select>
+                                <motion.button
+                                    onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+                                    aria-label={t("adminDashboard.sidebar.sortOrder", {
+                                        order: sortOrder === "asc" ? t("adminDashboard.sidebar.sortOrder.asc") : t("adminDashboard.sidebar.sortOrder.desc"),
+                                    })}
+                                >
+                                    <FaSort aria-hidden="true" />{" "}
+                                    {sortOrder === "asc" ? t("adminDashboard.sidebar.sortOrder.asc") : t("adminDashboard.sidebar.sortOrder.desc")}
+                                </motion.button>
+                            </div>
+                            <motion.button
+                                className="action-button"
+                                onClick={handleRefreshAIConfigs}
+                                disabled={aiConfigsLoading}
+                                aria-label={aiConfigsLoading ? t("adminDashboard.actions.loading") : t("adminDashboard.actions.refreshAIConfigs")}
+                            >
+                                <FaRedo aria-hidden="true" /> {aiConfigsLoading ? t("adminDashboard.actions.loading") : t("adminDashboard.actions.refreshAIConfigs")}
+                            </motion.button>
+                            <motion.button
+                                className="action-button"
+                                onClick={() => handleViewChange("add-ai-config")}
+                                aria-label={t("adminDashboard.sidebar.addAIConfig")}
+                            >
+                                <FaPlus aria-hidden="true" /> {t("adminDashboard.sidebar.addAIConfig")}
+                            </motion.button>
+                        </>
                     )}
                 </aside>
                 <main className="main-content" role="region" aria-labelledby="dashboard-title">
@@ -1672,6 +1786,56 @@ const AdminDashboard: React.FC = React.memo(() => {
                                 view={view}
                                 setView={setView}
                                 setError={setLocalError}
+                            />
+                        )}
+                        {view === "ai-configs" && (
+                            <AIConfigsList
+                                configs={aiConfigs}
+                                setConfigs={setAIConfigs}
+                                view={view}
+                                setView={setView}
+                                setSelectedConfig={setSelectedAIConfig}
+                                setError={setLocalError}
+                                searchQuery={searchQuery}
+                                sortField={sortField}
+                                sortOrder={sortOrder}
+                                currentPage={aiConfigsPage}
+                                setCurrentPage={setAIConfigsPage}
+                                itemsPerPage={ITEMS_PER_PAGE}
+                            />
+                        )}
+                        {view === "add-ai-config" && (
+                            <AIConfigAdd
+                                configs={aiConfigs}
+                                setConfigs={setAIConfigs}
+                                view={view}
+                                setView={setView}
+                                setError={setLocalError}
+                            />
+                        )}
+                        {view === "ai-config-details" && (
+                            <AIConfigView
+                                selectedConfig={selectedAIConfig}
+                                setSelectedConfig={setSelectedAIConfig}
+                                configs={aiConfigs}
+                                setConfigs={setAIConfigs}
+                                view={view}
+                                setView={setView}
+                                setError={setLocalError}
+                            />
+                        )}
+                        {view === "logs" && (
+                            <LogsList
+                                logs={logs}
+                                totalLogs={totalLogs}
+                                logsPage={logsPage}
+                                setLogsPage={setLogsPage}
+                                logSortField={logSortField}
+                                setLogSortField={setLogSortField}
+                                logSortOrder={logSortOrder}
+                                setLogSortOrder={setLogSortOrder}
+                                itemsPerPage={ITEMS_PER_PAGE}
+                                logsLoading={logsLoading}
                             />
                         )}
                     </Suspense>

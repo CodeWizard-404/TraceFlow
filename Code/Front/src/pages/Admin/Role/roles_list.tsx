@@ -16,7 +16,7 @@ import RoleView from "./roles_view";
 
 // Styles
 import "../AdminDashboard.css";
-import PermissionsClass from "models/Enum/PermissionsClass";
+import PermissionsClass from "../../../models/Enum/PermissionsClass";
 import { useTranslation } from "react-i18next";
 
 // Props interface
@@ -60,13 +60,10 @@ const viewVariants = {
   exit: { height: 0, opacity: 0, marginTop: 0, overflow: "hidden" },
 };
 
-// RolesList component, memoized
-// ... (other imports remain unchanged)
-
 const RolesList: React.FC<RolesListProps> = React.memo(
   ({ roles, setRoles, userRoles, view, setSelectedRole, setError, searchQuery, setConfirmation }) => {
     const { effectivePermissions } = useAuth();
-    const { t } = useTranslation(); // Add translation hook
+    const { t } = useTranslation();
     const [activeRolePopup, setActiveRolePopup] = useState<string | null>(null);
     const [expandedClasses, setExpandedClasses] = useState<Set<string>>(new Set());
     const [internalSearchQuery, setInternalSearchQuery] = useState(searchQuery);
@@ -237,8 +234,9 @@ const RolesList: React.FC<RolesListProps> = React.memo(
                     <p>{role.description || t("adminDashboard.noDescription")}</p>
                     <h5>{t("adminDashboard.permissionsByClass")}</h5>
                     {Object.entries(getCategorizedPermissionsForRole(role.Permissions)).length > 0 ? (
-                      Object.entries(getCategorizedPermissionsForRole(role.Permissions)).map(
-                        ([className, perms]) => (
+                      Object.entries(getCategorizedPermissionsForRole(role.Permissions))
+                        .sort(([classNameA], [classNameB]) => classNameA.localeCompare(classNameB)) // Sort categories alphabetically
+                        .map(([className, perms]) => (
                           <div key={className} className="permission-class-item">
                             <button
                               className="class-toggle"
@@ -257,8 +255,7 @@ const RolesList: React.FC<RolesListProps> = React.memo(
                               ))}
                             </ul>
                           </div>
-                        )
-                      )
+                        ))
                     ) : (
                       <p>{t("adminDashboard.noPermissionsAssigned")}</p>
                     )}

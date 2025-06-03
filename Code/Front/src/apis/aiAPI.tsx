@@ -1,23 +1,19 @@
 import { AxiosError } from 'axios';
 import api from './axiosConfig';
 import { AxiosErrorResponse } from './index';
-import { AIConfig, Anomaly, TimesheetSuggestion } from '../models/AI';
-
-// AI Response Types
-
-
+import { AIConfig } from '../models/AI';
 
 // Request Types
 export interface CreateAIConfigRequest {
     modelName: string;
-    anomalyThreshold: number;
+    maxOptimizeRoute: number;
     timesheetMaxSuggestions: number;
     supervisorId?: string;
 }
 
 export interface UpdateAIConfigRequest {
     modelName?: string;
-    anomalyThreshold?: number;
+    maxOptimizeRoute?: number;
     timesheetMaxSuggestions?: number;
 }
 
@@ -30,30 +26,6 @@ export interface ListAIConfigsRequest {
     supervisorId?: string;
 }
 
-export interface SuggestTimesheetRequest {
-    supervisorId: string;
-    weekStart: string;
-    criteria: {
-        delegationIds?: string[];
-        agentIds?: string[];
-        preferredDays?: string[];
-        timeInterval?: { startHour: number; endHour: number };
-        maxVisitsPerAgentPerWeek?: number;
-        includeRecruitmentVisits?: boolean;
-        coordinates?: { lat: number; lng: number };
-        recruitmentAreas?: string[];
-    };
-}
-
-export interface DetectAnomaliesRequest {
-    dataType: 'timesheet' | 'visit' | 'receipt';
-    data: any[];
-}
-
-export interface GenerateReportRequest {
-    filters: Record<string, any>;
-    format: 'pdf' | 'excel';
-}
 
 // Response Types
 export interface CreateAIConfigResponse extends AIConfig { }
@@ -75,18 +47,6 @@ export interface TestAIConfigResponse {
     response: Record<string, any>;
 }
 
-export interface SuggestTimesheetResponse {
-    suggestions: TimesheetSuggestion[];
-}
-
-export interface DetectAnomaliesResponse {
-    anomalies: Anomaly[];
-}
-
-export interface GenerateReportResponse {
-    report: Report;
-}
-
 const handleApiError = (error: unknown, defaultMessage: string): string => {
     if (error instanceof AxiosError) {
         const axiosError = error as AxiosError<AxiosErrorResponse>;
@@ -104,8 +64,12 @@ const handleApiError = (error: unknown, defaultMessage: string): string => {
                 return 'Resource not found.';
             case 429:
                 return 'API quota exceeded. Please try again later.';
+            case 499:
+                return 'Request was canceled.';
             case 500:
                 return 'Something went wrong on our end. Please try again later.';
+            case 503:
+                return 'AI service is unavailable. Try again later.';
             default:
                 return defaultMessage;
         }
@@ -164,32 +128,5 @@ export const testAIConfig = async (configID: string): Promise<TestAIConfigRespon
         return response.data;
     } catch (error) {
         throw new Error(handleApiError(error, 'Unable to test AI configuration.'));
-    }
-};
-
-export const suggestTimesheet = async (data: SuggestTimesheetRequest): Promise<SuggestTimesheetResponse> => {
-    try {
-        const response = await api.post<SuggestTimesheetResponse>('/ai/timesheet/suggest', data);
-        return response.data;
-    } catch (error) {
-        throw new Error(handleApiError(error, 'Unable to generate timesheet suggestions.'));
-    }
-};
-
-export const detectAnomalies = async (data: DetectAnomaliesRequest): Promise<DetectAnomaliesResponse> => {
-    try {
-        const response = await api.post<DetectAnomaliesResponse>('/ai/anomaly/detect', data);
-        return response.data;
-    } catch (error) {
-        throw new Error(handleApiError(error, 'Unable to detect anomalies.'));
-    }
-};
-
-export const generateReport = async (data: GenerateReportRequest): Promise<GenerateReportResponse> => {
-    try {
-        const response = await api.post<GenerateReportResponse>('/ai/report/generate', data);
-        return response.data;
-    } catch (error) {
-        throw new Error(handleApiError(error, 'Unable to generate report.'));
     }
 };

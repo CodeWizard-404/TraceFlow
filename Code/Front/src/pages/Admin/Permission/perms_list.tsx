@@ -3,6 +3,7 @@
  * Component for displaying a categorized list of permissions with toggleable PermView under each permission.
  * Optimized with memoization, debouncing, and efficient state management.
  * Includes skeleton loader and animated transitions for PermView.
+ * Categories are sorted alphabetically.
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
@@ -209,64 +210,68 @@ const PermsList: React.FC<PermsListProps> = React.memo(
                                         aria-label="Filter by permission class"
                                     >
                                         <option value="all">All Classes</option>
-                                        {Object.values(PermissionsClass).map((className) => (
-                                            <option key={className} value={className}>
-                                                {className}
-                                            </option>
-                                        ))}
+                                        {Object.values(PermissionsClass)
+                                            .sort()
+                                            .map((className) => (
+                                                <option key={className} value={className}>
+                                                    {className}
+                                                </option>
+                                            ))}
                                     </select>
                                 </div>
                             </div>
                         </div>
                         <div className="permissions-grid permissions-grid-0">
                             {Object.entries(filteredPermissions).length > 0 ? (
-                                Object.entries(filteredPermissions).map(([className, permissions]) => (
-                                    <div key={className} className="permission-class-section">
-                                        <h3 className="permission-class-title">{className}</h3>
-                                        <div className="permission-class-grid">
-                                            {Array.isArray(permissions) &&
-                                                permissions.map((permission) => (
-                                                    <div key={permission.permissionID}>
-                                                        <div
-                                                            className="permission-card"
-                                                            onClick={() => handlePermissionToggle(permission)}
-                                                            aria-expanded={selectedPermissionId === permission.permissionID}
-                                                            role="button"
-                                                            tabIndex={0}
-                                                            onKeyDown={(e) => {
-                                                                if (e.key === "Enter" || e.key === " ") {
-                                                                    handlePermissionToggle(permission);
-                                                                }
-                                                            }}
-                                                        >
-                                                            <h4>{permission.name}</h4>
-                                                            <p>{permission.description || "No description"}</p>
+                                Object.entries(filteredPermissions)
+                                    .sort(([classNameA], [classNameB]) => classNameA.localeCompare(classNameB))
+                                    .map(([className, permissions]) => (
+                                        <div key={className} className="permission-class-section">
+                                            <h3 className="permission-class-title">{className}</h3>
+                                            <div className="permission-class-grid">
+                                                {Array.isArray(permissions) &&
+                                                    permissions.map((permission) => (
+                                                        <div key={permission.permissionID}>
+                                                            <div
+                                                                className="permission-card"
+                                                                onClick={() => handlePermissionToggle(permission)}
+                                                                aria-expanded={selectedPermissionId === permission.permissionID}
+                                                                role="button"
+                                                                tabIndex={0}
+                                                                onKeyDown={(e) => {
+                                                                    if (e.key === "Enter" || e.key === " ") {
+                                                                        handlePermissionToggle(permission);
+                                                                    }
+                                                                }}
+                                                            >
+                                                                <h4>{permission.name}</h4>
+                                                                <p>{permission.description || "No description"}</p>
+                                                            </div>
+                                                            <AnimatePresence>
+                                                                {selectedPermissionId === permission.permissionID && (
+                                                                    <motion.div
+                                                                        variants={viewVariants}
+                                                                        initial="hidden"
+                                                                        animate="visible"
+                                                                        exit="exit"
+                                                                        transition={{ duration: 0.3 }}
+                                                                    >
+                                                                        <PermView
+                                                                            selectedPermission={permission}
+                                                                            setSelectedPermission={setSelectedPermission}
+                                                                            permissionsList={permissionsList}
+                                                                            setPermissionsList={() => { }} // No-op for toggle mode
+                                                                            view="permission-details"
+                                                                            setError={(error) => setError(error || "")}
+                                                                        />
+                                                                    </motion.div>
+                                                                )}
+                                                            </AnimatePresence>
                                                         </div>
-                                                        <AnimatePresence>
-                                                            {selectedPermissionId === permission.permissionID && (
-                                                                <motion.div
-                                                                    variants={viewVariants}
-                                                                    initial="hidden"
-                                                                    animate="visible"
-                                                                    exit="exit"
-                                                                    transition={{ duration: 0.3 }}
-                                                                >
-                                                                    <PermView
-                                                                        selectedPermission={permission}
-                                                                        setSelectedPermission={setSelectedPermission}
-                                                                        permissionsList={permissionsList}
-                                                                        setPermissionsList={() => { }} // No-op for toggle mode
-                                                                        view="permission-details"
-                                                                        setError={(error) => setError(error || "")}
-                                                                    />
-                                                                </motion.div>
-                                                            )}
-                                                        </AnimatePresence>
-                                                    </div>
-                                                ))}
+                                                    ))}
+                                            </div>
                                         </div>
-                                    </div>
-                                ))
+                                    ))
                             ) : (
                                 renderSkeleton()
                             )}

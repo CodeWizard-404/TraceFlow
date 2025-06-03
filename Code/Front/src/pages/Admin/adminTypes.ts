@@ -1,4 +1,4 @@
-export type SortField = "name" | "email" | "role" | "event" | "type" | "enabled" | "supervisor" | "location" | "lastname" | "phone" | "date";
+export type SortField = 'modelName' | "name" | "email" | "role" | "event" | "type" | "enabled" | "supervisor" | "location" | "lastname" | "phone" | "date";
 export type SortOrder = "asc" | "desc";
 export type ViewMode =
     | "users"
@@ -23,4 +23,9 @@ export type ViewMode =
     | "notification-rules"
     | "notification-rule-details"
     | "add-notification-rule"
-    | "notifications";
+    | "notifications"
+    | "ai-configs"
+    | "add-ai-config"
+    | "ai-config-details"
+    | "edit-ai-config"
+    | "logs"
