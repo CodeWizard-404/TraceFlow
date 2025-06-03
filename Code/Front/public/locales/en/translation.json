@@ -893,7 +893,8 @@
     "dismiss": "Dismiss error",
     "actions": {
       "dismiss": "Dismiss"
-    }
+    },
+    "clearAll": "Clear All"
   },
   "accessDenied": {
     "title": "Access Denied",
@@ -1120,6 +1121,32 @@
     }
   },
   "adminDashboard": {
+    "aiConfigs": {
+      "modelName": "Model Name",
+      "maxOptimizeRoute": "Max Optimize Route",
+      "timesheetMaxSuggestions": "Timesheet Max Suggestions",
+      "anomalyThreshold": "Anomaly Threshold",
+      "supervisor": "Supervisor",
+      "actions": "Actions",
+      "searchSupervisors": "Search Supervisor",
+      "selectSupervisor": "Select Supervisor"
+    },
+    "anomalyDetection": {
+      "dataType": "Data Type",
+      "dataInput": "Data Input",
+      "dataPlaceholder": "Enter JSON array data (e.g., [{...}, {...}])",
+      "timesheet": "Timesheet",
+      "visit": "Visit",
+      "receipt": "Receipt",
+      "results": "Anomaly Results",
+      "index": "Index",
+      "details": "Details"
+    },
+    "pagination": {
+      "previous": "Previous",
+      "next": "Next",
+      "page": "Page {{page}} of {{total}}"
+    },
     "loading": {
       "userDetails": "Loading user details..."
     },
@@ -1142,7 +1169,11 @@
       "addNotificationRule": "Add New Notification Rule",
       "notificationRuleDetails": "Notification Rule: {{event}}",
       "addAgent": "Add New Agent",
-      "agentDetails": "Agent: {{item}}"
+      "agentDetails": "Agent: {{item}}",
+      "aiConfigs": "AI Configurations",
+      "addAIConfig": "Add AI Configuration",
+      "aiConfigDetails": "AI Configuration Details: {{modelName}}",
+      "anomalyDetection": "Anomaly Detection"
     },
     "sidebar": {
       "management": "Management",
@@ -1184,7 +1215,9 @@
         "lastname": "Last name",
         "supervisor": "Supervisor",
         "location": "Location",
-        "date": "Date"
+        "date": "Date",
+        "modelName": "Model Name",
+        "anomalyThreshold": "Anomaly Threshold"
       },
       "sortOrder": {
         "asc": "Asc",
@@ -1204,7 +1237,13 @@
       "addChecklist": "Add Checklist",
       "addReason": "Add Reason",
       "importAgents": "Import Agents",
-      "addAgent": "Add Agent"
+      "addAgent": "Add Agent",
+      "ai": "AI Management",
+      "aiConfigs": "AI Configurations",
+      "anomalyDetection": "Anomaly Detection",
+      "sortAIConfigsBy": "Sort AI Configurations By",
+      "addAIConfig": "Add AI Configuration",
+      "refreshAIConfigs": "Refresh AI Configurations"
     },
     "search": {
       "placeholder": "Search {{view}}..."
@@ -1216,7 +1255,13 @@
       "updateChecklistFailed": "Failed to update checklist.",
       "deleteChecklistFailed": "Failed to delete checklist.",
       "createChecklistFailed": "Failed to create checklist.",
-      "duplicateExpectedHeaders": "System headers must be unique"
+      "duplicateExpectedHeaders": "System headers must be unique",
+      "createAIConfigFailed": "Failed to create AI configuration.",
+      "updateAIConfigFailed": "Failed to update AI configuration.",
+      "deleteAIConfigFailed": "Failed to delete AI configuration.",
+      "testAIConfigFailed": "Failed to test AI configuration.",
+      "detectAnomaliesFailed": "Failed to detect anomalies.",
+      "invalidDataFormat": "Invalid data format. Please provide a JSON array."
     },
     "actions": {
       "back": "Back",
@@ -1252,7 +1297,14 @@
       "duplicateHeaders": "CSV headers must be unique.",
       "invalidHeaderMapping": "All mappings must correspond to headers in the CSV file.",
       "invalidResponse": "Invalid response from server.",
-      "createAgent": "Create a New Agent"
+      "createAgent": "Create a New Agent",
+      "create": "Create",
+      "update": "Update",
+      "test": "Test",
+      "detect": "Detect Anomalies",
+      "submitting": "Submitting...",
+      "refreshAIConfigs": "Refresh AI Configurations",
+      "testResult": "Test Result: {{result}}"
     },
     "agents": {
       "viewAgent": "View Agent",
@@ -2030,6 +2082,16 @@
         "max": "Max"
       }
     },
+    "sort": {
+      "title": "Sort Reports",
+      "by": "Sort By",
+      "order": "Order",
+      "date": "Date",
+      "type": "Report Type",
+      "format": "Format",
+      "ascending": "Ascending",
+      "descending": "Descending"
+    },
     "accordion": {
       "daterange": "Date Range",
       "userselection": "User Selection",
@@ -2111,10 +2173,11 @@
         "reportID": "Report ID",
         "reportType": "Report Type",
         "format": "Format",
-        "cronExpression": "Period",
         "createdAt": "Created At",
         "generatedAt": "Generated At",
-        "actions": "Actions"
+        "actions": "Actions",
+        "creator": "Creator",
+        "cronExpression": "Schedule"
       },
       "noScheduled": "No scheduled reports found.",
       "noGenerated": "No generated reports found."

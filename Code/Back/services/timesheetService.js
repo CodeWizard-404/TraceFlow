@@ -246,7 +246,6 @@ class TimesheetService {
         const transaction = await sequelize.transaction();
         try {
             const { visitIDs, status } = data;
-            console.log(`Validating timesheet ${id} with status ${status} for visits: ${visitIDs}`); // Add logging
             const timesheet = await Timesheet.findByPk(id, {
                 include: [
                     {
@@ -264,19 +263,16 @@ class TimesheetService {
             if (!timesheet) {
                 const error = new Error('Timesheet not found');
                 error.status = 404;
-                console.error(`Timesheet ${id} not found`); // Log error
                 throw error;
             }
             if (!timesheet.User) {
                 const error = new Error('Supervisor not found for timesheet');
                 error.status = 500;
-                console.error(`Supervisor not found for timesheet ${id}`); // Log error
                 throw error;
             }
             if (!['pending', 'visited', 'rejected', 'validated'].includes(status)) {
                 const error = new Error('Invalid status');
                 error.status = 400;
-                console.error(`Invalid status ${status} for timesheet ${id}`); // Log error
                 throw error;
             }
             if (visitIDs.length > 0) {
@@ -287,11 +283,9 @@ class TimesheetService {
                 if (visits.length !== visitIDs.length) {
                     const error = new Error('Some visits not found or do not belong to this timesheet');
                     error.status = 400;
-                    console.error(`Visit mismatch for timesheet ${id}: expected ${visitIDs.length}, found ${visits.length}`); // Log error
                     throw error;
                 }
                 for (const visit of visits) {
-                    console.log(`Updating visit ${visit.visitID} to status ${status}`); // Log each visit update
                     visit.status = status;
                     await visit.save({ transaction });
                 }
@@ -314,12 +308,10 @@ class TimesheetService {
                     });
                 } catch (error) {
                     warning = `Timesheet ${id} validated successfully for user ${timesheet.User.userID}, but Google Calendar sync failed: ${error.message}`;
-                    console.warn(warning); // Log warning
                 }
             }
 
             await transaction.commit();
-            console.log(`Timesheet ${id} validated successfully with status ${status}`); // Log success
             const updatedTimesheet = await Timesheet.findByPk(id, {
                 include: [
                     {
@@ -339,7 +331,6 @@ class TimesheetService {
             };
         } catch (error) {
             await transaction.rollback();
-            console.error(`Failed to validate timesheet ${id}: ${error.message}`); // Log failure
             throw error.status ? error : Object.assign(new Error(ERROR_MESSAGES.DATABASE_ERROR), { status: 500 });
         }
     }
@@ -488,7 +479,6 @@ class TimesheetService {
 
             for (const visit of aiSuggestions) {
                 if (!visit.date || !validDates.includes(visit.date) || visit.date < todayDate) {
-                    console.log('Invalid visit date:', visit.date);
                     continue;
                 }
 
@@ -499,13 +489,11 @@ class TimesheetService {
                     visitMinutes >= timeInterval.endHour * 60 ||
                     (visit.date === todayDate && visitMinutes <= todayMinutes)
                 ) {
-                    console.log('Invalid visit time:', visit.time);
                     continue;
                 }
 
                 const isRecruitment = includeRecruitmentVisits && visit.agentID === null;
                 if (!isRecruitment && (!visit.agentID || !agentMap.has(visit.agentID))) {
-                    console.log('Invalid agentID:', visit.agentID);
                     continue;
                 }
 
@@ -518,7 +506,6 @@ class TimesheetService {
 
                 // Allow recruitment visits with empty checklists but require at least one reason
                 if (reasons.length === 0 || (!isRecruitment && checklists.length === 0)) {
-                    console.log('No valid reasons or checklists for visit:', visit);
                     continue;
                 }
 
@@ -592,7 +579,6 @@ class TimesheetService {
                     : null,
             }));
         } catch (error) {
-            console.error('Error in cleanSuggestions:', error);
             throw Object.assign(new Error('Failed to clean suggestions: ' + error.message), { status: 500 });
         }
     }

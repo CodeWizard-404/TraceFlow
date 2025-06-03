@@ -1,6 +1,6 @@
 const { makeOllamaApiCall } = require('../utils/apiClient');
 const { initializeAI } = require('../config/ai');
-const { AIConfig, User, Agent, Reason, Checklist, Delegation } = require('../models');
+const { AIConfig, User, Role, Agent, Reason, Checklist, Delegation } = require('../models');
 const GoogleMapsService = require('./googleMapsService');
 const { Op } = require('sequelize');
 const NodeCache = require('node-cache');
@@ -25,7 +25,8 @@ const ERROR_MESSAGES = {
     INVALID_AI_JSON: 'Failed to extract valid JSON from AI response.',
     NO_SUPERVISOR_LOCATION: 'Could not determine supervisor location.',
     NO_RECRUITMENT_LOCATIONS: 'Could not geocode recruitment areas.',
-    MISSING_COORDINATES: 'Supervisor coordinates are required.'
+    MISSING_COORDINATES: 'Supervisor coordinates are required.',
+    MAX_SUGGESTIONS_REACHED: 'Maximum timesheet suggestions limit reached. Try again in 24 hours.'
 };
 
 class AIService {
@@ -101,9 +102,9 @@ class AIService {
     }
 
     static async generateTimesheetSuggestions(supervisorId, weekNumber, year, timesheetData, controller = new AbortController()) {
-
         try {
             cache.flushAll();
+
             const supervisor = await User.findByPk(supervisorId, { attributes: ['userID'] });
             if (!supervisor) {
                 const error = new Error(ERROR_MESSAGES.INVALID_SUPERVISOR);
@@ -115,7 +116,7 @@ class AIService {
             const weekStartString = weekStart.toISOString().split('T')[0];
 
             const today = new Date();
-            const currentHour = today.getUTCHours() + 1; // CET is UTC+1
+            const currentHour = today.getUTCHours() + 1;
             const currentMinutes = today.getUTCMinutes();
             const currentTimeString = `${currentHour.toString().padStart(2, '0')}:${currentMinutes.toString().padStart(2, '0')}`;
 
@@ -148,7 +149,7 @@ class AIService {
                 throw Object.assign(new Error(ERROR_MESSAGES.MISSING_COORDINATES), { status: 400 });
             }
 
-            let supervisorLocation;
+            let supervisorLocation = { latitude: coordinates.lat, longitude: coordinates.lng, formattedAddress: 'Unknown' };
             try {
                 const locationData = await GoogleMapsService.getCurrentUserLocation(supervisorId, coordinates);
                 supervisorLocation = {
@@ -157,7 +158,7 @@ class AIService {
                     formattedAddress: locationData.address
                 };
             } catch (error) {
-                throw Object.assign(new Error(ERROR_MESSAGES.NO_SUPERVISOR_LOCATION), { status: 400, details: error.message });
+                console.warn('Warning: Google API failed, continuing with provided coordinates');
             }
 
             let daysOfWeek = preferredDays.length > 0
@@ -251,7 +252,19 @@ class AIService {
             checklists.forEach(c => { checklistMap[c.checklistID] = { id: c.checklistID, item: c.item }; });
 
             const aiConfig = await initializeAI();
-            const config = (await AIConfig.findOne({ where: { supervisorId }, attributes: ['modelName', 'timesheetMaxSuggestions'] })) || aiConfig;
+            let config = await AIConfig.findOne({ where: { supervisorId }, attributes: ['modelName', 'timesheetMaxSuggestions'] });
+
+            if (!config) {
+                config = await AIConfig.create({
+                    modelName: aiConfig.modelName || 'mistral',
+                    timesheetMaxSuggestions: aiConfig.timesheetMaxSuggestions || 5,
+                    supervisorId
+                });
+            }
+
+            if (config.timesheetMaxSuggestions <= 0) {
+                throw Object.assign(new Error(ERROR_MESSAGES.MAX_SUGGESTIONS_REACHED), { status: 429 });
+            }
 
             const prompt = `Generate timesheet visit suggestions for supervisor ${supervisorId} for week ${weekNumber} of ${year} starting ${weekStartString}.
 - Dates: ${daysOfWeek.join(',')}
@@ -265,7 +278,7 @@ class AIService {
 - Checklists: ${checklists.map(c => `${c.checklistID}:${c.item}`).join(';')}
 - Recruitment Visit Locations: ${recruitmentVisitLocations.map(loc => loc.formattedAddress).join(',')}
 Return a JSON array of visit objects: [{"date":"YYYY-MM-DD","time":"HH:MM","agentID":"string|null","reasons":[{"id":"string"}],"checklists":[{"id":"string"}]}]
-- Generate up to ${config.timesheetMaxSuggestions} visits for the provided dates: ${daysOfWeek.join(',')}.
+- Generate visits for the provided dates: ${daysOfWeek.join(',')}.
 - Ensure visit times are within ${adjustedStartHour}:00-${timeInterval.endHour}:00.
 - ${isCurrentWeek && daysOfWeek.includes(todayDate) ? `For visits on ${todayDate}, ensure time is after ${currentTimeString}.` : ''}
 - Include at least one recruitment visit with agentID: null if includeRecruitmentVisits is true.
@@ -296,27 +309,20 @@ Return a JSON array of visit objects: [{"date":"YYYY-MM-DD","time":"HH:MM","agen
 
             let suggestionsRaw;
             try {
-                // Directly parse the response.response field
                 suggestionsRaw = JSON.parse(response.response.trim());
             } catch (parseError) {
-                throw Object.assign(new Error(ERROR_MESSAGES.INVALID_AI_JSON), {
-                    status: 503,
-                    details: `Failed to parse JSON: ${parseError.message}`
-                });
+                throw Object.assign(new Error(ERROR_MESSAGES.INVALID_AI_JSON), { status: 503, details: `Failed to parse JSON: ${parseError.message}` });
             }
 
             if (!Array.isArray(suggestionsRaw)) {
                 return [];
             }
 
-            // Validate and filter suggestions
             const validSuggestions = suggestionsRaw.filter((visit, index) => {
-                // Validate date
                 if (!visit.date || !daysOfWeek.includes(visit.date) || visit.date < todayDate) {
                     return false;
                 }
 
-                // Validate time
                 const timeMatch = visit.time && visit.time.match(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/);
                 if (!timeMatch) {
                     return false;
@@ -332,18 +338,15 @@ Return a JSON array of visit objects: [{"date":"YYYY-MM-DD","time":"HH:MM","agen
                     return false;
                 }
 
-                // Validate agentID
                 const isRecruitment = visit.agentID === null;
                 if (!isRecruitment && !sortedAgents.some(agent => agent.agentID === visit.agentID)) {
                     return false;
                 }
 
-                // Validate reasons
                 if (!Array.isArray(visit.reasons) || visit.reasons.length === 0 || !visit.reasons.every(r => r.id && reasonMap[r.id])) {
                     return false;
                 }
 
-                // Validate checklists (allow empty for recruitment visits)
                 if (!isRecruitment && (!Array.isArray(visit.checklists) || visit.checklists.length === 0 || !visit.checklists.every(c => c.id && checklistMap[c.id]))) {
                     return false;
                 }
@@ -351,9 +354,6 @@ Return a JSON array of visit objects: [{"date":"YYYY-MM-DD","time":"HH:MM","agen
                 return true;
             });
 
-
-
-            // Ensure at least one recruitment visit if required
             if (includeRecruitmentVisits && !validSuggestions.some(visit => visit.agentID === null)) {
                 validSuggestions.push({
                     date: daysOfWeek[0],
@@ -364,13 +364,16 @@ Return a JSON array of visit objects: [{"date":"YYYY-MM-DD","time":"HH:MM","agen
                 });
             }
 
-            // Limit suggestions to max allowed
-            const finalSuggestions = validSuggestions.slice(0, config.timesheetMaxSuggestions);
+            if (validSuggestions.length > 0) {
+                await config.update({
+                    timesheetMaxSuggestions: config.timesheetMaxSuggestions - 1
+                });
+            }
 
             const cacheKey = `${supervisorId}-${weekNumber}-${year}-${JSON.stringify(timesheetData)}`;
-            cache.set(cacheKey, finalSuggestions);
+            cache.set(cacheKey, validSuggestions);
 
-            return finalSuggestions;
+            return validSuggestions;
         } catch (error) {
             if (error.name === 'AbortError') {
                 const abortError = new Error(ERROR_MESSAGES.REQUEST_CANCELED);
@@ -403,13 +406,13 @@ Return a JSON array of visit objects: [{"date":"YYYY-MM-DD","time":"HH:MM","agen
 
 
 
+
     static async optimizeRoute(origin, allPoints = [], mode = 'driving', trafficModel = 'best_guess', distanceMatrix, controller = new AbortController()) {
         try {
             if (!origin) {
                 throw Object.assign(new Error('Origin is required'), { status: 400 });
             }
 
-            // Validate all points
             allPoints.forEach((location, index) => {
                 if (!/^-?\d+\.\d{1,15},-?\d+\.\d{1,15}$/.test(location)) {
                     throw Object.assign(new Error(`Invalid point location format at index ${index}: ${location}`), { status: 400 });
@@ -421,19 +424,27 @@ Return a JSON array of visit objects: [{"date":"YYYY-MM-DD","time":"HH:MM","agen
             }
 
             const validIndices = Array.from({ length: allPoints.length }, (_, i) => i);
-            const maxRetries = 3;
-            let attempt = 0;
+            const aiConfig = await initializeAI();
+            let config = await AIConfig.findOne({ attributes: ['maxOptimizeRoute'] }) || aiConfig;
 
+            if (!config.maxOptimizeRoute) {
+                config = await AIConfig.create({
+                    modelName: aiConfig.modelName || 'mistral',
+                    maxOptimizeRoute: aiConfig.maxOptimizeRoute || 5
+                });
+            }
 
-            while (attempt < maxRetries) {
-                const aiConfig = await initializeAI();
-                const prompt = `
+            if (config.maxOptimizeRoute <= 0) {
+                return this.fallbackOptimization(allPoints, distanceMatrix);
+            }
+
+            const prompt = `
 Optimize the route starting from origin "${origin}" visiting points: ${allPoints.join(',') || 'none'}.
 - Mode: ${mode}
 - Traffic Model: ${trafficModel}
 - Distance Matrix: ${JSON.stringify(distanceMatrix)}
-- Current Date: 2025-05-25
-- Current Time: 21:10 CET
+- Current Date: 2025-06-03
+- Current Time: 15:18 CET
 Objective: Find the shortest and fastest route with minimal traffic, starting at origin.
 Constraints:
 - Exactly ${allPoints.length} points must be visited once.
@@ -452,65 +463,53 @@ Output: {"waypointOrder": [1, 0], "estimatedDuration": 15.5, "estimatedDistance"
 Return only the JSON object without additional text or formatting.
             `;
 
-                const payload = {
-                    model: 'mistral',
-                    prompt,
-                    stream: false
-                };
+            const payload = {
+                model: config.modelName || 'mistral',
+                prompt,
+                stream: false
+            };
 
-                let response;
-                try {
-                    response = await makeOllamaApiCall('post', '/generate', payload, { signal: controller.signal });
-                } catch (error) {
-                    throw Object.assign(new Error(ERROR_MESSAGES.AI_API_UNAVAILABLE), { status: 503, details: error.message });
-                }
-
-                if (!response || !response.response) {
-                    throw Object.assign(new Error(ERROR_MESSAGES.INVALID_AI_RESPONSE), { status: 503, details: 'No response data from AI service.' });
-                }
-
-                let optimizationResult;
-                try {
-                    // Normalize response by removing newlines and extra spaces
-                    const normalizedResponse = response.response.replace(/\s+/g, ' ').trim();
-                    const jsonString = this.extractJsonFromResponse(normalizedResponse);
-                    optimizationResult = JSON.parse(jsonString);
-                } catch (parseError) {
-                    attempt++;
-                    if (attempt >= maxRetries) {
-                        return this.fallbackOptimization(allPoints, distanceMatrix);
-                    }
-                    continue;
-                }
-
-                if (!optimizationResult || !Array.isArray(optimizationResult.waypointOrder)) {
-                    attempt++;
-                    if (attempt >= maxRetries) {
-                        return this.fallbackOptimization(allPoints, distanceMatrix);
-                    }
-                    continue;
-                }
-
-                const isValidOrder = optimizationResult.waypointOrder.length === allPoints.length &&
-                    optimizationResult.waypointOrder.every(index => validIndices.includes(index)) &&
-                    new Set(optimizationResult.waypointOrder).size === allPoints.length;
-
-                if (!isValidOrder) {
-                    attempt++;
-                    if (attempt >= maxRetries) {
-                        return this.fallbackOptimization(allPoints, distanceMatrix);
-                    }
-                    continue;
-                }
-
-                return {
-                    waypointOrder: optimizationResult.waypointOrder,
-                    estimatedDuration: optimizationResult.estimatedDuration || 0,
-                    estimatedDistance: optimizationResult.estimatedDistance || 0
-                };
+            let response;
+            try {
+                response = await makeOllamaApiCall('post', '/generate', payload, { signal: controller.signal });
+            } catch (error) {
+                throw Object.assign(new Error(ERROR_MESSAGES.AI_API_UNAVAILABLE), { status: 503, details: error.message });
             }
 
-            return this.fallbackOptimization(allPoints, distanceMatrix);
+            if (!response || !response.response) {
+                throw Object.assign(new Error(ERROR_MESSAGES.INVALID_AI_RESPONSE), { status: 503, details: 'No response data from AI service.' });
+            }
+
+            let optimizationResult;
+            try {
+                const normalizedResponse = response.response.replace(/\s+/g, ' ').trim();
+                const jsonString = this.extractJsonFromResponse(normalizedResponse);
+                optimizationResult = JSON.parse(jsonString);
+            } catch (parseError) {
+                return this.fallbackOptimization(allPoints, distanceMatrix);
+            }
+
+            if (!optimizationResult || !Array.isArray(optimizationResult.waypointOrder)) {
+                return this.fallbackOptimization(allPoints, distanceMatrix);
+            }
+
+            const isValidOrder = optimizationResult.waypointOrder.length === allPoints.length &&
+                optimizationResult.waypointOrder.every(index => validIndices.includes(index)) &&
+                new Set(optimizationResult.waypointOrder).size === allPoints.length;
+
+            if (!isValidOrder) {
+                return this.fallbackOptimization(allPoints, distanceMatrix);
+            }
+
+            await config.update({
+                maxOptimizeRoute: config.maxOptimizeRoute - 1
+            });
+
+            return {
+                waypointOrder: optimizationResult.waypointOrder,
+                estimatedDuration: optimizationResult.estimatedDuration || 0,
+                estimatedDistance: optimizationResult.estimatedDistance || 0
+            };
         } catch (error) {
             if (error.name === 'AbortError') {
                 const abortError = new Error(ERROR_MESSAGES.REQUEST_CANCELED);
@@ -752,7 +751,7 @@ Ensure the response is structured as a JSON object with a single 'summary' field
 
 
             const payload = {
-                model: 'mistral',
+                model: aiConfig.modelName || 'mistral',
                 prompt,
                 stream: false
             };
@@ -794,23 +793,22 @@ Ensure the response is structured as a JSON object with a single 'summary' field
 
 
 
-    /**
-     * Create a new AI configuration for a supervisor or globally
-     * @param {Object} configData - Configuration data (modelName, anomalyThreshold, timesheetMaxSuggestions, supervisorId)
-     * @param {string} requesterId - ID of the user making the request (for authorization)
-     * @returns {Object} Created AI configuration
-     */
     static async createAIConfig(configData, requesterId) {
         try {
-            // Validate requester (must be admin or super admin)
-            const requester = await User.findByPk(requesterId, { attributes: ['userID', 'role'] });
-            if (!requester || !['Admin', 'Super Admin'].includes(requester.role)) {
+            const requester = await User.findByPk(requesterId, {
+                attributes: ['userID'],
+                include: [{
+                    model: Role,
+                    attributes: ['name'],
+                    through: { attributes: [] }
+                }]
+            });
+            if (!requester || !requester.Roles.some(role => ['Admin', 'Super Admin'].includes(role.name))) {
                 throw Object.assign(new Error(ERROR_MESSAGES.UNAUTHORIZED), { status: 403 });
             }
 
-            const { modelName, anomalyThreshold, timesheetMaxSuggestions, supervisorId } = configData;
+            const { modelName, maxOptimizeRoute, timesheetMaxSuggestions, supervisorId } = configData;
 
-            // Validate inputs
             if (supervisorId) {
                 const supervisor = await User.findByPk(supervisorId, { attributes: ['userID'] });
                 if (!supervisor) {
@@ -822,15 +820,14 @@ Ensure the response is structured as a JSON object with a single 'summary' field
                 throw Object.assign(new Error(ERROR_MESSAGES.INVALID_MODEL_NAME), { status: 400 });
             }
 
-            if (typeof anomalyThreshold !== 'number' || anomalyThreshold < 0 || anomalyThreshold > 1) {
-                throw Object.assign(new Error(ERROR_MESSAGES.INVALID_THRESHOLD), { status: 400 });
+            if (!Number.isInteger(maxOptimizeRoute) || maxOptimizeRoute <= 0) {
+                throw Object.assign(new Error('Invalid maxOptimizeRoute value'), { status: 400 });
             }
 
             if (!Number.isInteger(timesheetMaxSuggestions) || timesheetMaxSuggestions <= 0) {
                 throw Object.assign(new Error(ERROR_MESSAGES.INVALID_MAX_SUGGESTIONS), { status: 400 });
             }
 
-            // Check for existing configuration
             if (supervisorId) {
                 const existingConfig = await AIConfig.findOne({ where: { supervisorId } });
                 if (existingConfig) {
@@ -838,10 +835,9 @@ Ensure the response is structured as a JSON object with a single 'summary' field
                 }
             }
 
-            // Create new configuration
             const newConfig = await AIConfig.create({
                 modelName,
-                anomalyThreshold,
+                maxOptimizeRoute,
                 timesheetMaxSuggestions,
                 supervisorId: supervisorId || null
             });
@@ -849,7 +845,7 @@ Ensure the response is structured as a JSON object with a single 'summary' field
             return {
                 configID: newConfig.configID,
                 modelName: newConfig.modelName,
-                anomalyThreshold: newConfig.anomalyThreshold,
+                maxOptimizeRoute: newConfig.maxOptimizeRoute,
                 timesheetMaxSuggestions: newConfig.timesheetMaxSuggestions,
                 supervisorId: newConfig.supervisorId,
                 createdAt: newConfig.createdAt,
@@ -862,18 +858,17 @@ Ensure the response is structured as a JSON object with a single 'summary' field
         }
     }
 
-    /**
-     * Update an existing AI configuration
-     * @param {string} configID - ID of the configuration to update
-     * @param {Object} updateData - Fields to update (modelName, anomalyThreshold, timesheetMaxSuggestions)
-     * @param {string} requesterId - ID of the user making the request
-     * @returns {Object} Updated AI configuration
-     */
     static async updateAIConfig(configID, updateData, requesterId) {
         try {
-            // Validate requester
-            const requester = await User.findByPk(requesterId, { attributes: ['userID', 'role'] });
-            if (!requester || !['Admin', 'Super Admin'].includes(requester.role)) {
+            const requester = await User.findByPk(requesterId, {
+                attributes: ['userID'],
+                include: [{
+                    model: Role,
+                    attributes: ['name'],
+                    through: { attributes: [] }
+                }]
+            });
+            if (!requester || !requester.Roles.some(role => ['Admin', 'Super Admin'].includes(role.name))) {
                 throw Object.assign(new Error(ERROR_MESSAGES.UNAUTHORIZED), { status: 403 });
             }
 
@@ -882,32 +877,30 @@ Ensure the response is structured as a JSON object with a single 'summary' field
                 throw Object.assign(new Error(ERROR_MESSAGES.AI_CONFIG_NOT_FOUND), { status: 404 });
             }
 
-            const { modelName, anomalyThreshold, timesheetMaxSuggestions } = updateData;
+            const { modelName, maxOptimizeRoute, timesheetMaxSuggestions } = updateData;
 
-            // Validate inputs
             if (modelName && typeof modelName !== 'string') {
                 throw Object.assign(new Error(ERROR_MESSAGES.INVALID_MODEL_NAME), { status: 400 });
             }
 
-            if (anomalyThreshold !== undefined && (typeof anomalyThreshold !== 'number' || anomalyThreshold < 0 || anomalyThreshold > 1)) {
-                throw Object.assign(new Error(ERROR_MESSAGES.INVALID_THRESHOLD), { status: 400 });
+            if (maxOptimizeRoute !== undefined && (!Number.isInteger(maxOptimizeRoute) || maxOptimizeRoute <= 0)) {
+                throw Object.assign(new Error('Invalid maxOptimizeRoute value'), { status: 400 });
             }
 
             if (timesheetMaxSuggestions !== undefined && (!Number.isInteger(timesheetMaxSuggestions) || timesheetMaxSuggestions <= 0)) {
                 throw Object.assign(new Error(ERROR_MESSAGES.INVALID_MAX_SUGGESTIONS), { status: 400 });
             }
 
-            // Update configuration
             await config.update({
                 modelName: modelName || config.modelName,
-                anomalyThreshold: anomalyThreshold !== undefined ? anomalyThreshold : config.anomalyThreshold,
+                maxOptimizeRoute: maxOptimizeRoute !== undefined ? maxOptimizeRoute : config.maxOptimizeRoute,
                 timesheetMaxSuggestions: timesheetMaxSuggestions !== undefined ? timesheetMaxSuggestions : config.timesheetMaxSuggestions
             });
 
             return {
                 configID: config.configID,
                 modelName: config.modelName,
-                anomalyThreshold: config.anomalyThreshold,
+                maxOptimizeRoute: config.maxOptimizeRoute,
                 timesheetMaxSuggestions: config.timesheetMaxSuggestions,
                 supervisorId: config.supervisorId,
                 createdAt: config.createdAt,
@@ -920,15 +913,8 @@ Ensure the response is structured as a JSON object with a single 'summary' field
         }
     }
 
-    /**
-     * Retrieve an AI configuration by ID or supervisor ID
-     * @param {Object} params - Parameters to query configuration (configID or supervisorId)
-     * @param {string} requesterId - ID of the user making the request
-     * @returns {Object} AI configuration
-     */
     static async getAIConfig(params, requesterId) {
         try {
-            // Validate requester
             const requester = await User.findByPk(requesterId, { attributes: ['userID', 'role'] });
             if (!requester || !['Admin', 'Super Admin'].includes(requester.role)) {
                 throw Object.assign(new Error(ERROR_MESSAGES.UNAUTHORIZED), { status: 403 });
@@ -942,7 +928,7 @@ Ensure the response is structured as a JSON object with a single 'summary' field
             } else if (supervisorId) {
                 config = await AIConfig.findOne({ where: { supervisorId } });
             } else {
-                config = await AIConfig.findOne({ where: { supervisorId: null } }); // Global config
+                config = await AIConfig.findOne({ where: { supervisorId: null } });
             }
 
             if (!config) {
@@ -952,7 +938,7 @@ Ensure the response is structured as a JSON object with a single 'summary' field
             return {
                 configID: config.configID,
                 modelName: config.modelName,
-                anomalyThreshold: config.anomalyThreshold,
+                maxOptimizeRoute: config.maxOptimizeRoute,
                 timesheetMaxSuggestions: config.timesheetMaxSuggestions,
                 supervisorId: config.supervisorId,
                 createdAt: config.createdAt,
@@ -965,17 +951,51 @@ Ensure the response is structured as a JSON object with a single 'summary' field
         }
     }
 
-    /**
-     * Delete an AI configuration
-     * @param {string} configID - ID of the configuration to delete
-     * @param {string} requesterId - ID of the user making the request
-     * @returns {Object} Deletion confirmation
-     */
+    static async listAIConfigs(params, requesterId) {
+        try {
+            const requester = await User.findByPk(requesterId, {
+                attributes: ['userID'],
+                include: [{
+                    model: Role,
+                    attributes: ['name'],
+                    through: { attributes: [] }
+                }]
+            });
+            if (!requester || !requester.Roles.some(role => ['Admin', 'Super Admin'].includes(role.name))) {
+                throw Object.assign(new Error(ERROR_MESSAGES.UNAUTHORIZED), { status: 403 });
+            }
+
+            const { supervisorId } = params;
+            const where = supervisorId ? { supervisorId } : {};
+            const configs = await AIConfig.findAll({ where });
+            return configs.map(config => ({
+                configID: config.configID,
+                modelName: config.modelName,
+                maxOptimizeRoute: config.maxOptimizeRoute,
+                timesheetMaxSuggestions: config.timesheetMaxSuggestions,
+                supervisorId: config.supervisorId,
+                createdAt: config.createdAt,
+                updatedAt: config.updatedAt
+            }));
+        } catch (error) {
+            throw error.message in ERROR_MESSAGES
+                ? error
+                : Object.assign(new Error('Failed to list AI configurations'), { status: 500, details: error.message });
+        }
+    }
+
     static async deleteAIConfig(configID, requesterId) {
         try {
             // Validate requester
-            const requester = await User.findByPk(requesterId, { attributes: ['userID', 'role'] });
-            if (!requester || !['Admin', 'Super Admin'].includes(requester.role)) {
+            const requester = await User.findByPk(requesterId, {
+                attributes: ['userID'],
+                include: [{
+                    model: Role,
+                    attributes: ['name'],
+                    through: { attributes: [] }
+                }]
+            });
+            if (!requester || !requester.Roles.some(role => ['Admin', 'Super Admin'].includes(role.name))) {
                 throw Object.assign(new Error(ERROR_MESSAGES.UNAUTHORIZED), { status: 403 });
             }
 
@@ -993,81 +1013,69 @@ Ensure the response is structured as a JSON object with a single 'summary' field
         }
     }
 
-    /**
-     * List all AI configurations (optionally filtered by supervisorId)
-     * @param {Object} params - Optional filter (supervisorId)
-     * @param {string} requesterId - ID of the user making the request
-     * @returns {Array} List of AI configurations
-     */
-    static async listAIConfigs(params, requesterId) {
-        try {
-            // Validate requester
-            const requester = await User.findByPk(requesterId, { attributes: ['userID', 'role'] });
-            if (!requester || !['Admin', 'Super Admin'].includes(requester.role)) {
-                throw Object.assign(new Error(ERROR_MESSAGES.UNAUTHORIZED), { status: 403 });
-            }
-
-            const { supervisorId } = params;
-            const where = supervisorId ? { supervisorId } : {};
-
-            const configs = await AIConfig.findAll({ where });
-            return configs.map(config => ({
-                configID: config.configID,
-                modelName: config.modelName,
-                anomalyThreshold: config.anomalyThreshold,
-                timesheetMaxSuggestions: config.timesheetMaxSuggestions,
-                supervisorId: config.supervisorId,
-                createdAt: config.createdAt,
-                updatedAt: config.updatedAt
-            }));
-        } catch (error) {
-            throw error.message in ERROR_MESSAGES
-                ? error
-                : Object.assign(new Error('Failed to list AI configurations'), { status: 500, details: error.message });
-        }
-    }
-
-    /**
-     * Test AI configuration by running a sample prompt
-     * @param {string} configID - ID of the configuration to test
-     * @param {string} requesterId - ID of the user making the request
-     * @returns {Object} Test result
-     */
     static async testAIConfig(configID, requesterId) {
         try {
-            // Validate requester
-            const requester = await User.findByPk(requesterId, { attributes: ['userID', 'role'] });
-            if (!requester || !['Admin', 'Super Admin'].includes(requester.role)) {
+            console.log('Step 1: Starting testAIConfig with configID:', configID, 'and requesterId:', requesterId);
+
+            console.log('Step 2: Fetching requester from database with ID:', requesterId);
+            const requester = await User.findByPk(requesterId, {
+                attributes: ['userID'],
+                include: [{
+                    model: Role,
+                    attributes: ['name'],
+                    through: { attributes: [] }
+                }]
+            });
+            console.log('Step 3: Requester fetched:', requester ? JSON.stringify(requester, null, 2) : 'No requester found');
+
+            if (!requester || !requester.Roles.some(role => ['Admin', 'Super Admin'].includes(role.name))) {
+                console.log('Step 4: Unauthorized access detected for requesterId:', requesterId);
                 throw Object.assign(new Error(ERROR_MESSAGES.UNAUTHORIZED), { status: 403 });
             }
 
+            console.log('Step 5: Fetching AI config with ID:', configID);
             const config = await AIConfig.findByPk(configID);
+            console.log('Step 6: AI config fetched:', config ? JSON.stringify(config, null, 2) : 'No config found');
+
             if (!config) {
+                console.log('Step 7: AI config not found for configID:', configID);
                 throw Object.assign(new Error(ERROR_MESSAGES.AI_CONFIG_NOT_FOUND), { status: 404 });
             }
 
+            console.log('Step 8: Preparing test prompt and payload for configID:', configID);
             const testPrompt = `Test prompt for AI configuration ${configID}. Return a simple JSON object: {"status": "success"}`;
             const payload = {
                 model: config.modelName,
                 prompt: testPrompt,
                 stream: false
             };
+            console.log('Step 9: Payload prepared:', JSON.stringify(payload, null, 2));
 
+            console.log('Step 10: Making Ollama API call with payload');
             const response = await makeOllamaApiCall('post', '/generate', payload);
+            console.log('Step 11: API response received:', response ? JSON.stringify(response, null, 2) : 'No response');
+
             if (!response || !response.response) {
+                console.log('Step 12: Invalid or missing AI response for configID:', configID);
                 throw Object.assign(new Error(ERROR_MESSAGES.INVALID_AI_RESPONSE), { status: 503 });
             }
 
+            console.log('Step 13: Extracting and parsing JSON from response');
             let result;
             try {
                 const jsonString = this.extractJsonFromResponse(response.response);
+                console.log('Step 14: Extracted JSON string:', jsonString);
                 result = JSON.parse(jsonString);
+                console.log('Step 15: Parsed JSON result:', JSON.stringify(result, null, 2));
             } catch (parseError) {
+                console.log('Step 16: Failed to parse JSON from response, error:', parseError.message);
                 throw Object.assign(new Error(ERROR_MESSAGES.INVALID_AI_JSON), { status: 503, details: parseError.message });
             }
 
+            console.log('Step 17: Preparing successful response for configID:', configID);
             return { configID, status: 'success', response: result };
         } catch (error) {
+            console.log('Step 18: Error occurred:', error.message, 'with status:', error.status || 503);
             throw error.message in ERROR_MESSAGES
                 ? error
                 : Object.assign(new Error(ERROR_MESSAGES.AI_API_UNAVAILABLE), { status: 503, details: error.message });

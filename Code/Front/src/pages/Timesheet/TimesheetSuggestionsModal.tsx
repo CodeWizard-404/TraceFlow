@@ -408,7 +408,6 @@ const TimesheetSuggestionsModal: React.FC<TimesheetSuggestionsModalProps> = ({
                 </button>
                 <div className="modal-form">
                     <h2>{t("timesheets.suggestions.title")}</h2>
-                    {error && <div className="error-message">{error}</div>}
                     {locationError && <div className="warning-message">{locationError}</div>}
                     <form onSubmit={e => { e.preventDefault(); generateSuggestions(); }}>
                         <div className="form-group">

@@ -363,6 +363,11 @@ body.dark .table-head .table-row {
     border-radius: 0.75rem;
 }
 
+.table-row-55 {
+    grid-template-columns: 0.75fr 1fr 1.5fr 1.5fr 2fr;
+
+}
+
 .table-body .table-row {
     background: #f8fafc;
     border-radius: 0.5rem;
@@ -6177,10 +6182,139 @@ body.dark .sop-modal-button.sop-modal-revoke {
 }
 
 .multi-select .select__option--is-selected {
-    background-color: #007bff;
+    background-color: #4cb1c7;
     color: white;
+}
+
+body.dark .multi-select .select__option--is-selected {
+    background-color: #60a0dc;
 }
 
 .multi-select .select__option--is-focused {
     background-color: #e9ecef;
+}
+
+
+
+/* Styles for editable table rows */
+.table-row.editing {
+    border-left: 4px solid #4cb1c7;
+    transition: border-color 0.3s ease;
+}
+
+body.dark .table-row.editing {
+    border-left: 4px solid #63b3ed;
+}
+
+/* Styles for input fields in table cells */
+.table-cell input {
+    width: 100%;
+    padding: 0.5rem;
+    font-size: 0.875rem;
+    font-family: 'Inter', sans-serif;
+    border: 1px solid #ddd;
+    border-radius: 0.75rem;
+    background: #f8fafc;
+    color: #1f2937;
+    transition: border-color 0.3s ease;
+    box-sizing: border-box;
+}
+
+body.dark .table-cell input {
+    background: #363636;
+    border-color: #4b5563;
+    color: #e5e7eb;
+}
+
+.table-cell input:focus {
+    border-color: #4cb1c7;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(76, 177, 199, 0.1);
+}
+
+body.dark .table-cell input:focus {
+    border-color: #60a0dc;
+    box-shadow: 0 0 0 3px rgba(99, 179, 237, 0.1);
+}
+
+/* Styles for edit and cancel buttons */
+.edit-button {
+    background: #4cb1c7;
+    color: #fff;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    border: none;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+body.dark .edit-button {
+    background: #63b3ed;
+}
+
+.edit-button:hover {
+    background: #3a8fa2;
+}
+
+body.dark .edit-button:hover {
+    background: #4a83ce;
+}
+
+.cancel-button {
+    background: #6b7280;
+    color: #fff;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    border: none;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+body.dark .cancel-button {
+    background: #4b5563;
+}
+
+.cancel-button:hover {
+    background: #4b5563;
+}
+
+body.dark .cancel-button:hover {
+    background: #374151;
+}
+
+.edit-button:disabled,
+.cancel-button:disabled {
+    background: #e5e7eb;
+    color: #9ca3af;
+    cursor: not-allowed;
+}
+
+body.dark .edit-button:disabled,
+body.dark .cancel-button:disabled {
+    background: #4b5563;
+    color: #6b7280;
+}
+
+/* Ensure actions column is flex for better alignment */
+.table-cell.actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    align-items: center;
+}
+
+.action-button-55 {
+    margin-bottom: 0 !important;
 }

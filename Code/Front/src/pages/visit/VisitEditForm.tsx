@@ -198,11 +198,11 @@ const VisitEditForm: React.FC<VisitEditFormProps> = ({
     const isFormComplete = isVisited
         ? editForm.checklists.length > 0
         : editForm.date &&
-          editForm.time &&
-          (isRecruitmentVisit || editForm.agentID) &&
-          editForm.reasons.length > 0 &&
-          editForm.checklists.length > 0 &&
-          (isSupervisor || selectedSupervisor);
+        editForm.time &&
+        (isRecruitmentVisit || editForm.agentID) &&
+        editForm.reasons.length > 0 &&
+        editForm.checklists.length > 0 &&
+        (isSupervisor || selectedSupervisor);
 
     // Handlers
     const handleRegionalManagerSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -469,9 +469,6 @@ const VisitEditForm: React.FC<VisitEditFormProps> = ({
 
     return (
         <div className="timesheet-form-container">
-            <header className="form-header">
-                <h1>{t("visitDetails.form.title")}</h1>
-            </header>
             <form onSubmit={handleSubmit} className="form-card" role="form">
                 {(isSuperAdmin || isDirector) && !isVisited && (
                     <div className="form-group">

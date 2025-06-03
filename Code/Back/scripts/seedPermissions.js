@@ -26,11 +26,15 @@ const getRouteClass = (routePath) => {
         reasons: 'Reason',
         'receipt-books': 'ReceiptBook',
         'receipt-stubs': 'ReceiptStub',
-        auth: 'User',
+        auth: 'Auth',
         roles: 'Role',
         permissions: 'Permission',
         users: 'User',
         locations: 'Location',
+        'csv-headers': 'CSVHeader',
+        ai: 'AI',
+        logs: 'Log',
+        reports: 'Report',
         csv: 'CSV'
     };
 
@@ -74,7 +78,10 @@ const extractPermissionsFromFiles = async () => {
                     return routeLower.includes(routeName) ||
                         (routeName.includes('receiptbook') && routeLower.includes('receipt-books')) ||
                         (routeName.includes('receiptstub') && routeLower.includes('receipt-stubs')) ||
-                        (routeName === 'notification' && routeLower.includes('notifications'));
+                        (routeName.includes('csvheader') && routeLower.includes('csv-headers')) ||
+                        (routeName === 'notification' && routeLower.includes('notifications')) ||
+                        (routeName === 'system' && routeLower.includes('logs')) ||
+                        (routeName === 'report' && routeLower.includes('reports'));
                 });
 
                 const inferredClass = matchingRoute ? routeClasses.get(matchingRoute) : 'Other';
