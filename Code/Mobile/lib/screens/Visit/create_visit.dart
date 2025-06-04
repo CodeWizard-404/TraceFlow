@@ -1,8 +1,7 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/foundation.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../models/agent.dart';
 import '../../models/checklist.dart';
@@ -15,7 +14,6 @@ import '../../providers/reason_provider.dart';
 import '../../providers/location_provider.dart';
 import '../../widgets/appbar/app_bar.dart';
 import '../../widgets/appbar/sidebar.dart';
-import '../../widgets/commen/button.dart';
 import '../../widgets/commen/spacer.dart';
 
 class CreateVisitScreen extends StatefulWidget {
@@ -51,7 +49,6 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
   @override
   void initState() {
     super.initState();
-    if (kDebugMode) print('CreateVisitScreen initState, week: ${widget.weekNumber}, year: ${widget.year}');
     final calculatedDate = DateTime(widget.year, 1, 1).add(Duration(days: (widget.weekNumber - 1) * 7));
     final now = DateTime.now();
     _selectedDate = calculatedDate.isBefore(now) ? now : calculatedDate;
@@ -60,14 +57,12 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
 
   @override
   void dispose() {
-    if (kDebugMode) print('Disposing CreateVisitScreen');
     _debounce?.cancel();
     _phoneController.dispose();
     super.dispose();
   }
 
   Future<void> _loadInitialData() async {
-    if (kDebugMode) print('Loading initial data');
     setState(() => _isLoading = true);
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
@@ -80,13 +75,11 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
         locationProvider.getAllRegions(),
         locationProvider.getAllGovernorates(),
         locationProvider.getAllDelegations(),
-        agentProvider.getAgentsBySupervisor(authProvider.user!.userID),
+        agentProvider.getAgentsByUser(authProvider.user!.userID),
         checklistProvider.getAllChecklists(),
         reasonProvider.getAllReasons(),
       ]);
-      if (kDebugMode) print('Initial data loaded successfully');
     } catch (e) {
-      if (kDebugMode) print('Error loading initial data: $e');
       _showSnackBar('Failed to load initial data: $e');
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -95,12 +88,8 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
 
   int _getWeekNumber(DateTime date) {
     final utcDate = DateTime.utc(date.year, date.month, date.day);
-    final dayOfWeek = utcDate.weekday % 7;
-    final adjustedDate = utcDate.add(Duration(days: 4 - (dayOfWeek == 0 ? 7 : dayOfWeek)));
-    final yearStart = DateTime.utc(adjustedDate.year, 1, 1);
-    final diffMillis = adjustedDate.millisecondsSinceEpoch - yearStart.millisecondsSinceEpoch;
-    final diffDays = diffMillis / 86400000;
-    return ((diffDays + 1) / 7).ceil();
+    final dayOfYear = int.parse(DateFormat('D').format(utcDate));
+    return ((dayOfYear - utcDate.weekday + 10) / 7).floor();
   }
 
   Future<void> _selectDate(BuildContext context) async {
@@ -110,22 +99,10 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
       initialDate: _selectedDate ?? now,
       firstDate: now,
       lastDate: now.add(const Duration(days: 365)),
-      builder: (context, child) => Theme(
-        data: Theme.of(context).copyWith(
-          colorScheme: Theme.of(context).colorScheme.copyWith(
-            primary: Theme.of(context).colorScheme.primary,
-            onPrimary: Theme.of(context).colorScheme.onPrimary,
-            surface: Theme.of(context).colorScheme.surface,
-            onSurface: Theme.of(context).colorScheme.onSurface,
-          ),
-        ),
-        child: child!,
-      ),
     );
     if (picked != null && picked != _selectedDate) {
       setState(() {
         _selectedDate = picked;
-        if (kDebugMode) print('Date selected: $_selectedDate');
       });
     }
   }
@@ -135,15 +112,6 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
     final TimeOfDay? picked = await showTimePicker(
       context: context,
       initialTime: _selectedTime ?? TimeOfDay.now(),
-      builder: (context, child) => Theme(
-        data: Theme.of(context).copyWith(
-          colorScheme: Theme.of(context).colorScheme.copyWith(
-            primary: Theme.of(context).colorScheme.primary,
-            onPrimary: Theme.of(context).colorScheme.onPrimary,
-          ),
-        ),
-        child: child!,
-      ),
     );
     if (picked != null && picked != _selectedTime) {
       final selectedDate = _selectedDate ?? now;
@@ -160,7 +128,6 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
       }
       setState(() {
         _selectedTime = picked;
-        if (kDebugMode) print('Time selected: ${_selectedTime!.format(context)}');
       });
     }
   }
@@ -179,7 +146,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
         selectedValue = _selectedGovernorateId;
         break;
       case 'delegation':
-        items = locationProvider.delegations.where((d) => _selectedGovernorateId != null).toList();
+        items = locationProvider.delegations.where((d) => d.governorateID == _selectedGovernorateId).toList();
         selectedValue = _selectedDelegationId;
         break;
       default:
@@ -193,8 +160,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: Theme.of(context).cardTheme.color,
-          title: Text('Select $type', style: Theme.of(context).textTheme.headlineSmall),
+          title: Text('Select $type'),
           content: SizedBox(
             width: double.maxFinite,
             child: Column(
@@ -204,8 +170,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                   controller: searchController,
                   decoration: InputDecoration(
                     hintText: 'Search ${type}s...',
-                    prefixIcon: Icon(Icons.search, color: Theme.of(context).colorScheme.primary),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    prefixIcon: Icon(Icons.search),
                   ),
                   onChanged: (value) {
                     setDialogState(() {
@@ -213,7 +178,6 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                     });
                   },
                 ),
-                const CustomSpacer(height: 12),
                 SizedBox(
                   height: 300,
                   child: ListView.builder(
@@ -240,7 +204,6 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                           });
                           Navigator.pop(context);
                         },
-                        activeColor: Theme.of(context).colorScheme.primary,
                       );
                     },
                   ),
@@ -251,7 +214,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text('Cancel', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
+              child: Text('Cancel'),
             ),
           ],
         ),
@@ -268,8 +231,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: Theme.of(context).cardTheme.color,
-          title: Text('Select Agent', style: Theme.of(context).textTheme.headlineSmall),
+          title: Text('Select Agent'),
           content: SizedBox(
             width: double.maxFinite,
             child: Column(
@@ -279,8 +241,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                   controller: searchController,
                   decoration: InputDecoration(
                     hintText: 'Search agents...',
-                    prefixIcon: Icon(Icons.search, color: Theme.of(context).colorScheme.primary),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    prefixIcon: Icon(Icons.search),
                   ),
                   onChanged: (value) {
                     setDialogState(() {
@@ -290,7 +251,6 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                     });
                   },
                 ),
-                const CustomSpacer(height: 12),
                 SizedBox(
                   height: 300,
                   child: ListView.builder(
@@ -305,7 +265,6 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                           setState(() => _selectedAgentId = value);
                           Navigator.pop(context);
                         },
-                        activeColor: Theme.of(context).colorScheme.primary,
                       );
                     },
                   ),
@@ -316,7 +275,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text('Cancel', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
+              child: Text('Cancel'),
             ),
           ],
         ),
@@ -334,8 +293,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: Theme.of(context).cardTheme.color,
-          title: Text('Select Checklists', style: Theme.of(context).textTheme.headlineSmall),
+          title: Text('Select Checklists'),
           content: SizedBox(
             width: double.maxFinite,
             child: Column(
@@ -345,8 +303,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                   controller: searchController,
                   decoration: InputDecoration(
                     hintText: 'Search checklists...',
-                    prefixIcon: Icon(Icons.search, color: Theme.of(context).colorScheme.primary),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    prefixIcon: Icon(Icons.search),
                   ),
                   onChanged: (value) {
                     setDialogState(() {
@@ -355,7 +312,6 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                     });
                   },
                 ),
-                const CustomSpacer(height: 12),
                 SizedBox(
                   height: 300,
                   child: ListView.builder(
@@ -375,7 +331,6 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                             }
                           });
                         },
-                        activeColor: Theme.of(context).colorScheme.primary,
                       );
                     },
                   ),
@@ -386,14 +341,14 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text('Cancel', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
+              child: Text('Cancel'),
             ),
-            CustomButton(
-              label: 'Confirm',
+            ElevatedButton(
               onPressed: () {
                 setState(() => _selectedChecklists = selectedChecklists);
                 Navigator.pop(context);
               },
+              child: Text('Confirm'),
             ),
           ],
         ),
@@ -411,8 +366,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: Theme.of(context).cardTheme.color,
-          title: Text('Select Reasons', style: Theme.of(context).textTheme.headlineSmall),
+          title: Text('Select Reasons'),
           content: SizedBox(
             width: double.maxFinite,
             child: Column(
@@ -422,8 +376,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                   controller: searchController,
                   decoration: InputDecoration(
                     hintText: 'Search reasons...',
-                    prefixIcon: Icon(Icons.search, color: Theme.of(context).colorScheme.primary),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    prefixIcon: Icon(Icons.search),
                   ),
                   onChanged: (value) {
                     setDialogState(() {
@@ -432,7 +385,6 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                     });
                   },
                 ),
-                const CustomSpacer(height: 12),
                 SizedBox(
                   height: 300,
                   child: ListView.builder(
@@ -452,7 +404,6 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                             }
                           });
                         },
-                        activeColor: Theme.of(context).colorScheme.primary,
                       );
                     },
                   ),
@@ -463,14 +414,14 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text('Cancel', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
+              child: Text('Cancel'),
             ),
-            CustomButton(
-              label: 'Confirm',
+            ElevatedButton(
               onPressed: () {
                 setState(() => _selectedReasons = selectedReasons);
                 Navigator.pop(context);
               },
+              child: Text('Confirm'),
             ),
           ],
         ),
@@ -488,10 +439,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
       if (value.isEmpty) {
         setState(() {
           _selectedAgentId = null;
-          _selectedRegionId = null;
-          _selectedGovernorateId = null;
           _selectedDelegationId = null;
-          agentProvider.clearAgents();
         });
       } else if (value.length >= 8) {
         try {
@@ -605,12 +553,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
   void _showSnackBar(String message) {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: message.contains('successfully')
-              ? Theme.of(context).colorScheme.primary
-              : Theme.of(context).colorScheme.error,
-        ),
+        SnackBar(content: Text(message)),
       );
     }
   }
@@ -620,360 +563,337 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
     return Scaffold(
       appBar: CustomAppBar(title: 'Create Visit', showBackButton: true),
       drawer: const AppSidebar(),
-      body: Container(
-        color: Theme.of(context).scaffoldBackgroundColor,
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : Form(
-            key: _formKey,
-            child: ListView(
-              children: [
-                _buildSectionCard(
-                  title: 'Date & Time',
-                  child: Column(
-                    children: [
-                      _buildTile(
-                        icon: Icons.calendar_today,
-                        title: _selectedDate == null
-                            ? 'Select Date'
-                            : '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
-                        onTap: () => _selectDate(context),
-                      ),
-                      const CustomSpacer(height: 12),
-                      _buildTile(
-                        icon: Icons.access_time,
-                        title: _selectedTime == null
-                            ? 'Select Time'
-                            : _selectedTime!.format(context),
-                        onTap: () => _selectTime(context),
-                      ),
-                    ],
-                  ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : Form(
+          key: _formKey,
+          child: ListView(
+            children: [
+              _buildSectionCard(
+                title: 'Date & Time',
+                child: Column(
+                  children: [
+                    _buildTile(
+                      icon: Icons.calendar_today,
+                      title: _selectedDate == null
+                          ? 'Select Date'
+                          : '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
+                      onTap: () => _selectDate(context),
+                    ),
+                    const CustomSpacer(height: 12),
+                    _buildTile(
+                      icon: Icons.access_time,
+                      title: _selectedTime == null
+                          ? 'Select Time'
+                          : _selectedTime!.format(context),
+                      onTap: () => _selectTime(context),
+                    ),
+                  ],
                 ),
-                const CustomSpacer(height: 16),
-                _buildSectionCard(
-                  title: 'Location & Agent',
-                  child: Consumer2<AgentProvider, LocationProvider>(
-                    builder: (context, agentProvider, locationProvider, child) {
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+              ),
+              const CustomSpacer(height: 16),
+              _buildSectionCard(
+                title: 'Location & Agent',
+                child: Consumer2<AgentProvider, LocationProvider>(
+                  builder: (context, agentProvider, locationProvider, child) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.surface,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.phone, color: Theme.of(context).colorScheme.primary, size: 24),
+                              const CustomSpacer(width: 12),
+                              Expanded(
+                                child: TextField(
+                                  controller: _phoneController,
+                                  keyboardType: TextInputType.number,
+                                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                                  maxLength: 8,
+                                  decoration: InputDecoration(
+                                    hintText: 'Enter agent\'s phone number',
+                                    border: InputBorder.none,
+                                  ),
+                                  style: TextStyle(fontSize: 16, color: Theme.of(context).colorScheme.onSurface),
+                                  onChanged: (value) => _onPhoneChanged(value, agentProvider),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (_phoneError != null) ...[
+                          const CustomSpacer(height: 8),
+                          Text(
+                            _phoneError!,
+                            style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12),
+                          ),
+                        ],
+                        const CustomSpacer(height: 12),
+                        GestureDetector(
+                          onTap: _agentPhone.isNotEmpty ? null : () => _showLocationDialog(context, 'region'),
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
                               color: Theme.of(context).colorScheme.surface,
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
                             ),
                             child: Row(
                               children: [
-                                Icon(Icons.phone, color: Theme.of(context).colorScheme.primary, size: 24),
+                                Icon(
+                                  Icons.location_on,
+                                  color: _agentPhone.isNotEmpty
+                                      ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
+                                      : Theme.of(context).colorScheme.primary,
+                                ),
                                 const CustomSpacer(width: 12),
                                 Expanded(
-                                  child: TextField(
-                                    controller: _phoneController,
-                                    keyboardType: TextInputType.number,
-                                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                                    maxLength: 8,
-                                    decoration: InputDecoration(
-                                      hintText: 'Enter agent\'s phone number',
-                                      border: InputBorder.none,
-                                      hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
-                                      counterText: '',
+                                  child: Text(
+                                    _selectedRegionId == null
+                                        ? 'Select Region'
+                                        : locationProvider.regions.firstWhere((r) => r.regionID == _selectedRegionId).name,
+                                    style: TextStyle(
+                                      color: _agentPhone.isNotEmpty
+                                          ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
+                                          : Theme.of(context).colorScheme.onSurface,
                                     ),
-                                    style: TextStyle(fontSize: 16, color: Theme.of(context).colorScheme.onSurface),
-                                    onChanged: (value) => _onPhoneChanged(value, agentProvider),
                                   ),
                                 ),
+                                Icon(Icons.arrow_drop_down, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
                               ],
                             ),
                           ),
-                          if (_phoneError != null) ...[
-                            const CustomSpacer(height: 8),
-                            Text(
-                              _phoneError!,
-                              style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12),
+                        ),
+                        const CustomSpacer(height: 12),
+                        GestureDetector(
+                          onTap: _agentPhone.isNotEmpty || _selectedRegionId == null
+                              ? null
+                              : () => _showLocationDialog(context, 'governorate'),
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surface,
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                          ],
-                          const CustomSpacer(height: 12),
-                          GestureDetector(
-                            onTap: _agentPhone.isNotEmpty ? null : () => _showLocationDialog(context, 'region'),
-                            child: Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.surface,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
-                                backgroundBlendMode: _agentPhone.isNotEmpty ? BlendMode.saturation : null,
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.location_on,
-                                    color: _agentPhone.isNotEmpty
-                                        ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
-                                        : Theme.of(context).colorScheme.primary,
-                                  ),
-                                  const CustomSpacer(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      _selectedRegionId == null
-                                          ? 'Select Region'
-                                          : locationProvider.regions.firstWhere((r) => r.regionID == _selectedRegionId).name,
-                                      style: TextStyle(
-                                        color: _agentPhone.isNotEmpty
-                                            ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
-                                            : Theme.of(context).colorScheme.onSurface,
-                                      ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.location_city,
+                                  color: _agentPhone.isNotEmpty || _selectedRegionId == null
+                                      ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
+                                      : Theme.of(context).colorScheme.primary,
+                                ),
+                                const CustomSpacer(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    _selectedGovernorateId == null
+                                        ? 'Select Governorate'
+                                        : locationProvider.governorates.firstWhere((g) => g.governorateID == _selectedGovernorateId).name,
+                                    style: TextStyle(
+                                      color: _agentPhone.isNotEmpty || _selectedRegionId == null
+                                          ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
+                                          : Theme.of(context).colorScheme.onSurface,
                                     ),
                                   ),
-                                  Icon(Icons.arrow_drop_down, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
-                                ],
-                              ),
+                                ),
+                                Icon(Icons.arrow_drop_down, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                              ],
                             ),
                           ),
-                          const CustomSpacer(height: 12),
-                          GestureDetector(
-                            onTap: _agentPhone.isNotEmpty || _selectedRegionId == null
-                                ? null
-                                : () => _showLocationDialog(context, 'governorate'),
-                            child: Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.surface,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
-                                backgroundBlendMode: _agentPhone.isNotEmpty || _selectedRegionId == null ? BlendMode.saturation : null,
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.location_city,
-                                    color: _agentPhone.isNotEmpty || _selectedRegionId == null
-                                        ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
-                                        : Theme.of(context).colorScheme.primary,
-                                  ),
-                                  const CustomSpacer(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      _selectedGovernorateId == null
-                                          ? 'Select Governorate'
-                                          : locationProvider.governorates.firstWhere((g) => g.governorateID == _selectedGovernorateId).name,
-                                      style: TextStyle(
-                                        color: _agentPhone.isNotEmpty || _selectedRegionId == null
-                                            ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
-                                            : Theme.of(context).colorScheme.onSurface,
-                                      ),
+                        ),
+                        const CustomSpacer(height: 12),
+                        GestureDetector(
+                          onTap: _agentPhone.isNotEmpty || _selectedGovernorateId == null
+                              ? null
+                              : () => _showLocationDialog(context, 'delegation'),
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surface,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.place,
+                                  color: _agentPhone.isNotEmpty || _selectedGovernorateId == null
+                                      ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
+                                      : Theme.of(context).colorScheme.primary,
+                                ),
+                                const CustomSpacer(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    _selectedDelegationId == null
+                                        ? 'Select Delegation'
+                                        : locationProvider.delegations.firstWhere((d) => d.delegationID == _selectedDelegationId).name,
+                                    style: TextStyle(
+                                      color: _agentPhone.isNotEmpty || _selectedGovernorateId == null
+                                          ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
+                                          : Theme.of(context).colorScheme.onSurface,
                                     ),
                                   ),
-                                  Icon(Icons.arrow_drop_down, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
-                                ],
-                              ),
+                                ),
+                                Icon(Icons.arrow_drop_down, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                              ],
                             ),
                           ),
-                          const CustomSpacer(height: 12),
-                          GestureDetector(
-                            onTap: _agentPhone.isNotEmpty || _selectedGovernorateId == null
-                                ? null
-                                : () => _showLocationDialog(context, 'delegation'),
-                            child: Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.surface,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
-                                backgroundBlendMode: _agentPhone.isNotEmpty || _selectedGovernorateId == null ? BlendMode.saturation : null,
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.place,
-                                    color: _agentPhone.isNotEmpty || _selectedGovernorateId == null
-                                        ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
-                                        : Theme.of(context).colorScheme.primary,
-                                  ),
-                                  const CustomSpacer(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      _selectedDelegationId == null
-                                          ? 'Select Delegation'
-                                          : locationProvider.delegations.firstWhere((d) => d.delegationID == _selectedDelegationId).name,
-                                      style: TextStyle(
-                                        color: _agentPhone.isNotEmpty || _selectedGovernorateId == null
-                                            ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
-                                            : Theme.of(context).colorScheme.onSurface,
-                                      ),
+                        ),
+                        const CustomSpacer(height: 12),
+                        GestureDetector(
+                          onTap: _agentPhone.isNotEmpty || _selectedDelegationId == null
+                              ? null
+                              : () => _showAgentDialog(context, agentProvider),
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surface,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.person,
+                                  color: _agentPhone.isNotEmpty || _selectedDelegationId == null
+                                      ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
+                                      : Theme.of(context).colorScheme.primary,
+                                ),
+                                const CustomSpacer(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    _selectedAgentId == null
+                                        ? (_agentPhone.isNotEmpty
+                                        ? 'Selected via phone'
+                                        : _selectedDelegationId == null
+                                        ? 'Select a delegation first'
+                                        : 'Select Agent')
+                                        : '${agentProvider.agents.firstWhere((agent) => agent.agentID == _selectedAgentId).name} ${agentProvider.agents.firstWhere((agent) => agent.agentID == _selectedAgentId).lastname}',
+                                    style: TextStyle(
+                                      color: _agentPhone.isNotEmpty || _selectedDelegationId == null
+                                          ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
+                                          : Theme.of(context).colorScheme.onSurface,
                                     ),
                                   ),
-                                  Icon(Icons.arrow_drop_down, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
-                                ],
-                              ),
+                                ),
+                                Icon(Icons.arrow_drop_down, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                              ],
                             ),
                           ),
-                          const CustomSpacer(height: 12),
-                          GestureDetector(
-                            onTap: _agentPhone.isNotEmpty || _selectedDelegationId == null
-                                ? null
-                                : () => _showAgentDialog(context, agentProvider),
-                            child: Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.surface,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
-                                backgroundBlendMode: _agentPhone.isNotEmpty || _selectedDelegationId == null ? BlendMode.saturation : null,
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.person,
-                                    color: _agentPhone.isNotEmpty || _selectedDelegationId == null
-                                        ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
-                                        : Theme.of(context).colorScheme.primary,
-                                  ),
-                                  const CustomSpacer(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      _selectedAgentId == null
-                                          ? (_agentPhone.isNotEmpty
-                                          ? 'Selected via phone'
-                                          : _selectedDelegationId == null
-                                          ? 'Select a delegation first'
-                                          : 'Select Agent')
-                                          : '${agentProvider.agents.firstWhere((agent) => agent.agentID == _selectedAgentId).name} ${agentProvider.agents.firstWhere((agent) => agent.agentID == _selectedAgentId).lastname}',
-                                      style: TextStyle(
-                                        color: _agentPhone.isNotEmpty || _selectedDelegationId == null
-                                            ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
-                                            : Theme.of(context).colorScheme.onSurface,
-                                      ),
-                                    ),
-                                  ),
-                                  Icon(Icons.arrow_drop_down, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
-                                ],
-                              ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+              const CustomSpacer(height: 16),
+              _buildSectionCard(
+                title: 'Checklists',
+                child: Consumer<ChecklistProvider>(
+                  builder: (context, checklistProvider, child) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        GestureDetector(
+                          onTap: () => _showChecklistDialog(context, checklistProvider),
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surface,
+                              borderRadius: BorderRadius.circular(12),
                             ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.checklist, color: Theme.of(context).colorScheme.primary),
+                                const CustomSpacer(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    _selectedChecklists.isEmpty
+                                        ? 'Select Checklists'
+                                        : '${_selectedChecklists.length} selected',
+                                    style: Theme.of(context).textTheme.bodyMedium,
+                                  ),
+                                ),
+                                Icon(Icons.arrow_drop_down, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                              ],
+                            ),
+                          ),
+                        ),
+                        if (_selectedChecklists.isNotEmpty) ...[
+                          const CustomSpacer(height: 8),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: _selectedChecklists.map((checklist) => Chip(
+                              label: Text(checklist.item),
+                              onDeleted: () => setState(() => _selectedChecklists.remove(checklist)),
+                            )).toList(),
                           ),
                         ],
-                      );
-                    },
-                  ),
+                      ],
+                    );
+                  },
                 ),
-                const CustomSpacer(height: 16),
-                _buildSectionCard(
-                  title: 'Checklists',
-                  child: Consumer<ChecklistProvider>(
-                    builder: (context, checklistProvider, child) {
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          GestureDetector(
-                            onTap: () => _showChecklistDialog(context, checklistProvider),
-                            child: Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.surface,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(Icons.checklist, color: Theme.of(context).colorScheme.primary),
-                                  const CustomSpacer(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      _selectedChecklists.isEmpty
-                                          ? 'Select Checklists'
-                                          : '${_selectedChecklists.length} selected',
-                                      style: Theme.of(context).textTheme.bodyMedium,
-                                    ),
+              ),
+              const CustomSpacer(height: 16),
+              _buildSectionCard(
+                title: 'Reasons',
+                child: Consumer<ReasonProvider>(
+                  builder: (context, reasonProvider, child) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        GestureDetector(
+                          onTap: () => _showReasonDialog(context, reasonProvider),
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surface,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.list_alt, color: Theme.of(context).colorScheme.primary),
+                                const CustomSpacer(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    _selectedReasons.isEmpty
+                                        ? 'Select Reasons'
+                                        : '${_selectedReasons.length} selected',
+                                    style: Theme.of(context).textTheme.bodyMedium,
                                   ),
-                                  Icon(Icons.arrow_drop_down, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
-                                ],
-                              ),
+                                ),
+                                Icon(Icons.arrow_drop_down, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                              ],
                             ),
                           ),
-                          if (_selectedChecklists.isNotEmpty) ...[
-                            const CustomSpacer(height: 8),
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: _selectedChecklists.map((checklist) => Chip(
-                                label: Text(checklist.item),
-                                deleteIcon: const Icon(Icons.close, size: 18),
-                                onDeleted: () => setState(() => _selectedChecklists.remove(checklist)),
-                                backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                                labelStyle: TextStyle(color: Theme.of(context).colorScheme.primary),
-                              )).toList(),
-                            ),
-                          ],
-                        ],
-                      );
-                    },
-                  ),
-                ),
-                const CustomSpacer(height: 16),
-                _buildSectionCard(
-                  title: 'Reasons',
-                  child: Consumer<ReasonProvider>(
-                    builder: (context, reasonProvider, child) {
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          GestureDetector(
-                            onTap: () => _showReasonDialog(context, reasonProvider),
-                            child: Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.surface,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(Icons.list_alt, color: Theme.of(context).colorScheme.primary),
-                                  const CustomSpacer(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      _selectedReasons.isEmpty
-                                          ? 'Select Reasons'
-                                          : '${_selectedReasons.length} selected',
-                                      style: Theme.of(context).textTheme.bodyMedium,
-                                    ),
-                                  ),
-                                  Icon(Icons.arrow_drop_down, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
-                                ],
-                              ),
-                            ),
+                        ),
+                        if (_selectedReasons.isNotEmpty) ...[
+                          const CustomSpacer(height: 8),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: _selectedReasons.map((reason) => Chip(
+                              label: Text(reason.item),
+                              onDeleted: () => setState(() => _selectedReasons.remove(reason)),
+                            )).toList(),
                           ),
-                          if (_selectedReasons.isNotEmpty) ...[
-                            const CustomSpacer(height: 8),
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: _selectedReasons.map((reason) => Chip(
-                                label: Text(reason.item),
-                                deleteIcon: const Icon(Icons.close, size: 18),
-                                onDeleted: () => setState(() => _selectedReasons.remove(reason)),
-                                backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                                labelStyle: TextStyle(color: Theme.of(context).colorScheme.primary),
-                              )).toList(),
-                            ),
-                          ],
                         ],
-                      );
-                    },
-                  ),
+                      ],
+                    );
+                  },
                 ),
-                const CustomSpacer(height: 24),
-                CustomButton(
-                  label: 'Create Visit',
-                  onPressed: _submitVisit,
-                  isLoading: _isLoading,
-                ),
-              ],
-            ),
+              ),
+              const CustomSpacer(height: 24),
+              ElevatedButton(
+                onPressed: _submitVisit,
+                child: Text('Create Visit'),
+              ),
+            ],
           ),
         ),
       ),
@@ -985,7 +905,6 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1017,7 +936,6 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
         ),
         child: Row(
           children: [

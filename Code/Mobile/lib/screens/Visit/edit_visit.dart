@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
@@ -19,7 +18,6 @@ import '../../providers/location_provider.dart';
 import '../../utils/constants.dart';
 import '../../widgets/appbar/app_bar.dart';
 import '../../widgets/appbar/sidebar.dart';
-import '../../widgets/commen/button.dart';
 import '../../widgets/commen/spacer.dart';
 
 class EditVisitScreen extends StatefulWidget {
@@ -151,7 +149,7 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
         locationProvider.getAllRegions(),
         locationProvider.getAllGovernorates(),
         locationProvider.getAllDelegations(),
-        agentProvider.getAgentsBySupervisor(authProvider.user!.userID),
+        agentProvider.getAgentsByUser(authProvider.user!.userID),
         checklistProvider.getAllChecklists(),
         reasonProvider.getAllReasons(),
       ]);
@@ -209,14 +207,14 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
       await visitProvider.updateVisit(
         visitId: _visit.visitID!,
         date: formattedDate,
-        time: _visit.status == 'visited' ? _visit.time : _timeController.text,
-        location: _visit.status == 'visited' ? _visit.location : location,
-        status: newStatus,
+        time: _timeController.text,
         duration: updatedDuration,
-        comment: _visit.status == 'visited' && _commentController.text.isNotEmpty ? _commentController.text : _visit.comment,
-        agentID: _visit.status == 'visited' ? _visit.agentID : _selectedAgentId,
+        location: location,
+        status: newStatus,
+        comment: _commentController.text,
+        agentID: _selectedAgentId,
         checklists: checklistUpdates,
-        reasons: _visit.status == 'visited' ? null : reasonUpdates,
+        reasons: reasonUpdates,
         photoPaths: _newPhotos.isNotEmpty ? _newPhotos.map((p) => p.path).toList() : null,
         photosToRemove: _photosToRemove.isNotEmpty ? _photosToRemove : null,
       );
@@ -270,84 +268,25 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
   void _showSnackBar(String message) {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: message.contains('successfully')
-              ? Theme.of(context).colorScheme.primary
-              : Theme.of(context).colorScheme.error,
-        ),
+        SnackBar(content: Text(message)),
       );
     }
   }
 
-  void _toggleChecklist(Checklist checklist, bool? value) {
-    if (_visit.status != 'visited') return;
+  void _toggleChecklist(String checklistId, bool checked) {
     setState(() {
-      final index = _visitChecklists.indexWhere((c) => c.checklistID == checklist.checklistID);
+      final index = _visitChecklists.indexWhere((c) => c.checklistID == checklistId);
       if (index != -1) {
         _visitChecklists[index] = Checklist(
-          checklistID: checklist.checklistID,
-          item: checklist.item,
+          checklistID: checklistId,
+          item: _visitChecklists[index].item,
           visitChecklist: VisitChecklist(
-            checked: value ?? false,
-            visitID: _visit.visitID,
-            checklistID: checklist.checklistID,
+            checked: checked,
+            visitID: _visit.visitID!,
+            checklistID: checklistId,
           ),
         );
       }
-      _checkForChanges();
-    });
-  }
-
-  void _addChecklist(Checklist checklist) {
-    if (!_visitChecklists.any((c) => c.checklistID == checklist.checklistID)) {
-      setState(() {
-        _visitChecklists.add(
-          Checklist(
-            checklistID: checklist.checklistID,
-            item: checklist.item,
-            visitChecklist: VisitChecklist(
-              checked: false,
-              visitID: _visit.visitID,
-              checklistID: checklist.checklistID,
-            ),
-          ),
-        );
-        _checkForChanges();
-      });
-    }
-  }
-
-  void _removeChecklist(String checklistId) {
-    if (_visit.status == 'visited') return;
-    setState(() {
-      _visitChecklists.removeWhere((c) => c.checklistID == checklistId);
-      _checkForChanges();
-    });
-  }
-
-  void _addReason(Reason reason) {
-    if (!_visitReasons.any((r) => r.reasonID == reason.reasonID)) {
-      setState(() {
-        _visitReasons.add(reason);
-        _checkForChanges();
-      });
-    }
-  }
-
-  void _removeReason(String reasonId) {
-    if (_visit.status == 'visited') return;
-    setState(() {
-      _visitReasons.removeWhere((r) => r.reasonID == reasonId);
-      _checkForChanges();
-    });
-  }
-
-  void _removePhoto(String photo) {
-    if (_visit.status != 'visited') return;
-    setState(() {
-      _photosToRemove.add(photo);
-      _checkForChanges();
     });
   }
 
@@ -358,7 +297,6 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
     if (pickedFile != null) {
       setState(() {
         _newPhotos.add(File(pickedFile.path));
-        _checkForChanges();
       });
     }
   }
@@ -368,15 +306,13 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
       context,
       MaterialPageRoute(
         builder: (_) => Scaffold(
-          appBar: CustomAppBar(title: 'Photo View', showBackButton: true),
+          appBar: AppBar(title: const Text('Photo View')),
           body: Center(
             child: Image.network(
               photoPath.startsWith('http') ? photoPath : '$baseUrl$photoPath',
               fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) => const Icon(Icons.error, color: Colors.white, size: 50),
             ),
           ),
-          backgroundColor: Colors.black,
         ),
       ),
     );
@@ -390,22 +326,10 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
       initialDate: _visit.date,
       firstDate: now,
       lastDate: now.add(const Duration(days: 365)),
-      builder: (context, child) => Theme(
-        data: Theme.of(context).copyWith(
-          colorScheme: Theme.of(context).colorScheme.copyWith(
-            primary: Theme.of(context).colorScheme.primary,
-            onPrimary: Theme.of(context).colorScheme.onPrimary,
-            surface: Theme.of(context).colorScheme.surface,
-            onSurface: Theme.of(context).colorScheme.onSurface,
-          ),
-        ),
-        child: child!,
-      ),
     );
     if (date != null && mounted) {
       setState(() {
         _dateController.text = DateFormat('yyyy-MM-dd').format(date);
-        _checkForChanges();
       });
     }
   }
@@ -417,15 +341,6 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
     final time = await showTimePicker(
       context: context,
       initialTime: initialTime,
-      builder: (context, child) => Theme(
-        data: Theme.of(context).copyWith(
-          colorScheme: Theme.of(context).colorScheme.copyWith(
-            primary: Theme.of(context).colorScheme.primary,
-            onPrimary: Theme.of(context).colorScheme.onPrimary,
-          ),
-        ),
-        child: child!,
-      ),
     );
     if (time != null && mounted) {
       final selectedDate = DateTime.parse(_dateController.text);
@@ -442,7 +357,6 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
       }
       setState(() {
         _timeController.text = '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
-        _checkForChanges();
       });
     }
   }
@@ -462,7 +376,7 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
         selectedValue = _selectedGovernorateId;
         break;
       case 'delegation':
-        items = locationProvider.delegations.where((d) => _selectedGovernorateId != null).toList();
+        items = locationProvider.delegations.where((d) => d.governorateID == _selectedGovernorateId).toList();
         selectedValue = _selectedDelegationId;
         break;
       default:
@@ -476,8 +390,7 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: Theme.of(context).cardTheme.color,
-          title: Text('Select $type', style: Theme.of(context).textTheme.headlineSmall),
+          title: Text('Select $type'),
           content: SizedBox(
             width: double.maxFinite,
             child: Column(
@@ -487,8 +400,7 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
                   controller: searchController,
                   decoration: InputDecoration(
                     hintText: 'Search ${type}s...',
-                    prefixIcon: Icon(Icons.search, color: Theme.of(context).colorScheme.primary),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    prefixIcon: Icon(Icons.search),
                   ),
                   onChanged: (value) {
                     setDialogState(() {
@@ -496,7 +408,6 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
                     });
                   },
                 ),
-                const CustomSpacer(height: 12),
                 SizedBox(
                   height: 300,
                   child: ListView.builder(
@@ -520,11 +431,9 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
                               _selectedDelegationId = value;
                             }
                             _selectedAgentId = null;
-                            _checkForChanges();
                           });
                           Navigator.pop(context);
                         },
-                        activeColor: Theme.of(context).colorScheme.primary,
                       );
                     },
                   ),
@@ -535,7 +444,7 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text('Cancel', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
+              child: Text('Cancel'),
             ),
           ],
         ),
@@ -553,8 +462,7 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: Theme.of(context).cardTheme.color,
-          title: Text('Select Agent', style: Theme.of(context).textTheme.headlineSmall),
+          title: Text('Select Agent'),
           content: SizedBox(
             width: double.maxFinite,
             child: Column(
@@ -564,18 +472,16 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
                   controller: searchController,
                   decoration: InputDecoration(
                     hintText: 'Search agents...',
-                    prefixIcon: Icon(Icons.search, color: Theme.of(context).colorScheme.primary),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    prefixIcon: Icon(Icons.search),
                   ),
                   onChanged: (value) {
                     setDialogState(() {
                       filteredAgents = agents.where((agent) =>
                       '${agent.name} ${agent.lastname}'.toLowerCase().contains(value.toLowerCase()) ||
-                          agent.agentID!.toLowerCase().contains(value.toLowerCase())).toList();
+                          agent.agentID.toLowerCase().contains(value.toLowerCase())).toList();
                     });
                   },
                 ),
-                const CustomSpacer(height: 12),
                 SizedBox(
                   height: 300,
                   child: ListView.builder(
@@ -587,13 +493,9 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
                         value: agent.agentID,
                         groupValue: _selectedAgentId,
                         onChanged: (value) {
-                          setState(() {
-                            _selectedAgentId = value;
-                            _checkForChanges();
-                          });
+                          setState(() => _selectedAgentId = value);
                           Navigator.pop(context);
                         },
-                        activeColor: Theme.of(context).colorScheme.primary,
                       );
                     },
                   ),
@@ -604,7 +506,7 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text('Cancel', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
+              child: Text('Cancel'),
             ),
           ],
         ),
@@ -620,8 +522,7 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: Theme.of(context).cardTheme.color,
-          title: Text('Select Checklists', style: Theme.of(context).textTheme.headlineSmall),
+          title: Text('Select Checklists'),
           content: SizedBox(
             width: double.maxFinite,
             child: Column(
@@ -631,8 +532,7 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
                   controller: TextEditingController(),
                   decoration: InputDecoration(
                     hintText: 'Search checklists...',
-                    prefixIcon: Icon(Icons.search, color: Theme.of(context).colorScheme.primary),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    prefixIcon: Icon(Icons.search),
                   ),
                   onChanged: (value) {
                     setDialogState(() {
@@ -640,7 +540,6 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
                     });
                   },
                 ),
-                const CustomSpacer(height: 12),
                 SizedBox(
                   height: 300,
                   child: ListView.builder(
@@ -660,7 +559,7 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
                                   item: checklist.item,
                                   visitChecklist: VisitChecklist(
                                     checked: false,
-                                    visitID: _visit.visitID,
+                                    visitID: _visit.visitID!,
                                     checklistID: checklist.checklistID,
                                   ),
                                 ),
@@ -670,7 +569,6 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
                             }
                           });
                         },
-                        activeColor: Theme.of(context).colorScheme.primary,
                       );
                     },
                   ),
@@ -681,17 +579,16 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text('Cancel', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
+              child: Text('Cancel'),
             ),
-            CustomButton(
-              label: 'Confirm',
+            ElevatedButton(
               onPressed: () {
                 setState(() {
                   _visitChecklists = selectedChecklists;
-                  _checkForChanges();
                 });
                 Navigator.pop(context);
               },
+              child: Text('Confirm'),
             ),
           ],
         ),
@@ -708,8 +605,7 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: Theme.of(context).cardTheme.color,
-          title: Text('Select Reasons', style: Theme.of(context).textTheme.headlineSmall),
+          title: Text('Select Reasons'),
           content: SizedBox(
             width: double.maxFinite,
             child: Column(
@@ -719,8 +615,7 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
                   controller: TextEditingController(),
                   decoration: InputDecoration(
                     hintText: 'Search reasons...',
-                    prefixIcon: Icon(Icons.search, color: Theme.of(context).colorScheme.primary),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    prefixIcon: Icon(Icons.search),
                   ),
                   onChanged: (value) {
                     setDialogState(() {
@@ -728,7 +623,6 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
                     });
                   },
                 ),
-                const CustomSpacer(height: 12),
                 SizedBox(
                   height: 300,
                   child: ListView.builder(
@@ -748,7 +642,6 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
                             }
                           });
                         },
-                        activeColor: Theme.of(context).colorScheme.primary,
                       );
                     },
                   ),
@@ -759,17 +652,16 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text('Cancel', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
+              child: Text('Cancel'),
             ),
-            CustomButton(
-              label: 'Confirm',
+            ElevatedButton(
               onPressed: () {
                 setState(() {
                   _visitReasons = selectedReasons;
-                  _checkForChanges();
                 });
                 Navigator.pop(context);
               },
+              child: Text('Confirm'),
             ),
           ],
         ),
@@ -780,264 +672,298 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: CustomAppBar(
-        title: _visit.status == 'visited' ? 'Review Visit' : 'Edit Visit',
-        showBackButton: true,
+      appBar: AppBar(
+        title: Text(_visit.status == 'visited' ? 'Review Visit' : 'Edit Visit'),
       ),
       drawer: const AppSidebar(),
-      body: RefreshIndicator(
-        onRefresh: _loadInitialData,
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
         child: _isLoading && !_isInitialized
             ? const Center(child: CircularProgressIndicator())
-            : Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: ListView(
-            children: [
-              if (_visit.status != 'visited') ...[
-                _buildSectionCard(
-                  title: 'Date & Time',
-                  child: Column(
-                    children: [
-                      _buildTile(
-                        icon: Icons.calendar_today,
-                        title: _dateController.text,
-                        onTap: _pickDate,
-                      ),
-                      const CustomSpacer(height: 12),
-                      _buildTile(
-                        icon: Icons.access_time,
-                        title: _timeController.text,
-                        onTap: _pickTime,
-                      ),
-                    ],
-                  ),
-                ),
-                const CustomSpacer(height: 16),
-                _buildSectionCard(
-                  title: 'Location & Agent',
-                  child: Consumer2<AgentProvider, LocationProvider>(
-                    builder: (context, agentProvider, locationProvider, child) {
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          TextField(
-                            controller: _agentPhoneController,
-                            keyboardType: TextInputType.number,
-                            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                            maxLength: 8,
-                            decoration: InputDecoration(
-                              hintText: 'Enter agent\'s phone number',
-                              prefixIcon: Icon(Icons.phone, color: Theme.of(context).colorScheme.primary),
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                              counterText: '',
-                            ),
-                          ),
-                          const CustomSpacer(height: 12),
-                          GestureDetector(
-                            onTap: _agentPhoneController.text.isNotEmpty
-                                ? null
-                                : () => _showLocationDialog(context, 'region'),
-                            child: Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.surface,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
-                                backgroundBlendMode: _agentPhoneController.text.isNotEmpty ? BlendMode.saturation : null,
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.location_on,
-                                    color: _agentPhoneController.text.isNotEmpty
-                                        ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
-                                        : Theme.of(context).colorScheme.primary,
-                                  ),
-                                  const CustomSpacer(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      _selectedRegionId == null
-                                          ? 'Select Region'
-                                          : locationProvider.regions.firstWhere((r) => r.regionID == _selectedRegionId).name,
-                                      style: TextStyle(
-                                        color: _agentPhoneController.text.isNotEmpty
-                                            ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
-                                            : Theme.of(context).colorScheme.onSurface,
-                                      ),
-                                    ),
-                                  ),
-                                  Icon(Icons.arrow_drop_down, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
-                                ],
-                              ),
-                            ),
-                          ),
-                          const CustomSpacer(height: 12),
-                          GestureDetector(
-                            onTap: _agentPhoneController.text.isNotEmpty || _selectedRegionId == null
-                                ? null
-                                : () => _showLocationDialog(context, 'governorate'),
-                            child: Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.surface,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
-                                backgroundBlendMode: _agentPhoneController.text.isNotEmpty || _selectedRegionId == null ? BlendMode.saturation : null,
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.location_city,
-                                    color: _agentPhoneController.text.isNotEmpty || _selectedRegionId == null
-                                        ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
-                                        : Theme.of(context).colorScheme.primary,
-                                  ),
-                                  const CustomSpacer(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      _selectedGovernorateId == null
-                                          ? 'Select Governorate'
-                                          : locationProvider.governorates.firstWhere((g) => g.governorateID == _selectedGovernorateId).name,
-                                      style: TextStyle(
-                                        color: _agentPhoneController.text.isNotEmpty || _selectedRegionId == null
-                                            ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
-                                            : Theme.of(context).colorScheme.onSurface,
-                                      ),
-                                    ),
-                                  ),
-                                  Icon(Icons.arrow_drop_down, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
-                                ],
-                              ),
-                            ),
-                          ),
-                          const CustomSpacer(height: 12),
-                          GestureDetector(
-                            onTap: _agentPhoneController.text.isNotEmpty || _selectedGovernorateId == null
-                                ? null
-                                : () => _showLocationDialog(context, 'delegation'),
-                            child: Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.surface,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
-                                backgroundBlendMode: _agentPhoneController.text.isNotEmpty || _selectedGovernorateId == null ? BlendMode.saturation : null,
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.place,
-                                    color: _agentPhoneController.text.isNotEmpty || _selectedGovernorateId == null
-                                        ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
-                                        : Theme.of(context).colorScheme.primary,
-                                  ),
-                                  const CustomSpacer(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      _selectedDelegationId == null
-                                          ? 'Select Delegation'
-                                          : locationProvider.delegations.firstWhere((d) => d.delegationID == _selectedDelegationId).name,
-                                      style: TextStyle(
-                                        color: _agentPhoneController.text.isNotEmpty || _selectedGovernorateId == null
-                                            ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
-                                            : Theme.of(context).colorScheme.onSurface,
-                                      ),
-                                    ),
-                                  ),
-                                  Icon(Icons.arrow_drop_down, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
-                                ],
-                              ),
-                            ),
-                          ),
-                          const CustomSpacer(height: 12),
-                          GestureDetector(
-                            onTap: _agentPhoneController.text.isNotEmpty || _selectedDelegationId == null
-                                ? null
-                                : () => _showAgentDialog(context, agentProvider),
-                            child: Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.surface,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
-                                backgroundBlendMode: _agentPhoneController.text.isNotEmpty || _selectedDelegationId == null ? BlendMode.saturation : null,
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.person,
-                                    color: _agentPhoneController.text.isNotEmpty || _selectedDelegationId == null
-                                        ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
-                                        : Theme.of(context).colorScheme.primary,
-                                  ),
-                                  const CustomSpacer(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      _selectedAgentId == null
-                                          ? (_agentPhoneController.text.isNotEmpty
-                                          ? 'Selected via phone'
-                                          : _selectedDelegationId == null
-                                          ? 'Select a delegation first'
-                                          : 'Select Agent')
-                                          : '${agentProvider.agents.firstWhere((agent) => agent.agentID == _selectedAgentId).name} ${agentProvider.agents.firstWhere((agent) => agent.agentID == _selectedAgentId).lastname}',
-                                      style: TextStyle(
-                                        color: _agentPhoneController.text.isNotEmpty || _selectedDelegationId == null
-                                            ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
-                                            : Theme.of(context).colorScheme.onSurface,
-                                      ),
-                                    ),
-                                  ),
-                                  Icon(Icons.arrow_drop_down, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                ),
-              ],
-              if (_visit.status == 'visited' && _visit.comment != null) ...[
-                const CustomSpacer(height: 16),
-                _buildSectionCard(
-                  title: 'Details',
-                  child: TextField(
-                    controller: _commentController,
-                    decoration: InputDecoration(
-                      hintText: 'Enter comment',
-                      prefixIcon: Icon(Icons.comment, color: Theme.of(context).colorScheme.primary),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            : ListView(
+          children: [
+            if (_visit.status != 'visited') ...[
+              _buildSectionCard(
+                title: 'Date & Time',
+                child: Column(
+                  children: [
+                    _buildTile(
+                      icon: Icons.calendar_today,
+                      title: _dateController.text,
+                      onTap: _pickDate,
                     ),
-                  ),
+                    const CustomSpacer(height: 12),
+                    _buildTile(
+                      icon: Icons.access_time,
+                      title: _timeController.text,
+                      onTap: _pickTime,
+                    ),
+                  ],
                 ),
-              ],
+              ),
               const CustomSpacer(height: 16),
               _buildSectionCard(
-                title: 'Checklists',
-                child: Consumer<ChecklistProvider>(
-                  builder: (context, checklistProvider, child) {
+                title: 'Location & Agent',
+                child: Consumer2<AgentProvider, LocationProvider>(
+                  builder: (context, agentProvider, locationProvider, child) {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        TextField(
+                          controller: _agentPhoneController,
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                          maxLength: 8,
+                          decoration: InputDecoration(
+                            hintText: 'Enter agent\'s phone number',
+                            prefixIcon: Icon(Icons.phone),
+                          ),
+                        ),
+                        const CustomSpacer(height: 12),
                         GestureDetector(
-                          onTap: _visit.status != 'visited' ? () => _showChecklistDialog(context, checklistProvider) : null,
+                          onTap: _agentPhoneController.text.isNotEmpty
+                              ? null
+                              : () => _showLocationDialog(context, 'region'),
                           child: Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
                               color: Theme.of(context).colorScheme.surface,
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
                             ),
                             child: Row(
                               children: [
-                                Icon(Icons.checklist, color: Theme.of(context).colorScheme.primary),
+                                Icon(
+                                  Icons.location_on,
+                                  color: _agentPhoneController.text.isNotEmpty
+                                      ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
+                                      : Theme.of(context).colorScheme.primary,
+                                ),
                                 const CustomSpacer(width: 12),
                                 Expanded(
                                   child: Text(
-                                    _visitChecklists.isEmpty
-                                        ? 'Select Checklists'
-                                        : '${_visitChecklists.length} selected',
+                                    _selectedRegionId == null
+                                        ? 'Select Region'
+                                        : locationProvider.regions.firstWhere((r) => r.regionID == _selectedRegionId).name,
+                                    style: TextStyle(
+                                      color: _agentPhoneController.text.isNotEmpty
+                                          ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
+                                          : Theme.of(context).colorScheme.onSurface,
+                                    ),
+                                  ),
+                                ),
+                                Icon(Icons.arrow_drop_down, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const CustomSpacer(height: 12),
+                        GestureDetector(
+                          onTap: _agentPhoneController.text.isNotEmpty || _selectedRegionId == null
+                              ? null
+                              : () => _showLocationDialog(context, 'governorate'),
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surface,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.location_city,
+                                  color: _agentPhoneController.text.isNotEmpty || _selectedRegionId == null
+                                      ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
+                                      : Theme.of(context).colorScheme.primary,
+                                ),
+                                const CustomSpacer(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    _selectedGovernorateId == null
+                                        ? 'Select Governorate'
+                                        : locationProvider.governorates.firstWhere((g) => g.governorateID == _selectedGovernorateId).name,
+                                    style: TextStyle(
+                                      color: _agentPhoneController.text.isNotEmpty || _selectedRegionId == null
+                                          ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
+                                          : Theme.of(context).colorScheme.onSurface,
+                                    ),
+                                  ),
+                                ),
+                                Icon(Icons.arrow_drop_down, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const CustomSpacer(height: 12),
+                        GestureDetector(
+                          onTap: _agentPhoneController.text.isNotEmpty || _selectedGovernorateId == null
+                              ? null
+                              : () => _showLocationDialog(context, 'delegation'),
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surface,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.place,
+                                  color: _agentPhoneController.text.isNotEmpty || _selectedGovernorateId == null
+                                      ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
+                                      : Theme.of(context).colorScheme.primary,
+                                ),
+                                const CustomSpacer(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    _selectedDelegationId == null
+                                        ? 'Select Delegation'
+                                        : locationProvider.delegations.firstWhere((d) => d.delegationID == _selectedDelegationId).name,
+                                    style: TextStyle(
+                                      color: _agentPhoneController.text.isNotEmpty || _selectedGovernorateId == null
+                                          ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
+                                          : Theme.of(context).colorScheme.onSurface,
+                                    ),
+                                  ),
+                                ),
+                                Icon(Icons.arrow_drop_down, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const CustomSpacer(height: 12),
+                        GestureDetector(
+                          onTap: _agentPhoneController.text.isNotEmpty || _selectedDelegationId == null
+                              ? null
+                              : () => _showAgentDialog(context, agentProvider),
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surface,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.person,
+                                  color: _agentPhoneController.text.isNotEmpty || _selectedDelegationId == null
+                                      ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
+                                      : Theme.of(context).colorScheme.primary,
+                                ),
+                                const CustomSpacer(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    _selectedAgentId == null
+                                        ? (_agentPhoneController.text.isNotEmpty
+                                        ? 'Selected via phone'
+                                        : _selectedDelegationId == null
+                                        ? 'Select a delegation first'
+                                        : 'Select Agent')
+                                        : '${agentProvider.agents.firstWhere((agent) => agent.agentID == _selectedAgentId).name} ${agentProvider.agents.firstWhere((agent) => agent.agentID == _selectedAgentId).lastname}',
+                                    style: TextStyle(
+                                      color: _agentPhoneController.text.isNotEmpty || _selectedDelegationId == null
+                                          ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
+                                          : Theme.of(context).colorScheme.onSurface,
+                                    ),
+                                  ),
+                                ),
+                                Icon(Icons.arrow_drop_down, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ],
+            if (_visit.status == 'visited' && _visit.comment != null) ...[
+              const CustomSpacer(height: 16),
+              _buildSectionCard(
+                title: 'Details',
+                child: TextField(
+                  controller: _commentController,
+                  decoration: InputDecoration(
+                    hintText: 'Enter comment',
+                    prefixIcon: Icon(Icons.comment),
+                  ),
+                ),
+              ),
+            ],
+            const CustomSpacer(height: 16),
+            _buildSectionCard(
+              title: 'Checklists',
+              child: Consumer<ChecklistProvider>(
+                builder: (context, checklistProvider, child) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      GestureDetector(
+                        onTap: _visit.status != 'visited' ? () => _showChecklistDialog(context, checklistProvider) : null,
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.surface,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.checklist, color: Theme.of(context).colorScheme.primary),
+                              const CustomSpacer(width: 12),
+                              Expanded(
+                                child: Text(
+                                  _visitChecklists.isEmpty
+                                      ? 'Select Checklists'
+                                      : '${_visitChecklists.length} selected',
+                                  style: Theme.of(context).textTheme.bodyMedium,
+                                ),
+                              ),
+                              Icon(Icons.arrow_drop_down, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                            ],
+                          ),
+                        ),
+                      ),
+                      if (_visitChecklists.isNotEmpty) ...[
+                        const CustomSpacer(height: 8),
+                        Column(
+                          children: _visitChecklists.map((checklist) => CheckboxListTile(
+                            title: Text(checklist.item),
+                            value: checklist.visitChecklist?.checked ?? false,
+                            onChanged: _visit.status == 'visited' ? (value) => _toggleChecklist(checklist.checklistID!, value!) : null,
+                            enabled: _visit.status == 'visited',
+                            controlAffinity: ListTileControlAffinity.leading,
+                          )).toList(),
+                        ),
+                      ],
+                    ],
+                  );
+                },
+              ),
+            ),
+            const CustomSpacer(height: 16),
+            _buildSectionCard(
+              title: 'Reasons',
+              child: Consumer<ReasonProvider>(
+                builder: (context, reasonProvider, child) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (_visit.status != 'visited') ...[
+                        GestureDetector(
+                          onTap: () => _showReasonDialog(context, reasonProvider),
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surface,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.list_alt, color: Theme.of(context).colorScheme.primary),
+                                const CustomSpacer(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    _visitReasons.isEmpty ? 'Select Reasons' : '${_visitReasons.length} selected',
                                     style: Theme.of(context).textTheme.bodyMedium,
                                   ),
                                 ),
@@ -1046,179 +972,113 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
                             ),
                           ),
                         ),
-                        if (_visitChecklists.isNotEmpty) ...[
-                          const CustomSpacer(height: 8),
-                          Column(
-                            children: _visitChecklists.map((checklist) => CheckboxListTile(
-                              title: Text(checklist.item),
-                              value: checklist.visitChecklist?.checked ?? false,
-                              onChanged: _visit.status == 'visited' ? (value) => _toggleChecklist(checklist, value) : null,
-                              activeColor: Theme.of(context).colorScheme.primary,
-                              enabled: _visit.status == 'visited',
-                              controlAffinity: ListTileControlAffinity.leading,
-                              dense: true,
-                            )).toList(),
-                          ),
-                        ],
                       ],
-                    );
-                  },
-                ),
+                      if (_visitReasons.isNotEmpty) ...[
+                        const CustomSpacer(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: _visitReasons.map((reason) => Chip(
+                            label: Text(reason.item),
+                            onDeleted: _visit.status != 'visited' ? () => setState(() => _visitReasons.remove(reason)) : null,
+                          )).toList(),
+                        ),
+                      ],
+                    ],
+                  );
+                },
               ),
+            ),
+            if (_visit.photos != null && _visit.photos!.isNotEmpty || _newPhotos.isNotEmpty) ...[
               const CustomSpacer(height: 16),
               _buildSectionCard(
-                title: 'Reasons',
-                child: Consumer<ReasonProvider>(
-                  builder: (context, reasonProvider, child) {
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                title: 'Photos',
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (_visit.status == 'visited')
+                      ElevatedButton(
+                        onPressed: _addNewPhoto,
+                        child: Text('Add Photo'),
+                      ),
+                    const CustomSpacer(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
                       children: [
-                        if (_visit.status != 'visited') ...[
-                          GestureDetector(
-                            onTap: () => _showReasonDialog(context, reasonProvider),
-                            child: Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.surface,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(Icons.list_alt, color: Theme.of(context).colorScheme.primary),
-                                  const CustomSpacer(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      _visitReasons.isEmpty ? 'Select Reasons' : '${_visitReasons.length} selected',
-                                      style: Theme.of(context).textTheme.bodyMedium,
-                                    ),
-                                  ),
-                                  Icon(Icons.arrow_drop_down, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                        if (_visitReasons.isNotEmpty) ...[
-                          const CustomSpacer(height: 8),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: _visitReasons.map((reason) => Chip(
-                              label: Text(reason.item),
-                              deleteIcon: _visit.status != 'visited' ? const Icon(Icons.close, size: 18) : null,
-                              onDeleted: _visit.status != 'visited' ? () => _removeReason(reason.reasonID!) : null,
-                              backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                              labelStyle: TextStyle(color: Theme.of(context).colorScheme.primary),
-                            )).toList(),
-                          ),
-                        ],
-                      ],
-                    );
-                  },
-                ),
-              ),
-              if (_visit.photos != null && _visit.photos!.isNotEmpty || _newPhotos.isNotEmpty) ...[
-                const CustomSpacer(height: 16),
-                _buildSectionCard(
-                  title: 'Photos',
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (_visit.status == 'visited')
-                        CustomButton(
-                          label: 'Add Photo',
-                          onPressed: _addNewPhoto,
-                        ),
-                      const CustomSpacer(height: 8),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          if (_visit.photos != null)
-                            ..._visit.photos!.where((p) => !_photosToRemove.contains(p)).map((photo) => GestureDetector(
-                              onTap: () => _viewPhotoFullScreen(photo),
-                              child: Stack(
-                                children: [
-                                  Image.network(
-                                    photo.startsWith('http') ? photo : '$baseUrl$photo',
-                                    width: 100,
-                                    height: 100,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) => const Icon(Icons.error, size: 100),
-                                  ),
-                                  Positioned(
-                                    top: 0,
-                                    right: 0,
-                                    child: IconButton(
-                                      icon: const Icon(Icons.close),
-                                      onPressed: () => _removePhoto(photo),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            )).toList(),
-                          ..._newPhotos.map((photo) => GestureDetector(
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => Scaffold(
-                                  appBar: CustomAppBar(title: 'Photo Preview', showBackButton: true),
-                                  body: Center(child: Image.file(photo, fit: BoxFit.contain)),
-                                  backgroundColor: Colors.black,
-                                ),
-                              ),
-                            ),
+                        if (_visit.photos != null)
+                          ..._visit.photos!.where((p) => !_photosToRemove.contains(p)).map((photo) => GestureDetector(
+                            onTap: () => _viewPhotoFullScreen(photo),
                             child: Stack(
                               children: [
-                                Image.file(
-                                  photo,
+                                Image.network(
+                                  photo.startsWith('http') ? photo : '$baseUrl$photo',
                                   width: 100,
                                   height: 100,
                                   fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) => const Icon(Icons.error, size: 100),
                                 ),
                                 Positioned(
                                   top: 0,
                                   right: 0,
                                   child: IconButton(
                                     icon: const Icon(Icons.close),
-                                    onPressed: () => setState(() {
-                                      _newPhotos.remove(photo);
-                                      _checkForChanges();
-                                    }),
+                                    onPressed: () => setState(() => _photosToRemove.add(photo)),
                                   ),
                                 ),
                               ],
                             ),
                           )).toList(),
-                        ],
-                      ),
-                    ],
-                  ),
+                        ..._newPhotos.map((photo) => GestureDetector(
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => Scaffold(
+                                appBar: AppBar(title: const Text('Photo Preview')),
+                                body: Center(child: Image.file(photo, fit: BoxFit.contain)),
+                              ),
+                            ),
+                          ),
+                          child: Stack(
+                            children: [
+                              Image.file(
+                                photo,
+                                width: 100,
+                                height: 100,
+                                fit: BoxFit.cover,
+                              ),
+                              Positioned(
+                                top: 0,
+                                right: 0,
+                                child: IconButton(
+                                  icon: const Icon(Icons.close),
+                                  onPressed: () => setState(() => _newPhotos.remove(photo)),
+                                ),
+                              ),
+                            ],
+                          ),
+                        )).toList(),
+                      ],
+                    ),
+                  ],
                 ),
-              ],
-              const CustomSpacer(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CustomButton(
-                    label: 'Cancel',
-                    onPressed: () {
-                      _editStartTime = null;
-                      Navigator.pop(context);
-                    },
-                  ),
-                  const CustomSpacer(width: 8),
-                  CustomButton(
-                    label: 'Save Changes',
-                    onPressed: _hasChanges ? _saveChanges : () {},
-                    isLoading: _isLoading,
-                  ),
-                ],
               ),
             ],
-          ),
+            const CustomSpacer(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text('Cancel'),
+                ),
+                const CustomSpacer(width: 8),
+                ElevatedButton(
+                  onPressed: _saveChanges,
+                  child: Text('Save Changes'),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
@@ -1229,7 +1089,6 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1261,7 +1120,6 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
         ),
         child: Row(
           children: [

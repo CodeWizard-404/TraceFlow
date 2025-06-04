@@ -5,10 +5,7 @@ import 'package:provider/provider.dart';
 import '../../models/checklist.dart';
 import '../../models/visit.dart';
 import '../../models/visit_checklist.dart';
-import '../../providers/auth_provider.dart';
 import '../../providers/visit_provider.dart';
-import '../../providers/checklist_provider.dart';
-import '../../providers/agent_provider.dart';
 import '../../widgets/Visit/otp_validation_screen.dart';
 import '../../widgets/commen/snack_bar.dar.dart';
 import '../Error.dart';
@@ -61,7 +58,6 @@ class _LogVisitScreenState extends State<LogVisitScreen> with WidgetsBindingObse
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    // Fetch data after the build phase
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _fetchVisitData();
     });
@@ -106,37 +102,19 @@ class _LogVisitScreenState extends State<LogVisitScreen> with WidgetsBindingObse
 
   Future<void> _fetchVisitData() async {
     final visitProvider = Provider.of<VisitProvider>(context, listen: false);
-    final checklistProvider = Provider.of<ChecklistProvider>(context, listen: false);
-    final agentProvider = Provider.of<AgentProvider>(context, listen: false);
-
     try {
-      // Fetch visit and checklists concurrently
-      await Future.wait([
-        visitProvider.fetchVisitById(widget.visitID),
-        checklistProvider.getChecklistsByVisitId(widget.visitID).catchError((e) {
-          // Handle checklist fetch error gracefully
-          _showSnackBar('Failed to fetch checklists: $e');
-          return [];
-        }),
-      ]);
-
+      await visitProvider.fetchVisitById(widget.visitID);
       if (mounted) {
         setState(() {
           _visit = visitProvider.currentVisit;
-          _checklists = checklistProvider.checklists ?? [];
+          _checklists = _visit?.checklists ?? [];
           if (_visit?.agentID == null) {
-            // Recruitment visit: skip QR/OTP
             _isQRVerified = true;
             _isOTPVerified = true;
             _entryTime = DateTime.now();
             _initializeCamera();
           }
         });
-      }
-
-      // Fetch agent data if agentID exists
-      if (_visit != null && _visit!.agentID != null) {
-        await agentProvider.fetchAgentById(_visit!.agentID!);
       }
     } catch (error) {
       if (mounted) {
@@ -168,7 +146,7 @@ class _LogVisitScreenState extends State<LogVisitScreen> with WidgetsBindingObse
   }
 
   Future<void> _startQRScan() async {
-    if (_visit?.agentID == null) return; // Recruitment visit, no QR needed
+    if (_visit?.agentID == null) return;
 
     final qrResult = await Navigator.push<String?>(
       context,
@@ -506,8 +484,6 @@ class _LogVisitScreenState extends State<LogVisitScreen> with WidgetsBindingObse
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final visitProvider = Provider.of<VisitProvider>(context);
-    final checklistProvider = Provider.of<ChecklistProvider>(context);
-    final agentProvider = Provider.of<AgentProvider>(context);
 
     return Scaffold(
       appBar: _isCameraActive
@@ -515,7 +491,7 @@ class _LogVisitScreenState extends State<LogVisitScreen> with WidgetsBindingObse
           : CustomAppBar(title: 'Log Visit', showBackButton: true),
       body: (!_isCameraInitialized && _isCameraActive)
           ? Container(color: Colors.black)
-          : visitProvider.isLoading || checklistProvider.isLoading || agentProvider.isLoading
+          : visitProvider.isLoading
           ? Center(child: CustomProgressIndicator(color: theme.colorScheme.primary))
           : !_isQRVerified || !_isOTPVerified
           ? Center(
@@ -802,7 +778,7 @@ class _LogVisitScreenState extends State<LogVisitScreen> with WidgetsBindingObse
                       _buildSectionHeader(context, 'Visit Details', Icons.person),
                       const CustomSpacer(height: 16),
                       Text(
-                        'Agent: ${agentProvider.currentAgent != null ? '${agentProvider.currentAgent!.name} ${agentProvider.currentAgent!.lastname}' : 'Recruitment Visit'}',
+                        'Agent: ${_visit?.agent != null ? '${_visit!.agent!.name} ${_visit!.agent!.lastname}' : 'Recruitment Visit'}',
                         style: theme.textTheme.bodyMedium,
                       ),
                       const CustomSpacer(height: 8),
@@ -947,7 +923,7 @@ class _LogVisitScreenState extends State<LogVisitScreen> with WidgetsBindingObse
               ),
               const CustomSpacer(height: 24),
               CustomButton(
-                label: 'Visit Progress',
+                label: 'Validate Visit',
                 onPressed: _validateVisit,
                 isLoading: visitProvider.isLoading,
               ),
@@ -983,9 +959,11 @@ class PhotoGalleryScreen extends StatelessWidget {
           PageView.builder(
             controller: pageController,
             itemCount: photos.length,
-            itemBuilder: (context, index) => Center(
-              child: Image.file(File(photos[index].path), fit: BoxFit.contain),
-            ),
+            itemBuilder: (context, index) =>
+                Center(
+                  child: Image.file(
+                      File(photos[index].path), fit: BoxFit.contain),
+                ),
           ),
           Positioned(
             top: 20,

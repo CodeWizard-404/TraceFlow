@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import '../services/cookie_manager.dart';
@@ -10,6 +11,13 @@ class LocationProvider with ChangeNotifier {
   List<dynamic> _governorates = [];
   List<dynamic> _delegations = [];
   Map<String, dynamic> _userLocations = {};
+  List<dynamic> _places = [];
+  Map<String, dynamic> _directions = {};
+  Map<String, dynamic> _distanceMatrix = {};
+  Map<String, dynamic> _placeDetails = {};
+  List<dynamic> _nearbyPlaces = [];
+  Map<String, dynamic> _currentUserLocation = {};
+  Map<String, dynamic> _locationDetails = {};
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -18,6 +26,13 @@ class LocationProvider with ChangeNotifier {
   List<dynamic> get governorates => _governorates;
   List<dynamic> get delegations => _delegations;
   Map<String, dynamic> get userLocations => _userLocations;
+  List<dynamic> get places => _places;
+  Map<String, dynamic> get directions => _directions;
+  Map<String, dynamic> get distanceMatrix => _distanceMatrix;
+  Map<String, dynamic> get placeDetails => _placeDetails;
+  List<dynamic> get nearbyPlaces => _nearbyPlaces;
+  Map<String, dynamic> get currentUserLocation => _currentUserLocation;
+  Map<String, dynamic> get locationDetails => _locationDetails;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
@@ -135,6 +150,76 @@ class LocationProvider with ChangeNotifier {
     }
   }
 
+  /// Fetches regions by governorate
+  Future<void> getRegionsByGovernorate(String governorateID) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      _regions = await LocationService.getRegionsByGovernorate(governorateID);
+    } catch (e) {
+      _errorMessage = 'Failed to fetch regions by governorate: $e';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Fetches governorates by delegation
+  Future<void> getGovernoratesByDelegation(String delegationID) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      _governorates = await LocationService.getGovernoratesByDelegation(delegationID);
+    } catch (e) {
+      _errorMessage = 'Failed to fetch governorates by delegation: $e';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Fetches regions by user
+  Future<void> getRegionsByUser(String userID) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      _regions = await LocationService.getRegionsByUser(userID);
+    } catch (e) {
+      _errorMessage = 'Failed to fetch regions by user: $e';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Fetches governorates by user
+  Future<void> getGovernoratesByUser(String userID) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      _governorates = await LocationService.getGovernoratesByUser(userID);
+    } catch (e) {
+      _errorMessage = 'Failed to fetch governorates by user: $e';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Fetches delegations by user
+  Future<void> getDelegationsByUser(String userID) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      _delegations = await LocationService.getDelegationsByUser(userID);
+    } catch (e) {
+      _errorMessage = 'Failed to fetch delegations by user: $e';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   /// Updates user location
   Future<void> updateUserLocation(String userId, double lat, double lng) async {
     _isLoading = true;
@@ -155,6 +240,122 @@ class LocationProvider with ChangeNotifier {
     }
   }
 
+  /// Geocodes an address
+  Future<void> geocodeAddress(String address) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      final result = await LocationService.geocodeAddress(address);
+      _userLocations['geocoded'] = {
+        'latitude': result['latitude'],
+        'longitude': result['longitude'],
+        'formattedAddress': result['formattedAddress'],
+      };
+    } catch (e) {
+      _errorMessage = 'Failed to geocode address: $e';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Fetches directions
+  Future<void> getDirections({
+    required String origin,
+    required String destination,
+    String? mode,
+    List<String>? waypoints,
+    bool? optimizeWaypoints,
+  }) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      final result = await LocationService.getDirections(
+        origin: origin,
+        destination: destination,
+        mode: mode,
+        waypoints: waypoints,
+        optimizeWaypoints: optimizeWaypoints,
+      );
+      _directions = result;
+    } catch (e) {
+      _errorMessage = 'Failed to fetch directions: $e';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Searches for places
+  Future<void> searchPlaces(String query, {Map<String, dynamic>? location, int? radius}) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      _places = await LocationService.searchPlaces(query, location: location, radius: radius);
+    } catch (e) {
+      _errorMessage = 'Failed to search places: $e';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Fetches distance matrix
+  Future<void> getDistanceMatrix(List<String> origins, List<String> destinations, {String? mode}) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      _distanceMatrix = (await LocationService.getDistanceMatrix(origins, destinations, mode: mode)) as Map<String, dynamic>;
+    } catch (e) {
+      _errorMessage = 'Failed to fetch distance matrix: $e';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Fetches place details
+  Future<void> getPlaceDetails(String placeId) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      _placeDetails = await LocationService.getPlaceDetails(placeId);
+    } catch (e) {
+      _errorMessage = 'Failed to fetch place details: $e';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Fetches nearby places
+  Future<void> getNearbyPlaces(double lat, double lng, {int? radius, String? type}) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      _nearbyPlaces = await LocationService.getNearbyPlaces(lat, lng, radius: radius, type: type);
+    } catch (e) {
+      _errorMessage = 'Failed to fetch nearby places: $e';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Fetches current user location
+  Future<void> getCurrentUserLocation(double lat, double lng) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      _currentUserLocation = await LocationService.getCurrentUserLocation(lat, lng);
+    } catch (e) {
+      _errorMessage = 'Failed to fetch current user location: $e';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   /// Fetches specific user location
   Future<void> getSpecificUserLocation(String userId) async {
     _isLoading = true;
@@ -168,6 +369,20 @@ class LocationProvider with ChangeNotifier {
       };
     } catch (e) {
       _errorMessage = 'Failed to fetch user location: $e';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Fetches location details by ID
+  Future<void> getLocationDetailsById(String id) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      _locationDetails = await LocationService.getLocationDetailsById(id);
+    } catch (e) {
+      _errorMessage = 'Failed to fetch location details: $e';
     } finally {
       _isLoading = false;
       notifyListeners();

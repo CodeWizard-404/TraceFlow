@@ -316,7 +316,7 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
                           onLocationChanged: (value) async {
                             setState(() => _selectedLocation = value);
                             if (value != null) {
-                              await Provider.of<AgentProvider>(context, listen: false).fetchAgentsByLocation(value);
+                              await Provider.of<AgentProvider>(context, listen: false).fetchAgentsByDelegation(value);
                             }
                           },
                         ),

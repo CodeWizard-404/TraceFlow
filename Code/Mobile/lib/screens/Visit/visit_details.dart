@@ -3,8 +3,6 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../models/visit.dart';
 import '../../providers/visit_provider.dart';
-import '../../providers/agent_provider.dart';
-import '../../providers/checklist_provider.dart';
 import '../../providers/timesheet_provider.dart';
 import '../../widgets/Visit/otp_validation_screen.dart';
 import '../../widgets/appbar/sidebar.dart';
@@ -30,16 +28,7 @@ class _VisitDetailsScreenState extends State<VisitDetailsScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final visitProvider = Provider.of<VisitProvider>(context, listen: false);
-      visitProvider.fetchVisitById(widget.visit.visitID).catchError((e) {
-        CustomSnackBar.show(
-          context: context,
-          message: 'Failed to fetch visit: $e',
-          backgroundColor: Theme.of(context).colorScheme.error.withOpacity(0.9),
-        );
-      });
-    });
+    // No need to fetch visit data as it's passed via widget.visit
   }
 
   void _navigateToEdit(BuildContext context) {
@@ -52,15 +41,14 @@ class _VisitDetailsScreenState extends State<VisitDetailsScreen> {
   Future<void> _navigateToLog(BuildContext context) async {
     final visitProvider = Provider.of<VisitProvider>(context, listen: false);
     final timesheetProvider = Provider.of<TimesheetProvider>(context, listen: false);
-    final visit = visitProvider.currentVisit ?? widget.visit;
+    final visit = widget.visit;
 
     if (visit.agentID == null) {
-      // No agent: go directly to LogVisitScreen
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (_) => LogVisitScreen(
-            visitID: visit.visitID!,
+            visitID: visit.visitID,
             weekNumber: timesheetProvider.currentTimesheet?.weekNumber ?? 1,
             year: visit.date.year,
           ),
@@ -69,7 +57,6 @@ class _VisitDetailsScreenState extends State<VisitDetailsScreen> {
       return;
     }
 
-    // Agent exists: start QR scanning
     final qrResult = await Navigator.push<String?>(
       context,
       MaterialPageRoute(builder: (_) => const QRScannerWidget()),
@@ -87,7 +74,7 @@ class _VisitDetailsScreenState extends State<VisitDetailsScreen> {
     try {
       final qrResponse = await visitProvider.verifyQRCode(
         qrData: qrResult,
-        visitId: visit.visitID!,
+        visitId: visit.visitID,
       );
       if (qrResponse['valid'] != true) {
         CustomSnackBar.show(
@@ -98,15 +85,14 @@ class _VisitDetailsScreenState extends State<VisitDetailsScreen> {
         return;
       }
 
-      // QR verified, prompt for OTP
       final otpValidated = await Navigator.push<bool>(
         context,
         MaterialPageRoute(
           builder: (_) => OTPValidationScreen(
-            visitId: visit.visitID!,
+            visitId: visit.visitID,
             onOTPValidated: (otp) async {
               final otpResponse = await visitProvider.validateOTP(
-                visitId: visit.visitID!,
+                visitId: visit.visitID,
                 otpCode: otp,
               );
               if (otpResponse['valid'] != true) {
@@ -118,12 +104,11 @@ class _VisitDetailsScreenState extends State<VisitDetailsScreen> {
       );
 
       if (otpValidated == true && mounted) {
-        // OTP verified, navigate to LogVisitScreen
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (_) => LogVisitScreen(
-              visitID: visit.visitID!,
+              visitID: visit.visitID,
               weekNumber: timesheetProvider.currentTimesheet?.weekNumber ?? 1,
               year: visit.date.year,
             ),
@@ -234,8 +219,8 @@ class _VisitDetailsScreenState extends State<VisitDetailsScreen> {
         ],
       ),
       drawer: const AppSidebar(),
-      body: Consumer4<VisitProvider, AgentProvider, ChecklistProvider, TimesheetProvider>(
-        builder: (context, visitProvider, agentProvider, checklistProvider, timesheetProvider, child) {
+      body: Consumer2<VisitProvider, TimesheetProvider>(
+        builder: (context, visitProvider, timesheetProvider, child) {
           if (visitProvider.isLoading) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -244,7 +229,6 @@ class _VisitDetailsScreenState extends State<VisitDetailsScreen> {
           }
 
           final visit = visitProvider.currentVisit ?? widget.visit;
-          final agent = visit.agent ?? agentProvider.currentAgent;
 
           return Padding(
             padding: const EdgeInsets.all(8.0),
@@ -332,13 +316,13 @@ class _VisitDetailsScreenState extends State<VisitDetailsScreen> {
                           _buildDetailRow(
                             context: context,
                             label: 'Name',
-                            value: agent != null ? '${agent.name} ${agent.lastname}' : 'No Agent (Recruitment)',
+                            value: visit.agent != null ? '${visit.agent!.name} ${visit.agent!.lastname}' : 'No Agent (Recruitment)',
                             icon: Icons.person_outline,
                           ),
                           _buildDetailRow(
                             context: context,
                             label: 'Phone',
-                            value: agent?.phone ?? 'N/A',
+                            value: visit.agent?.phone ?? 'N/A',
                             icon: Icons.phone_outlined,
                           ),
                         ],
@@ -498,7 +482,7 @@ class _VisitDetailsScreenState extends State<VisitDetailsScreen> {
                   ),
                 ),
                 const CustomSpacer(height: 16),
-                if (visit.status?.toLowerCase() == 'validated') // Show button only if status is 'validated'
+                if (visit.status?.toLowerCase() == 'validated')
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [

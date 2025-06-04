@@ -68,6 +68,7 @@ class CookieInterceptor implements InterceptorContract {
         if (kDebugMode) print('Token refresh failed: $e');
         if (e.toString().contains('Invalid refresh token') || e.toString().contains('401')) {
           await CookieManager.clearCookies();
+          throw Exception('Session expired. Please log in again.');
         }
         return httpResponse;
       } finally {
@@ -130,14 +131,16 @@ class CustomHttpClient {
   );
 
   static Future<http.Response> get(Uri url, {Map<String, String>? headers}) async {
-    final updatedHeaders = {...?headers, 'Content-Type': 'application/json'};
-    if (kDebugMode) print('GET $url');
-    final response = await _client.get(
-      url,
-      headers: updatedHeaders,
-    );
-    if (kDebugMode) print('GET response: ${response.statusCode}');
-    return response;
+    return _authenticatedRequest(() async {
+      final updatedHeaders = {...?headers, 'Content-Type': 'application/json'};
+      if (kDebugMode) print('GET $url');
+      final response = await _client.get(
+        url,
+        headers: updatedHeaders,
+      );
+      if (kDebugMode) print('GET response: ${response.statusCode}');
+      return response;
+    });
   }
 
   static Future<http.Response> post(
@@ -146,19 +149,21 @@ class CustomHttpClient {
         Object? body,
         Encoding? encoding,
       }) async {
-    final updatedHeaders = headers != null ? Map<String, String>.from(headers) : <String, String>{};
-    if (body != null && !updatedHeaders.containsKey('Content-Type')) {
-      updatedHeaders['Content-Type'] = 'application/json';
-    }
-    if (kDebugMode) print('POST $url');
-    final response = await _client.post(
-      url,
-      headers: updatedHeaders,
-      body: body,
-      encoding: encoding,
-    );
-    if (kDebugMode) print('POST response: ${response.statusCode}');
-    return response;
+    return _authenticatedRequest(() async {
+      final updatedHeaders = headers != null ? Map<String, String>.from(headers) : <String, String>{};
+      if (body != null && !updatedHeaders.containsKey('Content-Type')) {
+        updatedHeaders['Content-Type'] = 'application/json';
+      }
+      if (kDebugMode) print('POST $url');
+      final response = await _client.post(
+        url,
+        headers: updatedHeaders,
+        body: body,
+        encoding: encoding,
+      );
+      if (kDebugMode) print('POST response: ${response.statusCode}');
+      return response;
+    });
   }
 
   static Future<http.Response> put(
@@ -167,16 +172,18 @@ class CustomHttpClient {
         Object? body,
         Encoding? encoding,
       }) async {
-    final updatedHeaders = {...?headers, 'Content-Type': 'application/json'};
-    if (kDebugMode) print('PUT $url');
-    final response = await _client.put(
-      url,
-      headers: updatedHeaders,
-      body: body,
-      encoding: encoding,
-    );
-    if (kDebugMode) print('PUT response: ${response.statusCode}');
-    return response;
+    return _authenticatedRequest(() async {
+      final updatedHeaders = {...?headers, 'Content-Type': 'application/json'};
+      if (kDebugMode) print('PUT $url');
+      final response = await _client.put(
+        url,
+        headers: updatedHeaders,
+        body: body,
+        encoding: encoding,
+      );
+      if (kDebugMode) print('PUT response: ${response.statusCode}');
+      return response;
+    });
   }
 
   static Future<http.Response> delete(
@@ -185,15 +192,44 @@ class CustomHttpClient {
         Object? body,
         Encoding? encoding,
       }) async {
-    final updatedHeaders = {...?headers, 'Content-Type': 'application/json'};
-    if (kDebugMode) print('DELETE $url');
-    final response = await _client.delete(
-      url,
-      headers: updatedHeaders,
-      body: body,
-      encoding: encoding,
-    );
-    if (kDebugMode) print('DELETE response: ${response.statusCode}');
-    return response;
+    return _authenticatedRequest(() async {
+      final updatedHeaders = {...?headers, 'Content-Type': 'application/json'};
+      if (kDebugMode) print('DELETE $url');
+      final response = await _client.delete(
+        url,
+        headers: updatedHeaders,
+        body: body,
+        encoding: encoding,
+      );
+      if (kDebugMode) print('DELETE response: ${response.statusCode}');
+      return response;
+    });
+  }
+
+  static Future<http.Response> _authenticatedRequest(Future<http.Response> Function() request) async {
+    try {
+      final response = await request();
+      if (response.statusCode == 401) {
+        final refreshToken = CookieManager.cookies['refreshToken'];
+        if (refreshToken == null || refreshToken.isEmpty) {
+          throw Exception('No refresh token available');
+        }
+        try {
+          final refreshResult = await AuthService.refreshToken(refreshToken);
+          if (kDebugMode) print('Refresh result: $refreshResult');
+          return await request();
+        } catch (e) {
+          if (e.toString().contains('Invalid refresh token') || e.toString().contains('401')) {
+            await CookieManager.clearCookies();
+            throw Exception('Session expired. Please log in again.');
+          }
+          rethrow;
+        }
+      }
+      return response;
+    } catch (e) {
+      if (kDebugMode) print('Authenticated request failed: $e');
+      rethrow;
+    }
   }
 }
