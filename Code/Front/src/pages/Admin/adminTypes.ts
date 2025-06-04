@@ -1,4 +1,21 @@
-export type SortField = 'modelName' | "name" | "email" | "role" | "event" | "type" | "enabled" | "supervisor" | "location" | "lastname" | "phone" | "date";
+export type SortField =
+    | 'modelName'
+    | 'name'
+    | 'email'
+    | 'role'
+    | 'event'
+    | 'type'
+    | 'enabled'
+    | 'supervisor'
+    | 'location'
+    | 'lastname'
+    | 'phone'
+    | 'date'
+    | 'timestamp'
+    | 'level'
+    | 'message'
+    | 'userId'
+    | 'traceId';
 export type SortOrder = "asc" | "desc";
 export type ViewMode =
     | "users"

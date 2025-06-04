@@ -177,6 +177,19 @@ const AdminDashboard: React.FC = React.memo(() => {
     const [logSortField, setLogSortField] = useState<string>('timestamp');
     const [logSortOrder, setLogSortOrder] = useState<SortOrder>('desc');
     const [logsLoading, setLogsLoading] = useState(false);
+    const [logFilters, setLogFilters] = useState<{
+        level: string;
+        route?: string;
+        service?: string;
+        status?: number;
+        method?: string;
+        userId?: string;
+        traceId?: string;
+        startDate?: string;
+        endDate?: string;
+    }>({
+        level: 'all',
+    });
 
     const [aiConfigs, setAIConfigs] = useState<AIConfig[]>([]);
     const [aiConfigsLoading, setAIConfigsLoading] = useState(false);
@@ -255,6 +268,10 @@ const AdminDashboard: React.FC = React.memo(() => {
             canManageAIConfigs: effectivePermissions?.some(
                 (p) => p.name === import.meta.env.VITE_PERMISSIONS_MANAGE_AI_CONFIG
             ),
+            canViewLogs: effectivePermissions?.some(
+                (p) => p.name === import.meta.env.VITE_PERMISSIONS_VIEW_LOGS
+            ),
+
 
         }),
         [effectivePermissions]
@@ -443,7 +460,32 @@ const AdminDashboard: React.FC = React.memo(() => {
         }
     }, [userPermissions.canManageAIConfigs, setCachedData, t, setGlobalError, clearError]);
 
-
+    const handleRefreshLogs = useCallback(async () => {
+        try {
+            setLogsLoading(true);
+            const params = {
+                page: logsPage,
+                pageSize: ITEMS_PER_PAGE,
+                search: searchQuery,
+                sortBy: logSortField,
+                sortOrder: logSortOrder,
+                ...logFilters,
+                status: logFilters.status ? Number(logFilters.status) : undefined,
+            };
+            const response = await getLogs(params);
+            setLogs(response.data);
+            setTotalLogs(response.total);
+            setLocalError(null);
+            clearError();
+        } catch (err: unknown) {
+            console.error('Failed to refresh logs:', err);
+            const errorMessage = t('adminDashboard.error.fetchFailed');
+            setLocalError(errorMessage);
+            setGlobalError(errorMessage);
+        } finally {
+            setLogsLoading(false);
+        }
+    }, [logsPage, searchQuery, logSortField, logSortOrder, logFilters, t, setGlobalError, clearError]);
 
     const handleResetConfirm = async () => {
         if (isResetting) return; // Prevent multiple resets
@@ -561,6 +603,14 @@ const AdminDashboard: React.FC = React.memo(() => {
                     await handleRefreshNotifications();
                 }
             }
+
+            // Handle log events
+            else if (entity === 'log') {
+                if (!userPermissions.canViewLogs) return;
+                if (action === 'created' || action === 'deleted' || action === 'archived') {
+                    await handleRefreshLogs();
+                }
+            }
         };
 
         onNotification(handleEntityEvent);
@@ -574,6 +624,7 @@ const AdminDashboard: React.FC = React.memo(() => {
             if (userPermissions.canViewReasons) joinRoom('reason');
             if (userPermissions.canViewAgents) joinRoom('agent');
             if (userPermissions.canViewNotificationRules) joinRoom('notification');
+            if (userPermissions.canViewLogs) joinRoom('log');
         };
 
         joinEntityRooms();
@@ -818,10 +869,10 @@ const AdminDashboard: React.FC = React.memo(() => {
         agentsPage,
         userPermissions,
         aiConfigsPage,
-        logsPage,          
-    searchQuery,       
-    logSortField,      
-    logSortOrder,
+        logsPage,
+        searchQuery,
+        logSortField,
+        logSortOrder,
         t,
         setGlobalError,
         clearError,
@@ -1536,6 +1587,18 @@ const AdminDashboard: React.FC = React.memo(() => {
                             </motion.button>
                         </>
                     )}
+                    {userPermissions.canViewLogs && view === 'logs' && (
+                        <motion.button
+                            className="action-button"
+                            onClick={handleRefreshLogs}
+                            disabled={logsLoading}
+                            aria-label={logsLoading ? t('adminDashboard.actions.loading') : t('logs.refreshLogs')}
+                        >
+                            <FaRedo aria-hidden="true" /> {logsLoading ? t('adminDashboard.actions.loading') : t('logs.refreshLogs')}
+                        </motion.button>
+
+                    )}
+
                 </aside>
                 <main className="main-content" role="region" aria-labelledby="dashboard-title">
                     {showNotificationPanel && (
@@ -1824,7 +1887,7 @@ const AdminDashboard: React.FC = React.memo(() => {
                                 setError={setLocalError}
                             />
                         )}
-                        {view === "logs" && (
+                        {view === 'logs' && (
                             <LogsList
                                 logs={logs}
                                 totalLogs={totalLogs}
@@ -1836,6 +1899,9 @@ const AdminDashboard: React.FC = React.memo(() => {
                                 setLogSortOrder={setLogSortOrder}
                                 itemsPerPage={ITEMS_PER_PAGE}
                                 logsLoading={logsLoading}
+                                logFilters={{ ...logFilters, route: logFilters.route ?? "" }}
+                                setLogFilters={setLogFilters}
+                                refreshLogs={handleRefreshLogs}
                             />
                         )}
                     </Suspense>
