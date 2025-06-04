@@ -1170,7 +1170,7 @@
       "addNotificationRule": "Add New Notification Rule",
       "notificationRuleDetails": "Notification Rule: {{event}}",
       "addAgent": "Add New Agent",
-      "agentDetails": "Agent: {{item}}",
+      "agentDetails": "Agent: {{name}}",
       "aiConfigs": "AI Configurations",
       "addAIConfig": "Add AI Configuration",
       "aiConfigDetails": "AI Configuration Details: {{modelName}}",

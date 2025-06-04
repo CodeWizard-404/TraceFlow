@@ -105,6 +105,7 @@ const validViews: ViewMode[] = [
     "ai-configs",
     "add-ai-config",
     "ai-config-details",
+    "logs",
 ];
 
 interface CacheData {
@@ -670,6 +671,7 @@ const AdminDashboard: React.FC = React.memo(() => {
         setSelectedNotificationRule(null);
         setSelectedAIConfig(null);
 
+
         if (newView === "users") setUsersPage(1);
         else if (newView === "checklists") setChecklistsPage(1);
         else if (newView === "reasons") setReasonsPage(1);
@@ -685,9 +687,6 @@ const AdminDashboard: React.FC = React.memo(() => {
         if (sortConfig) {
             setSortField(sortConfig.sortField);
             setSortOrder(sortConfig.sortOrder);
-        } else if (newView !== "logs") {
-            setSortField("name");
-            setSortOrder("asc");
         }
 
         if (newView === "notifications") {
@@ -1036,6 +1035,7 @@ const AdminDashboard: React.FC = React.memo(() => {
                         t("adminDashboard.header.aiConfigDetails", {
                             modelName: selectedAIConfig.modelName,
                         })}
+                    {view === "logs" && t("adminDashboard.header.logs")}
 
                 </h1>
                 {(view === "users" ||

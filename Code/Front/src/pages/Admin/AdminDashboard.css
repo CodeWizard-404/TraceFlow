@@ -6430,3 +6430,41 @@ body.dark .modal-content-44 {
         width: 90%;
     }
 }
+
+
+.chart-container {
+    max-width: auto;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    font-size: 15rem;
+}
+
+body.dark .chart-container {
+    background: #363636;
+}
+
+.stats-panel {
+    margin-top: 20px;
+    padding: 20px;
+    background: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+body.dark .stats-panel {
+    background: #363636;
+    color: #fff;
+    font-size: x-large;
+}
+
+.stats-panel h3 {
+    margin-bottom: 15px;
+    font-size: 1.5em;
+}
+
+.stats-panel h4 {
+    margin-top: 20px;
+    margin-bottom: 10px;
+    font-size: 1.2em;
+}

@@ -16,16 +16,19 @@ import {
 } from '../../apis/logAPI';
 import { FaTrash, FaArchive, FaChartBar, FaDownload, FaRedo, FaCog, FaTimes, FaInfoCircle } from 'react-icons/fa';
 import Select from 'react-select';
-import { Bar } from 'react-chartjs-2';
 import {
     Chart as ChartJS,
     CategoryScale,
     LinearScale,
     BarElement,
+    LineElement,
+    PointElement,
+    ArcElement,
     Title,
     Tooltip,
     Legend,
 } from 'chart.js';
+import { Bar, Doughnut, Pie, Line } from 'react-chartjs-2';
 import './AdminDashboard.css';
 
 // Register Chart.js components
@@ -33,6 +36,9 @@ ChartJS.register(
     CategoryScale,
     LinearScale,
     BarElement,
+    LineElement,
+    PointElement,
+    ArcElement,
     Title,
     Tooltip,
     Legend
@@ -109,43 +115,314 @@ const LogsList: React.FC<LogsListProps> = ({
     const [isClearing, setIsClearing] = useState<boolean>(false);
     const [showFilterPopup, setShowFilterPopup] = useState<boolean>(false);
     const [selectedLog, setSelectedLog] = useState<Log | null>(null);
+    const [selectedChart, setSelectedChart] = useState<string | null>(null);
     const totalPages = useMemo(() => Math.ceil(totalLogs / itemsPerPage), [totalLogs, itemsPerPage]);
 
-    // Chart options
+    // Chart options with readable font sizes
     const chartOptions = {
         responsive: true,
+        maintainAspectRatio: false,
         plugins: {
             legend: {
                 position: 'top' as const,
+                labels: {
+                    font: {
+                        size: 12,
+                    },
+                    padding: 10,
+                },
             },
             title: {
                 display: true,
+                font: {
+                    size: 14,
+                },
+                padding: 10,
+            },
+            tooltip: {
+                bodyFont: {
+                    size: 12,
+                },
+                titleFont: {
+                    size: 14,
+                },
             },
         },
+        layout: {
+            padding: 10,
+        },
+    };
+
+    // Large chart options for popup
+    const largeChartOptions = {
+        ...chartOptions,
+        plugins: {
+            ...chartOptions.plugins,
+            legend: {
+                ...chartOptions.plugins.legend,
+                labels: {
+                    font: {
+                        size: 16,
+                    },
+                    padding: 15,
+                },
+            },
+            title: {
+                ...chartOptions.plugins.title,
+                font: {
+                    size: 18,
+                },
+                padding: 15,
+            },
+            tooltip: {
+                bodyFont: {
+                    size: 14,
+                },
+                titleFont: {
+                    size: 16,
+                },
+            },
+        },
+        layout: {
+            padding: 20,
+        },
+    };
+
+    // Bar-specific options
+    const barChartOptions = {
+        ...chartOptions,
         scales: {
             y: {
                 beginAtZero: true,
                 title: {
                     display: true,
                     text: t('logs.count'),
+                    font: {
+                        size: 12,
+                    },
+                },
+                ticks: {
+                    font: {
+                        size: 12,
+                    },
+                },
+            },
+            x: {
+                ticks: {
+                    font: {
+                        size: 12,
+                    },
+                    maxRotation: 45,
+                    minRotation: 45,
                 },
             },
         },
     };
 
-    // Chart data for logs by level
+    // Large Bar-specific options
+    const largeBarChartOptions = {
+        ...largeChartOptions,
+        scales: {
+            y: {
+                beginAtZero: true,
+                title: {
+                    display: true,
+                    text: t('logs.count'),
+                    font: {
+                        size: 16,
+                    },
+                },
+                ticks: {
+                    font: {
+                        size: 14,
+                    },
+                },
+            },
+            x: {
+                ticks: {
+                    font: {
+                        size: 14,
+                    },
+                    maxRotation: 45,
+                    minRotation: 45,
+                },
+            },
+        },
+    };
+
+    // Horizontal Bar-specific options
+    const horizontalBarChartOptions = {
+        ...chartOptions,
+        indexAxis: 'y' as const,
+        scales: {
+            x: {
+                beginAtZero: true,
+                title: {
+                    display: true,
+                    text: t('logs.count'),
+                    font: {
+                        size: 12,
+                    },
+                },
+                ticks: {
+                    font: {
+                        size: 12,
+                    },
+                },
+            },
+            y: {
+                ticks: {
+                    font: {
+                        size: 12,
+                    },
+                },
+            },
+        },
+    };
+
+    // Large Horizontal Bar-specific options
+    const largeHorizontalBarChartOptions = {
+        ...largeChartOptions,
+        indexAxis: 'y' as const,
+        scales: {
+            x: {
+                beginAtZero: true,
+                title: {
+                    display: true,
+                    text: t('logs.count'),
+                    font: {
+                        size: 16,
+                    },
+                },
+                ticks: {
+                    font: {
+                        size: 14,
+                    },
+                },
+            },
+            y: {
+                ticks: {
+                    font: {
+                        size: 14,
+                    },
+                },
+            },
+        },
+    };
+
+    // Line chart options
+    const lineChartOptions = {
+        ...chartOptions,
+        scales: {
+            y: {
+                beginAtZero: true,
+                title: {
+                    display: true,
+                    text: t('logs.count'),
+                    font: {
+                        size: 12,
+                    },
+                },
+                ticks: {
+                    font: {
+                        size: 12,
+                    },
+                },
+            },
+            x: {
+                ticks: {
+                    font: {
+                        size: 12,
+                    },
+                    maxRotation: 45,
+                    minRotation: 45,
+                },
+            },
+        },
+    };
+
+    // Large Line chart options
+    const largeLineChartOptions = {
+        ...largeChartOptions,
+        scales: {
+            y: {
+                beginAtZero: true,
+                title: {
+                    display: true,
+                    text: t('logs.count'),
+                    font: {
+                        size: 16,
+                    },
+                },
+                ticks: {
+                    font: {
+                        size: 14,
+                    },
+                },
+            },
+            x: {
+                ticks: {
+                    font: {
+                        size: 14,
+                    },
+                    maxRotation: 45,
+                    minRotation: 45,
+                },
+            },
+        },
+    };
+
+    // Doughnut and Pie chart options
+    const doughnutPieChartOptions = {
+        ...chartOptions,
+        cutout: '60%',
+        plugins: {
+            ...chartOptions.plugins,
+            legend: {
+                ...chartOptions.plugins.legend,
+                position: 'right' as const,
+            },
+        },
+    };
+
+    // Large Doughnut and Pie chart options
+    const largeDoughnutPieChartOptions = {
+        ...largeChartOptions,
+        cutout: '60%',
+        plugins: {
+            ...largeChartOptions.plugins,
+            legend: {
+                ...largeChartOptions.plugins.legend,
+                position: 'right' as const,
+            },
+        },
+    };
+
+    // Chart data for logs by level (Doughnut)
     const levelChartData = useMemo(() => ({
         labels: logStatistics.database?.byLevel?.map((stat: any) => stat.level) || [],
         datasets: [{
             label: t('logs.byLevel'),
             data: logStatistics.database?.byLevel?.map((stat: any) => stat.count) || [],
-            backgroundColor: 'rgba(75, 192, 192, 0.6)',
-            borderColor: 'rgba(75, 192, 192, 1)',
+            backgroundColor: [
+                'rgba(75, 192, 192, 0.6)',
+                'rgba(255, 99, 132, 0.6)',
+                'rgba(54, 162, 235, 0.6)',
+                'rgba(255, 206, 86, 0.6)',
+                'rgba(153, 102, 255, 0.6)',
+            ],
+            borderColor: [
+                'rgba(75, 192, 192, 1)',
+                'rgba(255, 99, 132, 1)',
+                'rgba(54, 162, 235, 1)',
+                'rgba(255, 206, 86, 1)',
+                'rgba(153, 102, 255, 1)',
+            ],
             borderWidth: 1,
         }],
     }), [logStatistics, t]);
 
-    // Chart data for logs by route
+    // Chart data for logs by route (Bar)
     const routeChartData = useMemo(() => ({
         labels: logStatistics.database?.byRoute?.map((stat: any) => stat.route) || [],
         datasets: [{
@@ -157,19 +434,31 @@ const LogsList: React.FC<LogsListProps> = ({
         }],
     }), [logStatistics, t]);
 
-    // Chart data for logs by service
+    // Chart data for logs by service (Pie)
     const serviceChartData = useMemo(() => ({
         labels: logStatistics.database?.byService?.map((stat: any) => stat.service) || [],
         datasets: [{
             label: t('logs.byService'),
             data: logStatistics.database?.byService?.map((stat: any) => stat.count) || [],
-            backgroundColor: 'rgba(54, 162, 235, 0.6)',
-            borderColor: 'rgba(54, 162, 235, 1)',
+            backgroundColor: [
+                'rgba(54, 162, 235, 0.6)',
+                'rgba(255, 206, 86, 0.6)',
+                'rgba(75, 192, 192, 0.6)',
+                'rgba(153, 102, 255, 0.6)',
+                'rgba(255, 99, 132, 0.6)',
+            ],
+            borderColor: [
+                'rgba(54, 162, 235, 1)',
+                'rgba(255, 206, 86, 1)',
+                'rgba(75, 192, 192, 1)',
+                'rgba(153, 102, 255, 1)',
+                'rgba(255, 99, 132, 1)',
+            ],
             borderWidth: 1,
         }],
     }), [logStatistics, t]);
 
-    // Chart data for logs by status
+    // Chart data for logs by status (Horizontal Bar)
     const statusChartData = useMemo(() => ({
         labels: logStatistics.database?.byStatus?.map((stat: any) => stat.status ?? 'NULL') || [],
         datasets: [{
@@ -181,15 +470,17 @@ const LogsList: React.FC<LogsListProps> = ({
         }],
     }), [logStatistics, t]);
 
-    // Chart data for logs by method
+    // Chart data for logs by method (Line)
     const methodChartData = useMemo(() => ({
         labels: logStatistics.database?.byMethod?.map((stat: any) => stat.method ?? 'NULL') || [],
         datasets: [{
             label: t('logs.byMethod'),
             data: logStatistics.database?.byMethod?.map((stat: any) => stat.count) || [],
-            backgroundColor: 'rgba(153, 102, 255, 0.6)',
+            backgroundColor: 'rgba(153, 102, 255, 0.2)',
             borderColor: 'rgba(153, 102, 255, 1)',
-            borderWidth: 1,
+            borderWidth: 2,
+            fill: true,
+            tension: 0.3,
         }],
     }), [logStatistics, t]);
 
@@ -410,6 +701,11 @@ const LogsList: React.FC<LogsListProps> = ({
         setSelectedLog(log);
     }, []);
 
+    // Handle chart click
+    const handleChartClick = useCallback((chartType: string) => {
+        setSelectedChart(chartType);
+    }, []);
+
     // Filter options
     const levelOptions = useMemo(
         () => [
@@ -455,56 +751,64 @@ const LogsList: React.FC<LogsListProps> = ({
         <div className="table-card">
             <h2>{t('adminDashboard.header.logs')}</h2>
             <div className="logs-controls">
-                <div className="action-buttons">
-                    <button
-                        onClick={() => setShowFilterPopup(true)}
-                        aria-label={t('logs.filterLogs')}
-                        className="action-button-0"
-                    >
-                        <FaCog /> {t('logs.filterLogs')}
-                    </button>
-                    <button
-                        onClick={handleDeleteLogs}
-                        disabled={isDeleting}
-                        aria-label={t('logs.deleteLogs')}
-                        className="action-button-0 danger"
-                    >
-                        <FaTrash /> {isDeleting ? t('logs.deleting') : t('logs.deleteLogs')}
-                    </button>
-                    <button
-                        onClick={handleArchiveLogs}
-                        disabled={isArchiving}
-                        aria-label={t('logs.archiveLogs')}
-                        className="action-button-0"
-                    >
-                        <FaArchive /> {isArchiving ? t('logs.archiving') : t('logs.archiveLogs')}
-                    </button>
-                    <button
-                        onClick={handleExportLogs}
-                        disabled={isExporting}
-                        aria-label={t('logs.exportLogs')}
-                        className="action-button-0"
-                    >
-                        <FaDownload /> {isExporting ? t('logs.exporting') : t('logs.exportLogs')}
-                    </button>
-                    <button
-                        onClick={handleClearLogs}
-                        disabled={isClearing}
-                        aria-label={t('logs.clearLogs')}
-                        className="action-button-0 danger"
-                    >
-                        <FaTrash /> {isClearing ? t('logs.clearing') : t('logs.clearLogs')}
-                    </button>
-                    <button
-                        onClick={() => {
-                            setShowStats(!showStats);
-                            if (!showStats) fetchStatistics();
-                        }}
-                        aria-label={t('logs.toggleStats')}
-                        className="action-button-0"
-                    >
-                        <FaChartBar /> {showStats ? t('logs.hideStats') : t('logs.showStats')}
-                    </button>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <div>
+                        <button
+                            onClick={() => setShowFilterPopup(true)}
+                            aria-label={t('logs.filterLogs')}
+                            className="action-button-0"
+                        >
+                            <FaCog /> {t('logs.filterLogs')}
+                        </button>
+
+                        <button
+                            onClick={() => {
+                                setShowStats(!showStats);
+                                if (!showStats) fetchStatistics();
+                            }}
+                            aria-label={t('logs.toggleStats')}
+                            className="action-button-0"
+                        >
+                            <FaChartBar /> {showStats ? t('logs.hideStats') : t('logs.showStats')}
+                        </button>
+                    </div>
+                    <div>
+                        <button
+                            onClick={handleArchiveLogs}
+                            disabled={isArchiving}
+                            aria-label={t('logs.archiveLogs')}
+                            className="action-button-0"
+                        >
+                            <FaArchive /> {isArchiving ? t('logs.archiving') : t('logs.archiveLogs')}
+                        </button>
+                        <button
+                            onClick={handleExportLogs}
+                            disabled={isExporting}
+                            aria-label={t('logs.exportLogs')}
+                            className="action-button-0"
+                        >
+                            <FaDownload /> {isExporting ? t('logs.exporting') : t('logs.exportLogs')}
+                        </button>
+                    </div>
+                    <div>
+                        <button
+                            onClick={handleDeleteLogs}
+                            disabled={isDeleting}
+                            aria-label={t('logs.deleteLogs')}
+                            className="action-button-0 danger"
+                        >
+                            <FaTrash /> {isDeleting ? t('logs.deleting') : t('logs.deleteLogs')}
+                        </button>
+
+                        <button
+                            onClick={handleClearLogs}
+                            disabled={isClearing}
+                            aria-label={t('logs.clearLogs')}
+                            className="action-button-0 danger"
+                        >
+                            <FaTrash /> {isClearing ? t('logs.clearing') : t('logs.clearLogs')}
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -670,46 +974,111 @@ const LogsList: React.FC<LogsListProps> = ({
                 </div>
             )}
 
+            {/* Chart Popup */}
+            {selectedChart && (
+                <div className="modal-overlay">
+                    <div className="modal-content-44" style={{ width: '100%', maxWidth: '90vw' }}>
+                        <div className="modal-header">
+                            <h3>{t(`logs.by${selectedChart.charAt(0).toUpperCase() + selectedChart.slice(1)}`)}</h3>
+                            <button
+                                onClick={() => setSelectedChart(null)}
+                                className="modal-close"
+                                aria-label={t('logs.closeChart')}
+                            >
+                                <FaTimes />
+                            </button>
+                        </div>
+                        <div className="modal-body">
+                            <div className="chart-container" style={{ height: '70vh' }}>
+                                {selectedChart === 'level' && (
+                                    <Doughnut
+                                        options={{ ...largeDoughnutPieChartOptions, plugins: { ...largeDoughnutPieChartOptions.plugins, title: { ...largeDoughnutPieChartOptions.plugins.title, text: t('logs.byLevel') } } }}
+                                        data={levelChartData}
+                                    />
+                                )}
+                                {selectedChart === 'route' && (
+                                    <Bar
+                                        options={{ ...largeBarChartOptions, plugins: { ...largeBarChartOptions.plugins, title: { ...largeBarChartOptions.plugins.title, text: t('logs.byRoute') } } }}
+                                        data={routeChartData}
+                                    />
+                                )}
+                                {selectedChart === 'service' && (
+                                    <Pie
+                                        options={{ ...largeDoughnutPieChartOptions, plugins: { ...largeDoughnutPieChartOptions.plugins, title: { ...largeDoughnutPieChartOptions.plugins.title, text: t('logs.byService') } } }}
+                                        data={serviceChartData}
+                                    />
+                                )}
+                                {selectedChart === 'status' && (
+                                    <Bar
+                                        options={{ ...largeHorizontalBarChartOptions, plugins: { ...largeHorizontalBarChartOptions.plugins, title: { ...largeHorizontalBarChartOptions.plugins.title, text: t('logs.byStatus') } } }}
+                                        data={statusChartData}
+                                    />
+                                )}
+                                {selectedChart === 'method' && (
+                                    <Line
+                                        options={{ ...largeLineChartOptions, plugins: { ...largeLineChartOptions.plugins, title: { ...largeLineChartOptions.plugins.title, text: t('logs.byMethod') } } }}
+                                        data={methodChartData}
+                                    />
+                                )}
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            )}
+
             {/* Statistics Panel */}
             {showStats && (
                 <div className="stats-panel">
                     <h3>{t('logs.statistics')}</h3>
                     <p>{t('logs.totalLogs', { count: logStatistics.database?.total || 0 })}</p>
                     <p>{t('logs.uniqueUsers', { count: logStatistics.database?.uniqueUsers || 0 })}</p>
-                    <h4>{t('logs.byLevel')}</h4>
-                    <div className="chart-container">
-                        <Bar
-                            options={{ ...chartOptions, plugins: { ...chartOptions.plugins, title: { ...chartOptions.plugins.title, text: t('logs.byLevel') } } }}
-                            data={levelChartData}
-                        />
-                    </div>
-                    <h4>{t('logs.byRoute')}</h4>
-                    <div className="chart-container">
-                        <Bar
-                            options={{ ...chartOptions, plugins: { ...chartOptions.plugins, title: { ...chartOptions.plugins.title, text: t('logs.byRoute') } } }}
-                            data={routeChartData}
-                        />
-                    </div>
-                    <h4>{t('logs.byService')}</h4>
-                    <div className="chart-container">
-                        <Bar
-                            options={{ ...chartOptions, plugins: { ...chartOptions.plugins, title: { ...chartOptions.plugins.title, text: t('logs.byService') } } }}
-                            data={serviceChartData}
-                        />
-                    </div>
-                    <h4>{t('logs.byStatus')}</h4>
-                    <div className="chart-container">
-                        <Bar
-                            options={{ ...chartOptions, plugins: { ...chartOptions.plugins, title: { ...chartOptions.plugins.title, text: t('logs.byStatus') } } }}
-                            data={statusChartData}
-                        />
-                    </div>
-                    <h4>{t('logs.byMethod')}</h4>
-                    <div className="chart-container">
-                        <Bar
-                            options={{ ...chartOptions, plugins: { ...chartOptions.plugins, title: { ...chartOptions.plugins.title, text: t('logs.byMethod') } } }}
-                            data={methodChartData}
-                        />
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
+                        <div onClick={() => handleChartClick('level')} style={{ cursor: 'pointer' }}>
+                            <h4>{t('logs.byLevel')}</h4>
+                            <div className="chart-container" style={{ height: '250px' }}>
+                                <Doughnut
+                                    options={{ ...doughnutPieChartOptions, plugins: { ...doughnutPieChartOptions.plugins, title: { ...doughnutPieChartOptions.plugins.title, text: t('logs.byLevel') } } }}
+                                    data={levelChartData}
+                                />
+                            </div>
+                        </div>
+                        <div onClick={() => handleChartClick('route')} style={{ cursor: 'pointer' }}>
+                            <h4>{t('logs.byRoute')}</h4>
+                            <div className="chart-container" style={{ height: '250px' }}>
+                                <Bar
+                                    options={{ ...barChartOptions, plugins: { ...barChartOptions.plugins, title: { ...barChartOptions.plugins.title, text: t('logs.byRoute') } } }}
+                                    data={routeChartData}
+                                />
+                            </div>
+                        </div>
+                        <div onClick={() => handleChartClick('service')} style={{ cursor: 'pointer' }}>
+                            <h4>{t('logs.byService')}</h4>
+                            <div className="chart-container" style={{ height: '250px' }}>
+                                <Pie
+                                    options={{ ...doughnutPieChartOptions, plugins: { ...doughnutPieChartOptions.plugins, title: { ...doughnutPieChartOptions.plugins.title, text: t('logs.byService') } } }}
+                                    data={serviceChartData}
+                                />
+                            </div>
+                        </div>
+                        <div onClick={() => handleChartClick('status')} style={{ cursor: 'pointer' }}>
+                            <h4>{t('logs.byStatus')}</h4>
+                            <div className="chart-container" style={{ height: '250px' }}>
+                                <Bar
+                                    options={{ ...horizontalBarChartOptions, plugins: { ...horizontalBarChartOptions.plugins, title: { ...horizontalBarChartOptions.plugins.title, text: t('logs.byStatus') } } }}
+                                    data={statusChartData}
+                                />
+                            </div>
+                        </div>
+                        <div onClick={() => handleChartClick('method')} style={{ cursor: 'pointer' }}>
+                            <h4>{t('logs.byMethod')}</h4>
+                            <div className="chart-container" style={{ height: '250px' }}>
+                                <Line
+                                    options={{ ...lineChartOptions, plugins: { ...lineChartOptions.plugins, title: { ...lineChartOptions.plugins.title, text: t('logs.byMethod') } } }}
+                                    data={methodChartData}
+                                />
+                            </div>
+                        </div>
                     </div>
                     <p>{t('logs.healthStatus', { status: healthStatus })}</p>
                 </div>
