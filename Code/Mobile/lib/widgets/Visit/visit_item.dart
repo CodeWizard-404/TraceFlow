@@ -7,8 +7,14 @@ import '../../screens/Visit/visit_details.dart';
 
 class VisitItem extends StatelessWidget {
   final Visit visit;
+  final bool isDraggable;
 
-  const VisitItem({super.key, required this.visit});
+  const VisitItem({super.key, required this.visit, this.isDraggable = true});
+
+  bool get _canDrag {
+    final isPastDate = visit.date.isBefore(DateTime.now().subtract(const Duration(days: 1)));
+    return isDraggable && !isPastDate && visit.status?.toLowerCase() != 'visited';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,20 +26,20 @@ class VisitItem extends StatelessWidget {
       builder: (context, agentProvider, child) {
         final agent = visit.agent ?? agentProvider.currentAgent;
 
-        return Card(
-          elevation: 0, // No elevation for flat design
+        Widget visitCard = Card(
+          elevation: 0,
           margin: const EdgeInsets.symmetric(vertical: 3, horizontal: 6),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
             side: BorderSide(
-              color: theme.colorScheme.primary.withOpacity(0.8), // Sharp, modern border
+              color: theme.colorScheme.primary.withOpacity(0.8),
               width: 1.2,
             ),
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: Material(
-              color: theme.colorScheme.surface, // Clean, flat background
+              color: theme.colorScheme.surface,
               child: InkWell(
                 borderRadius: BorderRadius.circular(8),
                 splashColor: theme.colorScheme.primary.withOpacity(0.2),
@@ -53,11 +59,18 @@ class VisitItem extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          Icon(
-                            Icons.person_outline,
-                            color: theme.colorScheme.primary,
-                            size: 14,
-                          ),
+                          if (_canDrag)
+                            const Icon(
+                              Icons.drag_handle,
+                              color: Colors.grey,
+                              size: 14,
+                            )
+                          else
+                            Icon(
+                              Icons.person_outline,
+                              color: theme.colorScheme.primary,
+                              size: 14,
+                            ),
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
@@ -204,6 +217,32 @@ class VisitItem extends StatelessWidget {
               ),
             ),
           ),
+        );
+
+        if (!_canDrag) return visitCard;
+
+        return LongPressDraggable<Visit>(
+          data: visit,
+          feedback: Material(
+            elevation: 4,
+            borderRadius: BorderRadius.circular(8),
+            child: Opacity(
+              opacity: 0.8,
+              child: Container(
+                width: MediaQuery.of(context).size.width - 32,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: visitCard,
+              ),
+            ),
+          ),
+          childWhenDragging: Opacity(
+            opacity: 0.3,
+            child: visitCard,
+          ),
+          child: visitCard,
         );
       },
     );

@@ -557,10 +557,22 @@ class VisitService {
                 await visit.setReasons(updatedReasons, { transaction });
             }
 
+            // Fetch actor user to check role
+            let actorUser = null;
+            if (actorID) {
+                actorUser = await User.findByPk(actorID, { transaction });
+            }
+
+            // If actor is supervisor, force status to pending
+            let newStatus = status;
+            if (actorUser && actorUser.role === process.env.ROLE_SUPERVISOR) {
+                newStatus = 'pending';
+            }
+
             visit.date = newDate;
             visit.time = time || visit.time;
             visit.duration = duration !== undefined ? duration : visit.duration;
-            visit.status = ['pending', 'visited', 'rejected', 'validated'].includes(status) ? status : visit.status;
+            visit.status = ['pending', 'visited', 'rejected', 'validated'].includes(newStatus) ? newStatus : visit.status;
             visit.photos = photoPaths;
             visit.comment = comment !== undefined ? comment : visit.comment;
 
