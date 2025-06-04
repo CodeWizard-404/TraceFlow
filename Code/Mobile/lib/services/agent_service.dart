@@ -1,10 +1,12 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'package:http_parser/http_parser.dart';
 import '../models/agent.dart';
 import '../models/user.dart';
 import '../utils/constants.dart';
-import '../services/cookie_manager.dart';
+import './auth_service.dart';
+import './cookie_manager.dart';
 
 class AgentService {
   Future<Agent?> createAgent({
@@ -18,111 +20,76 @@ class AgentService {
     double? longitude,
     String? locationAddress,
   }) async {
-    if (kDebugMode) print('AgentService: Creating agent for $name $lastname');
     try {
-      final headers = CookieManager.getHeaders();
-      final body = json.encode({
-        'name': name,
-        'lastname': lastname,
-        'email': email,
-        'phone': phone,
-        'supervisorID': supervisorID,
-        'delegationID': delegationID,
-        if (latitude != null) 'latitude': latitude,
-        if (longitude != null) 'longitude': longitude,
-        if (locationAddress != null) 'locationAddress': locationAddress,
-      });
-
-      final response = await http.post(
-        Uri.parse('$baseUrl/agents'),
-        headers: {...headers, 'Content-Type': 'application/json'},
-        body: body,
+      final response = await AuthService.makeAuthenticatedRequest(
+        request: () async {
+          final url = Uri.parse('$baseUrl/agents');
+          final response = await http.post(
+            url,
+            headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
+            body: jsonEncode({
+              'name': name,
+              'lastname': lastname,
+              'email': email,
+              'phone': phone,
+              'supervisorID': supervisorID,
+              'delegationID': delegationID,
+              'latitude': latitude,
+              'longitude': longitude,
+              'locationAddress': locationAddress,
+            }),
+          );
+          CookieManager.extractCookies(response);
+          if (response.statusCode == 201) return response;
+          throw Exception('Failed to create agent: ${response.statusCode}');
+        },
       );
-
-      if (kDebugMode) print('Response status: ${response.statusCode}');
-      if (response.statusCode != 201) {
-        if (kDebugMode) print('Response body: ${response.body}');
-      }
-      CookieManager.extractCookies(response);
-
-      if (response.statusCode == 201) {
-        final data = json.decode(response.body);
-        final agent = Agent.fromJson(data);
-        if (kDebugMode) print('Agent created: ${agent.agentID}');
-        return agent;
-      } else {
-        final error = 'Failed to create agent: ${response.statusCode}';
-        if (kDebugMode) print(error);
-        throw Exception(error);
-      }
+      return Agent.fromJson(response['agent'] ?? response);
     } catch (e) {
       if (kDebugMode) print('Error creating agent: $e');
-      throw Exception('Error creating agent: $e');
+      rethrow;
     }
   }
 
   Future<List<Agent>> fetchAllAgents() async {
-    if (kDebugMode) print('AgentService: Fetching all agents');
     try {
-      final headers = CookieManager.getHeaders();
-      final response = await http.get(
-        Uri.parse('$baseUrl/agents'),
-        headers: headers,
+      final response = await AuthService.makeAuthenticatedRequest(
+        request: () async {
+          final url = Uri.parse('$baseUrl/agents');
+          final response = await http.get(
+            url,
+            headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
+          );
+          CookieManager.extractCookies(response);
+          if (response.statusCode == 200) return response;
+          throw Exception('Failed to fetch agents: ${response.statusCode}');
+        },
       );
-
-      if (kDebugMode) print('Response status: ${response.statusCode}');
-      if (response.statusCode != 200) {
-        if (kDebugMode) print('Response body: ${response.body}');
-      }
-      CookieManager.extractCookies(response);
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final agents = (data['agents'] as List).map((json) => Agent.fromJson(json)).toList();
-        if (kDebugMode) print('Agents fetched: ${agents.length}');
-        return agents;
-      } else {
-        final error = 'Failed to fetch all agents: ${response.statusCode}';
-        if (kDebugMode) print(error);
-        throw Exception(error);
-      }
+      return (response['agents'] ?? response as List).map((json) => Agent.fromJson(json)).toList();
     } catch (e) {
       if (kDebugMode) print('Error fetching all agents: $e');
-      throw Exception('Error fetching all agents: $e');
+      rethrow;
     }
   }
 
   Future<Agent?> fetchAgentById(String id) async {
-    if (kDebugMode) print('AgentService: Fetching agent by ID: $id');
     try {
-      final headers = CookieManager.getHeaders();
-      final response = await http.get(
-        Uri.parse('$baseUrl/agents/$id'),
-        headers: headers,
+      final response = await AuthService.makeAuthenticatedRequest(
+        request: () async {
+          final url = Uri.parse('$baseUrl/agents/$id');
+          final response = await http.get(
+            url,
+            headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
+          );
+          CookieManager.extractCookies(response);
+          if (response.statusCode == 200) return response;
+          throw Exception('Failed to fetch agent by ID: ${response.statusCode}');
+        },
       );
-
-      if (kDebugMode) print('Response status: ${response.statusCode}');
-      if (response.statusCode != 200) {
-        if (kDebugMode) print('Response body: ${response.body}');
-      }
-      CookieManager.extractCookies(response);
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final agent = Agent.fromJson(data);
-        if (kDebugMode) print('Agent fetched: ${agent.agentID}');
-        return agent;
-      } else if (response.statusCode == 404) {
-        if (kDebugMode) print('No agent found for ID: $id');
-        return null;
-      } else {
-        final error = 'Failed to fetch agent: ${response.statusCode}';
-        if (kDebugMode) print(error);
-        throw Exception(error);
-      }
+      return Agent.fromJson(response['agent'] ?? response);
     } catch (e) {
       if (kDebugMode) print('Error fetching agent by ID: $e');
-      return null;
+      rethrow;
     }
   }
 
@@ -135,309 +102,220 @@ class AgentService {
     String? supervisorID,
     String? delegationID,
   }) async {
-    if (kDebugMode) print('AgentService: Updating agent ID: $id');
     try {
-      final headers = CookieManager.getHeaders();
-      final body = json.encode({
-        if (name != null) 'name': name,
-        if (lastname != null) 'lastname': lastname,
-        if (email != null) 'email': email,
-        if (phone != null) 'phone': phone,
-        if (supervisorID != null) 'supervisorID': supervisorID,
-        if (delegationID != null) 'delegationID': delegationID,
-      });
-
-      final response = await http.put(
-        Uri.parse('$baseUrl/agents/$id'),
-        headers: {...headers, 'Content-Type': 'application/json'},
-        body: body,
+      final response = await AuthService.makeAuthenticatedRequest(
+        request: () async {
+          final url = Uri.parse('$baseUrl/agents/$id');
+          final response = await http.put(
+            url,
+            headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
+            body: jsonEncode({
+              if (name != null) 'name': name,
+              if (lastname != null) 'lastname': lastname,
+              if (email != null) 'email': email,
+              if (phone != null) 'phone': phone,
+              if (supervisorID != null) 'supervisorID': supervisorID,
+              if (delegationID != null) 'delegationID': delegationID,
+            }),
+          );
+          CookieManager.extractCookies(response);
+          if (response.statusCode == 200) return response;
+          throw Exception('Failed to update agent: ${response.statusCode}');
+        },
       );
-
-      if (kDebugMode) print('Response status: ${response.statusCode}');
-      if (response.statusCode != 200) {
-        if (kDebugMode) print('Response body: ${response.body}');
-      }
-      CookieManager.extractCookies(response);
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final agent = Agent.fromJson(data);
-        if (kDebugMode) print('Agent updated: ${agent.agentID}');
-        return agent;
-      } else {
-        final error = 'Failed to update agent: ${response.statusCode}';
-        if (kDebugMode) print(error);
-        throw Exception(error);
-      }
+      return Agent.fromJson(response['agent'] ?? response);
     } catch (e) {
       if (kDebugMode) print('Error updating agent: $e');
-      throw Exception('Error updating agent: $e');
+      rethrow;
     }
   }
 
   Future<bool> deleteAgent(String id) async {
-    if (kDebugMode) print('AgentService: Deleting agent ID: $id');
     try {
-      final headers = CookieManager.getHeaders();
-      final response = await http.delete(
-        Uri.parse('$baseUrl/agents/$id'),
-        headers: headers,
+      await AuthService.makeAuthenticatedRequest(
+        request: () async {
+          final url = Uri.parse('$baseUrl/agents/$id');
+          final response = await http.delete(
+            url,
+            headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
+          );
+          CookieManager.extractCookies(response);
+          if (response.statusCode == 200) return response;
+          throw Exception('Failed to delete agent: ${response.statusCode}');
+        },
       );
-
-      if (kDebugMode) print('Response status: ${response.statusCode}');
-      if (response.statusCode != 200) {
-        if (kDebugMode) print('Response body: ${response.body}');
-      }
-      CookieManager.extractCookies(response);
-
-      if (response.statusCode == 200) {
-        if (kDebugMode) print('Agent deleted: $id');
-        return true;
-      } else {
-        final error = 'Failed to delete agent: ${response.statusCode}';
-        if (kDebugMode) print(error);
-        throw Exception(error);
-      }
+      return true;
     } catch (e) {
       if (kDebugMode) print('Error deleting agent: $e');
-      throw Exception('Error deleting agent: $e');
+      rethrow;
     }
   }
 
   Future<Agent?> fetchAgentByPhone(String phone) async {
-    if (kDebugMode) print('AgentService: Fetching agent by phone: $phone');
     try {
-      final headers = CookieManager.getHeaders();
-      final response = await http.get(
-        Uri.parse('$baseUrl/agents/phone/$phone'),
-        headers: headers,
+      final response = await AuthService.makeAuthenticatedRequest(
+        request: () async {
+          final url = Uri.parse('$baseUrl/agents/phone/$phone');
+          final response = await http.get(
+            url,
+            headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
+          );
+          CookieManager.extractCookies(response);
+          if (kDebugMode) print('AgentService: Fetching agent by phone: $phone');
+          return response;
+        },
       );
-
-      if (kDebugMode) print('Response status: ${response.statusCode}');
-      if (response.statusCode != 200) {
-        if (kDebugMode) print('Response body: ${response.body}');
-      }
-      CookieManager.extractCookies(response);
-
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data != null) {
-          final agent = Agent.fromJson(data);
-          if (kDebugMode) print('Agent fetched: ${agent.agentID}');
-          return agent;
-        } else {
-          if (kDebugMode) print('No agent found for phone: $phone');
-          return null;
-        }
-      } else if (response.statusCode == 404) {
-        if (kDebugMode) print('No agent found for phone: $phone');
-        return null;
+        final decodedResponse = jsonDecode(response.body);
+        if (kDebugMode) print('Agent fetched: ${decodedResponse['agentID']}');
+        return Agent.fromJson(decodedResponse['agent'] ?? decodedResponse);
       } else {
-        final error = 'Failed to fetch agent: ${response.statusCode}';
-        if (kDebugMode) print(error);
-        throw Exception(error);
+        throw Exception('Failed to fetch agent by phone: ${response.statusCode}');
       }
     } catch (e) {
       if (kDebugMode) print('Error fetching agent by phone: $e');
-      return null;
+      rethrow;
     }
   }
 
   Future<List<Agent>> fetchAgentsByDelegation(String delegationID) async {
-    if (kDebugMode) print('AgentService: Fetching agents for delegation: $delegationID');
     try {
-      final headers = CookieManager.getHeaders();
-      final response = await http.get(
-        Uri.parse('$baseUrl/agents/delegation?delegationID=$delegationID'),
-        headers: headers,
+      final response = await AuthService.makeAuthenticatedRequest(
+        request: () async {
+          final url = Uri.parse('$baseUrl/agents/delegation/$delegationID');
+          final response = await http.get(
+            url,
+            headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
+          );
+          CookieManager.extractCookies(response);
+          if (response.statusCode == 200) return response;
+          throw Exception('Failed to fetch agents by delegation: ${response.statusCode}');
+        },
       );
-
-      if (kDebugMode) print('Response status: ${response.statusCode}');
-      if (response.statusCode != 200) {
-        if (kDebugMode) print('Response body: ${response.body}');
-      }
-      CookieManager.extractCookies(response);
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final agents = (data['agents'] as List).map((json) => Agent.fromJson(json)).toList();
-        if (kDebugMode) print('Agents fetched: ${agents.length}');
-        return agents;
-      } else {
-        final error = 'Failed to fetch agents by delegation: ${response.statusCode}';
-        if (kDebugMode) print(error);
-        throw Exception(error);
-      }
+      return (response['agents'] ?? response as List).map((json) => Agent.fromJson(json)).toList();
     } catch (e) {
       if (kDebugMode) print('Error fetching agents by delegation: $e');
-      throw Exception('Error fetching agents by delegation: $e');
+      rethrow;
     }
   }
 
   Future<List<String>> fetchUniqueLocations() async {
-    if (kDebugMode) print('AgentService: Fetching unique locations');
     try {
-      final headers = CookieManager.getHeaders();
-      final response = await http.get(
-        Uri.parse('$baseUrl/agents/locations'),
-        headers: headers,
+      final response = await AuthService.makeAuthenticatedRequest(
+        request: () async {
+          final url = Uri.parse('$baseUrl/agents/locations');
+          final response = await http.get(
+            url,
+            headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
+          );
+          CookieManager.extractCookies(response);
+          if (response.statusCode == 200) return response;
+          throw Exception('Failed to fetch unique locations: ${response.statusCode}');
+        },
       );
-
-      if (kDebugMode) print('Response status: ${response.statusCode}');
-      if (response.statusCode != 200) {
-        if (kDebugMode) print('Response body: ${response.body}');
-      }
-      CookieManager.extractCookies(response);
-
-      if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
-        final locations = data.map((loc) => loc.toString()).toList();
-        if (kDebugMode) print('Unique locations: $locations');
-        return locations;
-      } else {
-        final error = 'Failed to fetch locations: ${response.statusCode}';
-        if (kDebugMode) print(error);
-        throw Exception(error);
-      }
+      return List<String>.from(response['locations'] ?? response);
     } catch (e) {
       if (kDebugMode) print('Error fetching unique locations: $e');
-      throw Exception('Error fetching locations: $e');
+      rethrow;
     }
   }
 
   Future<User?> getAgentSupervisor(String agentID) async {
-    if (kDebugMode) print('AgentService: Fetching supervisor by agent ID: $agentID');
     try {
-      final headers = CookieManager.getHeaders();
-      final response = await http.get(
-        Uri.parse('$baseUrl/agents/$agentID/supervisor'),
-        headers: headers,
+      final response = await AuthService.makeAuthenticatedRequest(
+        request: () async {
+          final url = Uri.parse('$baseUrl/agents/$agentID/supervisor');
+          final response = await http.get(
+            url,
+            headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
+          );
+          CookieManager.extractCookies(response);
+          if (response.statusCode == 200) return response;
+          throw Exception('Failed to fetch supervisor: ${response.statusCode}');
+        },
       );
-
-      if (kDebugMode) print('Response status: ${response.statusCode}');
-      if (response.statusCode != 200) {
-        if (kDebugMode) print('Response body: ${response.body}');
-      }
-      CookieManager.extractCookies(response);
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final supervisor = User.fromJson(data);
-        if (kDebugMode) print('Supervisor fetched: ${supervisor.userID}');
-        return supervisor;
-      } else if (response.statusCode == 404) {
-        if (kDebugMode) print('No supervisor found for agent: $agentID');
-        return null;
-      } else {
-        final error = 'Failed to fetch supervisor: ${response.statusCode}';
-        if (kDebugMode) print(error);
-        throw Exception(error);
-      }
+      return User.fromJson(response['supervisor'] ?? response);
     } catch (e) {
-      if (kDebugMode) print('Error fetching supervisor by agent: $e');
-      return null;
+      if (kDebugMode) print('Error fetching supervisor: $e');
+      rethrow;
     }
   }
 
   Future<List<Agent>> getAgentsByUser(String userID) async {
-    if (kDebugMode) print('AgentService: Fetching agents by user ID: $userID');
     try {
-      final headers = CookieManager.getHeaders();
-      final response = await http.get(
-        Uri.parse('$baseUrl/agents/user/$userID'),
-        headers: headers,
+      final response = await AuthService.makeAuthenticatedRequest(
+        request: () async {
+          final url = Uri.parse('$baseUrl/agents/user/$userID');
+          final response = await http.get(
+            url,
+            headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
+          );
+          CookieManager.extractCookies(response);
+          if (kDebugMode) print('AgentService: Fetching agents by user ID: $userID');
+          return response; // Return the http.Response object
+        },
       );
-
-      if (kDebugMode) print('Response status: ${response.statusCode}');
-      if (response.statusCode != 200) {
-        if (kDebugMode) print('Response body: ${response.body}');
-      }
-      CookieManager.extractCookies(response);
-
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final agents = (data['agents'] as List).map((json) => Agent.fromJson(json)).toList();
+        final decodedResponse = jsonDecode(response.body);
+        final agentList = decodedResponse['agents'] as List<dynamic>? ?? [];
+        final agents = agentList.map((json) => Agent.fromJson(json as Map<String, dynamic>)).toList();
         if (kDebugMode) print('Agents fetched: ${agents.length}');
         return agents;
       } else {
-        final error = 'Failed to fetch agents: ${response.statusCode}';
-        if (kDebugMode) print(error);
-        throw Exception(error);
+        throw Exception('Failed to fetch agents by user: ${response.statusCode}');
       }
     } catch (e) {
       if (kDebugMode) print('Error fetching agents by user: $e');
-      throw Exception('Error fetching agents: $e');
+      rethrow;
     }
   }
 
   Future<Map<String, dynamic>> uploadAgents(Uint8List fileBytes) async {
-    if (kDebugMode) print('AgentService: Uploading agent CSV');
     try {
-      final headers = CookieManager.getHeaders();
-      final request = http.MultipartRequest(
-        'POST',
-        Uri.parse('$baseUrl/agents/upload'),
+      final response = await AuthService.makeAuthenticatedRequest(
+        request: () async {
+          final url = Uri.parse('$baseUrl/agents/upload');
+          final request = http.MultipartRequest('POST', url)
+            ..headers.addAll(CookieManager.getHeaders({'Content-Type': 'multipart/form-data'}));
+          request.files.add(http.MultipartFile.fromBytes(
+            'file',
+            fileBytes,
+            filename: 'agents.csv',
+            contentType: MediaType('text', 'csv'),
+          ));
+          final streamedResponse = await request.send();
+          final responseBody = await streamedResponse.stream.bytesToString();
+          final httpResponse = http.Response(responseBody, streamedResponse.statusCode, headers: streamedResponse.headers);
+          CookieManager.extractCookies(httpResponse);
+          if (httpResponse.statusCode == 200) return httpResponse;
+          throw Exception('Failed to upload agents: $responseBody');
+        },
       );
-      request.headers.addAll(headers);
-      request.files.add(
-        http.MultipartFile.fromBytes(
-          'file',
-          fileBytes,
-          filename: 'agents.csv',
-        ),
-      );
-
-      final response = await request.send();
-      final responseBody = await response.stream.bytesToString();
-
-      if (kDebugMode) print('Response status: ${response.statusCode}');
-      if (response.statusCode != 200) {
-        if (kDebugMode) print('Response body: $responseBody');
-      }
-
-      if (response.statusCode == 200) {
-        final data = json.decode(responseBody);
-        if (kDebugMode) print('CSV processed: ${data['status']}');
-        return data;
-      } else {
-        final error = 'Failed to upload agents: ${response.statusCode}';
-        if (kDebugMode) print(error);
-        throw Exception(error);
-      }
+      return response;
     } catch (e) {
       if (kDebugMode) print('Error uploading agents: $e');
-      throw Exception('Error uploading agents: $e');
+      rethrow;
     }
   }
 
   Future<List<Agent>> fetchAgentLocations() async {
-    if (kDebugMode) print('AgentService: Fetching agent locations');
     try {
-      final headers = CookieManager.getHeaders();
-      final response = await http.get(
-        Uri.parse('$baseUrl/agents/map/locations'),
-        headers: headers,
+      final response = await AuthService.makeAuthenticatedRequest(
+        request: () async {
+          final url = Uri.parse('$baseUrl/agents/locations/all');
+          final response = await http.get(
+            url,
+            headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
+          );
+          CookieManager.extractCookies(response);
+          if (response.statusCode == 200) return response;
+          throw Exception('Failed to fetch agent locations: ${response.statusCode}');
+        },
       );
-
-      if (kDebugMode) print('Response status: ${response.statusCode}');
-      if (response.statusCode != 200) {
-        if (kDebugMode) print('Response body: ${response.body}');
-      }
-      CookieManager.extractCookies(response);
-
-      if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
-        final agents = data.map((json) => Agent.fromJson(json)).toList();
-        if (kDebugMode) print('Agent locations fetched: ${agents.length}');
-        return agents;
-      } else {
-        final error = 'Failed to fetch agent locations: ${response.statusCode}';
-        if (kDebugMode) print(error);
-        throw Exception(error);
-      }
+      return (response['agents'] ?? response as List).map((json) => Agent.fromJson(json)).toList();
     } catch (e) {
       if (kDebugMode) print('Error fetching agent locations: $e');
-      throw Exception('Error fetching agent locations: $e');
+      rethrow;
     }
   }
 
@@ -446,33 +324,23 @@ class AgentService {
     required double lng,
     double radius = 5000,
   }) async {
-    if (kDebugMode) print('AgentService: Fetching nearby agents at ($lat, $lng)');
     try {
-      final headers = CookieManager.getHeaders();
-      final response = await http.get(
-        Uri.parse('$baseUrl/agents/nearby?lat=$lat&lng=$lng&radius=$radius'),
-        headers: headers,
+      final response = await AuthService.makeAuthenticatedRequest(
+        request: () async {
+          final url = Uri.parse('$baseUrl/agents/nearby?lat=$lat&lng=$lng&radius=$radius');
+          final response = await http.get(
+            url,
+            headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
+          );
+          CookieManager.extractCookies(response);
+          if (response.statusCode == 200) return response;
+          throw Exception('Failed to fetch nearby agents: ${response.statusCode}');
+        },
       );
-
-      if (kDebugMode) print('Response status: ${response.statusCode}');
-      if (response.statusCode != 200) {
-        if (kDebugMode) print('Response body: ${response.body}');
-      }
-      CookieManager.extractCookies(response);
-
-      if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
-        final agents = data.map((json) => Agent.fromJson(json)).toList();
-        if (kDebugMode) print('Nearby agents fetched: ${agents.length}');
-        return agents;
-      } else {
-        final error = 'Failed to fetch nearby agents: ${response.statusCode}';
-        if (kDebugMode) print(error);
-        throw Exception(error);
-      }
+      return (response['agents'] ?? response as List).map((json) => Agent.fromJson(json)).toList();
     } catch (e) {
       if (kDebugMode) print('Error fetching nearby agents: $e');
-      throw Exception('Error fetching nearby agents: $e');
+      rethrow;
     }
   }
 
@@ -482,33 +350,25 @@ class AgentService {
     required double northEastLat,
     required double northEastLng,
   }) async {
-    if (kDebugMode) print('AgentService: Fetching agents by bounds');
     try {
-      final headers = CookieManager.getHeaders();
-      final response = await http.get(
-        Uri.parse('$baseUrl/agents/bounds?southWestLat=$southWestLat&southWestLng=$southWestLng&northEastLat=$northEastLat&northEastLng=$northEastLng'),
-        headers: headers,
+      final response = await AuthService.makeAuthenticatedRequest(
+        request: () async {
+          final url = Uri.parse(
+            '$baseUrl/agents/bounds?southWestLat=$southWestLat&southWestLng=$southWestLng&northEastLat=$northEastLat&northEastLng=$northEastLng',
+          );
+          final response = await http.get(
+            url,
+            headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
+          );
+          CookieManager.extractCookies(response);
+          if (response.statusCode == 200) return response;
+          throw Exception('Failed to fetch agents by bounds: ${response.statusCode}');
+        },
       );
-
-      if (kDebugMode) print('Response status: ${response.statusCode}');
-      if (response.statusCode != 200) {
-        if (kDebugMode) print('Response body: ${response.body}');
-      }
-      CookieManager.extractCookies(response);
-
-      if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
-        final agents = data.map((json) => Agent.fromJson(json)).toList();
-        if (kDebugMode) print('Agents by bounds fetched: ${agents.length}');
-        return agents;
-      } else {
-        final error = 'Failed to fetch agents by bounds: ${response.statusCode}';
-        if (kDebugMode) print(error);
-        throw Exception(error);
-      }
+      return (response['agents'] ?? response as List).map((json) => Agent.fromJson(json)).toList();
     } catch (e) {
       if (kDebugMode) print('Error fetching agents by bounds: $e');
-      throw Exception('Error fetching agents by bounds: $e');
+      rethrow;
     }
   }
 
@@ -518,39 +378,28 @@ class AgentService {
     required double longitude,
     required String address,
   }) async {
-    if (kDebugMode) print('AgentService: Correcting location for agent ID: $agentId');
     try {
-      final headers = CookieManager.getHeaders();
-      final body = json.encode({
-        'agentId': agentId,
-        'latitude': latitude,
-        'longitude': longitude,
-        'address': address,
-      });
-
-      final response = await http.post(
-        Uri.parse('$baseUrl/agents/correct-location'),
-        headers: {...headers, 'Content-Type': 'application/json'},
-        body: body,
+      final response = await AuthService.makeAuthenticatedRequest(
+        request: () async {
+          final url = Uri.parse('$baseUrl/agents/$agentId/location');
+          final response = await http.put(
+            url,
+            headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
+            body: jsonEncode({
+              'latitude': latitude,
+              'longitude': longitude,
+              'address': address,
+            }),
+          );
+          CookieManager.extractCookies(response);
+          if (response.statusCode == 200) return response;
+          throw Exception('Failed to correct agent location: ${response.statusCode}');
+        },
       );
-
-      if (kDebugMode) print('Response status: ${response.statusCode}');
-      if (response.statusCode != 200) {
-        if (kDebugMode) print('Response body: ${response.body}');
-      }
-      CookieManager.extractCookies(response);
-
-      if (response.statusCode == 200) {
-        if (kDebugMode) print('Agent location corrected for ID: $agentId');
-        return true;
-      } else {
-        final error = 'Failed to correct agent location: ${response.statusCode}';
-        if (kDebugMode) print(error);
-        throw Exception(error);
-      }
+      return response['success'] ?? true;
     } catch (e) {
       if (kDebugMode) print('Error correcting agent location: $e');
-      throw Exception('Error correcting agent location: $e');
+      rethrow;
     }
   }
 }

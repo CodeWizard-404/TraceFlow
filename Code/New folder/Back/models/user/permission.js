@@ -24,11 +24,15 @@ module.exports = (sequelize, DataTypes) => {
                 'ReceiptStub', // Permissions related to receipt stubs
                 'Agent',       // Permissions related to agents
                 'Auth',        // Permissions related to authentication
-                'Permission',   // Permissions related to permissions
+                'Permission',  // Permissions related to permissions
                 'Notification', // Permissions related to notifications
                 'Location',    // Permissions related to locations
                 'CSV',         // Permissions related to CSV operations
-                'Other'
+                'CSVHeader',   // Permissions related to CSV headers
+                'AI',          // Permissions related to AI operations
+                'Log',         // Permissions related to system logs
+                'Report',      // Permissions related to reports
+                'Other'        // Fallback for unclassified permissions
             ),
             allowNull: false,
             defaultValue: 'Other',

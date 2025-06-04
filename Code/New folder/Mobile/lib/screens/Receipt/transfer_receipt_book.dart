@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:TraceFlow/providers/auth_provider.dart';
 import 'package:TraceFlow/providers/receipt_book_provider.dart';
-import 'package:TraceFlow/providers/user_provider.dart';
 import 'package:TraceFlow/providers/agent_provider.dart';
 import 'package:TraceFlow/providers/receipt_stub_provider.dart';
 import 'package:TraceFlow/widgets/appbar/app_bar.dart';
@@ -13,11 +12,12 @@ import 'package:TraceFlow/widgets/commen/spacer.dart';
 import 'package:TraceFlow/models/receipt_book.dart';
 import 'package:TraceFlow/widgets/Receipt/RecipientTypeSelector.dart';
 import 'package:TraceFlow/widgets/Receipt/AgentSelector.dart';
-import 'package:TraceFlow/widgets/Receipt/UserSelector.dart';
 import 'package:TraceFlow/widgets/Receipt/BookScanner.dart';
 import 'package:TraceFlow/widgets/Receipt/OtpValidator.dart';
 import 'package:TraceFlow/widgets/qr_scanner/qr_scanner_widget.dart';
 import 'dart:async';
+
+import '../../models/receipt_book_type.dart';
 
 class TransferReceiptBookScreen extends StatefulWidget {
   final String? initialBookID;
@@ -57,38 +57,30 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
     final receiptBookProvider = Provider.of<ReceiptBookProvider>(context, listen: false);
     try {
       await Future.wait([
-        receiptBookProvider.fetchAndFilterReceiptBooksByHolder(authProvider.user!.userID!),
+        receiptBookProvider.fetchReceiptBooksByHolder(authProvider.user!.userID!),
+        receiptBookProvider.fetchAllReceiptBookTypes(),
         agentProvider.fetchUniqueLocations(),
       ]);
-      print('User books loaded: ${receiptBookProvider.receiptBooks.length}');
     } catch (e) {
       setState(() => _error = 'Error loading initial data: $e');
     }
   }
 
-  Future<void> _fetchUsersForRole(String role) async {
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
-    try {
-      await userProvider.getUsersByRole(role);
-    } catch (e) {
-      setState(() => _error = 'Error loading users for $role: $e');
-    }
-  }
-
   bool _isTransferable(ReceiptBook book, String userID, String? recipientType) {
     switch (recipientType) {
-      case "Supervisor":
-      case "Regional Manager":
-        return book.currentHolderID == userID && ["With Supervisor", "Stub Collected"].contains(book.status);
-      case "Stock Manager":
-        return book.currentHolderID == userID && book.status == "Stub Collected";
       case "Agent":
         return book.currentHolderID == userID && book.status == "With Supervisor";
       case "Stub Collection":
-        return book.status == "Assigned to Agent";
+        return book.status == "Assigned to Agent" && book.currentHolderID == userID;
       default:
         return false;
     }
+  }
+
+  String _getTypeName(String typeID, ReceiptBookProvider provider) {
+    return provider.receiptBookTypes
+        .firstWhere((t) => t.typeID == typeID, orElse: () => ReceiptBookType(typeID: '', name: 'Unknown Type'))
+        .name;
   }
 
   Future<void> _handleScanSuccess(String decodedText) async {
@@ -102,63 +94,52 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
       final number = decodedText.substring(4, 4 + numberLength);
       final typeStart = 4 + numberLength + 2;
       final typeLength = int.parse(decodedText.substring(typeStart, typeStart + 2));
-      final type = decodedText.substring(typeStart + 2, typeStart + 2 + typeLength);
+      final typeID = decodedText.substring(typeStart + 2, typeStart + 2 + typeLength);
 
       if (_recipientType == "Stub Collection") {
         if (_scannedQRCodes.contains(decodedText)) {
-          setState(() => _error = 'QR code "$number" has already been scanned.');
+          setState(() => _error = 'QR code "$number" already scanned.');
           return;
         }
-
-        try {
-          await receiptBookProvider.fetchReceiptBookByNumber(number);
-          if (receiptBookProvider.currentReceiptBook == null) {
-            setState(() => _error = 'Book with number "$number" not found.');
-            return;
-          }
-          if (!_isTransferable(receiptBookProvider.currentReceiptBook!, authProvider.user!.userID!, _recipientType)) {
-            setState(() => _error = 'Book "$number" (status: ${receiptBookProvider.currentReceiptBook!.status}) cannot be collected.');
-            return;
-          }
-        } catch (e) {
-          setState(() => _error = 'Failed to fetch book "$number": $e');
+        await receiptBookProvider.fetchReceiptBookByNumber(number);
+        if (receiptBookProvider.currentReceiptBook == null) {
+          setState(() => _error = 'Book "$number" not found.');
           return;
         }
-
+        if (!_isTransferable(receiptBookProvider.currentReceiptBook!, authProvider.user!.userID!, _recipientType)) {
+          setState(() => _error = 'Book "$number" (status: ${receiptBookProvider.currentReceiptBook!.status}) cannot be collected.');
+          return;
+        }
         setState(() {
           _selectedBookIDs.add(receiptBookProvider.currentReceiptBook!.bookID!);
           _scannedQRCodes.add(decodedText);
           _error = null;
-          print('Stub Collection: Added book number=$number, bookID=${receiptBookProvider.currentReceiptBook!.bookID} from QR');
         });
       } else {
         final matchingBook = receiptBookProvider.receiptBooks.firstWhere(
-          (r) => r.number == number && r.type == type,
-          orElse: () => ReceiptBook(number: '', type: '', status: '', qrCode: ''),
+              (r) => r.number == number && r.typeID == typeID,
+          orElse: () => ReceiptBook(bookID: '', number: '', status: '', qrCode: '', typeID: ''),
         );
-
-        if (matchingBook.bookID == null) {
-          setState(() => _error = 'QR code "$number" not found in receipt books.');
+        if (matchingBook.bookID.isEmpty) {
+          setState(() => _error = 'QR code "$number" not found.');
           return;
         }
-        if (_scannedQRCodes.contains(decodedText) || _selectedBookIDs.contains(matchingBook.bookID!)) {
-          setState(() => _error = 'QR code "$number" has already been scanned.');
+        if (_scannedQRCodes.contains(decodedText) || _selectedBookIDs.contains(matchingBook.bookID)) {
+          setState(() => _error = 'QR code "$number" already scanned.');
           return;
         }
         if (!_isTransferable(matchingBook, authProvider.user!.userID!, _recipientType)) {
-          setState(() => _error = 'Book "$number" (status: ${matchingBook.status}, holder: ${matchingBook.currentHolderID}) cannot be scanned by you or transferred to $_recipientType.');
+          setState(() => _error = 'Book "$number" cannot be transferred to $_recipientType.');
           return;
         }
-
         setState(() {
-          _selectedBookIDs.add(matchingBook.bookID!);
+          _selectedBookIDs.add(matchingBook.bookID);
           _scannedQRCodes.add(decodedText);
           _error = null;
-          print('Added book: ${matchingBook.number}, status: ${matchingBook.status}, holder: ${matchingBook.currentHolderID}');
         });
       }
     } catch (err) {
-      setState(() => _error = "Invalid QR code format: $err");
+      setState(() => _error = "Invalid QR code: $err");
     } finally {
       _scanLock = false;
     }
@@ -180,7 +161,7 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
         if (_otpSecondsRemaining > 0) _otpSecondsRemaining--;
         else {
           timer.cancel();
-          _error = "OTP has expired. Please initiate the transfer again.";
+          _error = "OTP expired. Please retry.";
           _transferInitiated = false;
         }
       });
@@ -189,19 +170,19 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
 
   Future<void> _initiateTransfer() async {
     if (_selectedBookIDs.isEmpty) {
-      setState(() => _error = 'Please select at least one book.');
+      setState(() => _error = 'Select at least one book.');
       return;
     }
     if (_recipientType == null) {
-      setState(() => _error = 'Please select a recipient type.');
+      setState(() => _error = 'Select a recipient type.');
       return;
     }
     if (_recipientType == "Agent" && _selectedBookIDs.length > 1) {
-      setState(() => _error = "Only one book can be assigned to an Agent.");
+      setState(() => _error = "Only one book can be assigned to an agent.");
       return;
     }
-    if (_recipientType != "Stub Collection" && _recipientID == null) {
-      setState(() => _error = "Please select a recipient.");
+    if (_recipientType == "Agent" && _recipientID == null) {
+      setState(() => _error = "Select an agent.");
       return;
     }
 
@@ -214,7 +195,7 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
         await receiptBookProvider.transferReceiptBooks(
           bookIDs: _selectedBookIDs,
           recipientID: _recipientID!,
-          recipientType: _recipientType == "Agent" ? "agent" : "user",
+          recipientType: "agent",
         );
       }
       setState(() {
@@ -224,41 +205,32 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
       });
       _startOtpTimer();
     } catch (e) {
-      setState(() => _error = 'Failed to initiate transfer: $e');
+      setState(() => _error = 'Failed to initiate: $e');
     }
   }
 
   Future<void> _validateTransfer() async {
     if (_otpController.text.isEmpty) {
-      setState(() => _error = 'Please enter the OTP.');
+      setState(() => _error = 'Enter OTP.');
       return;
     }
     final receiptBookProvider = Provider.of<ReceiptBookProvider>(context, listen: false);
     final receiptStubProvider = Provider.of<ReceiptStubProvider>(context, listen: false);
-
     try {
       if (_recipientType == "Stub Collection") {
-        await receiptStubProvider.validateStubCollection(
-          _selectedBookIDs,
-          _otpController.text,
-        );
+        await receiptStubProvider.validateStubCollection(_selectedBookIDs, _otpController.text);
       } else {
-        if (_recipientID == null) {
-          setState(() => _error = 'Recipient ID is null, cannot validate transfer.');
-          return;
-        }
         await receiptBookProvider.validateTransfer(
           bookIDs: _selectedBookIDs,
           recipientID: _recipientID!,
           otpCode: _otpController.text,
-          recipientType: _recipientType == "Agent" ? "agent" : "user",
+          recipientType: "agent",
         );
       }
       _otpTimer?.cancel();
       Navigator.pushNamed(context, '/receipt-books');
     } catch (e) {
-      setState(() => _error = 'Failed to validate transfer: $e');
-      print('Validation error details: $e');
+      setState(() => _error = 'Validation failed: $e');
     }
   }
 
@@ -296,108 +268,92 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
     return Scaffold(
       appBar: CustomAppBar(title: 'Transfer Receipt Books', showBackButton: true),
       drawer: const AppSidebar(),
-      body: Builder(
-        builder: (BuildContext scaffoldContext) {
-          return MultiProvider(
-            providers: [
-              ChangeNotifierProvider.value(value: Provider.of<ReceiptBookProvider>(context)),
-              ChangeNotifierProvider.value(value: Provider.of<AuthProvider>(context)),
-              ChangeNotifierProvider.value(value: Provider.of<UserProvider>(context)),
-              ChangeNotifierProvider.value(value: Provider.of<AgentProvider>(context)),
-              ChangeNotifierProvider.value(value: Provider.of<ReceiptStubProvider>(context)),
-            ],
-            builder: (context, child) {
-              final receiptBookProvider = Provider.of<ReceiptBookProvider>(context);
-              final userProvider = Provider.of<UserProvider>(context);
-              final agentProvider = Provider.of<AgentProvider>(context);
-              final isLoading = receiptBookProvider.isLoading || userProvider.isLoading || agentProvider.isLoading;
-              if (isLoading) return const Center(child: CustomProgressIndicator());
+      body: MultiProvider(
+        providers: [
+          ChangeNotifierProvider.value(value: Provider.of<ReceiptBookProvider>(context)),
+          ChangeNotifierProvider.value(value: Provider.of<AuthProvider>(context)),
+          ChangeNotifierProvider.value(value: Provider.of<AgentProvider>(context)),
+          ChangeNotifierProvider.value(value: Provider.of<ReceiptStubProvider>(context)),
+        ],
+        builder: (context, child) {
+          final receiptBookProvider = Provider.of<ReceiptBookProvider>(context);
+          final agentProvider = Provider.of<AgentProvider>(context);
+          final isLoading = receiptBookProvider.isLoading || agentProvider.isLoading;
+          if (isLoading) return const Center(child: CustomProgressIndicator());
 
-              return RefreshIndicator(
-                onRefresh: _onRefresh,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (!_transferInitiated) ...[
-                          RecipientTypeSelector(
-                            recipientType: _recipientType,
-                            onChanged: (value) async {
-                              setState(() {
-                                _recipientType = value;
-                                _recipientID = null;
-                                _selectedLocation = null;
-                                _selectedBookIDs.clear();
-                                _scannedQRCodes.clear();
-                                _phoneController.clear();
-                                _error = null;
-                                _isScannerActive = false;
-                              });
-                              if (value != null && value != "Agent" && value != "Stub Collection") {
-                                await _fetchUsersForRole(value);
-                              }
-                            },
-                          ),
-                          const CustomSpacer(height: 16),
-                          if (_recipientType == "Agent")
-                            AgentSelector(
-                              recipientID: _recipientID,
-                              selectedLocation: _selectedLocation,
-                              phoneController: _phoneController,
-                              onRecipientIDChanged: (value) => setState(() => _recipientID = value),
-                              onLocationChanged: (value) async {
-                                setState(() => _selectedLocation = value);
-                                if (value != null) {
-                                  await Provider.of<AgentProvider>(context, listen: false)
-                                      .fetchAgentsByLocation(value);
-                                }
-                              },
-                            ),
-                          if (_recipientType != "Agent" && _recipientType != "Stub Collection")
-                            UserSelector(
-                              recipientType: _recipientType,
-                              recipientID: _recipientID,
-                              onRecipientIDChanged: (value) => setState(() => _recipientID = value),
-                            ),
-                          if (_recipientType != null && (_recipientType == "Stub Collection" || _recipientID != null)) ...[
-                            const CustomSpacer(height: 16),
-                            BookScanner(
-                              selectedBookIDs: _selectedBookIDs,
-                              error: _error,
-                              recipientType: _recipientType,
-                              onScanQR: _scanQRCode,
-                              onRemoveBook: (bookID) => setState(() {
-                                _selectedBookIDs.remove(bookID);
-                                _scannedQRCodes.removeWhere((qr) => qr.contains(bookID));
-                              }),
-                            ),
-                            const CustomSpacer(height: 16),
-                            CustomButton(
-                              label: _recipientType == "Stub Collection" ? 'Initiate Stub Collection' : 'Initiate Transfer',
-                              icon: Icons.send,
-                              onPressed: _initiateTransfer,
-                            ),
-                          ],
-                        ] else ...[
-                          OtpValidator(
-                            recipientType: _recipientType,
-                            recipientID: _recipientID,
-                            otpSecondsRemaining: _otpSecondsRemaining,
-                            error: _error,
-                            otpController: _otpController,
-                            onValidateTransfer: _validateTransfer,
-                            formatTime: _formatTime,
-                          ),
-                        ],
+          return RefreshIndicator(
+            onRefresh: _onRefresh,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (!_transferInitiated) ...[
+                      RecipientTypeSelector(
+                        recipientType: _recipientType,
+                        onChanged: (value) {
+                          setState(() {
+                            _recipientType = value;
+                            _recipientID = null;
+                            _selectedLocation = null;
+                            _selectedBookIDs.clear();
+                            _scannedQRCodes.clear();
+                            _phoneController.clear();
+                            _error = null;
+                            _isScannerActive = false;
+                          });
+                        },
+                      ),
+                      const CustomSpacer(height: 16),
+                      if (_recipientType == "Agent")
+                        AgentSelector(
+                          recipientID: _recipientID,
+                          selectedLocation: _selectedLocation,
+                          phoneController: _phoneController,
+                          onRecipientIDChanged: (value) => setState(() => _recipientID = value),
+                          onLocationChanged: (value) async {
+                            setState(() => _selectedLocation = value);
+                            if (value != null) {
+                              await Provider.of<AgentProvider>(context, listen: false).fetchAgentsByDelegation(value);
+                            }
+                          },
+                        ),
+                      if (_recipientType != null && (_recipientType == "Stub Collection" || _recipientID != null)) ...[
+                        const CustomSpacer(height: 16),
+                        BookScanner(
+                          selectedBookIDs: _selectedBookIDs,
+                          error: _error,
+                          recipientType: _recipientType,
+                          onScanQR: _scanQRCode,
+                          onRemoveBook: (bookID) => setState(() {
+                            _selectedBookIDs.remove(bookID);
+                            _scannedQRCodes.removeWhere((qr) => qr.contains(bookID));
+                          }),
+                        ),
+                        const CustomSpacer(height: 16),
+                        CustomButton(
+                          label: _recipientType == "Stub Collection" ? 'Initiate Stub Collection' : 'Initiate Transfer',
+                          icon: Icons.send,
+                          onPressed: _initiateTransfer,
+                        ),
                       ],
-                    ),
-                  ),
+                    ] else ...[
+                      OtpValidator(
+                        recipientType: _recipientType,
+                        recipientID: _recipientID,
+                        otpSecondsRemaining: _otpSecondsRemaining,
+                        error: _error,
+                        otpController: _otpController,
+                        onValidateTransfer: _validateTransfer,
+                        formatTime: _formatTime,
+                      ),
+                    ],
+                  ],
                 ),
-              );
-            },
+              ),
+            ),
           );
         },
       ),

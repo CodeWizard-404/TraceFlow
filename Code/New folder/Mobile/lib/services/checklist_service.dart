@@ -9,10 +9,10 @@ class ChecklistService {
   Future<List<Checklist>> getChecklistsByVisitId(String visitId) async {
     if (kDebugMode) print('ChecklistService: Fetching checklists for visit ID: $visitId');
     try {
-      final headers = await CookieManager.getHeaders();
+      final headers = CookieManager.getHeaders();
       if (kDebugMode) print('Headers prepared: $headers');
       final response = await http.get(
-        Uri.parse('$baseUrl/visits/$visitId/checklists'), // Updated endpoint
+        Uri.parse('$baseUrl/checklists/visit/$visitId'),
         headers: headers,
       );
 
@@ -41,7 +41,7 @@ class ChecklistService {
   Future<List<Checklist>> getAllChecklists() async {
     if (kDebugMode) print('ChecklistService: Fetching all checklists');
     try {
-      final headers = await CookieManager.getHeaders();
+      final headers = CookieManager.getHeaders();
       if (kDebugMode) print('Headers prepared: $headers');
       final response = await http.get(
         Uri.parse('$baseUrl/checklists'),

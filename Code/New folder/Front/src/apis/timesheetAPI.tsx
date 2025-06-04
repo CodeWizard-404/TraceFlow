@@ -247,8 +247,8 @@ export const validateTimesheet = async (
     if (!id || !data.status || !Array.isArray(data.visitIDs)) {
       throw new Error("Timesheet ID, status, and visitIDs array are required.");
     }
-    if (!["pending", "validated"].includes(data.status)) {
-      throw new Error("Status must be 'pending' or 'validated'.");
+    if (!["pending", "validated", "rejected", "visited"].includes(data.status)) {
+      throw new Error("Status must be 'pending', 'validated', or 'rejected'.");
     }
     const response = await api.put<ValidateTimesheetResponse>(`/timesheets/${id}/validate`, { visitIDs: data.visitIDs, status: data.status });
     return response.data;

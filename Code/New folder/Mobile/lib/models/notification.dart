@@ -1,57 +1,47 @@
-// Represents a notification in the TraceFlow system.
 class Notification {
   final String notificationID;
+  final String userID;
   final String type;
   final String message;
-  final String? title;
-  final DateTime createdAt;
-  final bool isRead;
-  final Map<String, dynamic>? metadata;
+  final String status;
+  final String channel;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
 
   Notification({
     required this.notificationID,
+    required this.userID,
     required this.type,
     required this.message,
-    this.title,
-    required this.createdAt,
-    this.isRead = false,
-    this.metadata,
+    required this.status,
+    required this.channel,
+    this.createdAt,
+    this.updatedAt,
   });
 
-  // Creates a Notification from JSON data.
   factory Notification.fromJson(Map<String, dynamic> json) {
     return Notification(
       notificationID: json['notificationID'] as String,
+      userID: json['userID'] as String,
       type: json['type'] as String,
       message: json['message'] as String,
-      title: json['title'] as String?,
+      status: json['status'] as String,
+      channel: json['channel'] as String,
       createdAt: DateTime.parse(json['createdAt'] as String),
-      isRead: json['isRead'] as bool? ?? false,
-      metadata: json['metadata'] as Map<String, dynamic>?,
+      updatedAt: DateTime.parse(json['updatedAt'] as String),
     );
   }
 
-  // Converts the Notification to JSON.
-  Map<String, dynamic> toJson() => {
-    'notificationID': notificationID,
-    'type': type,
-    'message': message,
-    'title': title,
-    'createdAt': createdAt.toIso8601String(),
-    'isRead': isRead,
-    'metadata': metadata,
-  };
-
-  // Creates a copy with updated fields.
-  Notification copyWith({bool? isRead}) {
-    return Notification(
-      notificationID: notificationID,
-      type: type,
-      message: message,
-      title: title,
-      createdAt: createdAt,
-      isRead: isRead ?? this.isRead,
-      metadata: metadata,
-    );
+  Map<String, dynamic> toJson() {
+    return {
+      'notificationID': notificationID,
+      'userID': userID,
+      'type': type,
+      'message': message,
+      'status': status,
+      'channel': channel,
+      'createdAt': createdAt?.toIso8601String() ,
+      'updatedAt': updatedAt?.toIso8601String(),
+    };
   }
 }

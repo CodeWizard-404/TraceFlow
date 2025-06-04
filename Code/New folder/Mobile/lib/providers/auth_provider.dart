@@ -50,18 +50,32 @@ class AuthProvider with ChangeNotifier {
 
   AuthProvider() {
     _restoreSession();
-    _startProactiveRefreshTimer();
   }
 
   void _startProactiveRefreshTimer() {
     _refreshTimer?.cancel();
-    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) async {
-      if (_refreshToken != null &&
-          _tokenExpiry != null &&
-          _tokenExpiry! - DateTime.now().millisecondsSinceEpoch < 30000) {
+    if (_tokenExpiry == null || _refreshToken == null) return;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final timeToExpiry = (_tokenExpiry! - now - 30000) / 1000; // 30s buffer
+    if (timeToExpiry <= 0) {
+      _refreshAccessToken();
+      return;
+    }
+    _refreshTimer = Timer(Duration(seconds: timeToExpiry.toInt()), () async {
+      if (_refreshToken != null) {
         await _refreshAccessToken();
+        _startProactiveRefreshTimer(); // Restart timer after refresh
+      } else {
+        if (kDebugMode) print('No refresh token available, stopping refresh timer');
+        _refreshTimer?.cancel();
       }
     });
+  }
+
+  Future<bool> _isTokenExpired() async {
+    if (_tokenExpiry == null) return true;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    return now >= _tokenExpiry! - 30000; // 30s buffer
   }
 
   Future<void> _restoreSession() async {
@@ -73,7 +87,11 @@ class AuthProvider with ChangeNotifier {
       if (CookieManager.cookies.containsKey('accessToken') &&
           CookieManager.cookies.containsKey('refreshToken')) {
         _refreshToken = CookieManager.cookies['refreshToken'];
+        if (await _isTokenExpired()) {
+          await _refreshAccessToken();
+        }
         await _checkAuthStatus();
+        _startProactiveRefreshTimer();
       } else {
         _errorMessage = 'Please log in to continue.';
       }
@@ -90,8 +108,7 @@ class AuthProvider with ChangeNotifier {
     try {
       final result = await AuthService.checkAuthStatus();
       _user = User.fromJson(result['user']);
-      _tokenExpiry =
-          DateTime.now().millisecondsSinceEpoch + (result['expiresIn'] as int);
+      _tokenExpiry = DateTime.now().millisecondsSinceEpoch + (result['expiresIn'] as int);
       await _fetchPermissions();
       if (!isSupervisor) {
         throw Exception('Access denied: Supervisor role required');
@@ -149,8 +166,6 @@ class AuthProvider with ChangeNotifier {
               .toList();
           if (kDebugMode) print('Permissions loaded: $_permissions');
           return true;
-        } else if (response.statusCode == 401 && attempt < maxRetries - 1) {
-          await _refreshAccessToken();
         } else {
           if (kDebugMode) print('Permissions fetch failed with status: ${response.statusCode}');
           return false;
@@ -187,6 +202,7 @@ class AuthProvider with ChangeNotifier {
         _startotpTimer();
       } else {
         await _handleSuccessfulLogin(result);
+        _startProactiveRefreshTimer();
         if (kDebugMode) print('After login, isSupervisor: $isSupervisor');
         if (!isSupervisor) {
           if (kDebugMode) print('Supervisor role not found, logging out');
@@ -221,6 +237,7 @@ class AuthProvider with ChangeNotifier {
         _startotpTimer();
       } else {
         await _handleSuccessfulLogin(result);
+        _startProactiveRefreshTimer();
         if (!isSupervisor) {
           await logout();
           throw Exception('Access denied: Supervisor role required');
@@ -252,6 +269,7 @@ class AuthProvider with ChangeNotifier {
         _startotpTimer();
       } else {
         await _handleSuccessfulLogin(result);
+        _startProactiveRefreshTimer();
         if (!isSupervisor) {
           await logout();
           throw Exception('Access denied: Supervisor role required');
@@ -290,6 +308,7 @@ class AuthProvider with ChangeNotifier {
       _refreshToken = result['refreshToken'] ?? '';
       await _handleSuccessfulLogin(result);
       _requires2FA = false;
+      _startProactiveRefreshTimer();
       if (!isSupervisor) {
         await logout();
         throw Exception('Access denied: Supervisor role required');
@@ -413,7 +432,6 @@ class AuthProvider with ChangeNotifier {
       _isLoading = false;
       if (kDebugMode) print('Logout completed');
       notifyListeners();
-      _startProactiveRefreshTimer();
     }
   }
 
@@ -502,7 +520,7 @@ class AuthProvider with ChangeNotifier {
       _tokenExpiry = (result['expiresIn'] != null
           ? DateTime.now().millisecondsSinceEpoch + result['expiresIn']
           : null) as int?;
-      if (kDebugMode) print('Token refreshed successfully');
+      if (kDebugMode) print('Token refreshed successfully, new expiry: $_tokenExpiry');
     } catch (e) {
       if (kDebugMode) print('Token refresh failed: $e');
       await logout();

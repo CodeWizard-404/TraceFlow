@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../models/visit.dart';
 import '../../providers/timesheet_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../screens/Visit/visit_details.dart';
 import '../commen/empty_state.dart';
 
@@ -48,23 +49,32 @@ class WeekViewCalendar extends StatelessWidget {
     }
   }
 
-  List<List<Visit>> _groupOverlappingVisits(List<Visit> visits, List<DateTime> weekDays) {
+  List<List<Visit>> _groupOverlappingVisits(
+    List<Visit> visits,
+    List<DateTime> weekDays,
+  ) {
     final groupedVisits = List.generate(weekDays.length, (_) => <Visit>[]);
     for (var visit in visits) {
       final visitDate = visit.date;
       final visitStartTime = _parseVisitStartTime(visitDate, visit.time)!;
       final dayIndex = weekDays.indexWhere((d) {
         final dayStart = DateTime(d.year, d.month, d.day, 6, 0);
-        final dayEnd = dayStart.add(Duration(hours: 24));
-        return visitStartTime.isAfter(dayStart.subtract(Duration(minutes: 1))) &&
+        final dayEnd = dayStart.add(const Duration(hours: 24));
+        return visitStartTime.isAfter(
+              dayStart.subtract(const Duration(minutes: 1)),
+            ) &&
             visitStartTime.isBefore(dayEnd);
       });
       if (dayIndex != -1) groupedVisits[dayIndex].add(visit);
     }
 
     for (var dayVisits in groupedVisits) {
-      dayVisits.sort((a, b) => _parseVisitStartTime(a.date, a.time)!
-          .compareTo(_parseVisitStartTime(b.date, b.time)!));
+      dayVisits.sort(
+        (a, b) => _parseVisitStartTime(
+          a.date,
+          a.time,
+        )!.compareTo(_parseVisitStartTime(b.date, b.time)!),
+      );
     }
     return groupedVisits;
   }
@@ -73,53 +83,107 @@ class WeekViewCalendar extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final weekDays = _getWeekDays(date);
-    const int startHour = 6; // 6 AM
-    const int endHour = 30; // 6 AM next day (6 + 24)
-    const double hourHeight = 50.0; // Height per hour
+    const int startHour = 6;
+    const int endHour = 30;
+    const double hourHeight = 50.0;
     const double timeColumnWidth = 50.0;
     const double sidePadding = 1.0;
-    final availableWidth = MediaQuery.of(context).size.width - timeColumnWidth - (sidePadding * 2);
+    final availableWidth =
+        MediaQuery.of(context).size.width - timeColumnWidth - (sidePadding * 2);
     final columnWidth = availableWidth / 7.25;
+    final authProvider = Provider.of<AuthProvider>(context);
+    final isSupervisor =
+        authProvider.user?.roles?.contains('SUPERVISOR') ?? false;
 
     return Consumer<TimesheetProvider>(
       builder: (context, provider, child) {
-        if (provider.timesheets.isEmpty) return const EmptyState(text: 'No timesheets available');
+        if (provider.timesheets.isEmpty)
+          return const EmptyState(text: 'No timesheets available');
 
-        final visits = provider.timesheets
-            .expand((t) => t.visits ?? [])
-            .where((visit) {
-          final visitDate = visit.date;
-          final startTime = _parseVisitStartTime(visitDate, visit.time);
-          if (startTime == null) return false;
+        final visits =
+            provider.timesheets
+                .expand((t) => t.visits ?? [])
+                .where((visit) {
+                  final visitDate = visit.date;
+                  final startTime = _parseVisitStartTime(visitDate, visit.time);
+                  if (startTime == null) return false;
 
-          // Define the time window for the current day (6 AM to 6 AM next day)
-          final dayStart = DateTime(visitDate.year, visitDate.month, visitDate.day, 6, 0);
-          final dayEnd = dayStart.add(Duration(hours: 24));
+                  final dayStart = DateTime(
+                    visitDate.year,
+                    visitDate.month,
+                    visitDate.day,
+                    6,
+                    0,
+                  );
+                  final dayEnd = dayStart.add(const Duration(hours: 24));
 
-          return startTime.isAfter(dayStart.subtract(Duration(minutes: 1))) &&
-              startTime.isBefore(dayEnd);
-        })
-            .toList()
-            .cast<Visit>();
+                  return startTime.isAfter(
+                        dayStart.subtract(const Duration(minutes: 1)),
+                      ) &&
+                      startTime.isBefore(dayEnd);
+                })
+                .toList()
+                .cast<Visit>();
 
         final groupedVisits = _groupOverlappingVisits(visits, weekDays);
 
         return LayoutBuilder(
           builder: (context, constraints) {
-            // Actual header height from error log
             const double headerHeight = 26.0;
-            // Fallback height to match screen (~731.3 after AppBar)
             const double fallbackHeight = 731.3;
-            // Use finite height: min of maxHeight or fallback
-            final availableHeight = constraints.maxHeight.isFinite
-                ? constraints.maxHeight
-                : fallbackHeight;
-            // Scrollable area takes remaining height
-            final scrollableHeight = (availableHeight - headerHeight).clamp(0.0, double.infinity);
+            final availableHeight =
+                constraints.maxHeight.isFinite
+                    ? constraints.maxHeight
+                    : fallbackHeight;
+            final scrollableHeight = (availableHeight - headerHeight).clamp(
+              0.0,
+              double.infinity,
+            );
 
             return Column(
               children: [
-                // Fixed Header
+                if (isSupervisor)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.calendar_today),
+                        onPressed: () async {
+                          final timesheet = provider.timesheets.firstWhere(
+                            (ts) => ts.weekNumber == _getWeekNumber(date),
+                            orElse: () => provider.timesheets.first,
+                          );
+                          await provider.syncTimesheetToCalendar(
+                            timesheet.timesheetID,
+                          );
+                        },
+                        tooltip: 'Sync to Calendar',
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.lightbulb),
+                        onPressed: () async {
+                          await provider.suggestTimesheet(
+                            supervisorID: authProvider.user!.userID,
+                            weekNumber: _getWeekNumber(date),
+                            year: date.year,
+                            coordinates: {'lat': 36.8065, 'lng': 10.1815},
+                          );
+                        },
+                        tooltip: 'Generate Timesheet Suggestions',
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.map),
+                        onPressed: () {
+                          Navigator.pushNamed(
+                            context,
+                            '/visits_map',
+                            arguments: {'visits': visits},
+                          );
+                        },
+                        tooltip: 'View Visits on Map',
+                      ),
+                    ],
+                  ),
                 Container(
                   padding: const EdgeInsets.symmetric(vertical: 4),
                   decoration: BoxDecoration(
@@ -132,73 +196,88 @@ class WeekViewCalendar extends StatelessWidget {
                         width: timeColumnWidth,
                         child: Text(
                           'Time',
-                          style: theme.textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold),
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
                           textAlign: TextAlign.center,
                         ),
                       ),
-                      ...weekDays.map((day) => Expanded(
-                        child: Text(
-                          DateFormat('EEE d').format(day),
-                          style: theme.textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold),
-                          textAlign: TextAlign.center,
+                      ...weekDays.map(
+                        (day) => Expanded(
+                          child: Text(
+                            DateFormat('EEE d').format(day),
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
                         ),
-                      )),
+                      ),
                     ],
                   ),
                 ),
-                // Scrollable Content
                 SizedBox(
                   height: scrollableHeight,
                   child: SingleChildScrollView(
                     child: SizedBox(
-                      height: (endHour - startHour) * hourHeight, // 24 hours * 50 = 1200
+                      height: (endHour - startHour) * hourHeight,
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          // Time Column
                           SizedBox(
                             width: timeColumnWidth,
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
-                              children: List.generate(endHour - startHour, (index) {
-                                final hour = (startHour + index) % 24; // Handle 24-hour wrap-around
+                              children: List.generate(endHour - startHour, (
+                                index,
+                              ) {
+                                final hour = (startHour + index) % 24;
                                 return SizedBox(
                                   height: hourHeight,
                                   child: Center(
                                     child: Text(
                                       '${hour.toString().padLeft(2, '0')}:00',
-                                      style: theme.textTheme.labelSmall?.copyWith(
-                                        color: theme.colorScheme.onSurface.withOpacity(0.6),
-                                      ),
+                                      style: theme.textTheme.labelSmall
+                                          ?.copyWith(
+                                            color: theme.colorScheme.onSurface
+                                                .withOpacity(0.6),
+                                          ),
                                     ),
                                   ),
                                 );
                               }),
                             ),
                           ),
-                          // Calendar Grid
                           Expanded(
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: sidePadding),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: sidePadding,
+                              ),
                               child: Container(
                                 decoration: BoxDecoration(
-                                  border: Border.all(color: theme.dividerColor.withOpacity(0.2)),
+                                  border: Border.all(
+                                    color: theme.dividerColor.withOpacity(0.2),
+                                  ),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Stack(
                                   children: [
                                     Row(
-                                      children: weekDays.map((day) {
-                                        return Expanded(
-                                          child: Container(
-                                            decoration: BoxDecoration(
-                                              border: Border(
-                                                right: BorderSide(color: theme.dividerColor.withOpacity(0.2)),
+                                      children:
+                                          weekDays.map((day) {
+                                            return Expanded(
+                                              child: Container(
+                                                decoration: BoxDecoration(
+                                                  border: Border(
+                                                    right: BorderSide(
+                                                      color: theme.dividerColor
+                                                          .withOpacity(0.2),
+                                                    ),
+                                                  ),
+                                                ),
                                               ),
-                                            ),
-                                          ),
-                                        );
-                                      }).toList(),
+                                            );
+                                          }).toList(),
                                     ),
                                     ...weekDays.asMap().entries.expand((entry) {
                                       final dayIndex = entry.key;
@@ -206,36 +285,71 @@ class WeekViewCalendar extends StatelessWidget {
                                       final overlaps = <List<Visit>>[];
                                       var currentOverlap = <Visit>[];
 
-                                      for (var i = 0; i < dayVisits.length; i++) {
+                                      for (
+                                        var i = 0;
+                                        i < dayVisits.length;
+                                        i++
+                                      ) {
                                         final currentVisit = dayVisits[i];
-                                        final currentStart = _parseVisitStartTime(currentVisit.date, currentVisit.time)!;
+                                        final currentStart =
+                                            _parseVisitStartTime(
+                                              currentVisit.date,
+                                              currentVisit.time,
+                                            )!;
                                         if (currentOverlap.isEmpty) {
                                           currentOverlap.add(currentVisit);
                                         } else {
                                           final lastVisit = currentOverlap.last;
-                                          final lastStart = _parseVisitStartTime(lastVisit.date, lastVisit.time)!;
-                                          if (currentStart.difference(lastStart).inMinutes.abs() < 30) {
+                                          final lastStart =
+                                              _parseVisitStartTime(
+                                                lastVisit.date,
+                                                lastVisit.time,
+                                              )!;
+                                          if (currentStart
+                                                  .difference(lastStart)
+                                                  .inMinutes
+                                                  .abs() <
+                                              30) {
                                             currentOverlap.add(currentVisit);
                                           } else {
                                             overlaps.add(currentOverlap);
                                             currentOverlap = [currentVisit];
                                           }
                                         }
-                                        if (i == dayVisits.length - 1) overlaps.add(currentOverlap);
+                                        if (i == dayVisits.length - 1)
+                                          overlaps.add(currentOverlap);
                                       }
 
                                       return overlaps.expand((overlapGroup) {
-                                        return overlapGroup.asMap().entries.map((entry) {
+                                        return overlapGroup.asMap().entries.map((
+                                          entry,
+                                        ) {
                                           final visit = entry.value;
                                           final overlapIndex = entry.key;
-                                          final overlapCount = overlapGroup.length;
-                                          final startTime = _parseVisitStartTime(visit.date, visit.time)!;
-                                          // Calculate minutes since 6 AM
-                                          final startMinutes = ((startTime.hour + (startTime.day > visit.date.day ? 24 : 0)) - startHour) * 60 + startTime.minute;
-                                          final top = startMinutes * (hourHeight / 60);
-                                          final visitWidth = columnWidth / overlapCount;
+                                          final overlapCount =
+                                              overlapGroup.length;
+                                          final startTime =
+                                              _parseVisitStartTime(
+                                                visit.date,
+                                                visit.time,
+                                              )!;
+                                          final startMinutes =
+                                              ((startTime.hour +
+                                                          (startTime.day >
+                                                                  visit.date.day
+                                                              ? 24
+                                                              : 0)) -
+                                                      startHour) *
+                                                  60 +
+                                              startTime.minute;
+                                          final top =
+                                              startMinutes * (hourHeight / 60);
+                                          final visitWidth =
+                                              columnWidth / overlapCount;
 
-                                          final leftPosition = dayIndex * columnWidth + overlapIndex * visitWidth;
+                                          final leftPosition =
+                                              dayIndex * columnWidth +
+                                              overlapIndex * visitWidth;
 
                                           return Positioned(
                                             top: top,
@@ -247,41 +361,73 @@ class WeekViewCalendar extends StatelessWidget {
                                                 Navigator.push(
                                                   context,
                                                   MaterialPageRoute(
-                                                    builder: (_) => VisitDetailsScreen(visit: visit),
+                                                    builder:
+                                                        (_) =>
+                                                            VisitDetailsScreen(
+                                                              visit: visit,
+                                                            ),
                                                   ),
                                                 );
                                               },
                                               child: Container(
                                                 margin: const EdgeInsets.all(5),
                                                 decoration: BoxDecoration(
-                                                  color: Colors.grey.withOpacity(0.2),
+                                                  color: Colors.grey
+                                                      .withOpacity(0.2),
                                                   border: Border.all(
-                                                    color: _getStatusColor(context, visit.status),
+                                                    color: _getStatusColor(
+                                                      context,
+                                                      visit.status,
+                                                    ),
                                                     width: 1,
                                                   ),
-                                                  borderRadius: BorderRadius.circular(6),
+                                                  borderRadius:
+                                                      BorderRadius.circular(6),
                                                 ),
                                                 child: Center(
                                                   child: FittedBox(
                                                     child: Column(
-                                                      mainAxisSize: MainAxisSize.min,
+                                                      mainAxisSize:
+                                                          MainAxisSize.min,
                                                       children: [
                                                         Text(
-                                                          visit.time.split(':').take(2).join(':'),
-                                                          style: theme.textTheme.labelSmall?.copyWith(
-                                                            color: theme.colorScheme.onSurface,
-                                                            fontSize: 10,
-                                                          ),
-                                                          textAlign: TextAlign.center,
+                                                          visit.time
+                                                              .split(':')
+                                                              .take(2)
+                                                              .join(':'),
+                                                          style: theme
+                                                              .textTheme
+                                                              .labelSmall
+                                                              ?.copyWith(
+                                                                color:
+                                                                    theme
+                                                                        .colorScheme
+                                                                        .onSurface,
+                                                                fontSize: 10,
+                                                              ),
+                                                          textAlign:
+                                                              TextAlign.center,
                                                         ),
                                                         Text(
-                                                          visit.location ?? 'Visit',
-                                                          style: theme.textTheme.labelSmall?.copyWith(
-                                                            color: theme.colorScheme.onSurface.withOpacity(0.8),
-                                                            fontSize: 9,
-                                                          ),
-                                                          textAlign: TextAlign.center,
-                                                          overflow: TextOverflow.ellipsis,
+                                                          visit.location ??
+                                                              'Visit',
+                                                          style: theme
+                                                              .textTheme
+                                                              .labelSmall
+                                                              ?.copyWith(
+                                                                color: theme
+                                                                    .colorScheme
+                                                                    .onSurface
+                                                                    .withOpacity(
+                                                                      0.8,
+                                                                    ),
+                                                                fontSize: 9,
+                                                              ),
+                                                          textAlign:
+                                                              TextAlign.center,
+                                                          overflow:
+                                                              TextOverflow
+                                                                  .ellipsis,
                                                         ),
                                                       ],
                                                     ),
@@ -309,5 +455,14 @@ class WeekViewCalendar extends StatelessWidget {
         );
       },
     );
+  }
+
+  int _getWeekNumber(DateTime date) {
+    final startOfYear = DateTime(date.year, 1, 1);
+    final firstMonday =
+        startOfYear.weekday <= 4
+            ? startOfYear.subtract(Duration(days: startOfYear.weekday - 1))
+            : startOfYear.add(Duration(days: 8 - startOfYear.weekday));
+    return (date.difference(firstMonday).inDays ~/ 7) + 1;
   }
 }

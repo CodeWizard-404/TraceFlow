@@ -53,7 +53,7 @@ export const getLogs = async (params: {
     endDate?: string;
     search?: string;
     sortBy?: string;
-    sortOrder?: 'ASC' | 'DESC';
+    sortOrder?: 'asc' | 'desc';
 }): Promise<GetLogsResponse> => {
     try {
         const response = await api.get<GetLogsResponse>('/logs', { params });

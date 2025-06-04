@@ -9,16 +9,12 @@ const ERROR_MESSAGES = {
     MISSING_FIELDS: 'Please fill in all required fields.',
     SERVER_ERROR: 'Something broke. Try again later.',
     INVALID_SUPERVISOR: 'Invalid supervisor ID.',
-    INVALID_WEEK_START: 'Invalid week start date.',
     INVALID_DATA_TYPE: 'Invalid data type provided.',
-    INVALID_FILTERS: 'Invalid report filters provided.',
-    INVALID_FORMAT: 'Invalid report format. Use "pdf" or "excel".',
     INVALID_AI_CONFIG: 'Invalid AI configuration parameters.',
     AI_CONFIG_NOT_FOUND: 'AI configuration not found.',
     UNAUTHORIZED: 'Unauthorized to perform this action.',
     INVALID_MODEL_NAME: 'Invalid AI model name.',
-    INVALID_THRESHOLD: 'Anomaly threshold must be between 0 and 1.',
-    INVALID_MAX_SUGGESTIONS: 'Timesheet max suggestions must be a positive integer.'
+    INVALID_THRESHOLD: 'Anomaly threshold must be between 0 and 1.'
 };
 
 class AIController {
@@ -35,241 +31,69 @@ class AIController {
     }
 
     /**
-     * Generate timesheet suggestions using AI.
-     * @param {Object} req - Express request object.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with suggestions or error.
-     */
-    static async suggestTimesheet(req, res) {
-        const actorID = req.user?.userID || 'unknown';
-        try {
-            const errors = validationResult(req);
-            if (!errors.isEmpty()) {
-                throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
-            }
-
-            const { supervisorId, weekStart, criteria } = req.body;
-            const cacheKey = `ai_timesheet_${supervisorId}_${weekStart}`;
-            const cachedResult = cache.get(cacheKey);
-            if (cachedResult) {
-                logger.info('Returning cached timesheet suggestions', {
-                    traceId: req.traceId,
-                    route: 'ai/timesheet',
-                    service: 'api',
-                    status: 200,
-                    method: req.method,
-                    url: req.originalUrl,
-                    ip: req.ip,
-                    userId: actorID,
-                    metadata: { supervisorId, weekStart }
-                });
-                return res.status(200).json(cachedResult);
-            }
-
-            // Parse weekStart to extract weekNumber and year
-            const weekStartDate = new Date(weekStart);
-            if (isNaN(weekStartDate)) {
-                throw Object.assign(new Error(ERROR_MESSAGES.INVALID_WEEK_START), { status: 400 });
-            }
-            const year = weekStartDate.getUTCFullYear();
-            const jan4 = new Date(Date.UTC(year, 0, 4));
-            const dayOfWeek = jan4.getUTCDay() || 7;
-            const firstMonday = new Date(Date.UTC(year, 0, 4 - (dayOfWeek - 1)));
-            const weekNumber = Math.floor((weekStartDate - firstMonday) / (7 * 24 * 60 * 60 * 1000)) + 1;
-
-            const suggestions = await AIService.generateTimesheetSuggestions(supervisorId, weekNumber, year, criteria);
-            const result = { suggestions };
-            cache.set(cacheKey, result, 60);
-
-            logger.info('Successfully generated timesheet suggestions', {
-                traceId: req.traceId,
-                route: 'ai/timesheet',
-                service: 'api',
-                status: 200,
-                method: req.method,
-                url: req.originalUrl,
-                ip: req.ip,
-                userId: actorID,
-                metadata: { supervisorId, weekStart, suggestionCount: suggestions.length }
-            });
-
-            return res.status(200).json(result);
-        } catch (error) {
-            const response = AIController.formatError(error);
-            const status = error.message === ERROR_MESSAGES.MISSING_FIELDS ? 400 : error.status || 500;
-
-            logger.error('Failed to generate timesheet suggestions', {
-                traceId: req.traceId,
-                route: 'ai/timesheet',
-                service: 'api',
-                status,
-                method: req.method,
-                url: req.originalUrl,
-                ip: req.ip,
-                userId: actorID,
-                metadata: { error: response.error }
-            });
-
-            return res.status(status).json(response);
-        }
-    }
-
-    /**
-     * Detect anomalies in provided data using AI.
-     * @param {Object} req - Express request object.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with anomalies or error.
-     */
-    static async detectAnomalies(req, res) {
-        const actorID = req.user?.userID || 'unknown';
-        try {
-            const errors = validationResult(req);
-            if (!errors.isEmpty()) {
-                throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
-            }
-
-            const { dataType, data } = req.body;
-            const cacheKey = `ai_anomaly_${dataType}_${JSON.stringify(data).slice(0, 100)}`;
-            const cachedResult = cache.get(cacheKey);
-            if (cachedResult) {
-                logger.info('Returning cached anomaly detection results', {
-                    traceId: req.traceId,
-                    route: 'ai/anomaly',
-                    service: 'api',
-                    status: 200,
-                    method: req.method,
-                    url: req.originalUrl,
-                    ip: req.ip,
-                    userId: actorID,
-                    metadata: { dataType }
-                });
-                return res.status(200).json(cachedResult);
-            }
-
-            const anomalies = await AIService.detectAnomalies(dataType, data);
-            const result = { anomalies };
-            cache.set(cacheKey, result, 60);
-
-            logger.info('Successfully detected anomalies', {
-                traceId: req.traceId,
-                route: 'ai/anomaly',
-                service: 'api',
-                status: 200,
-                method: req.method,
-                url: req.originalUrl,
-                ip: req.ip,
-                userId: actorID,
-                metadata: { dataType, anomalyCount: anomalies.length }
-            });
-
-            return res.status(200).json(result);
-        } catch (error) {
-            const response = AIController.formatError(error);
-            const status = error.message === ERROR_MESSAGES.MISSING_FIELDS ? 400 : error.status || 500;
-
-            logger.error('Failed to detect anomalies', {
-                traceId: req.traceId,
-                route: 'ai/anomaly',
-                service: 'api',
-                status,
-                method: req.method,
-                url: req.originalUrl,
-                ip: req.ip,
-                userId: actorID,
-                metadata: { error: response.error }
-            });
-
-            return res.status(status).json(response);
-        }
-    }
-
-    /**
-     * Generate a report using AI.
-     * @param {Object} req - Express request object.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with report or error.
-     */
-    static async generateReport(req, res) {
-        const actorID = req.user?.userID || 'unknown';
-        try {
-            const errors = validationResult(req);
-            if (!errors.isEmpty()) {
-                throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
-            }
-
-            const { filters, format } = req.body;
-            const cacheKey = `ai_report_${JSON.stringify(filters)}_${format}`;
-            const cachedResult = cache.get(cacheKey);
-            if (cachedResult) {
-                logger.info('Returning cached report', {
-                    traceId: req.traceId,
-                    route: 'ai/report',
-                    service: 'api',
-                    status: 200,
-                    method: req.method,
-                    url: req.originalUrl,
-                    ip: req.ip,
-                    userId: actorID,
-                    metadata: { format }
-                });
-                return res.status(200).json(cachedResult);
-            }
-
-            const report = await AIService.generateReport(filters, format);
-            const result = { report };
-            cache.set(cacheKey, result, 60);
-
-            logger.info('Successfully generated report', {
-                traceId: req.traceId,
-                route: 'ai/report',
-                service: 'api',
-                status: 200,
-                method: req.method,
-                url: req.originalUrl,
-                ip: req.ip,
-                userId: actorID,
-                metadata: { format }
-            });
-
-            return res.status(200).json(result);
-        } catch (error) {
-            const response = AIController.formatError(error);
-            const status = error.message === ERROR_MESSAGES.MISSING_FIELDS ? 400 : error.status || 500;
-
-            logger.error('Failed to generate report', {
-                traceId: req.traceId,
-                route: 'ai/report',
-                service: 'api',
-                status,
-                method: req.method,
-                url: req.originalUrl,
-                ip: req.ip,
-                userId: actorID,
-                metadata: { error: response.error }
-            });
-
-            return res.status(status).json(response);
-        }
-    }
-
-    /**
      * Create a new AI configuration.
      * @param {Object} req - Express request object.
      * @param {Object} res - Express response object.
      * @returns {Promise<void>} JSON response with created configuration or error.
      */
     static async createAIConfig(req, res) {
+        console.log('Creating AI configuration', req.body);
         const actorID = req.user?.userID || 'unknown';
         try {
             const errors = validationResult(req);
             if (!errors.isEmpty()) {
-                throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
+                throw Object.assign(new Error(ERROR_MESSAGES.MISSING_FIELDS), { status: 400, details: errors.array() });
             }
 
-            const { modelName, anomalyThreshold, timesheetMaxSuggestions, supervisorId } = req.body;
-            const configData = { modelName, anomalyThreshold, timesheetMaxSuggestions, supervisorId };
+            const { modelName, anomalyThreshold, supervisorId, maxOptimizeRoute, timesheetMaxSuggestions } = req.body;
+
+            // Validate modelName
+            if (typeof modelName !== 'string' || !modelName.trim()) {
+                throw Object.assign(new Error(ERROR_MESSAGES.INVALID_MODEL_NAME), { status: 400 });
+            }
+
+            // Handle anomalyThreshold: default to environment variable if not provided
+            let finalAnomalyThreshold;
+            const defaultThreshold = parseFloat(process.env.OLLAMA_ANOMALY_THRESHOLD);
+
+            // Check if default threshold is valid
+            if (isNaN(defaultThreshold) || defaultThreshold < 0 || defaultThreshold > 1) {
+                throw Object.assign(new Error('Invalid OLLAMA_ANOMALY_THRESHOLD in environment configuration'), { status: 500 });
+            }
+
+            // If anomalyThreshold is not provided, use the default
+            finalAnomalyThreshold = (anomalyThreshold === undefined || anomalyThreshold === null)
+                ? defaultThreshold
+                : anomalyThreshold;
+
+            // Validate anomalyThreshold if provided in the request
+            if (anomalyThreshold !== undefined && anomalyThreshold !== null) {
+                if (typeof anomalyThreshold !== 'number' || isNaN(anomalyThreshold) || anomalyThreshold < 0 || anomalyThreshold > 1) {
+                    throw Object.assign(new Error(ERROR_MESSAGES.INVALID_THRESHOLD), { status: 400 });
+                }
+            }
+
+            // Validate maxOptimizeRoute
+            if (maxOptimizeRoute !== undefined && (!Number.isInteger(maxOptimizeRoute) || maxOptimizeRoute <= 0)) {
+                throw Object.assign(new Error('Invalid maxOptimizeRoute value'), { status: 400 });
+            }
+
+            // Validate timesheetMaxSuggestions
+            if (timesheetMaxSuggestions !== undefined && (!Number.isInteger(timesheetMaxSuggestions) || timesheetMaxSuggestions <= 0)) {
+                throw Object.assign(new Error('Invalid timesheetMaxSuggestions value'), { status: 400 });
+            }
+
+            // Prepare config data
+            const configData = {
+                modelName,
+                anomalyThreshold: finalAnomalyThreshold,
+                supervisorId,
+                maxOptimizeRoute,
+                timesheetMaxSuggestions
+            };
             const cacheKey = `ai_config_${supervisorId || 'global'}`;
 
+            // Create and cache the configuration
             const config = await AIService.createAIConfig(configData, actorID);
             cache.set(cacheKey, config, 60);
 
@@ -288,7 +112,7 @@ class AIController {
             return res.status(201).json(config);
         } catch (error) {
             const response = AIController.formatError(error);
-            const status = error.message === ERROR_MESSAGES.MISSING_FIELDS ? 400 : error.status || 500;
+            const status = error.status || 500;
 
             logger.error('Failed to create AI configuration', {
                 traceId: req.traceId,
@@ -299,7 +123,7 @@ class AIController {
                 url: req.originalUrl,
                 ip: req.ip,
                 userId: actorID,
-                metadata: { error: response.error }
+                metadata: { error: response.error, details: response.details }
             });
 
             return res.status(status).json(response);
@@ -317,12 +141,47 @@ class AIController {
         try {
             const errors = validationResult(req);
             if (!errors.isEmpty()) {
-                throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
+                throw Object.assign(new Error(ERROR_MESSAGES.MISSING_FIELDS), { status: 400, details: errors.array() });
             }
 
             const { configID } = req.params;
-            const { modelName, anomalyThreshold, timesheetMaxSuggestions } = req.body;
-            const updateData = { modelName, anomalyThreshold, timesheetMaxSuggestions };
+            const { modelName, anomalyThreshold, maxOptimizeRoute, timesheetMaxSuggestions } = req.body;
+
+            // Validate modelName
+            if (modelName !== undefined && (typeof modelName !== 'string' || !modelName.trim())) {
+                throw Object.assign(new Error(ERROR_MESSAGES.INVALID_MODEL_NAME), { status: 400 });
+            }
+
+            // Handle anomalyThreshold: default to environment variable if not provided
+            let finalAnomalyThreshold = anomalyThreshold;
+            if (anomalyThreshold === undefined || anomalyThreshold === null) {
+                const defaultThreshold = parseFloat(process.env.OLLAMA_ANOMALY_THRESHOLD);
+                if (isNaN(defaultThreshold) || defaultThreshold < 0 || defaultThreshold > 1) {
+                    throw Object.assign(new Error('Invalid OLLAMA_ANOMALY_THRESHOLD in environment configuration'), { status: 500 });
+                }
+                finalAnomalyThreshold = defaultThreshold;
+            } else {
+                if (typeof anomalyThreshold !== 'number' || isNaN(anomalyThreshold) || anomalyThreshold < 0 || anomalyThreshold > 1) {
+                    throw Object.assign(new Error(ERROR_MESSAGES.INVALID_THRESHOLD), { status: 400 });
+                }
+            }
+
+            // Validate maxOptimizeRoute
+            if (maxOptimizeRoute !== undefined && (!Number.isInteger(maxOptimizeRoute) || maxOptimizeRoute <= 0)) {
+                throw Object.assign(new Error('Invalid maxOptimizeRoute value'), { status: 400 });
+            }
+
+            // Validate timesheetMaxSuggestions
+            if (timesheetMaxSuggestions !== undefined && (!Number.isInteger(timesheetMaxSuggestions) || timesheetMaxSuggestions <= 0)) {
+                throw Object.assign(new Error('Invalid timesheetMaxSuggestions value'), { status: 400 });
+            }
+
+            const updateData = {
+                ...(modelName !== undefined && { modelName }),
+                anomalyThreshold: finalAnomalyThreshold,
+                ...(maxOptimizeRoute !== undefined && { maxOptimizeRoute }),
+                ...(timesheetMaxSuggestions !== undefined && { timesheetMaxSuggestions })
+            };
             const cacheKey = `ai_config_${configID}`;
 
             const config = await AIService.updateAIConfig(configID, updateData, actorID);
@@ -343,7 +202,7 @@ class AIController {
             return res.status(200).json(config);
         } catch (error) {
             const response = AIController.formatError(error);
-            const status = error.message === ERROR_MESSAGES.MISSING_FIELDS ? 400 : error.status || 500;
+            const status = error.status || 500;
 
             logger.error('Failed to update AI configuration', {
                 traceId: req.traceId,
@@ -354,7 +213,7 @@ class AIController {
                 url: req.originalUrl,
                 ip: req.ip,
                 userId: actorID,
-                metadata: { error: response.error }
+                metadata: { error: response.error, details: response.details }
             });
 
             return res.status(status).json(response);
@@ -372,7 +231,7 @@ class AIController {
         try {
             const errors = validationResult(req);
             if (!errors.isEmpty()) {
-                throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
+                throw Object.assign(new Error(ERROR_MESSAGES.MISSING_FIELDS), { status: 400, details: errors.array() });
             }
 
             const { configID, supervisorId } = req.query;
@@ -412,7 +271,7 @@ class AIController {
             return res.status(200).json(config);
         } catch (error) {
             const response = AIController.formatError(error);
-            const status = error.message === ERROR_MESSAGES.MISSING_FIELDS ? 400 : error.status || 500;
+            const status = error.status || 500;
 
             logger.error('Failed to retrieve AI configuration', {
                 traceId: req.traceId,
@@ -423,7 +282,7 @@ class AIController {
                 url: req.originalUrl,
                 ip: req.ip,
                 userId: actorID,
-                metadata: { error: response.error }
+                metadata: { error: response.error, details: response.details }
             });
 
             return res.status(status).json(response);
@@ -441,7 +300,7 @@ class AIController {
         try {
             const errors = validationResult(req);
             if (!errors.isEmpty()) {
-                throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
+                throw Object.assign(new Error(ERROR_MESSAGES.MISSING_FIELDS), { status: 400, details: errors.array() });
             }
 
             const { configID } = req.params;
@@ -463,7 +322,7 @@ class AIController {
             return res.status(200).json(result);
         } catch (error) {
             const response = AIController.formatError(error);
-            const status = error.message === ERROR_MESSAGES.MISSING_FIELDS ? 400 : error.status || 500;
+            const status = error.status || 500;
 
             logger.error('Failed to delete AI configuration', {
                 traceId: req.traceId,
@@ -474,7 +333,7 @@ class AIController {
                 url: req.originalUrl,
                 ip: req.ip,
                 userId: actorID,
-                metadata: { error: response.error }
+                metadata: { error: response.error, details: response.details }
             });
 
             return res.status(status).json(response);
@@ -492,7 +351,7 @@ class AIController {
         try {
             const errors = validationResult(req);
             if (!errors.isEmpty()) {
-                throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
+                throw Object.assign(new Error(ERROR_MESSAGES.MISSING_FIELDS), { status: 400, details: errors.array() });
             }
 
             const { supervisorId } = req.query;
@@ -532,7 +391,7 @@ class AIController {
             return res.status(200).json(configs);
         } catch (error) {
             const response = AIController.formatError(error);
-            const status = error.message === ERROR_MESSAGES.MISSING_FIELDS ? 400 : error.status || 500;
+            const status = error.status || 500;
 
             logger.error('Failed to retrieve AI configurations list', {
                 traceId: req.traceId,
@@ -543,7 +402,7 @@ class AIController {
                 url: req.originalUrl,
                 ip: req.ip,
                 userId: actorID,
-                metadata: { error: response.error }
+                metadata: { error: response.error, details: response.details }
             });
 
             return res.status(status).json(response);
@@ -561,7 +420,7 @@ class AIController {
         try {
             const errors = validationResult(req);
             if (!errors.isEmpty()) {
-                throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
+                throw Object.assign(new Error(ERROR_MESSAGES.MISSING_FIELDS), { status: 400, details: errors.array() });
             }
 
             const { configID } = req.params;
@@ -582,7 +441,7 @@ class AIController {
             return res.status(200).json(result);
         } catch (error) {
             const response = AIController.formatError(error);
-            const status = error.message === ERROR_MESSAGES.MISSING_FIELDS ? 400 : error.status || 500;
+            const status = error.status || 500;
 
             logger.error('Failed to test AI configuration', {
                 traceId: req.traceId,
@@ -593,7 +452,7 @@ class AIController {
                 url: req.originalUrl,
                 ip: req.ip,
                 userId: actorID,
-                metadata: { error: response.error }
+                metadata: { error: response.error, details: response.details }
             });
 
             return res.status(status).json(response);

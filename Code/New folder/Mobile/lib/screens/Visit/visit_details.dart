@@ -1,115 +1,192 @@
-import 'package:TraceFlow/utils/constants.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../models/visit.dart';
-import '../../providers/auth_provider.dart';
-import '../../providers/agent_provider.dart';
 import '../../providers/visit_provider.dart';
-import '../../providers/checklist_provider.dart';
-import '../../providers/reason_provider.dart';
-import '../../widgets/appbar/app_bar.dart';
+import '../../providers/timesheet_provider.dart';
+import '../../widgets/Visit/otp_validation_screen.dart';
 import '../../widgets/appbar/sidebar.dart';
 import '../../widgets/commen/button.dart';
-import '../../widgets/commen/empty_state.dart';
 import '../../widgets/commen/icon_button.dart';
-import '../../widgets/commen/info_row.dart';
-import '../../widgets/commen/progress_indicator.dart';
+import '../../widgets/commen/snack_bar.dar.dart';
 import '../../widgets/commen/spacer.dart';
+import '../../utils/constants.dart';
 import '../../widgets/qr_scanner/qr_scanner_widget.dart';
-import '../Error.dart';
-import 'log_visit_screen.dart';
 import 'edit_visit.dart';
+import 'log_visit_screen.dart';
 
 class VisitDetailsScreen extends StatefulWidget {
   final Visit visit;
 
-  const VisitDetailsScreen({required this.visit, super.key});
+  const VisitDetailsScreen({super.key, required this.visit});
 
   @override
-  VisitDetailsScreenState createState() => VisitDetailsScreenState();
+  _VisitDetailsScreenState createState() => _VisitDetailsScreenState();
 }
 
-class VisitDetailsScreenState extends State<VisitDetailsScreen> {
-  Future<void> _fetchDataFuture = Future.value();
-
+class _VisitDetailsScreenState extends State<VisitDetailsScreen> {
   @override
   void initState() {
     super.initState();
-    if (kDebugMode) print('VisitDetailsScreen initState for visit: ${widget.visit.visitID}');
-    _fetchDataFuture = _fetchVisitDetails();
+    // No need to fetch visit data as it's passed via widget.visit
   }
 
-  Future<void> _fetchVisitDetails() async {
-    if (kDebugMode) print('Fetching visit details for visit: ${widget.visit.visitID}');
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+  void _navigateToEdit(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => EditVisitScreen(visit: widget.visit)),
+    );
+  }
+
+  Future<void> _navigateToLog(BuildContext context) async {
     final visitProvider = Provider.of<VisitProvider>(context, listen: false);
-    final checklistProvider = Provider.of<ChecklistProvider>(context, listen: false);
-    final reasonProvider = Provider.of<ReasonProvider>(context, listen: false);
-    final agentProvider = Provider.of<AgentProvider>(context, listen: false);
+    final timesheetProvider = Provider.of<TimesheetProvider>(context, listen: false);
+    final visit = widget.visit;
+
+    if (visit.agentID == null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => LogVisitScreen(
+            visitID: visit.visitID,
+            weekNumber: timesheetProvider.currentTimesheet?.weekNumber ?? 1,
+            year: visit.date.year,
+          ),
+        ),
+      );
+      return;
+    }
+
+    final qrResult = await Navigator.push<String?>(
+      context,
+      MaterialPageRoute(builder: (_) => const QRScannerWidget()),
+    );
+
+    if (qrResult == null || !mounted) {
+      CustomSnackBar.show(
+        context: context,
+        message: 'QR scan cancelled or failed',
+        backgroundColor: Theme.of(context).colorScheme.error.withOpacity(0.9),
+      );
+      return;
+    }
 
     try {
-      // Fetch visit first to get embedded checklists and reasons
-      await visitProvider.fetchVisitById(widget.visit.visitID!);
-      final visit = visitProvider.currentVisit;
-
-      // Check if checklists and reasons are already available
-      if (visit?.checklists == null || visit?.reasons == null) {
-        if (kDebugMode) print('Checklists or reasons missing, fetching separately');
-        await Future.wait([
-          if (visit?.checklists == null)
-            checklistProvider.getChecklistsByVisitId(widget.visit.visitID!).catchError((e) {
-              if (kDebugMode) print('Checklist fetch failed: $e');
-              return [];
-            }),
-          if (visit?.reasons == null)
-            reasonProvider.getReasonsByVisitId(widget.visit.visitID!).catchError((e) {
-              if (kDebugMode) print('Reason fetch failed: $e');
-              return [];
-            }),
-        ]);
-      } else {
-        if (kDebugMode) print('Using embedded checklists and reasons from visit');
-        checklistProvider.setChecklists(visit!.checklists!);
-        reasonProvider.setReasons(visit.reasons!);
+      final qrResponse = await visitProvider.verifyQRCode(
+        qrData: qrResult,
+        visitId: visit.visitID,
+      );
+      if (qrResponse['valid'] != true) {
+        CustomSnackBar.show(
+          context: context,
+          message: qrResponse['message'] ?? 'Invalid QR code',
+          backgroundColor: Theme.of(context).colorScheme.error.withOpacity(0.9),
+        );
+        return;
       }
 
-      // Fetch agent, handle errors gracefully
-      await agentProvider.fetchAgentById(widget.visit.agentID).catchError((e) {
-        if (kDebugMode) print('Agent fetch failed: $e');
-        return null;
-      });
+      final otpValidated = await Navigator.push<bool>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => OTPValidationScreen(
+            visitId: visit.visitID,
+            onOTPValidated: (otp) async {
+              final otpResponse = await visitProvider.validateOTP(
+                visitId: visit.visitID,
+                otpCode: otp,
+              );
+              if (otpResponse['valid'] != true) {
+                throw Exception(otpResponse['message'] ?? 'Invalid OTP');
+              }
+            },
+          ),
+        ),
+      );
 
-      if (kDebugMode) print('Fetched visit details successfully');
-      if (mounted) setState(() {});
+      if (otpValidated == true && mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => LogVisitScreen(
+              visitID: visit.visitID,
+              weekNumber: timesheetProvider.currentTimesheet?.weekNumber ?? 1,
+              year: visit.date.year,
+            ),
+          ),
+        );
+      }
     } catch (e) {
-      if (kDebugMode) print('Error fetching visit details: $e');
-      if (e.toString().contains('401')) {
-        await authProvider.logout();
-        Navigator.pushReplacementNamed(context, '/login');
-      }
-      rethrow; // Let FutureBuilder handle critical errors
+      CustomSnackBar.show(
+        context: context,
+        message: 'Verification failed: $e',
+        backgroundColor: Theme.of(context).colorScheme.error.withOpacity(0.9),
+      );
     }
   }
 
-  void _viewPhotoFullScreen(String photoPath) {
-    if (kDebugMode) print('Viewing photo: $photoPath');
+  void _deleteVisit(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirm Delete'),
+        content: const Text('Are you sure you want to delete this visit?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      final visitProvider = Provider.of<VisitProvider>(context, listen: false);
+      try {
+        await visitProvider.deleteVisit(widget.visit.visitID);
+        Navigator.pop(context);
+        CustomSnackBar.show(
+          context: context,
+          message: 'Visit deleted successfully',
+          backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.9),
+        );
+      } catch (e) {
+        CustomSnackBar.show(
+          context: context,
+          message: 'Failed to delete visit: $e',
+          backgroundColor: Theme.of(context).colorScheme.error.withOpacity(0.9),
+        );
+      }
+    }
+  }
+
+  void _viewPhotoFullScreen(BuildContext context, String photoPath) {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => Scaffold(
-          appBar: CustomAppBar(title: 'Photo View', showBackButton: true),
+          appBar: AppBar(
+            title: const Text('Photo View'),
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ),
           body: Center(
             child: Image.network(
               photoPath.startsWith('http') ? photoPath : '$baseUrl$photoPath',
               fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) {
-                if (kDebugMode) print('Error loading photo: $error');
-                return const Icon(Icons.error, size: 50);
-              },
+              errorBuilder: (context, error, stackTrace) => const Icon(
+                Icons.error,
+                color: Colors.white,
+                size: 50,
+              ),
             ),
           ),
-          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          backgroundColor: Colors.black,
         ),
       ),
     );
@@ -118,474 +195,423 @@ class VisitDetailsScreenState extends State<VisitDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final timeFormat = DateFormat('HH:mm');
+    final formattedTime = timeFormat.format(DateTime.parse('2025-01-01 ${widget.visit.time}'));
+
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: CustomAppBar(title: 'Visit Details', showBackButton: true),
+      appBar: AppBar(
+        title: const Text('Visit Details'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
+        actions: [
+          CustomIconButton(
+            icon: Icons.edit,
+            onPressed: () => _navigateToEdit(context),
+            size: 24,
+          ),
+          CustomIconButton(
+            icon: Icons.delete,
+            onPressed: () => _deleteVisit(context),
+            size: 24,
+          ),
+        ],
+      ),
       drawer: const AppSidebar(),
-      body: RefreshIndicator(
-        onRefresh: _fetchVisitDetails,
-        child: FutureBuilder(
-          future: _fetchDataFuture,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const CustomProgressIndicator();
-            }
-            if (snapshot.hasError) {
-              if (kDebugMode) print('Snapshot error: ${snapshot.error}');
-              return ErrorPage(
-                errorMessage: 'Failed to load visit details: ${snapshot.error}',
-                onRetry: _fetchVisitDetails,
-              );
-            }
+      body: Consumer2<VisitProvider, TimesheetProvider>(
+        builder: (context, visitProvider, timesheetProvider, child) {
+          if (visitProvider.isLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (visitProvider.errorMessage != null) {
+            return Center(child: Text('Error: ${visitProvider.errorMessage}'));
+          }
 
-            return Consumer5<AuthProvider, VisitProvider, AgentProvider, ChecklistProvider, ReasonProvider>(
-              builder: (
-                  context,
-                  authProvider,
-                  visitProvider,
-                  agentProvider,
-                  checklistProvider,
-                  reasonProvider,
-                  child,
-                  ) {
-                final visit = visitProvider.currentVisit ?? widget.visit;
-                final agent = agentProvider.currentAgent;
-                final checklists = checklistProvider.checklists;
-                final reasons = reasonProvider.reasons;
+          final visit = visitProvider.currentVisit ?? widget.visit;
 
-                return SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (['pending', 'visited', 'validated', 'rejected'].contains(visit.status.toLowerCase()))
+          return Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+              children: [
+                Expanded(
+                  child: ListView(
+                    children: [
+                      _buildSectionCard(
+                        context,
+                        title: 'Visit Details',
+                        children: [
+                          _buildDetailRow(
+                            context: context,
+                            label: 'Date',
+                            value: DateFormat('MMM dd, yyyy').format(visit.date),
+                            icon: Icons.calendar_today_outlined,
+                          ),
+                          _buildDetailRow(
+                            context: context,
+                            label: 'Time',
+                            value: formattedTime,
+                            icon: Icons.access_time_outlined,
+                          ),
+                          _buildDetailRow(
+                            context: context,
+                            label: 'Location',
+                            value: visit.location ?? 'N/A',
+                            icon: Icons.location_on_outlined,
+                          ),
                           Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              CustomIconButton(
-                                icon: Icons.edit,
-                                onPressed: () {
-                                  if (kDebugMode) print('Navigating to EditVisitScreen');
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => EditVisitScreen(visit: visit),
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.check_circle_outline,
+                                    color: _getStatusColor(context, visit.status),
+                                    size: 14,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Status',
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: theme.colorScheme.onSurface,
                                     ),
-                                  );
-                                },
-                                size: 28,
+                                  ),
+                                ],
                               ),
-                              const CustomSpacer(width: 12),
-                              CustomIconButton(
-                                icon: Icons.delete,
-                                onPressed: () => _deleteVisit(context, visit, visitProvider),
-                                size: 28,
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: _getStatusColor(context, visit.status).withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(
+                                    color: _getStatusColor(context, visit.status).withOpacity(0.6),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Text(
+                                  visit.status?.toUpperCase() ?? 'N/A',
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: _getStatusColor(context, visit.status),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
                               ),
                             ],
                           ),
-                        const CustomSpacer(height: 16),
-                        Card(
-                          color: theme.cardTheme.color,
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
+                          if (visit.duration != null)
+                            _buildDetailRow(
+                              context: context,
+                              label: 'Duration',
+                              value: '${visit.duration} minutes',
+                              icon: Icons.timer_outlined,
+                            ),
+                        ],
+                      ),
+                      const CustomSpacer(height: 8),
+                      _buildSectionCard(
+                        context,
+                        title: 'Agent',
+                        children: [
+                          _buildDetailRow(
+                            context: context,
+                            label: 'Name',
+                            value: visit.agent != null ? '${visit.agent!.name} ${visit.agent!.lastname}' : 'No Agent (Recruitment)',
+                            icon: Icons.person_outline,
+                          ),
+                          _buildDetailRow(
+                            context: context,
+                            label: 'Phone',
+                            value: visit.agent?.phone ?? 'N/A',
+                            icon: Icons.phone_outlined,
+                          ),
+                        ],
+                      ),
+                      const CustomSpacer(height: 8),
+                      _buildSectionCard(
+                        context,
+                        title: 'Reasons',
+                        children: visit.reasons?.isNotEmpty ?? false
+                            ? visit.reasons!.map((reason) => _buildDetailRow(
+                          context: context,
+                          label: 'Reason',
+                          value: reason.item,
+                          icon: Icons.list_alt_outlined,
+                        )).toList()
+                            : [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.list_alt_outlined,
+                                color: theme.colorScheme.primary,
+                                size: 14,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'No reasons specified',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const CustomSpacer(height: 8),
+                      _buildSectionCard(
+                        context,
+                        title: 'Checklists',
+                        children: visit.checklists?.isNotEmpty ?? false
+                            ? visit.checklists!.map((checklist) => Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
                               children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      InfoRow(
-                                        icon: Icons.location_on,
-                                        text: visit.location ?? 'N/A',
-                                      ),
-                                      const CustomSpacer(height: 12),
-                                      InfoRow(
-                                        icon: Icons.access_time,
-                                        text: '${visit.date.day}/${visit.date.month}/${visit.date.year} - ${visit.time}',
-                                      ),
-                                    ],
+                                Icon(
+                                  checklist.visitChecklist?.checked == true
+                                      ? Icons.check_circle
+                                      : Icons.circle_outlined,
+                                  color: checklist.visitChecklist?.checked == true
+                                      ? theme.colorScheme.primary
+                                      : theme.colorScheme.onSurface.withOpacity(0.6),
+                                  size: 14,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  checklist.item,
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: theme.colorScheme.onSurface,
                                   ),
                                 ),
-                                if (visit.status == "visited")
-                                  _buildDurationClock(context, visit.duration ?? 0),
                               ],
                             ),
-                          ),
-                        ),
-                        const CustomSpacer(height: 16),
-                        Card(
-                          color: theme.cardTheme.color,
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _buildSectionHeader(context, 'Agent Information', Icons.person),
-                                const CustomSpacer(height: 16),
-                                ...[
-                                  InfoRow(
-                                    icon: Icons.person,
-                                    text: '${agent?.name} ${agent?.lastname}',
-                                  ),
-                                  const CustomSpacer(height: 8),
-                                  InfoRow(
-                                    icon: Icons.phone,
-                                    text: agent?.phone ?? 'N/A',
-                                  ),
-                                  const CustomSpacer(height: 8),
-                                  Row(
-                                    children: [
-                                      Text('Status:', style: theme.textTheme.bodyMedium),
-                                      const CustomSpacer(width: 8),
-                                      _buildStatusChip(context, visit.status),
-                                    ],
-                                  ),
-                                ],
-                              ],
+                            Text(
+                              checklist.visitChecklist?.checked == true ? 'Completed' : 'Not Completed',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: theme.colorScheme.onSurface.withOpacity(0.9),
+                              ),
                             ),
+                          ],
+                        )).toList()
+                            : [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.check_circle_outline,
+                                color: theme.colorScheme.primary,
+                                size: 16,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'No checklists available',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
+                        ],
+                      ),
+                      if (visit.photos?.isNotEmpty ?? false) ...[
                         const CustomSpacer(height: 16),
-                        Card(
-                          color: theme.cardTheme.color,
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _buildSectionHeader(context, 'Checklists', Icons.checklist),
-                                const CustomSpacer(height: 16),
-                                if (checklists.isEmpty)
-                                  const EmptyState(text: 'No checklists available')
-                                else
-                                  ...checklists.map(
-                                        (checklist) => _buildChecklistRow(
-                                      context,
-                                      checklist.item,
-                                      checklist.visitChecklist?.checked ?? false,
+                        _buildSectionCard(
+                          context,
+                          title: 'Photos (${visit.photos!.length})',
+                          children: [
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: visit.photos!.map((photo) => GestureDetector(
+                                onTap: () => _viewPhotoFullScreen(context, photo),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(4),
+                                    border: Border.all(
+                                      color: theme.colorScheme.onSurface.withOpacity(0.4),
+                                      width: 1,
                                     ),
                                   ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const CustomSpacer(height: 16),
-                        Card(
-                          color: theme.cardTheme.color,
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _buildSectionHeader(context, 'Reasons', Icons.notes),
-                                const CustomSpacer(height: 16),
-                                if (reasons.isEmpty)
-                                  const EmptyState(text: 'No reasons provided')
-                                else
-                                  ...reasons.map(
-                                        (reason) => InfoRow(
-                                      icon: Icons.circle,
-                                      text: reason.item,
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(4),
+                                    child: Image.network(
+                                      photo.startsWith('http') ? photo : '$baseUrl$photo',
+                                      width: 100,
+                                      height: 100,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) => const Icon(
+                                        Icons.error,
+                                        size: 50,
+                                      ),
                                     ),
                                   ),
-                              ],
+                                ),
+                              )).toList(),
                             ),
-                          ),
+                          ],
                         ),
-                        if (visit.photos != null && visit.photos!.isNotEmpty) ...[
-                          const CustomSpacer(height: 16),
-                          Card(
-                            color: theme.cardTheme.color,
-                            child: Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  _buildSectionHeader(context, 'Photos', Icons.photo),
-                                  const CustomSpacer(height: 16),
-                                  Wrap(
-                                    spacing: 8,
-                                    runSpacing: 8,
-                                    children: visit.photos!.map((photoPath) {
-                                      return GestureDetector(
-                                        onTap: () => _viewPhotoFullScreen(photoPath),
-                                        child: Image.network(
-                                          photoPath.startsWith('http') ? photoPath : '$baseUrl$photoPath',
-                                          width: 100,
-                                          height: 100,
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (context, error, stackTrace) {
-                                            if (kDebugMode) print('Error loading photo: $error');
-                                            return const Icon(Icons.error);
-                                          },
-                                        ),
-                                      );
-                                    }).toList(),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                        if (visit.status == 'visited' && visit.comment != null) ...[
-                          const CustomSpacer(height: 16),
-                          Card(
-                            color: theme.cardTheme.color,
-                            child: Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  _buildSectionHeader(context, 'Comments', Icons.comment),
-                                  const CustomSpacer(height: 16),
-                                  Text(
-                                    visit.comment ?? 'No comments provided',
-                                    style: theme.textTheme.bodyMedium,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                        if (visit.status == 'validated') ...[
-                          const CustomSpacer(height: 24),
-                          Center(
-                            child: SizedBox(
-                              width: 360,
-                              child: CustomButton(
-                                label: 'Log Visit',
-                                icon: Icons.check_circle,
-                                onPressed: () => _logVisit(context, visit, visitProvider),
-                              ),
-                            ),
-                          ),
-                        ],
                       ],
-                    ),
+                      if (visit.comment?.isNotEmpty ?? false) ...[
+                        const CustomSpacer(height: 16),
+                        _buildSectionCard(
+                          context,
+                          title: 'Comment',
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.comment_outlined,
+                                  color: theme.colorScheme.primary,
+                                  size: 16,
+                                ),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    visit.comment!,
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: theme.colorScheme.onSurface.withOpacity(0.9),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
                   ),
-                );
-              },
-            );
-          },
+                ),
+                const CustomSpacer(height: 16),
+                if (visit.status?.toLowerCase() == 'validated')
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CustomButton(
+                        label: 'Log Visit',
+                        onPressed: () => _navigateToLog(context),
+                        backgroundColor: theme.colorScheme.primary.withOpacity(0.8),
+                        textColor: Colors.white,
+                        isOutlined: false,
+                      ),
+                    ],
+                  ),
+                const CustomSpacer(height: 16),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildSectionCard(BuildContext context, {required String title, required List<Widget> children}) {
+    final theme = Theme.of(context);
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: theme.colorScheme.primary.withOpacity(0.8),
+          width: 1.2,
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(8),
+            splashColor: theme.colorScheme.primary.withOpacity(0.2),
+            highlightColor: theme.colorScheme.primary.withOpacity(0.1),
+            onTap: () {},
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(8, 6, 8, 4),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        color: theme.colorScheme.primary,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        title,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(height: 6, thickness: 0.5, color: Colors.grey),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+                  child: Column(children: children),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
   }
 
-  Future<void> _deleteVisit(
-      BuildContext context,
-      Visit visit,
-      VisitProvider visitProvider,
-      ) async {
-    if (kDebugMode) print('Attempting to delete visit: ${visit.visitID}');
-    final theme = Theme.of(context);
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: theme.cardTheme.color,
-        title: Text('Confirm Deletion', style: theme.textTheme.headlineSmall),
-        content: Text('Are you sure you want to delete this visit?', style: theme.textTheme.bodyMedium),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text('Cancel', style: TextStyle(color: theme.colorScheme.primary)),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text('Delete', style: TextStyle(color: theme.colorScheme.error)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true) {
-      try {
-        await visitProvider.deleteVisit(visit.visitID!);
-        if (kDebugMode) print('Visit deleted: ${visit.visitID}');
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Visit deleted successfully', style: TextStyle(color: theme.colorScheme.onSurface)),
-            backgroundColor: theme.cardTheme.color,
-          ),
-        );
-      } catch (e) {
-        if (kDebugMode) print('Error deleting visit: $e');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to delete visit: $e', style: TextStyle(color: theme.colorScheme.onSurface)),
-            backgroundColor: theme.colorScheme.error,
-          ),
-        );
-        if (e.toString().contains('401')) {
-          await Provider.of<AuthProvider>(context, listen: false).logout();
-          Navigator.pushReplacementNamed(context, '/login');
-        }
-      }
-    }
-  }
-
-  Future<void> _logVisit(
-      BuildContext context,
-      Visit visit,
-      VisitProvider visitProvider,
-      ) async {
-    if (kDebugMode) print('Attempting to log visit: ${visit.visitID}');
-    final theme = Theme.of(context);
-    if (visit.date == null) {
-      if (kDebugMode) print('Visit date missing');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Visit date is missing. Cannot log visit.', style: TextStyle(color: theme.colorScheme.onSurface)),
-          backgroundColor: theme.colorScheme.error,
-        ),
-      );
-      return;
-    }
-
-    final scannedData = await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => QRScannerWidget()),
-    );
-    if (scannedData != null) {
-      try {
-        final result = await visitProvider.verifyQRCode(
-          visitId: visit.visitID!,
-          qrData: scannedData,
-        );
-        if (result['valid'] == true) {
-          final weekNumber = _getWeekNumber(visit.date);
-          if (kDebugMode) print('QR code valid, navigating to LogVisitScreen');
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (_) => LogVisitScreen(
-                visitID: visit.visitID!,
-                weekNumber: weekNumber,
-                year: visit.date.year,
-              ),
-            ),
-          );
-        } else {
-          if (kDebugMode) print('Invalid QR code: ${result['message']}');
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                result['message'] ?? 'Invalid QR code',
-                style: TextStyle(color: theme.colorScheme.onSurface),
-              ),
-              backgroundColor: theme.colorScheme.error,
-            ),
-          );
-        }
-      } catch (e) {
-        if (kDebugMode) print('Error verifying QR code: $e');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error verifying QR code: $e', style: TextStyle(color: theme.colorScheme.onSurface)),
-            backgroundColor: theme.colorScheme.error,
-          ),
-        );
-        if (e.toString().contains('401')) {
-          await Provider.of<AuthProvider>(context, listen: false).logout();
-          Navigator.pushReplacementNamed(context, '/login');
-        }
-      }
-    }
-  }
-
-  int _getWeekNumber(DateTime date) {
-    final firstDayOfYear = DateTime(date.year, 1, 1);
-    final daysOffset = firstDayOfYear.weekday - 1;
-    final firstMonday = firstDayOfYear.subtract(Duration(days: daysOffset));
-    final daysSinceFirstMonday = date.difference(firstMonday).inDays;
-    final weekNumber = (daysSinceFirstMonday / 7).ceil() + (daysOffset > 3 ? 1 : 0);
-    if (kDebugMode) print('Calculated week number: $weekNumber for date: $date');
-    return weekNumber;
-  }
-
-  Widget _buildSectionHeader(BuildContext context, String title, IconData icon) {
-    final theme = Theme.of(context);
-    return Row(
-      children: [
-        Icon(icon, color: theme.colorScheme.primary),
-        const CustomSpacer(width: 12),
-        Text(title, style: theme.textTheme.headlineSmall),
-      ],
-    );
-  }
-
-  Widget _buildChecklistRow(BuildContext context, String item, bool checked) {
+  Widget _buildDetailRow({required BuildContext context, required String label, required String value, IconData? icon}) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.only(bottom: 4),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Icon(
-            checked ? Icons.check_circle : Icons.circle_outlined,
-            color: checked ? theme.colorScheme.primary : theme.colorScheme.onSurface.withOpacity(0.6),
-            size: 20,
+          Row(
+            children: [
+              if (icon != null)
+                Icon(
+                  icon,
+                  color: theme.colorScheme.primary,
+                  size: 16,
+                ),
+              if (icon != null) const SizedBox(width: 6),
+              Text(
+                label,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+            ],
           ),
-          const CustomSpacer(width: 12),
-          Expanded(child: Text(item, style: theme.textTheme.bodyMedium)),
+          Flexible(
+            child: Text(
+              value,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurface.withOpacity(0.9),
+              ),
+              textAlign: TextAlign.end,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildStatusChip(BuildContext context, String? status) {
-    final statusData = _getStatusData(context, status);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        border: Border.all(color: statusData['color'], width: 1.5),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        status ?? 'Unknown',
-        style: TextStyle(
-          fontSize: 14,
-          color: statusData['color'],
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-    );
-  }
-
-  Map<String, dynamic> _getStatusData(BuildContext context, String? status) {
-    final theme = Theme.of(context);
+  Color _getStatusColor(BuildContext context, String? status) {
     switch (status?.toLowerCase()) {
       case 'visited':
-        return {'color': theme.colorScheme.primary};
+        return Theme.of(context).colorScheme.primary;
       case 'pending':
-        return {'color': Colors.orange};
+        return const Color(0xFFF4B400);
       case 'rejected':
-        return {'color': theme.colorScheme.error};
+        return const Color(0xFFD93025);
       case 'validated':
-        return {'color': Colors.green};
+        return const Color(0xFF2EA44F);
       default:
-        return {'color': theme.colorScheme.onSurface.withOpacity(0.7)};
+        return Theme.of(context).colorScheme.onSurface.withOpacity(0.6);
     }
-  }
-
-  Widget _buildDurationClock(BuildContext context, int duration) {
-    final theme = Theme.of(context);
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(Icons.timer, size: 30, color: theme.colorScheme.primary),
-        const CustomSpacer(height: 8),
-        Text(
-          '$duration min',
-          style: theme.textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: theme.colorScheme.primary,
-          ),
-        ),
-      ],
-    );
   }
 }

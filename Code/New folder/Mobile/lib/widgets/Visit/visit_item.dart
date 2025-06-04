@@ -1,113 +1,265 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import '../../models/visit.dart';
-import '../../screens/visit/visit_details.dart';
-import '../commen/info_row.dart';
+import '../../providers/agent_provider.dart';
+import '../../screens/Visit/visit_details.dart';
 
 class VisitItem extends StatelessWidget {
   final Visit visit;
+  final bool isDraggable;
 
-  const VisitItem(this.visit, {super.key});
+  const VisitItem({super.key, required this.visit, this.isDraggable = true});
+
+  bool get _canDrag {
+    final isPastDate = visit.date.isBefore(DateTime.now().subtract(const Duration(days: 1)));
+    return isDraggable && !isPastDate && visit.status?.toLowerCase() != 'visited';
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    String formattedTime = visit.time?.split(':').take(2).join(':') ?? 'N/A';
-    return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => VisitDetailsScreen(visit: visit)),
-      ),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-        child: Card(
-          elevation: 2,
-          color: theme.cardTheme.color, // #F9FAFB or #1F262D
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Visit Details',
-                      style: theme.textTheme.headlineSmall, // Black/gray
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: _getStatusColor(context, visit.status).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        visit.status ?? 'Unknown',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: _getStatusColor(context, visit.status),
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                InfoRow(
-                  icon: Icons.location_on,
-                  text: 'Location: ${visit.location ?? 'N/A'}',
-                ),
-                const SizedBox(height: 8),
-                InfoRow(
-                  icon: Icons.access_time,
-                  text: 'Time: $formattedTime',
-                ),
-                if (visit.reasons != null && visit.reasons!.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: visit.reasons!
-                        .map(
-                          (reason) => Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.onSurface.withOpacity(0.1), // Gray tint
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          reason.item ?? 'N/A',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: theme.colorScheme.onSurface, // Black/gray
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    )
-                        .toList(),
-                  ),
-                ],
-              ],
+    final timeFormat = DateFormat('HH:mm');
+    final formattedTime = timeFormat.format(DateTime.parse('2025-01-01 ${visit.time}'));
+
+    return Consumer<AgentProvider>(
+      builder: (context, agentProvider, child) {
+        final agent = visit.agent ?? agentProvider.currentAgent;
+
+        Widget visitCard = Card(
+          elevation: 0,
+          margin: const EdgeInsets.symmetric(vertical: 3, horizontal: 6),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+            side: BorderSide(
+              color: theme.colorScheme.primary.withOpacity(0.8),
+              width: 1.2,
             ),
           ),
-        ),
-      ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Material(
+              color: theme.colorScheme.surface,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(8),
+                splashColor: theme.colorScheme.primary.withOpacity(0.2),
+                highlightColor: theme.colorScheme.primary.withOpacity(0.1),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => VisitDetailsScreen(visit: visit),
+                    ),
+                  );
+                },
+                child: Padding(
+                  padding: const EdgeInsets.all(6),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          if (_canDrag)
+                            const Icon(
+                              Icons.drag_handle,
+                              color: Colors.grey,
+                              size: 14,
+                            )
+                          else
+                            Icon(
+                              Icons.person_outline,
+                              color: theme.colorScheme.primary,
+                              size: 14,
+                            ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              agent != null ? '${agent.name} ${agent.lastname}' : 'Agent: ${visit.agentID}',
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: theme.colorScheme.onSurface,
+                                fontSize: 14,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: _getStatusColor(context, visit.status).withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(
+                                color: _getStatusColor(context, visit.status).withOpacity(0.6),
+                                width: 1,
+                              ),
+                            ),
+                            child: Text(
+                              visit.status?.toUpperCase() ?? 'N/A',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: _getStatusColor(context, visit.status),
+                                fontWeight: FontWeight.w600,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Icon(
+                            Icons.arrow_forward_ios,
+                            color: theme.colorScheme.onSurface.withOpacity(0.7),
+                            size: 10,
+                          ),
+                        ],
+                      ),
+                      const Divider(height: 6, thickness: 0.5, color: Colors.grey),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.calendar_today_outlined,
+                                color: theme.colorScheme.primary,
+                                size: 12,
+                              ),
+                              const SizedBox(width: 3),
+                              Text(
+                                DateFormat('MMM dd, yyyy').format(visit.date),
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.onSurface.withOpacity(0.9),
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.access_time_outlined,
+                                color: theme.colorScheme.primary,
+                                size: 12,
+                              ),
+                              const SizedBox(width: 3),
+                              Text(
+                                formattedTime,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.onSurface.withOpacity(0.9),
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 3),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.location_on_outlined,
+                            color: theme.colorScheme.primary,
+                            size: 12,
+                          ),
+                          const SizedBox(width: 3),
+                          Expanded(
+                            child: Text(
+                              visit.location ?? 'N/A',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurface.withOpacity(0.9),
+                                fontSize: 11,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (visit.reasons != null && visit.reasons!.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              Icons.list_alt_outlined,
+                              color: theme.colorScheme.primary,
+                              size: 12,
+                            ),
+                            const SizedBox(width: 3),
+                            Expanded(
+                              child: Wrap(
+                                spacing: 3,
+                                runSpacing: 3,
+                                children: visit.reasons!.map((reason) => Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: theme.colorScheme.onSurface.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(3),
+                                    border: Border.all(
+                                      color: theme.colorScheme.onSurface.withOpacity(0.4),
+                                      width: 0.5,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    reason.item ?? 'N/A',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: theme.colorScheme.onSurface,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 10,
+                                    ),
+                                  ),
+                                )).toList(),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        if (!_canDrag) return visitCard;
+
+        return LongPressDraggable<Visit>(
+          data: visit,
+          feedback: Material(
+            elevation: 4,
+            borderRadius: BorderRadius.circular(8),
+            child: Opacity(
+              opacity: 0.8,
+              child: Container(
+                width: MediaQuery.of(context).size.width - 32,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: visitCard,
+              ),
+            ),
+          ),
+          childWhenDragging: Opacity(
+            opacity: 0.3,
+            child: visitCard,
+          ),
+          child: visitCard,
+        );
+      },
     );
   }
 
   Color _getStatusColor(BuildContext context, String? status) {
     switch (status?.toLowerCase()) {
       case 'visited':
-        return Theme.of(context).colorScheme.primary; // #63b3ed or #4cb1c7
+        return Theme.of(context).colorScheme.primary;
       case 'pending':
-        return const Color(0xFFF4B400); // Yellow
+        return const Color(0xFFF4B400);
       case 'rejected':
-        return const Color(0xFFD93025); // Red
+        return const Color(0xFFD93025);
       case 'validated':
-        return const Color(0xFF2EA44F); // Blue-green (your call if this stays)
+        return const Color(0xFF2EA44F);
       default:
-        return Theme.of(context).colorScheme.onSurface.withOpacity(0.6); // Gray
+        return Theme.of(context).colorScheme.onSurface.withOpacity(0.6);
     }
   }
 }

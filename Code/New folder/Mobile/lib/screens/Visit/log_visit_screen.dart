@@ -1,21 +1,19 @@
 import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import '../../models/checklist.dart';
 import '../../models/visit.dart';
 import '../../models/visit_checklist.dart';
-import '../../providers/auth_provider.dart';
 import '../../providers/visit_provider.dart';
-import '../../providers/checklist_provider.dart';
-import '../../providers/agent_provider.dart';
+import '../../widgets/Visit/otp_validation_screen.dart';
 import '../../widgets/commen/snack_bar.dar.dart';
 import '../Error.dart';
 import '../../widgets/appbar/app_bar.dart';
 import '../../widgets/commen/button.dart';
 import '../../widgets/commen/progress_indicator.dart';
 import '../../widgets/commen/spacer.dart';
+import '../../widgets/qr_scanner/qr_scanner_widget.dart';
 
 class LogVisitScreen extends StatefulWidget {
   final String visitID;
@@ -53,37 +51,33 @@ class _LogVisitScreenState extends State<LogVisitScreen> with WidgetsBindingObse
   double? _nativeAspectRatio;
   bool _isMinimalView = false;
   bool _isFlippingCamera = false;
+  bool _isQRVerified = false;
+  bool _isOTPVerified = false;
 
   @override
   void initState() {
     super.initState();
-    if (kDebugMode) print('LogVisitScreen initState for visitID: ${widget.visitID}');
     WidgetsBinding.instance.addObserver(this);
-    _initializeCamera();
-    _fetchVisitData();
-    _entryTime = DateTime.now();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _fetchVisitData();
+    });
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (kDebugMode) print('AppLifecycleState changed to: $state');
     if (state == AppLifecycleState.resumed && _isCameraInitialized && _isCameraActive) {
       _cameraController.initialize().then((_) {
         if (mounted) setState(() {});
-        if (kDebugMode) print('Camera resumed');
       }).catchError((e) {
-        if (kDebugMode) print('Camera resume failed: $e');
         _showSnackBar('Camera resume failed: $e');
       });
     }
   }
 
   Future<void> _initializeCamera() async {
-    if (kDebugMode) print('Initializing camera');
     try {
       _cameras = await availableCameras();
       if (_cameras.isEmpty) {
-        if (kDebugMode) print('No cameras available');
         _showError('No cameras available');
         return;
       }
@@ -98,56 +92,45 @@ class _LogVisitScreenState extends State<LogVisitScreen> with WidgetsBindingObse
       _maxZoom = await _cameraController.getMaxZoomLevel();
       await _cameraController.setZoomLevel(_zoomLevel);
       _nativeAspectRatio = 9 / 12;
-      setState(() {
-        _isCameraInitialized = true;
-        if (kDebugMode) print('Camera initialized');
-      });
+      if (mounted) {
+        setState(() => _isCameraInitialized = true);
+      }
     } catch (e) {
-      if (kDebugMode) print('Camera initialization failed: $e');
       _showError('Camera initialization failed: $e');
     }
   }
 
   Future<void> _fetchVisitData() async {
-    if (kDebugMode) print('Fetching visit data for visitID: ${widget.visitID}');
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final visitProvider = Provider.of<VisitProvider>(context, listen: false);
-    final checklistProvider = Provider.of<ChecklistProvider>(context, listen: false);
-    final agentProvider = Provider.of<AgentProvider>(context, listen: false);
-
     try {
-      await Future.wait([
-        visitProvider.fetchVisitById(widget.visitID),
-        checklistProvider.getChecklistsByVisitId(widget.visitID),
-      ]);
-      _visit = visitProvider.currentVisit;
-      if (_visit?.agentID != null) {
-        await agentProvider.fetchAgentById(_visit!.agentID);
+      await visitProvider.fetchVisitById(widget.visitID);
+      if (mounted) {
+        setState(() {
+          _visit = visitProvider.currentVisit;
+          _checklists = _visit?.checklists ?? [];
+          if (_visit?.agentID == null) {
+            _isQRVerified = true;
+            _isOTPVerified = true;
+            _entryTime = DateTime.now();
+            _initializeCamera();
+          }
+        });
       }
-      setState(() {
-        _checklists = checklistProvider.checklists;
-        if (kDebugMode) print('Fetched ${_checklists.length} checklists');
-      });
     } catch (error) {
-      if (kDebugMode) print('Error fetching visit data: $error');
-      _showError('Failed to load visit data: $error');
-      if (error.toString().contains('401')) {
-        await authProvider.logout();
-        Navigator.pushReplacementNamed(context, '/login');
+      if (mounted) {
+        _showError('Failed to load visit data: $error');
       }
     }
   }
 
   @override
   void dispose() {
-    if (kDebugMode) print('Disposing LogVisitScreen');
     WidgetsBinding.instance.removeObserver(this);
-    _cameraController.dispose();
+    if (_isCameraInitialized) _cameraController.dispose();
     super.dispose();
   }
 
   void _showError(String message) {
-    if (kDebugMode) print('Showing error: $message');
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -162,83 +145,138 @@ class _LogVisitScreenState extends State<LogVisitScreen> with WidgetsBindingObse
     );
   }
 
+  Future<void> _startQRScan() async {
+    if (_visit?.agentID == null) return;
+
+    final qrResult = await Navigator.push<String?>(
+      context,
+      MaterialPageRoute(builder: (_) => const QRScannerWidget()),
+    );
+
+    if (qrResult != null && mounted) {
+      final visitProvider = Provider.of<VisitProvider>(context, listen: false);
+      try {
+        final qrResponse = await visitProvider.verifyQRCode(
+          qrData: qrResult,
+          visitId: widget.visitID,
+        );
+        if (qrResponse['valid'] == true) {
+          setState(() => _isQRVerified = true);
+          await _promptOTP();
+        } else {
+          CustomSnackBar.show(
+            context: context,
+            message: qrResponse['message'] ?? 'Invalid QR code',
+            backgroundColor: Theme.of(context).colorScheme.error.withOpacity(0.9),
+          );
+        }
+      } catch (e) {
+        CustomSnackBar.show(
+          context: context,
+          message: 'QR verification failed: $e',
+          backgroundColor: Theme.of(context).colorScheme.error.withOpacity(0.9),
+        );
+      }
+    }
+  }
+
+  Future<void> _promptOTP() async {
+    final otpValidated = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => OTPValidationScreen(
+          visitId: widget.visitID,
+          onOTPValidated: (otp) async {
+            final visitProvider = Provider.of<VisitProvider>(context, listen: false);
+            final otpResponse = await visitProvider.validateOTP(
+              visitId: widget.visitID,
+              otpCode: otp,
+            );
+            if (otpResponse['valid'] != true) {
+              throw Exception(otpResponse['message'] ?? 'Invalid OTP');
+            }
+          },
+        ),
+      ),
+    );
+
+    if (otpValidated == true && mounted) {
+      setState(() {
+        _isOTPVerified = true;
+        _entryTime = DateTime.now();
+      });
+      await _initializeCamera();
+    }
+  }
+
   Future<void> _startCamera() async {
-    if (kDebugMode) print('Starting camera');
-    if (!_isCameraInitialized) return;
+    if (!_isCameraInitialized || !_isQRVerified || !_isOTPVerified) return;
     await _cameraController.setFlashMode(FlashMode.off);
-    setState(() {
-      _isCameraActive = true;
-    });
+    if (mounted) {
+      setState(() => _isCameraActive = true);
+    }
   }
 
   void _stopCamera() {
-    if (kDebugMode) print('Stopping camera');
-    setState(() {
-      _isCameraActive = false;
-      _lastCapturedPhoto = null;
-      _isMinimalView = false;
-      _isFlippingCamera = false;
-    });
+    if (mounted) {
+      setState(() {
+        _isCameraActive = false;
+        _lastCapturedPhoto = null;
+        _isMinimalView = false;
+        _isFlippingCamera = false;
+      });
+    }
     _showPhotoPreview();
   }
 
   Future<void> _capturePhoto() async {
     if (!_isCameraInitialized || !_isCameraActive || _isTakingPicture) return;
-    if (kDebugMode) print('Capturing photo');
     setState(() => _isTakingPicture = true);
-
     try {
       await _cameraController.setFlashMode(_isFlashOn ? FlashMode.torch : FlashMode.off);
       final photo = await _cameraController.takePicture();
-      setState(() {
-        _photos.insert(0, photo);
-        _lastCapturedPhoto = photo;
-        if (kDebugMode) print('Photo captured, total photos: ${_photos.length}');
-      });
+      if (mounted) {
+        setState(() {
+          _photos.insert(0, photo);
+          _lastCapturedPhoto = photo;
+        });
+      }
       await Future.delayed(const Duration(milliseconds: 500));
-      setState(() => _isTakingPicture = false);
+      if (mounted) {
+        setState(() => _isTakingPicture = false);
+      }
       if (!_isFlashOn) await _cameraController.setFlashMode(FlashMode.off);
     } catch (e) {
-      if (kDebugMode) print('Error capturing photo: $e');
       _showSnackBar('Error capturing photo: $e');
-      setState(() => _isTakingPicture = false);
+      if (mounted) {
+        setState(() => _isTakingPicture = false);
+      }
     }
   }
 
   void _toggleFlash() {
-    if (kDebugMode) print('Toggling flash: ${_isFlashOn ? 'off' : 'on'}');
-    setState(() {
-      _isFlashOn = !_isFlashOn;
-    });
+    setState(() => _isFlashOn = !_isFlashOn);
     _cameraController.setFlashMode(_isFlashOn ? FlashMode.torch : FlashMode.off);
   }
 
   Future<void> _switchCamera() async {
     if (!_isCameraInitialized || !_isCameraActive || _isFlippingCamera) return;
-    if (kDebugMode) print('Switching camera');
     setState(() => _isFlippingCamera = true);
-
     try {
       await _cameraController.setFlashMode(FlashMode.off);
       await _cameraController.dispose();
-
       _currentCameraIndex = (_currentCameraIndex + 1) % _cameras.length;
       _cameraController = CameraController(
         _cameras[_currentCameraIndex],
         ResolutionPreset.max,
         enableAudio: false,
       );
-
       await _cameraController.initialize();
       await _cameraController.setZoomLevel(_zoomLevel);
-
-      setState(() {
-        _nativeAspectRatio = 9 / 12;
-        _isFlippingCamera = false;
-        if (kDebugMode) print('Camera switched to index: $_currentCameraIndex');
-      });
+      if (mounted) {
+        setState(() => _isFlippingCamera = false);
+      }
     } catch (e) {
-      if (kDebugMode) print('Camera switch failed: $e');
       _showSnackBar('Camera switch failed: $e');
       _cameraController = CameraController(
         _cameras[_currentCameraIndex],
@@ -246,21 +284,21 @@ class _LogVisitScreenState extends State<LogVisitScreen> with WidgetsBindingObse
         enableAudio: false,
       );
       await _cameraController.initialize();
-      setState(() => _isFlippingCamera = false);
+      if (mounted) {
+        setState(() => _isFlippingCamera = false);
+      }
     }
   }
 
   void _onScaleUpdate(ScaleUpdateDetails details) {
     setState(() {
       _zoomLevel = (_zoomLevel + (details.scale - 1) * 0.5).clamp(_minZoom, _maxZoom);
-      if (kDebugMode) print('Zoom level updated: $_zoomLevel');
     });
     _cameraController.setZoomLevel(_zoomLevel);
   }
 
   Future<void> _onTapFocus(TapDownDetails details) async {
     if (!_isCameraInitialized || !_isCameraActive) return;
-    if (kDebugMode) print('Setting focus point');
     final offset = Offset(
       details.localPosition.dx / MediaQuery.of(context).size.width,
       details.localPosition.dy / MediaQuery.of(context).size.height,
@@ -270,22 +308,15 @@ class _LogVisitScreenState extends State<LogVisitScreen> with WidgetsBindingObse
   }
 
   void _onZoomChanged(double value) {
-    setState(() {
-      _zoomLevel = value;
-      if (kDebugMode) print('Zoom changed to: $_zoomLevel');
-    });
+    setState(() => _zoomLevel = value);
     _cameraController.setZoomLevel(_zoomLevel);
   }
 
   void _removePhoto(int index) {
-    setState(() {
-      _photos.removeAt(index);
-      if (kDebugMode) print('Removed photo at index $index, total photos: ${_photos.length}');
-    });
+    setState(() => _photos.removeAt(index));
   }
 
   void _viewPhotoFullScreen(int initialIndex) {
-    if (kDebugMode) print('Viewing photo gallery at index: $initialIndex');
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -299,20 +330,13 @@ class _LogVisitScreenState extends State<LogVisitScreen> with WidgetsBindingObse
   }
 
   void _showPhotoPreview() {
-    if (_photos.isEmpty) {
-      if (kDebugMode) print('No photos to preview');
-      return;
-    }
-    if (kDebugMode) print('Showing photo preview with ${_photos.length} photos');
+    if (_photos.isEmpty || !mounted) return;
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           backgroundColor: Theme.of(context).cardTheme.color,
-          title: Text(
-            'Captured Photos (${_photos.length})',
-            style: Theme.of(context).textTheme.headlineSmall,
-          ),
+          title: Text('Captured Photos (${_photos.length})', style: Theme.of(context).textTheme.headlineSmall),
           content: SizedBox(
             width: double.maxFinite,
             height: 400,
@@ -324,59 +348,48 @@ class _LogVisitScreenState extends State<LogVisitScreen> with WidgetsBindingObse
                 childAspectRatio: 1,
               ),
               itemCount: _photos.length,
-              itemBuilder: (context, index) {
-                return GestureDetector(
-                  onTap: () => _viewPhotoFullScreen(index),
-                  child: Stack(
-                    children: [
-                      Container(
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Theme.of(context).dividerColor, width: 1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.file(
-                            File(_photos[index].path),
-                            width: 150,
-                            height: 150,
-                            fit: BoxFit.cover,
+              itemBuilder: (context, index) => GestureDetector(
+                onTap: () => _viewPhotoFullScreen(index),
+                child: Stack(
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Theme.of(context).dividerColor, width: 1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.file(File(_photos[index].path), width: 150, height: 150, fit: BoxFit.cover),
+                      ),
+                    ),
+                    Positioned(
+                      top: 4,
+                      right: 4,
+                      child: GestureDetector(
+                        onTap: () {
+                          setDialogState(() => _removePhoto(index));
+                          setState(() {});
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.background.withOpacity(0.7),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Theme.of(context).colorScheme.error, width: 1),
                           ),
+                          child: Icon(Icons.close, color: Theme.of(context).colorScheme.error, size: 18),
                         ),
                       ),
-                      Positioned(
-                        top: 4,
-                        right: 4,
-                        child: GestureDetector(
-                          onTap: () {
-                            setDialogState(() => _removePhoto(index));
-                            setState(() {});
-                            if (kDebugMode) print('Removed photo from preview at index: $index');
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.background.withOpacity(0.7),
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Theme.of(context).colorScheme.error, width: 1),
-                            ),
-                            child: Icon(Icons.close, color: Theme.of(context).colorScheme.error, size: 18),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
           actions: [
             CustomButton(
               label: 'Close',
-              onPressed: () {
-                if (kDebugMode) print('Closing photo preview');
-                Navigator.pop(context);
-              },
+              onPressed: () => Navigator.pop(context),
             ),
           ],
         ),
@@ -385,7 +398,6 @@ class _LogVisitScreenState extends State<LogVisitScreen> with WidgetsBindingObse
   }
 
   void _toggleChecklist(String checklistId, bool checked) {
-    if (kDebugMode) print('Toggling checklist $checklistId to $checked');
     setState(() {
       final index = _checklists.indexWhere((c) => c.checklistID == checklistId);
       if (index != -1) {
@@ -403,24 +415,17 @@ class _LogVisitScreenState extends State<LogVisitScreen> with WidgetsBindingObse
   }
 
   Future<void> _validateVisit() async {
-    if (kDebugMode) print('Validating visit: ${widget.visitID}');
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final visitProvider = Provider.of<VisitProvider>(context, listen: false);
-
     if (_photos.isEmpty) {
-      if (kDebugMode) print('Validation failed: no photos');
       _showSnackBar('At least one photo is required');
       return;
     }
-
     try {
       final duration = _entryTime != null ? DateTime.now().difference(_entryTime!).inMinutes : 0;
-      final checklistUpdates = _checklists
-          .map((c) => {
+      final checklistUpdates = _checklists.map((c) => {
         'checklistID': c.checklistID,
         'checked': c.visitChecklist?.checked ?? false,
-      })
-          .toList();
+      }).toList();
 
       await visitProvider.logVisit(
         visitId: widget.visitID,
@@ -428,52 +433,41 @@ class _LogVisitScreenState extends State<LogVisitScreen> with WidgetsBindingObse
         checklistUpdates: checklistUpdates,
         photoPaths: _photos.map((p) => p.path).toList(),
         comment: _comment,
+        status: 'visited',
       );
-      if (kDebugMode) print('Visit validated successfully');
-      Navigator.pop(context);
-      CustomSnackBar.show(
-        context: context,
-        message: 'Visit validated successfully',
-        backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.9),
-      );
+      if (mounted) {
+        Navigator.pop(context);
+        CustomSnackBar.show(
+          context: context,
+          message: 'Visit validated successfully',
+          backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.9),
+        );
+      }
     } catch (error) {
-      if (kDebugMode) print('Error validating visit: $error');
-      _showError('Failed to validate visit: $error');
-      if (error.toString().contains('401')) {
-        await authProvider.logout();
-        Navigator.pushReplacementNamed(context, '/login');
+      if (mounted) {
+        _showError('Failed to validate visit: $error');
       }
     }
   }
 
   void _showSnackBar(String message) {
-    if (kDebugMode) print('Showing snackbar: $message');
-    CustomSnackBar.show(
-      context: context,
-      message: message,
-      backgroundColor: Theme.of(context).colorScheme.error.withOpacity(0.9),
-    );
+    if (mounted) {
+      CustomSnackBar.show(
+        context: context,
+        message: message,
+        backgroundColor: Theme.of(context).colorScheme.error.withOpacity(0.9),
+      );
+    }
   }
 
   double _getAspectRatio(BuildContext context) {
     final orientation = MediaQuery.of(context).orientation;
-    final ratio = orientation == Orientation.portrait ? 9 / 12 : 12 / 9;
-    if (kDebugMode) print('Camera aspect ratio: $ratio');
-    return ratio;
+    return orientation == Orientation.portrait ? 9 / 12 : 12 / 9;
   }
 
-  bool _isFrontCamera() {
-    final isFront = _cameras[_currentCameraIndex].lensDirection == CameraLensDirection.front;
-    if (kDebugMode) print('Using ${isFront ? 'front' : 'back'} camera');
-    return isFront;
-  }
+  bool _isFrontCamera() => _cameras[_currentCameraIndex].lensDirection == CameraLensDirection.front;
 
-  void _toggleMinimalView() {
-    setState(() {
-      _isMinimalView = !_isMinimalView;
-      if (kDebugMode) print('Toggled minimal view: $_isMinimalView');
-    });
-  }
+  void _toggleMinimalView() => setState(() => _isMinimalView = !_isMinimalView);
 
   Widget _buildSectionHeader(BuildContext context, String title, IconData icon) {
     final theme = Theme.of(context);
@@ -490,21 +484,38 @@ class _LogVisitScreenState extends State<LogVisitScreen> with WidgetsBindingObse
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final visitProvider = Provider.of<VisitProvider>(context);
-    final checklistProvider = Provider.of<ChecklistProvider>(context);
-    final agentProvider = Provider.of<AgentProvider>(context);
 
     return Scaffold(
       appBar: _isCameraActive
           ? null
-          : CustomAppBar(
-        title: 'Log Visit',
-        showBackButton: true,
-        onJumpToNow: null,
-      ),
+          : CustomAppBar(title: 'Log Visit', showBackButton: true),
       body: (!_isCameraInitialized && _isCameraActive)
           ? Container(color: Colors.black)
-          : visitProvider.isLoading || checklistProvider.isLoading || agentProvider.isLoading || !_isCameraInitialized
+          : visitProvider.isLoading
           ? Center(child: CustomProgressIndicator(color: theme.colorScheme.primary))
+          : !_isQRVerified || !_isOTPVerified
+          ? Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              _visit?.agentID == null
+                  ? 'Recruitment Visit: No QR/OTP Required'
+                  : 'Please Scan QR Code',
+              style: theme.textTheme.headlineSmall,
+              textAlign: TextAlign.center,
+            ),
+            const CustomSpacer(height: 24),
+            if (_visit?.agentID != null)
+              CustomButton(
+                label: 'Scan QR Code',
+                icon: Icons.qr_code_scanner,
+                onPressed: _startQRScan,
+                backgroundColor: theme.colorScheme.primary,
+              ),
+          ],
+        ),
+      )
           : _isCameraActive
           ? GestureDetector(
         onTapDown: _onTapFocus,
@@ -517,9 +528,7 @@ class _LogVisitScreenState extends State<LogVisitScreen> with WidgetsBindingObse
                 child: _isFlippingCamera
                     ? Container(
                   color: Colors.black,
-                  child: Center(
-                    child: CustomProgressIndicator(color: theme.colorScheme.primary),
-                  ),
+                  child: Center(child: CustomProgressIndicator(color: theme.colorScheme.primary)),
                 )
                     : _isFrontCamera()
                     ? Transform(
@@ -612,10 +621,7 @@ class _LogVisitScreenState extends State<LogVisitScreen> with WidgetsBindingObse
                     ),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(8),
-                      child: Image.file(
-                        File(_lastCapturedPhoto!.path),
-                        fit: BoxFit.cover,
-                      ),
+                      child: Image.file(File(_lastCapturedPhoto!.path), fit: BoxFit.cover),
                     ),
                   ),
                   onEnd: () => setState(() => _lastCapturedPhoto = null),
@@ -644,12 +650,7 @@ class _LogVisitScreenState extends State<LogVisitScreen> with WidgetsBindingObse
                             ),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(8),
-                              child: Image.file(
-                                File(_photos[index].path),
-                                width: 80,
-                                height: 80,
-                                fit: BoxFit.cover,
-                              ),
+                              child: Image.file(File(_photos[index].path), width: 80, height: 80, fit: BoxFit.cover),
                             ),
                           ),
                           Positioned(
@@ -695,12 +696,7 @@ class _LogVisitScreenState extends State<LogVisitScreen> with WidgetsBindingObse
                             ),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(8),
-                              child: Image.file(
-                                File(_photos[index].path),
-                                width: 80,
-                                height: 80,
-                                fit: BoxFit.cover,
-                              ),
+                              child: Image.file(File(_photos[index].path), width: 80, height: 80, fit: BoxFit.cover),
                             ),
                           ),
                           Positioned(
@@ -782,12 +778,12 @@ class _LogVisitScreenState extends State<LogVisitScreen> with WidgetsBindingObse
                       _buildSectionHeader(context, 'Visit Details', Icons.person),
                       const CustomSpacer(height: 16),
                       Text(
-                        'Agent: ${agentProvider.currentAgent != null ? '${agentProvider.currentAgent!.name} ${agentProvider.currentAgent!.lastname}' : 'Loading...'}',
+                        'Agent: ${_visit?.agent != null ? '${_visit!.agent!.name} ${_visit!.agent!.lastname}' : 'Recruitment Visit'}',
                         style: theme.textTheme.bodyMedium,
                       ),
                       const CustomSpacer(height: 8),
                       Text(
-                        'Location: ${_visit?.location ?? 'N/A'}',
+                        'Location: ${_visit?.location ?? 'Not specified'}',
                         style: theme.textTheme.bodyMedium,
                       ),
                     ],
@@ -807,12 +803,10 @@ class _LogVisitScreenState extends State<LogVisitScreen> with WidgetsBindingObse
                       if (_visit?.reasons?.isEmpty ?? true)
                         Text('No reasons specified', style: theme.textTheme.bodyMedium)
                       else
-                        ..._visit!.reasons!
-                            .map((r) => Padding(
+                        ..._visit!.reasons!.map((r) => Padding(
                           padding: const EdgeInsets.only(bottom: 8),
-                          child: Text(r.item ?? 'N/A', style: theme.textTheme.bodyMedium),
-                        ))
-                            .toList(),
+                          child: Text(r.item ?? 'Not specified', style: theme.textTheme.bodyMedium),
+                        )),
                     ],
                   ),
                 ),
@@ -850,12 +844,7 @@ class _LogVisitScreenState extends State<LogVisitScreen> with WidgetsBindingObse
                                     ),
                                     child: ClipRRect(
                                       borderRadius: BorderRadius.circular(8),
-                                      child: Image.file(
-                                        File(photo.path),
-                                        width: 100,
-                                        height: 100,
-                                        fit: BoxFit.cover,
-                                      ),
+                                      child: Image.file(File(photo.path), width: 100, height: 100, fit: BoxFit.cover),
                                     ),
                                   ),
                                   Positioned(
@@ -892,27 +881,19 @@ class _LogVisitScreenState extends State<LogVisitScreen> with WidgetsBindingObse
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildSectionHeader(
-                        context,
-                        'Checklist (${_checklists.where((c) => c.visitChecklist?.checked ?? false).length}/${_checklists.length})',
-                        Icons.checklist,
-                      ),
+                      _buildSectionHeader(context, 'Checklist (${_checklists.length})', Icons.checklist),
                       const CustomSpacer(height: 16),
                       if (_checklists.isEmpty)
-                        Text('No checklist items available', style: theme.textTheme.bodyMedium)
+                        Text('No checklists assigned', style: theme.textTheme.bodyMedium)
                       else
-                        ..._checklists
-                            .map(
-                              (c) => CheckboxListTile(
-                            title: Text(c.item ?? 'N/A', style: theme.textTheme.bodyMedium),
-                            value: c.visitChecklist?.checked ?? false,
-                            onChanged: (value) => _toggleChecklist(c.checklistID!, value ?? false),
-                            activeColor: theme.colorScheme.primary,
-                            controlAffinity: ListTileControlAffinity.leading,
-                            dense: true,
-                          ),
-                        )
-                            .toList(),
+                        ..._checklists.map((checklist) => CheckboxListTile(
+                          title: Text(checklist.item ?? 'Untitled Checklist'),
+                          value: checklist.visitChecklist?.checked ?? false,
+                          onChanged: (value) => _toggleChecklist(checklist.checklistID!, value!),
+                          activeColor: theme.colorScheme.primary,
+                          controlAffinity: ListTileControlAffinity.leading,
+                          dense: true,
+                        )),
                     ],
                   ),
                 ),
@@ -928,15 +909,11 @@ class _LogVisitScreenState extends State<LogVisitScreen> with WidgetsBindingObse
                       _buildSectionHeader(context, 'Comment', Icons.comment),
                       const CustomSpacer(height: 16),
                       TextField(
-                        onChanged: (value) {
-                          _comment = value;
-                          if (kDebugMode) print('Comment updated: $value');
-                        },
+                        onChanged: (value) => _comment = value,
                         decoration: InputDecoration(
-                          labelText: 'Add a comment (optional)',
+                          hintText: 'Add a comment...',
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                          labelStyle: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.onSurface.withOpacity(0.7)),
+                          prefixIcon: Icon(Icons.edit, color: theme.colorScheme.primary),
                         ),
                         maxLines: 3,
                       ),
@@ -945,21 +922,10 @@ class _LogVisitScreenState extends State<LogVisitScreen> with WidgetsBindingObse
                 ),
               ),
               const CustomSpacer(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  CustomButton(
-                    label: 'Validate Visit',
-                    onPressed: _validateVisit,
-                  ),
-                  CustomButton(
-                    label: 'Back',
-                    onPressed: () {
-                      if (kDebugMode) print('Navigating back');
-                      Navigator.pop(context);
-                    },
-                  ),
-                ],
+              CustomButton(
+                label: 'Validate Visit',
+                onPressed: _validateVisit,
+                isLoading: visitProvider.isLoading,
               ),
             ],
           ),
@@ -969,7 +935,7 @@ class _LogVisitScreenState extends State<LogVisitScreen> with WidgetsBindingObse
   }
 }
 
-class PhotoGalleryScreen extends StatefulWidget {
+class PhotoGalleryScreen extends StatelessWidget {
   final List<XFile> photos;
   final int initialIndex;
   final Function(int) onRemove;
@@ -982,104 +948,37 @@ class PhotoGalleryScreen extends StatefulWidget {
   });
 
   @override
-  _PhotoGalleryScreenState createState() => _PhotoGalleryScreenState();
-}
-
-class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
-  late PageController _pageController;
-  late int _currentIndex;
-
-  @override
-  void initState() {
-    super.initState();
-    if (kDebugMode) print('PhotoGalleryScreen initState, initialIndex: ${widget.initialIndex}');
-    _currentIndex = widget.initialIndex;
-    _pageController = PageController(initialPage: _currentIndex);
-  }
-
-  @override
-  void dispose() {
-    if (kDebugMode) print('Disposing PhotoGalleryScreen');
-    _pageController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final pageController = PageController(initialPage: initialIndex);
+
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: theme.colorScheme.background,
-        leading: IconButton(
-          icon: Icon(Icons.close, color: theme.colorScheme.onBackground),
-          onPressed: () {
-            if (kDebugMode) print('Closing PhotoGalleryScreen');
-            Navigator.pop(context);
-          },
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.delete, color: theme.colorScheme.error),
-            onPressed: () {
-              if (kDebugMode) print('Deleting photo at index: $_currentIndex');
-              widget.onRemove(_currentIndex);
-              if (widget.photos.isEmpty) {
-                if (kDebugMode) print('No photos left, closing gallery');
-                Navigator.pop(context);
-              } else {
-                setState(() {
-                  if (_currentIndex >= widget.photos.length) {
-                    _currentIndex = widget.photos.length - 1;
-                  }
-                  _pageController.jumpToPage(_currentIndex);
-                  if (kDebugMode) print('Updated currentIndex to: $_currentIndex');
-                });
-              }
-            },
+      appBar: CustomAppBar(title: 'Photo Gallery', showBackButton: true),
+      body: Stack(
+        children: [
+          PageView.builder(
+            controller: pageController,
+            itemCount: photos.length,
+            itemBuilder: (context, index) =>
+                Center(
+                  child: Image.file(
+                      File(photos[index].path), fit: BoxFit.contain),
+                ),
+          ),
+          Positioned(
+            top: 20,
+            right: 20,
+            child: IconButton(
+              icon: Icon(Icons.delete, color: theme.colorScheme.error),
+              onPressed: () {
+                onRemove(pageController.page!.round());
+                if (photos.isEmpty) Navigator.pop(context);
+              },
+            ),
           ),
         ],
       ),
-      body: PageView.builder(
-        controller: _pageController,
-        itemCount: widget.photos.length,
-        onPageChanged: (index) {
-          setState(() {
-            _currentIndex = index;
-            if (kDebugMode) print('Page changed to index: $index');
-          });
-        },
-        itemBuilder: (context, index) {
-          return Center(
-            child: Image.file(
-              File(widget.photos[index].path),
-              fit: BoxFit.contain,
-              frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
-                if (frame != null) {
-                  return child;
-                }
-                return Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Image.file(
-                      File(widget.photos[index].path),
-                      fit: BoxFit.contain,
-                      filterQuality: FilterQuality.low,
-                      color: theme.colorScheme.secondary.withOpacity(0.5),
-                      colorBlendMode: BlendMode.modulate,
-                    ),
-                    SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CustomProgressIndicator(color: theme.colorScheme.primary),
-                    ),
-                  ],
-                );
-              },
-            ),
-          );
-        },
-      ),
-      backgroundColor: theme.colorScheme.background,
+      backgroundColor: Colors.black,
     );
   }
 }

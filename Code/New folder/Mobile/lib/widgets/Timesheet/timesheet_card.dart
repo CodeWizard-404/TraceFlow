@@ -31,7 +31,10 @@ class TimesheetCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: theme.textTheme.headlineSmall?.copyWith(color: theme.colorScheme.primary)),
+              Text(
+                title,
+                style: theme.textTheme.headlineSmall?.copyWith(color: theme.colorScheme.primary),
+              ),
               const CustomSpacer(height: 12),
               Text(subtitle, style: theme.textTheme.bodyMedium),
               if (onTap != null) ...[

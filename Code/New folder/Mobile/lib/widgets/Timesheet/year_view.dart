@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../providers/timesheet_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../commen/empty_state.dart';
 
 class YearView extends StatelessWidget {
@@ -49,6 +50,9 @@ class YearView extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final months = _getYearMonths(date);
+    final authProvider = Provider.of<AuthProvider>(context);
+    final isSupervisor = authProvider.user?.roles?.contains('SUPERVISOR') ?? false;
+
     return Consumer<TimesheetProvider>(
       builder: (context, provider, child) {
         if (provider.timesheets.isEmpty) return const EmptyState(text: 'No timesheets available');
@@ -56,6 +60,35 @@ class YearView extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            if (isSupervisor)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.calendar_today),
+                    onPressed: () async {
+                      final timesheet = provider.timesheets.firstWhere(
+                            (ts) => ts.year == date.year,
+                        orElse: () => provider.timesheets.first,
+                      );
+                      await provider.syncTimesheetToCalendar(timesheet.timesheetID);
+                    },
+                    tooltip: 'Sync to Calendar',
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.map),
+                    onPressed: () {
+                      Navigator.pushNamed(context, '/visits_map', arguments: {
+                        'visits': provider.timesheets
+                            .expand((t) => t.visits ?? [])
+                            .where((v) => v.date.year == date.year)
+                            .toList(),
+                      });
+                    },
+                    tooltip: 'View Visits on Map',
+                  ),
+                ],
+              ),
             GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),

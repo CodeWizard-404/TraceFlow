@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:TraceFlow/widgets/commen/dropdown.dar.dart';
+
+import '../commen/dropdown.dar.dart';
 
 class RecipientTypeSelector extends StatelessWidget {
   final String? recipientType;
@@ -13,7 +14,7 @@ class RecipientTypeSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const recipientOptions = ["Supervisor", "Regional Manager", "Agent", "Stock Manager", "Stub Collection"];
+    const recipientOptions = ["Agent", "Stub Collection"];
     return CustomDropdown<String>(
       value: recipientType,
       items: recipientOptions,

@@ -1,21 +1,21 @@
 import 'package:TraceFlow/models/visit_reason.dart';
 
 class Reason {
-  final String? reasonID;
+  final String reasonID;
   final String item;
-  final VisitReason? visitReason;
+  final VisitReason? visitReasons; // Changed from List<VisitReason>? to VisitReason?
 
   Reason({
-    this.reasonID,
+    required this.reasonID,
     required this.item,
-    this.visitReason,
+    this.visitReasons,
   });
 
   factory Reason.fromJson(Map<String, dynamic> json) {
     return Reason(
-      reasonID: json['reasonID'] as String?,
+      reasonID: json['reasonID'] as String,
       item: json['item'] as String,
-      visitReason: json['VisitReasons'] != null
+      visitReasons: json['VisitReasons'] != null
           ? VisitReason.fromJson(json['VisitReasons'] as Map<String, dynamic>)
           : null,
     );
@@ -25,7 +25,7 @@ class Reason {
     return {
       'reasonID': reasonID,
       'item': item,
-      'VisitReasons': visitReason?.toJson(),
+      'VisitReasons': visitReasons?.toJson(),
     };
   }
 }

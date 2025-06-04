@@ -346,3 +346,25 @@ export const getReceiptBookHolders = async (): Promise<User[]> => {
         throw new Error(handleApiError(error, 'Failed to fetch receipt book holders.'));
     }
 };
+
+
+
+export default {
+    getAllReceiptBooks,
+    getReceiptBookById,
+    createReceiptBook,
+    updateReceiptBook,
+    deleteReceiptBook,
+    validateTransfer,
+    getTransferHistory,
+    getAllReceiptBookTypes,
+    getReceiptBookTypeById,
+    createReceiptBookType,
+    updateReceiptBookType,
+    deleteReceiptBookType,
+    uploadReceiptBooks,
+    getReceiptBooksByHolder,
+    getReceiptBookHolders
+};
+
+

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
-import { FaDownload, FaTrash, FaFilter, FaSort, FaList, FaPlus, FaClock, FaChevronDown } from "react-icons/fa";
+import { FaDownload, FaTrash, FaFilter, FaList, FaPlus, FaClock, FaChevronDown, FaSync, FaSort } from "react-icons/fa";
 import Select from "react-select";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -172,10 +172,7 @@ const ReportingPage: React.FC = () => {
   const [formatFilter, setFormatFilter] = useState("");
   const [dateStart, setDateStart] = useState("");
   const [dateEnd, setDateEnd] = useState("");
-  const [scheduleSort, setScheduleSort] = useState<"scheduleID" | "reportType" | "createdAt">("scheduleID");
-  const [scheduleSortOrder, setScheduleSortOrder] = useState<"asc" | "desc">("asc");
-  const [reportSort, setReportSort] = useState<"generatedReportID" | "reportType" | "generatedAt">("generatedReportID");
-  const [reportSortOrder, setReportSortOrder] = useState<"asc" | "desc">("asc");
+
 
   // Generate and Schedule view states
   const [selectedReportType, setSelectedReportType] = useState("");
@@ -204,6 +201,10 @@ const ReportingPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalReport, setModalReport] = useState<GeneratedReport | null>(null);
 
+  const [scheduledPage, setScheduledPage] = useState<number>(1);
+  const [generatedPage, setGeneratedPage] = useState<number>(1);
+  const [itemsPerPage] = useState<number>(20);
+
   // Track which selectors have been opened
   const [openedSelectors, setOpenedSelectors] = useState<Set<string>>(new Set());
 
@@ -211,6 +212,106 @@ const ReportingPage: React.FC = () => {
   const [schedulePeriod, setSchedulePeriod] = useState<"daily" | "weekly" | "monthly" | "yearly" | "custom" | "">("");
   const [customPeriodValue, setCustomPeriodValue] = useState("");
   const [customPeriodUnit, setCustomPeriodUnit] = useState<"minutes" | "hours" | "days" | "">("");
+
+
+  interface ReportCardProps {
+    type: "scheduled" | "generated";
+    data: ReportSchedule | GeneratedReport;
+    onDownload: (filePath: string) => void;
+    onDelete: (id: string) => void;
+  }
+
+  interface ReportCardProps {
+    type: "scheduled" | "generated";
+    data: ReportSchedule | GeneratedReport;
+    onDownload: (filePath: string) => void;
+    onDelete: (id: string) => void;
+  }
+
+  const ReportCard = ({ type, data, onDownload, onDelete }: ReportCardProps) => {
+    const { t } = useTranslation();
+    let id: string, date: string, creatorName: string, additional: React.ReactNode | null;
+
+    if (type === "scheduled") {
+      const schedule = data as ReportSchedule;
+      id = schedule.scheduleID;
+      date = new Date(schedule.createdAt).toLocaleString();
+      creatorName = schedule.Creator
+        ? `${schedule.Creator.firstname} ${schedule.Creator.lastname}`
+        : t("reports.unknownCreator");
+      additional = <p>{t("reports.table.headers.cronExpression")}: {cronToReadable(schedule.cronExpression, t)}</p>;
+    } else {
+      const report = data as GeneratedReport;
+      id = report.generatedReportID;
+      date = new Date(report.generatedAt).toLocaleString();
+      creatorName = report.Generator
+        ? `${report.Generator.firstname} ${report.Generator.lastname}`
+        : t("reports.unknownCreator");
+      additional = null;
+    }
+
+    return (
+      <div className="report-card">
+        <div className="card-header">
+          <h3>{t(`reports.types.${data.reportType.toLowerCase()}`)}</h3>
+          <span>{t(`reports.formats.${data.format}`)}</span>
+        </div>
+        <div className="card-body">
+          <p>{t("reports.table.headers.creator")}: {creatorName}</p>
+          <p>
+            {type === "scheduled" ? t("reports.table.headers.createdAt") : t("reports.table.headers.generatedAt")}: {date}
+          </p>
+          {additional}
+        </div>
+        <div className="card-footer">
+          {type === "generated" && (
+            <button
+              onClick={() => onDownload((data as GeneratedReport).filePath)}
+              className="action-btn download"
+            >
+              <FaDownload />
+            </button>
+          )}
+          <button onClick={() => onDelete(id)} className="action-btn delete">
+            <FaTrash />
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  interface PaginationProps {
+    totalPages: number;
+    currentPage: number;
+    onPageChange: (page: number) => void;
+  }
+
+  const Pagination = ({ totalPages, currentPage, onPageChange }: PaginationProps) => {
+    if (totalPages <= 1) return null;
+    const pageNumbers = [];
+    for (let i = 1; i <= totalPages; i++) {
+      pageNumbers.push(i);
+    }
+    return (
+      <div className="pagination">
+        <button onClick={() => onPageChange(currentPage - 1)} disabled={currentPage === 1}>
+          &lt;
+        </button>
+        {pageNumbers.map(number => (
+          <button
+            key={number}
+            onClick={() => onPageChange(number)}
+            className={number === currentPage ? "active" : ""}
+          >
+            {number}
+          </button>
+        ))}
+        <button onClick={() => onPageChange(currentPage + 1)} disabled={currentPage === totalPages}>
+          &gt;
+        </button>
+      </div>
+    );
+  };
 
   // Convert period to cron expression
   const getCronExpression = () => {
@@ -406,23 +507,24 @@ const ReportingPage: React.FC = () => {
   };
 
   // Fetch schedules and reports
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [schedulesData, reportsData] = await Promise.all([
+        listSchedules(),
+        listGeneratedReports(),
+      ]);
+      setSchedules(schedulesData);
+      setGeneratedReports(reportsData);
+      setError(null);
+    } catch (err: any) {
+      setError(err.message || t("reports.errors.fetchData"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const [schedulesData, reportsData] = await Promise.all([
-          listSchedules(),
-          listGeneratedReports(),
-        ]);
-        setSchedules(schedulesData);
-        setGeneratedReports(reportsData);
-        setError(null);
-      } catch (err: any) {
-        setError(err.message || t("reports.errors.fetchData"));
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchData();
   }, [t]);
 
@@ -518,6 +620,12 @@ const ReportingPage: React.FC = () => {
     }
   }, [filterValues.governorateID, selectedReportType, openedSelectors, t]);
 
+  // Add sort state for schedules and generated reports
+  const [scheduleSort, setScheduleSort] = useState<keyof ReportSchedule>("createdAt");
+  const [scheduleSortOrder, setScheduleSortOrder] = useState<"asc" | "desc">("desc");
+  const [reportSort, setReportSort] = useState<keyof GeneratedReport>("generatedAt");
+  const [reportSortOrder, setReportSortOrder] = useState<"asc" | "desc">("desc");
+
   const filteredSchedules = useMemo(() => {
     let result = [...schedules];
     if (reportTypeFilter) result = result.filter(s => s.reportType === reportTypeFilter);
@@ -529,9 +637,13 @@ const ReportingPage: React.FC = () => {
       });
     }
     return result.sort((a, b) => {
-      const key = scheduleSort;
+      const key: keyof ReportSchedule = scheduleSort;
       const order = scheduleSortOrder === "asc" ? 1 : -1;
-      return (a[key] > b[key] ? 1 : -1) * order;
+      // Use type assertion for dynamic property access
+      if (a[key] === undefined || b[key] === undefined) return 0;
+      if (a[key]! > b[key]!) return 1 * order;
+      if (a[key]! < b[key]!) return -1 * order;
+      return 0;
     });
   }, [schedules, reportTypeFilter, formatFilter, dateStart, dateEnd, scheduleSort, scheduleSortOrder]);
 
@@ -546,11 +658,73 @@ const ReportingPage: React.FC = () => {
       });
     }
     return result.sort((a, b) => {
-      const key = reportSort;
+      const key: keyof GeneratedReport = reportSort;
       const order = reportSortOrder === "asc" ? 1 : -1;
-      return (a[key] > b[key] ? 1 : -1) * order;
+      if (a[key] === undefined || b[key] === undefined) return 0;
+      if (a[key]! > b[key]!) return 1 * order;
+      if (a[key]! < b[key]!) return -1 * order;
+      return 0;
     });
   }, [generatedReports, reportTypeFilter, formatFilter, dateStart, dateEnd, reportSort, reportSortOrder]);
+
+
+
+  const SortCard: React.FC = () => {
+    const { t } = useTranslation();
+
+    const handleSortChange = (sortKey: keyof ReportSchedule | keyof GeneratedReport) => {
+      if (view === "scheduled") {
+        if (scheduleSort === sortKey) {
+          setScheduleSortOrder(scheduleSortOrder === "asc" ? "desc" : "asc");
+        } else {
+          setScheduleSort(sortKey as keyof ReportSchedule);
+          setScheduleSortOrder("asc");
+        }
+      } else {
+        if (reportSort === sortKey) {
+          setReportSortOrder(reportSortOrder === "asc" ? "desc" : "asc");
+        } else {
+          setReportSort(sortKey as keyof GeneratedReport);
+          setReportSortOrder("asc");
+        }
+      }
+    };
+
+    return (
+      <div className="filter-card">
+        <h3>{t("reports.sort.title")}</h3>
+        <div className="form-group">
+          <label className="filter-label">{t("reports.sort.by")}</label>
+          <Select
+            options={[
+              { value: view === "scheduled" ? "createdAt" : "generatedAt", label: t("reports.sort.date") },
+              { value: "reportType", label: t("reports.sort.type") },
+              { value: "format", label: t("reports.sort.format") },
+            ]}
+            value={{
+              value: view === "scheduled" ? scheduleSort : reportSort,
+              label: t(`reports.sort.${view === "scheduled" ? (scheduleSort === "createdAt" ? "date" : scheduleSort) : (reportSort === "generatedAt" ? "date" : reportSort)}`),
+            }}
+            onChange={(option) => option && handleSortChange(option.value as keyof ReportSchedule | keyof GeneratedReport)}
+            className="react-select-container"
+            classNamePrefix="react-select"
+            isSearchable={false}
+          />
+        </div>
+        <div className="form-group">
+          <label className="filter-label">{t("reports.sort.order")}</label>
+          <button
+            onClick={() => handleSortChange(view === "scheduled" ? scheduleSort : reportSort)}
+            className="action-btn sort"
+            title={t(`reports.sort.${(view === "scheduled" ? scheduleSortOrder : reportSortOrder) === "asc" ? "descending" : "ascending"}`)}
+          >
+            <FaSort /> {t(`reports.sort.${(view === "scheduled" ? scheduleSortOrder : reportSortOrder) === "asc" ? "ascending" : "descending"}`)}
+          </button>
+        </div>
+      </div>
+    );
+  };
+
 
   const handleGenerateReport = async () => {
     setLoading(true);
@@ -670,53 +844,39 @@ const ReportingPage: React.FC = () => {
   };
 
   const handleDownloadReport = async (filePath: string) => {
-    setLoading(true);
     try {
       const response = await downloadReport(filePath);
-      const blob = new Blob([response], {
-        type: selectedFormat === "pdf" ? "application/pdf" : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      });
-      const url = window.URL.createObjectURL(blob);
+      const url = window.URL.createObjectURL(new Blob([response]));
       const link = document.createElement("a");
       link.href = url;
-      link.download = filePath.split("/").pop() || `report_${Date.now()}.${selectedFormat}`;
+      link.setAttribute("download", filePath.split("/").pop() || "report");
       document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      setError(null);
+      link.remove();
     } catch (err: any) {
-      setError(err.message || t("reports.errors.downloadReport"));
-    } finally {
-      setLoading(false);
+      setError(err.message || t("reports.errors.download"));
     }
   };
 
   const handleDeleteSchedule = async (scheduleID: string) => {
-    setLoading(true);
-    try {
-      await deleteSchedule(scheduleID);
-      const schedulesData = await listSchedules();
-      setSchedules(schedulesData);
-      setError(null);
-    } catch (err: any) {
-      setError(err.message || t("reports.errors.deleteSchedule"));
-    } finally {
-      setLoading(false);
+    if (window.confirm(t("reports.confirmDelete"))) {
+      try {
+        await deleteSchedule(scheduleID);
+        setSchedules(schedules.filter(schedule => schedule.scheduleID !== scheduleID));
+      } catch (err: any) {
+        setError(err.message || t("reports.errors.deleteSchedule"));
+      }
     }
   };
 
   const handleDeleteGeneratedReport = async (reportID: string) => {
-    setLoading(true);
-    try {
-      await deleteGeneratedReport(reportID);
-      const reports = await listGeneratedReports();
-      setGeneratedReports(reports);
-      setError(null);
-    } catch (err: any) {
-      setError(err.message || t("reports.errors.deleteReport"));
-    } finally {
-      setLoading(false);
+    if (window.confirm(t("reports.confirmDelete"))) {
+      try {
+        await deleteGeneratedReport(reportID);
+        setGeneratedReports(generatedReports.filter(report => report.generatedReportID !== reportID));
+      } catch (err: any) {
+        setError(err.message || t("reports.errors.deleteReport"));
+      }
     }
   };
 
@@ -777,7 +937,6 @@ const ReportingPage: React.FC = () => {
 
   const renderGenerateForm = () => {
     const filters = selectedReportType ? allowedFilters[selectedReportType] || [] : [];
-    const currentStatusOptions = reportStatusOptions[selectedReportType] || [];
 
     const filterSections = [
       { title: "Date Range", filters: ["dateRange"].filter(f => filters.includes(f)) },
@@ -2240,137 +2399,51 @@ const ReportingPage: React.FC = () => {
     );
   };
 
-  const renderSkeleton = () => (
-    <div className="table-card" aria-busy="true">
-      <h2>{t("reports.loading")}</h2>
-      <div className="table-container">
-        <div className="table-head">
-          {view === "scheduled" ? (
-            <div className="table-row-1 table-row-0  table-row-8">
-              <div className="table-cell">{t("reports.table.headers.scheduleID")}</div>
-              <div className="table-cell">{t("reports.table.headers.reportType")}</div>
-              <div className="table-cell">{t("reports.table.headers.format")}</div>
-              <div className="table-cell">{t("reports.table.headers.cronExpression")}</div>
-              <div className="table-cell">{t("reports.table.headers.createdAt")}</div>
-              <div className="table-cell">{t("reports.table.headers.actions")}</div>
-            </div>
-          ) : (
-            <div className="table-row-1 table-row-0  table-row-9">
-              <div className="table-cell">{t("reports.table.headers.reportID")}</div>
-              <div className="table-cell">{t("reports.table.headers.reportType")}</div>
-              <div className="table-cell">{t("reports.table.headers.format")}</div>
-              <div className="table-cell">{t("reports.table.headers.generatedAt")}</div>
-              <div className="table-cell">{t("reports.table.headers.actions")}</div>
-            </div>
-          )}
-        </div>
-        <div className="table-body">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="table-row-1 table-row-0  table-row-8 ">
-              <div className="table-cell"><div className="skeleton"></div></div>
-              <div className="table-cell"><div className="skeleton"></div></div>
-              <div className="table-cell"><div className="skeleton"></div></div>
-              <div className="table-cell"><div className="skeleton"></div></div>
-              <div className="table-cell"><div className="skeleton"></div></div>
-              {view === "scheduled" && <div className="table-cell"><div className="skeleton"></div></div>}
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
 
-  const renderListView = () => (
-    <motion.div
-      className="table-card"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.3 }}
-    >
-      {loading && (view === "scheduled" ? schedules.length === 0 : generatedReports.length === 0) ? (
-        renderSkeleton()
-      ) : (
-        <div className="table-container">
-          <h2>{view === "scheduled" ? t("reports.scheduled.listTitle") : t("reports.generated.listTitle")}</h2>
-          <div className="table-head">
-            {view === "scheduled" ? (
-              <div className="table-row-1 table-row-0  table-row-8">
-                <div className="table-cell sortable" onClick={() => { setScheduleSort("scheduleID"); setScheduleSortOrder(prev => prev === "asc" ? "desc" : "asc"); }}>
-                  {t("reports.table.headers.scheduleID")} <FaSort />
-                </div>
-                <div className="table-cell sortable" onClick={() => { setScheduleSort("reportType"); setScheduleSortOrder(prev => prev === "asc" ? "desc" : "asc"); }}>
-                  {t("reports.table.headers.reportType")} <FaSort />
-                </div>
-                <div className="table-cell">{t("reports.table.headers.format")}</div>
-                <div className="table-cell">{t("reports.table.headers.cronExpression")}</div>
-                <div className="table-cell sortable" onClick={() => { setScheduleSort("createdAt"); setScheduleSortOrder(prev => prev === "asc" ? "desc" : "asc"); }}>
-                  {t("reports.table.headers.createdAt")} <FaSort />
-                </div>
-                <div className="table-cell">{t("reports.table.headers.actions")}</div>
-              </div>
-            ) : (
-              <div className="table-row-1 table-row-0 table-row-9">
-                <div className="table-cell sortable" onClick={() => { setReportSort("generatedReportID"); setReportSortOrder(prev => prev === "asc" ? "desc" : "asc"); }}>
-                  {t("reports.table.headers.reportID")} <FaSort />
-                </div>
-                <div className="table-cell sortable" onClick={() => { setReportSort("reportType"); setReportSortOrder(prev => prev === "asc" ? "desc" : "asc"); }}>
-                  {t("reports.table.headers.reportType")} <FaSort />
-                </div>
-                <div className="table-cell">{t("reports.table.headers.format")}</div>
-                <div className="table-cell sortable" onClick={() => { setReportSort("generatedAt"); setReportSortOrder(prev => prev === "asc" ? "desc" : "asc"); }}>
-                  {t("reports.table.headers.generatedAt")} <FaSort />
-                </div>
-                <div className="table-cell">{t("reports.table.headers.actions")}</div>
-              </div>
-            )}
-          </div>
-          <div className="table-body">
-            {view === "scheduled" ? (
-              filteredSchedules.length > 0 ? (
-                filteredSchedules.map(schedule => (
-                  <div className="table-row-1 table-row-0 table-row-8">
-                    <div className="table-cell">{schedule.scheduleID}</div>
-                    <div className="table-cell">{t(`reports.types.${schedule.reportType.toLowerCase()}`)}</div>
-                    <div className="table-cell">{t(`reports.formats.${schedule.format}`)}</div>
-                    <div className="table-cell">{cronToReadable(schedule.cronExpression, t)}</div>
-                    <div className="table-cell">{new Date(schedule.createdAt).toLocaleString()}</div>
-                    <div className="table-cell actions flex space-x-2">
-                      <button onClick={() => handleDeleteSchedule(schedule.scheduleID)} disabled={loading} className="action-btn delete">
-                        <FaTrash aria-hidden="true" />
-                      </button>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="table-row no-data">{t("reports.table.noScheduled")}</div>
-              )
-            ) : (
-              filteredGeneratedReports.length > 0 ? (
-                filteredGeneratedReports.map(report => (
-                  <div className="table-row-1 table-row-0 table-row-9">
-                    <div className="table-cell">{report.generatedReportID}</div>
-                    <div className="table-cell">{t(`reports.types.${report.reportType.toLowerCase()}`)}</div>
-                    <div className="table-cell">{t(`reports.formats.${report.format}`)}</div>
-                    <div className="table-cell">{new Date(report.generatedAt).toLocaleString()}</div>
-                    <div className="table-cell actions flex space-x-2">
-                      <button onClick={() => handleDownloadReport(report.filePath)} disabled={loading} className="action-btn download">
-                        <FaDownload aria-hidden="true" />
-                      </button>
-                      <button onClick={() => handleDeleteGeneratedReport(report.generatedReportID)} disabled={loading} className="action-btn delete">
-                        <FaTrash aria-hidden="true" />
-                      </button>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="table-row no-data">{t("reports.table.noGenerated")}</div>
-              )
-            )}
-          </div>
-        </div>
-      )}
-    </motion.div>
-  );
+
+  const renderListView = () => {
+    const currentPage = view === "scheduled" ? scheduledPage : generatedPage;
+    const setCurrentPage = view === "scheduled" ? setScheduledPage : setGeneratedPage;
+    const totalItems = view === "scheduled" ? filteredSchedules.length : filteredGeneratedReports.length;
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentItems = view === "scheduled"
+      ? filteredSchedules.slice(indexOfFirstItem, indexOfLastItem)
+      : filteredGeneratedReports.slice(indexOfFirstItem, indexOfLastItem);
+
+    return (
+      <>
+        <motion.div
+          className="report-grid"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}
+        >
+          {loading && (view === "scheduled" ? schedules.length === 0 : generatedReports.length === 0) ? (
+            <div className="loading">{t("reports.loading")}</div>
+          ) : currentItems.length > 0 ? (
+            currentItems.map(item => (
+              <ReportCard
+                key={view === "scheduled" ? (item as ReportSchedule).scheduleID : (item as GeneratedReport).generatedReportID}
+                type={view as "scheduled" | "generated"}
+                data={item}
+                onDownload={handleDownloadReport}
+                onDelete={view === "scheduled" ? handleDeleteSchedule : handleDeleteGeneratedReport}
+              />
+            ))
+          ) : (
+            <div className="no-data">{t("reports.table.noData")}</div>
+          )}
+        </motion.div>
+        <Pagination
+          totalPages={totalPages}
+          currentPage={currentPage}
+          onPageChange={(page: number) => setCurrentPage(page)}
+        />
+      </>
+    );
+  };
 
   return (
     <div className="reporting-container">
@@ -2380,6 +2453,11 @@ const ReportingPage: React.FC = () => {
             view === "generated" ? t("reports.generated.title") :
               view === "generate" ? t("reports.generate.title") : t("reports.schedule.title")}
         </h1>
+        {(view === "scheduled" || view === "generated") && (
+          <button onClick={fetchData} className="action-btn refresh" title={t("reports.actions.refresh")}>
+            <FaSync />
+          </button>
+        )}
       </header>
       <section className="dashboard-content">
         <aside className="sidebar">
@@ -2412,7 +2490,12 @@ const ReportingPage: React.FC = () => {
               </button>
             </div>
           </div>
-          {(view === "scheduled" || view === "generated") && renderFilterForm()}
+          {(view === "scheduled" || view === "generated") && (
+            <>
+              <SortCard />
+              {renderFilterForm()}
+            </>
+          )}
         </aside>
         <main className="main-content">
           {(view === "scheduled" || view === "generated") && renderListView()}

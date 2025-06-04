@@ -33,7 +33,7 @@ class _AgentSelectorState extends State<AgentSelector> {
   Timer? _debounce;
   final TextEditingController _searchController = TextEditingController();
   List<Agent> _filteredAgents = [];
-  int _visibleAgentsLimit = 10; // Cap at 10 initially
+  int _visibleAgentsLimit = 10;
 
   @override
   void initState() {
@@ -65,17 +65,12 @@ class _AgentSelectorState extends State<AgentSelector> {
             widget.onRecipientIDChanged(agent.agentID);
             widget.onLocationChanged(agent.location);
           } else {
-            setState(() => _phoneError = 'Agent not found with this phone number');
+            setState(() => _phoneError = 'Agent not found.');
             widget.onRecipientIDChanged(null);
           }
         } catch (e) {
-          setState(() => _phoneError = 'Error fetching agent: $e');
+          setState(() => _phoneError = 'Error: $e');
           widget.onRecipientIDChanged(null);
-          if (e.toString().contains('401')) {
-            // Session expired, redirect to login
-            Provider.of<AuthProvider>(context, listen: false).logout();
-            Navigator.pushReplacementNamed(context, '/login');
-          }
         }
       }
     });
@@ -90,7 +85,7 @@ class _AgentSelectorState extends State<AgentSelector> {
         final phone = agent.phone?.toLowerCase() ?? '';
         return fullName.contains(query) || phone.contains(query);
       }).toList();
-      _visibleAgentsLimit = 10; // Reset limit when filtering
+      _visibleAgentsLimit = 10;
     });
   }
 
@@ -134,13 +129,11 @@ class _AgentSelectorState extends State<AgentSelector> {
                             groupValue: widget.selectedLocation,
                             onChanged: (value) async {
                               if (value != null) {
-                                print('Fetching agents for: $value');
-                                await widget.onLocationChanged(value); // Fetch agents
-                                print('Location picked: $value, agents: ${agentProvider.agents.length}');
-                                Navigator.pop(context); // Close dialog
+                                await widget.onLocationChanged(value);
+                                Navigator.pop(context);
                                 setState(() {
-                                  _filteredAgents = List.from(agentProvider.agents); // Init filtered list
-                                  _visibleAgentsLimit = 10; // Reset limit
+                                  _filteredAgents = List.from(agentProvider.agents);
+                                  _visibleAgentsLimit = 10;
                                 });
                               }
                             },
@@ -170,16 +163,12 @@ class _AgentSelectorState extends State<AgentSelector> {
     final selectedAgent = widget.recipientID != null
         ? agentProvider.agents.firstWhere(
           (agent) => agent.agentID == widget.recipientID,
-      orElse: () => agentProvider.currentAgent ??
-          Agent(agentID: '', name: 'Unknown', lastname: '', location: ''),
+      orElse: () => agentProvider.currentAgent ?? Agent(agentID: '', name: 'Unknown', lastname: '', location: '', delegationID: ''),
     )
         : null;
     final agentsToShow = _searchController.text.isEmpty ? agentProvider.agents : _filteredAgents;
     final visibleAgents = agentsToShow.take(_visibleAgentsLimit).toList();
     final hasMore = agentsToShow.length > _visibleAgentsLimit;
-
-    print(
-        'Building UI, recipientID: ${widget.recipientID}, selectedAgent: ${selectedAgent?.name}, agents: ${agentProvider.agents.length}, filtered: ${agentsToShow.length}, visible: ${visibleAgents.length}');
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -220,7 +209,7 @@ class _AgentSelectorState extends State<AgentSelector> {
             ),
             const CustomSpacer(height: 8),
             if (agentsToShow.isEmpty)
-              const Text('No agents match your search', style: TextStyle(color: Colors.red))
+              const Text('No agents found.', style: TextStyle(color: Colors.red))
             else ...[
               SizedBox(
                 height: 200,
@@ -233,9 +222,8 @@ class _AgentSelectorState extends State<AgentSelector> {
                       value: agent.agentID,
                       groupValue: widget.recipientID,
                       onChanged: (value) {
-                        print('Agent selected: $value');
                         widget.onRecipientIDChanged(value);
-                        setState(() {}); // Force rebuild
+                        setState(() {});
                       },
                     );
                   },
@@ -244,11 +232,7 @@ class _AgentSelectorState extends State<AgentSelector> {
               if (hasMore) ...[
                 const CustomSpacer(height: 8),
                 ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      _visibleAgentsLimit += 10; // Load 10 more
-                    });
-                  },
+                  onPressed: () => setState(() => _visibleAgentsLimit += 10),
                   child: const Text('Show More'),
                 ),
               ],

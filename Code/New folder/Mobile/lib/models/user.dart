@@ -86,6 +86,7 @@ class User {
     }
   }
 
+
   Map<String, dynamic> toJson() => {
     'userID': userID,
     'keycloakId': keycloakId,

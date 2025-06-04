@@ -3,10 +3,9 @@ import 'package:camera/camera.dart';
 import 'package:flutter/services.dart';
 import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart';
 import '../../widgets/appbar/app_bar.dart';
-import '../../widgets/commen/button.dart';
-import '../../widgets/commen/progress_indicator.dart';
-import '../../widgets/commen/spacer.dart';
+import '../commen/progress_indicator.dart';
 import '../commen/snack_bar.dar.dart';
+import '../commen/spacer.dart';
 
 class QRScannerWidget extends StatefulWidget {
   const QRScannerWidget({super.key});
@@ -20,6 +19,9 @@ class QRScannerWidgetState extends State<QRScannerWidget> {
   final BarcodeScanner _barcodeScanner = BarcodeScanner(formats: [BarcodeFormat.qrCode]);
   bool _isInitialized = false;
   bool _isScanning = false;
+  bool _isSuccess = false;
+  bool _isShaking = false;
+  String _statusText = 'Scanning for QR code...';
   double _appBarHeight = 0.0;
 
   @override
@@ -31,7 +33,7 @@ class QRScannerWidgetState extends State<QRScannerWidget> {
   Future<void> _initializeCamera() async {
     final cameras = await availableCameras();
     _cameraController = CameraController(
-      cameras.first,
+      cameras.firstWhere((camera) => camera.lensDirection == CameraLensDirection.back),
       ResolutionPreset.high,
       enableAudio: false,
       imageFormatGroup: ImageFormatGroup.yuv420,
@@ -42,6 +44,56 @@ class QRScannerWidgetState extends State<QRScannerWidget> {
     setState(() {
       _isInitialized = true;
     });
+    _startContinuousScan();
+  }
+
+  Future<void> _startContinuousScan() async {
+    if (!_isInitialized || _isScanning || _isSuccess) return;
+    setState(() => _isScanning = true);
+
+    try {
+      while (_isInitialized && mounted && !_isSuccess) {
+        final image = await _cameraController.takePicture();
+        final inputImage = InputImage.fromFilePath(image.path);
+        final barcodes = await _barcodeScanner.processImage(inputImage);
+
+        if (barcodes.isNotEmpty && barcodes.first.rawValue != null) {
+          setState(() {
+            _statusText = 'QR code detected';
+          });
+          await Future.delayed(const Duration(milliseconds: 1500));
+          setState(() {
+            _statusText = 'Verifying QR code...';
+          });
+          await Future.delayed(const Duration(milliseconds: 1500));
+
+          // Return QR data to parent
+          setState(() {
+            _isSuccess = true;
+            _statusText = 'QR code validated!';
+          });
+          await Future.delayed(const Duration(milliseconds: 1000));
+          Navigator.pop(context, barcodes.first.rawValue);
+          return;
+        }
+
+        await Future.delayed(const Duration(milliseconds: 100)); // Control scan rate
+      }
+    } catch (e) {
+      setState(() {
+        _isShaking = true;
+        _statusText = 'Error scanning QR code';
+      });
+      CustomSnackBar.show(
+        context: context,
+        message: 'Error: $e',
+        backgroundColor: Theme.of(context).colorScheme.error.withOpacity(0.9),
+      );
+      await Future.delayed(const Duration(milliseconds: 500));
+      setState(() => _isShaking = false);
+    } finally {
+      setState(() => _isScanning = false);
+    }
   }
 
   @override
@@ -51,43 +103,13 @@ class QRScannerWidgetState extends State<QRScannerWidget> {
     super.dispose();
   }
 
-  Future<void> _scanQRCode() async {
-    if (!_isInitialized || _isScanning) return;
-    setState(() => _isScanning = true);
-    try {
-      final image = await _cameraController.takePicture();
-      final inputImage = InputImage.fromFilePath(image.path);
-      final barcodes = await _barcodeScanner.processImage(inputImage);
-      for (final barcode in barcodes) {
-        if (barcode.rawValue != null) {
-          Navigator.pop(context, barcode.rawValue);
-          return;
-        }
-      }
-      CustomSnackBar.show(
-        context: context,
-        message: 'No valid QR code detected',
-        backgroundColor: Theme.of(context).colorScheme.error.withOpacity(0.9),
-      );
-    } catch (e) {
-      CustomSnackBar.show(
-        context: context,
-        message: 'Error scanning QR code: $e',
-        backgroundColor: Theme.of(context).colorScheme.error.withOpacity(0.9),
-      );
-    } finally {
-      setState(() => _isScanning = false);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: Colors.black, // Kept as black for camera overlay
+      backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // Camera Preview (unchanged for precision)
           if (_isInitialized)
             Positioned.fill(
               child: OverflowBox(
@@ -103,14 +125,12 @@ class QRScannerWidgetState extends State<QRScannerWidget> {
                 ),
               ),
             ),
-          // Dark overlay outside QR frame
           if (_isInitialized)
             Positioned.fill(
               child: CustomPaint(
                 painter: QROverlayPainter(appBarHeight: _appBarHeight, theme: theme),
               ),
             ),
-          // AppBar and content
           Column(
             children: [
               CustomAppBar(
@@ -146,86 +166,89 @@ class QRScannerWidgetState extends State<QRScannerWidget> {
                       children: [
                         if (!_isInitialized)
                           CustomProgressIndicator(
-                            color: theme.colorScheme.primary,
+                            color: theme.primaryColor,
                           )
                         else
-                          Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              SizedBox(
-                                width: 320,
-                                height: 320,
-                                child: Stack(
-                                  children: [
-                                    Positioned(
-                                      top: 0,
-                                      left: 0,
-                                      child: _buildStaticCorner(theme),
-                                    ),
-                                    Positioned(
-                                      top: 0,
-                                      right: 0,
-                                      child: Transform.rotate(
-                                        angle: 1.5708,
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
+                            transform: _isShaking
+                                ? (Matrix4.identity()..translate(10.0, 0.0))
+                                : Matrix4.identity(),
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                SizedBox(
+                                  width: 320,
+                                  height: 320,
+                                  child: Stack(
+                                    children: [
+                                      Positioned(
+                                        top: 0,
+                                        left: 0,
                                         child: _buildStaticCorner(theme),
                                       ),
-                                    ),
-                                    Positioned(
-                                      bottom: 0,
-                                      left: 0,
-                                      child: Transform.rotate(
-                                        angle: -1.5708,
-                                        child: _buildStaticCorner(theme),
+                                      Positioned(
+                                        top: 0,
+                                        right: 0,
+                                        child: Transform.rotate(
+                                          angle: 1.5708,
+                                          child: _buildStaticCorner(theme),
+                                        ),
                                       ),
-                                    ),
-                                    Positioned(
-                                      bottom: 0,
-                                      right: 0,
-                                      child: Transform.rotate(
-                                        angle: 3.1416,
-                                        child: _buildStaticCorner(theme),
+                                      Positioned(
+                                        bottom: 0,
+                                        left: 0,
+                                        child: Transform.rotate(
+                                          angle: -1.5708,
+                                          child: _buildStaticCorner(theme),
+                                        ),
                                       ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              if (_isScanning)
-                                Container(
-                                  width: 70,
-                                  height: 70,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    gradient: RadialGradient(
-                                      colors: [
-                                        theme.colorScheme.background.withOpacity(0.6),
-                                        theme.colorScheme.background.withOpacity(0.3),
-                                      ],
-                                    ),
-                                  ),
-                                  child: CustomProgressIndicator(
-                                    color: theme.colorScheme.primary,
+                                      Positioned(
+                                        bottom: 0,
+                                        right: 0,
+                                        child: Transform.rotate(
+                                          angle: 3.1416,
+                                          child: _buildStaticCorner(theme),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                            ],
+                                if (_isScanning && !_isSuccess)
+                                  Container(
+                                    width: 70,
+                                    height: 70,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      gradient: RadialGradient(
+                                        colors: [
+                                          theme.colorScheme.background.withOpacity(0.6),
+                                          theme.colorScheme.background.withOpacity(0.3),
+                                        ],
+                                      ),
+                                    ),
+                                    child: CustomProgressIndicator(
+                                      color: theme.colorScheme.primary,
+                                    ),
+                                  ),
+                                if (_isSuccess)
+                                  Icon(
+                                    Icons.check_circle,
+                                    color: Colors.green,
+                                    size: 80,
+                                  ),
+                              ],
+                            ),
                           ),
-                        const CustomSpacer(height: 0),
-                        CustomButton(
-                          label: _isScanning ? 'Scanning...' : 'Scan QR',
-                          icon: Icons.qr_code_scanner,
-                          onPressed: _scanQRCode,
-                          isLoading: _isScanning,
-                          backgroundColor: _isScanning
-                              ? theme.colorScheme.secondary.withOpacity(0.6)
-                              : theme.colorScheme.primary,
-                          textColor: theme.elevatedButtonTheme.style?.foregroundColor?.resolve({}),
-                        ),
-                        const CustomSpacer(height: 0),
+                        const CustomSpacer(height: 16),
                         Text(
-                          _isScanning ? 'Analyzing code...' : 'Tap to initiate scan',
+                          _statusText,
                           style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.onSurface.withOpacity(0.8),
+                            color: Colors.white,
                             fontWeight: FontWeight.w500,
                           ),
+                          textAlign: TextAlign.center,
                         ),
                       ],
                     );
@@ -245,8 +268,8 @@ class QRScannerWidgetState extends State<QRScannerWidget> {
       height: 40,
       decoration: BoxDecoration(
         border: Border(
-          top: BorderSide(color: theme.colorScheme.primary, width: 5),
-          left: BorderSide(color: theme.colorScheme.primary, width: 5),
+          top: BorderSide(color: Colors.green, width: 5),
+          left: BorderSide(color: Colors.green, width: 5),
         ),
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(12),
@@ -291,7 +314,7 @@ class QROverlayPainter extends CustomPainter {
         center: Alignment.center,
         radius: qrSize / 2 + 20,
         colors: [
-          theme.colorScheme.primary.withOpacity(0.1),
+          Colors.green.withOpacity(0.2),
           Colors.transparent,
         ],
       ).createShader(qrRect);
@@ -303,5 +326,5 @@ class QROverlayPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }

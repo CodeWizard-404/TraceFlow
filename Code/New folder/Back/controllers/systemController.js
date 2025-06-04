@@ -9,67 +9,69 @@ class SystemController {
     /**
      * Fetch logs with pagination and filters
      */
-    static async getLogs(req, res) {
-        try {
-            const {
-                page,
-                pageSize,
-                level,
-                route,
-                service,
-                status,
-                method,
-                userId,
-                traceId,
-                startDate,
-                endDate,
-                search,
-                sortBy,
-                sortOrder,
-            } = req.query;
+  static async getLogs(req, res) {
+    try {
+        const {
+            page,
+            pageSize,
+            level,
+            route,
+            service,
+            status,
+            method,
+            userId,
+            traceId,
+            startDate,
+            endDate,
+            search,
+            sortBy,
+            sortOrder,
+            includeDeleted, // New query parameter
+        } = req.query;
 
-            const logs = await systemService.getLogs({
-                page: page ? parseInt(page) : undefined,
-                pageSize: pageSize ? parseInt(pageSize) : undefined,
-                level,
-                route,
-                service,
-                status: status ? parseInt(status) : undefined,
-                method,
-                userId,
-                traceId,
-                startDate,
-                endDate,
-                search,
-                sortBy,
-                sortOrder,
-            });
+        const logs = await systemService.getLogs({
+            page: page ? parseInt(page) : undefined,
+            pageSize: pageSize ? parseInt(pageSize) : undefined,
+            level,
+            route,
+            service,
+            status: status ? parseInt(status) : undefined,
+            method,
+            userId,
+            traceId,
+            startDate,
+            endDate,
+            search,
+            sortBy,
+            sortOrder,
+            includeDeleted: includeDeleted === 'true',
+        });
 
-            logger.info(`Fetched logs by user ${req.user.userID}`, {
-                page,
-                pageSize,
-                level,
-                route,
-                service,
-                status,
-                method,
-                userId,
-                traceId,
-                search,
-                ip: req.ip,
-            });
+        logger.info(`Fetched logs by user ${req.user.userID}`, {
+            page,
+            pageSize,
+            level,
+            route,
+            service,
+            status,
+            method,
+            userId,
+            traceId,
+            search,
+            includeDeleted,
+            ip: req.ip,
+        });
 
-            return res.status(200).json(logs);
-        } catch (error) {
-            logger.error(`Get logs error: ${error.message}`, {
-                user: req.user.userID,
-                ip: req.ip,
-            });
-            return res.status(error.status || 500).json({ error: error.message || 'Failed to fetch logs' });
-        }
+        return res.status(200).json(logs);
+    } catch (error) {
+        logger.error(`Get logs error: ${error.message}`, {
+            user: req.user.userID,
+            ip: req.ip,
+        });
+        return res.status(error.status || 500).json({ error: error.message || 'Failed to fetch logs' });
     }
+}
 
-    // ... other methods remain unchanged, but update all calls to SystemService to use systemService
     static async getLogsByCategory(req, res) {
         try {
             const { category } = req.params;
@@ -104,23 +106,25 @@ class SystemController {
         }
     }
 
-    static async deleteLogs(req, res) {
-        try {
-            const { level, route, service, status, method, userId, traceId, startDate, endDate } = req.body;
+static async deleteLogs(req, res) {
+    try {
+        const { level, route, service, status, method, userId, traceId, startDate, endDate, force } = req.body;
 
-            const deletedCount = await systemService.deleteLogs({
-                level,
-                route,
-                service,
-                status: status ? parseInt(status) : undefined,
-                method,
-                userId,
-                traceId,
-                startDate,
-                endDate,
-            });
+        const deletedCount = await systemService.deleteLogs({
+            level,
+            route,
+            service,
+            status: status ? parseInt(status) : undefined,
+            method,
+            userId,
+            traceId,
+            startDate,
+            endDate,
+            force: force === true,
+        });
 
-            logger.info(`Deleted ${deletedCount} logs by user ${req.user.userID}`, {
+        logger.info(`Deleted ${JSON.stringify(deletedCount)} logs by user ${req.user.userID}`, {
+            metadata: { // Explicitly define metadata to avoid [object Object]
                 level,
                 route,
                 service,
@@ -130,38 +134,40 @@ class SystemController {
                 traceId,
                 startDate,
                 endDate,
-                ip: req.ip,
-            });
+                force,
+            },
+            ip: req.ip,
+        });
 
-            return res.status(200).json({ deletedCount });
-        } catch (error) {
-            logger.error(`Delete logs error: ${error.message}`, {
-                user: req.user.userID,
-                ip: req.ip,
-            });
-            return res.status(error.status || 500).json({ error: error.message || 'Failed to delete logs' });
-        }
+        return res.status(200).json(deletedCount);
+    } catch (error) {
+        logger.error(`Delete logs error: ${error.message}`, {
+            user: req.user.userID,
+            ip: req.ip,
+        });
+        return res.status(error.status || 500).json({ error: error.message || 'Failed to delete logs' });
     }
+}
 
-    static async archiveLogs(req, res) {
-        try {
-            const { retentionDays } = req.body;
-            const deletedCount = await systemService.archiveLogs(retentionDays);
+static async archiveLogs(req, res) {
+    try {
+        const { retentionDays, force } = req.body;
+        const deletedCount = await systemService.archiveLogs(retentionDays, force === true);
 
-            logger.info(`Archived ${deletedCount} logs by user ${req.user.userID}`, {
-                retentionDays,
-                ip: req.ip,
-            });
+        logger.info(`Archived ${JSON.stringify(deletedCount)} logs by user ${req.user.userID}`, {
+            metadata: { retentionDays, force },
+            ip: req.ip,
+        });
 
-            return res.status(200).json({ deletedCount });
-        } catch (error) {
-            logger.error(`Archive logs error: ${error.message}`, {
-                user: req.user.userID,
-                ip: req.ip,
-            });
-            return res.status(error.status || 500).json({ error: error.message || 'Failed to archive logs' });
-        }
+        return res.status(200).json(deletedCount);
+    } catch (error) {
+        logger.error(`Archive logs error: ${error.message}`, {
+            user: req.user.userID,
+            ip: req.ip,
+        });
+        return res.status(error.status || 500).json({ error: error.message || 'Failed to archive logs' });
     }
+}
 
     static async getLogStatistics(req, res) {
         try {
@@ -227,24 +233,24 @@ class SystemController {
         }
     }
 
-    static async clearAllLogs(req, res) {
-        try {
-            const deletedCount = await systemService.clearAllLogs();
+static async clearAllLogs(req, res) {
+    try {
+        const deletedCount = await systemService.clearAllLogs();
 
-            logger.info(`Cleared ${deletedCount} logs by user ${req.user.userID}`, {
-                ip: req.ip,
-            });
+        logger.info(`Cleared ${JSON.stringify(deletedCount)} logs by user ${req.user.userID}`, {
+            metadata: {}, // Empty metadata for clearAllLogs
+            ip: req.ip,
+        });
 
-            return res.status(200).json({ deletedCount });
-        } catch (error) {
-            logger.error(`Clear all logs error: ${error.message}`, {
-                user: req.user.userID,
-                ip: req.ip,
-            });
-            return res.status(error.status || 500).json({ error: error.message || 'Failed to clear all logs' });
-        }
+        return res.status(200).json(deletedCount);
+    } catch (error) {
+        logger.error(`Clear all logs error: ${error.message}`, {
+            user: req.user.userID,
+            ip: req.ip,
+        });
+        return res.status(error.status || 500).json({ error: error.message || 'Failed to clear all logs' });
     }
-
+}
     static async getUniqueValues(req, res) {
         try {
             const { field } = req.params;

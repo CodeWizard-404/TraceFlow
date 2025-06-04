@@ -1,197 +1,218 @@
-import 'dart:async';
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
-import 'package:socket_io_client/socket_io_client.dart' as socket_io;
+import 'package:socket_io_client/socket_io_client.dart' as IO;
 import '../models/notification.dart';
-import '../services/auth_service.dart';
 import '../services/cookie_manager.dart';
-import '../services/http_client.dart';
+import '../services/notification_service.dart';
 import '../utils/constants.dart';
 
-// Manages real-time notifications using Socket.IO for the TraceFlow mobile app.
 class NotificationProvider with ChangeNotifier {
+  IO.Socket? _socket;
   List<Notification> _notifications = [];
-  int _unreadCount = 0;
-  socket_io.Socket? _socket;
-  bool _isConnected = false;
-  Timer? _reconnectTimer;
-  String? _userID;
-  List<String> _rooms = [];
+  Map<String, dynamic> _preferences = {};
+  List<String> _notificationTypes = [];
+  List<dynamic> _rules = [];
+  bool _isLoading = false;
+  String? _errorMessage;
 
-  // Getters for state
+  // Getters
   List<Notification> get notifications => _notifications;
-  int get unreadCount => _unreadCount;
-  bool get isConnected => _isConnected;
+  Map<String, dynamic> get preferences => _preferences;
+  List<String> get notificationTypes => _notificationTypes;
+  List<dynamic> get rules => _rules;
+  bool get isLoading => _isLoading;
+  String? get errorMessage => _errorMessage;
 
-  NotificationProvider() {
-    if (kDebugMode) print('NotificationProvider initialized');
+  /// Initializes the provider with WebSocket connection and fetches initial data
+  void initialize(String userID, List<String> roles) {
+    _connectToSocket(userID, roles);
+    _fetchRules();
+    _fetchPreferences();
+    _fetchNotificationTypes();
+    _fetchNotifications();
   }
 
-  // Initializes Socket.IO connection for authenticated user.
-  Future<void> initialize(String userID, List<String> roles) async {
-    if (_userID == userID && _isConnected) {
-      if (kDebugMode) print('Socket already initialized for userID: $userID');
-      return;
-    }
-    _userID = userID;
-    _rooms = [userID, ...roles.map((role) => role.toLowerCase())];
-    await _connect();
-  }
+  /// Establishes WebSocket connection and sets up event listeners
+  void _connectToSocket(String userID, List<String> roles) {
+    _socket = IO.io(baseUrl, <String, dynamic>{
+      'transports': ['websocket'],
+      'autoConnect': false,
+      'extraHeaders': {
+        'Cookie': 'accessToken=${CookieManager.cookies['accessToken']}',
+      },
+    });
 
-  // Connects to Socket.IO server.
-  Future<void> _connect() async {
-    if (_isConnected || _userID == null) return;
-    try {
-      if (kDebugMode) print('Connecting to Socket.IO, userID: $_userID');
-      _socket = socket_io.io(
-        baseUrl,
-        socket_io.OptionBuilder()
-            .setTransports(['websocket'])
-            .enableForceNew()
-            .setExtraHeaders(CookieManager.getHeaders())
-            .build(),
-      );
+    _socket!.connect();
 
-      _socket!.onConnect((_) {
-        _isConnected = true;
-        _reconnectTimer?.cancel();
-        if (kDebugMode) print('Socket.IO connected');
-        _joinRooms();
-        notifyListeners();
-      });
-
-      _socket!.onDisconnect((_) {
-        _isConnected = false;
-        if (kDebugMode) print('Socket.IO disconnected');
-        _startReconnectTimer();
-        notifyListeners();
-      });
-
-      _socket!.onError((error) {
-        if (kDebugMode) print('Socket.IO error: $error');
-        _isConnected = false;
-        _startReconnectTimer();
-        notifyListeners();
-      });
-
-      // Handle incoming notifications
-      _socket!.on('notification', (data) {
-        if (data is Map<String, dynamic>) {
-          final notification = Notification.fromJson({
-            'notificationID': data['notificationID'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
-            'type': data['type'] ?? 'info',
-            'message': data['message'] ?? '',
-            'title': data['title'],
-            'createdAt': data['createdAt'] ?? DateTime.now().toIso8601String(),
-            'isRead': false,
-            'metadata': data['metadata'],
-          });
-          _addNotification(notification);
-        }
-      });
-
-      // Handle token refresh events
-      _socket!.on('tokenRefreshed', (_) {
-        if (kDebugMode) print('Token refreshed, rejoining rooms');
-        _joinRooms();
-      });
-    } catch (e) {
-      if (kDebugMode) print('Socket.IO connection failed: $e');
-      _startReconnectTimer();
-    }
-  }
-
-  // Joins user and role-based rooms.
-  void _joinRooms() {
-    if (!_isConnected || _socket == null) return;
-    for (var room in _rooms) {
-      _socket!.emit('joinRoom', room);
-      if (kDebugMode) print('Joined room: $room');
-    }
-  }
-
-  // Adds a notification and updates unread count.
-  void _addNotification(Notification notification) {
-    if (_notifications.any((n) => n.notificationID == notification.notificationID)) {
-      if (kDebugMode) print('Duplicate notification ignored: ${notification.notificationID}');
-      return;
-    }
-    _notifications = [notification, ..._notifications];
-    if (!notification.isRead) _unreadCount++;
-    if (kDebugMode) print('Added notification: ${notification.message}, unread: $_unreadCount');
-    notifyListeners();
-  }
-
-  // Marks a notification as read.
-  Future<void> markAsRead(String notificationID) async {
-    final index = _notifications.indexWhere((n) => n.notificationID == notificationID);
-    if (index == -1 || _notifications[index].isRead) return;
-
-    try {
-      await AuthService.makeAuthenticatedRequest(
-        request: () => CustomHttpClient.post(
-          Uri.parse('$baseUrl/notifications/$notificationID/read'),
-          headers: {'Content-Type': 'application/json'},
-        ),
-      );
-      _notifications[index] = _notifications[index].copyWith(isRead: true);
-      _unreadCount--;
-      if (kDebugMode) print('Marked notification as read: $notificationID');
-      notifyListeners();
-    } catch (e) {
-      if (kDebugMode) print('Failed to mark notification as read: $e');
-    }
-  }
-
-  // Marks all notifications as read.
-  Future<void> markAllAsRead() async {
-    if (_unreadCount == 0) return;
-    try {
-      await AuthService.makeAuthenticatedRequest(
-        request: () => CustomHttpClient.post(
-          Uri.parse('$baseUrl/notifications/read-all'),
-          headers: {'Content-Type': 'application/json'},
-        ),
-      );
-      _notifications = _notifications.map((n) => n.copyWith(isRead: true)).toList();
-      _unreadCount = 0;
-      if (kDebugMode) print('Marked all notifications as read');
-      notifyListeners();
-    } catch (e) {
-      if (kDebugMode) print('Failed to mark all notifications as read: $e');
-    }
-  }
-
-  // Starts a timer to attempt reconnection.
-  void _startReconnectTimer() {
-    _reconnectTimer?.cancel();
-    _reconnectTimer = Timer.periodic(const Duration(seconds: 5), (timer) async {
-      if (!_isConnected && _userID != null) {
-        if (kDebugMode) print('Attempting to reconnect Socket.IO');
-        await _connect();
-      } else {
-        timer.cancel();
+    _socket!.onConnect((_) {
+      if (kDebugMode) print('Connected to WebSocket');
+      _socket!.emit('join', userID);
+      for (var role in roles) {
+        _socket!.emit('join', role.toLowerCase());
       }
+    });
+
+    _socket!.on('notification', (data) {
+      if (kDebugMode) print('Received notification: $data');
+      final notification = Notification.fromJson(data is String ? jsonDecode(data) : data);
+      _notifications.insert(0, notification);
+      notifyListeners();
+    });
+
+    _socket!.on('notification:updated', (data) {
+      if (kDebugMode) print('Notification updated: $data');
+      final notificationID = data['notificationID'];
+      final status = data['status'];
+      final index = _notifications.indexWhere((n) => n.notificationID == notificationID);
+      if (index != -1) {
+        _notifications[index] = Notification(
+          notificationID: _notifications[index].notificationID,
+          type: _notifications[index].type,
+          message: _notifications[index].message,
+          channel: _notifications[index].channel,
+          status: status,
+          createdAt: _notifications[index].createdAt,
+          userID: _notifications[index].userID, updatedAt: null,
+        );
+        notifyListeners();
+      }
+    });
+
+    _socket!.onDisconnect((_) {
+      if (kDebugMode) print('Disconnected from WebSocket');
+    });
+
+    _socket!.onConnectError((error) {
+      if (kDebugMode) print('WebSocket connection error: $error');
+      _errorMessage = 'WebSocket connection failed';
+      notifyListeners();
     });
   }
 
-  // Cleans up Socket.IO connection and state.
-  void cleanup() {
-    if (kDebugMode) print('Cleaning up NotificationProvider');
-    _socket?.emit('leaveRoom', _rooms);
-    _socket?.disconnect();
-    _socket = null;
-    _isConnected = false;
-    _reconnectTimer?.cancel();
-    _notifications = [];
-    _unreadCount = 0;
-    _userID = null;
-    _rooms = [];
+  /// Fetches notification rules
+  Future<void> _fetchRules() async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      _rules = await NotificationService.getRules();
+    } catch (e) {
+      _errorMessage = 'Failed to fetch rules: $e';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Fetches notification preferences
+  Future<void> _fetchPreferences() async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      final result = await NotificationService.getPreferences();
+      _preferences = result['preferences'] ?? {};
+    } catch (e) {
+      _errorMessage = 'Failed to fetch preferences: $e';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Fetches available notification types
+  Future<void> _fetchNotificationTypes() async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      _notificationTypes = await NotificationService.getNotificationTypes();
+    } catch (e) {
+      _errorMessage = 'Failed to fetch notification types: $e';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Fetches user's notifications
+  Future<void> _fetchNotifications() async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      final notificationsData = await NotificationService.getNotifications();
+      _notifications = notificationsData.map((data) => Notification.fromJson(data)).toList();
+    } catch (e) {
+      _errorMessage = 'Failed to fetch notifications: $e';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Updates notification preferences
+  Future<void> updatePreferences(Map<String, dynamic> preferences) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      await NotificationService.updatePreferences(preferences);
+      _preferences = preferences;
+    } catch (e) {
+      _errorMessage = 'Failed to update preferences: $e';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Marks a single notification as read
+  Future<void> markNotificationAsRead(String notificationID) async {
+    try {
+      await NotificationService.markNotificationAsRead(notificationID);
+      final index = _notifications.indexWhere((n) => n.notificationID == notificationID);
+      if (index != -1) {
+        _notifications[index] = Notification(
+          notificationID: _notifications[index].notificationID,
+          type: _notifications[index].type,
+          message: _notifications[index].message,
+          channel: _notifications[index].channel,
+          status: 'read',
+          createdAt: _notifications[index].createdAt,
+          userID: _notifications[index].userID, updatedAt: null,
+        );
+        notifyListeners();
+      }
+    } catch (e) {
+      _errorMessage = 'Failed to mark notification as read: $e';
+    }
+  }
+
+  /// Marks all notifications as read
+  Future<void> markAllNotificationsAsRead() async {
+    try {
+      await NotificationService.markAllNotificationsAsRead();
+      _notifications = _notifications.map((n) => Notification(
+        notificationID: n.notificationID,
+        type: n.type,
+        message: n.message,
+        channel: n.channel,
+        status: 'read',
+        createdAt: n.createdAt,
+        userID: n.userID, updatedAt: null,
+      )).toList();
+      notifyListeners();
+    } catch (e) {
+      _errorMessage = 'Failed to mark all notifications as read: $e';
+    }
+  }
+
+  /// Clears error message
+  void clearError() {
+    _errorMessage = null;
     notifyListeners();
   }
 
   @override
   void dispose() {
-    cleanup();
+    _socket?.disconnect();
     super.dispose();
   }
 }

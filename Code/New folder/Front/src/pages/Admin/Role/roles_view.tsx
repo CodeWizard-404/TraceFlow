@@ -140,14 +140,14 @@ const RoleView: React.FC<RoleViewProps> = React.memo(
     const categorizeByAction = (permissions: Permission[]) => {
       const categories: { [key: string]: Permission[] } = {
         Access: [],
-        Update: [],
-        Delete: [],
-        Create: [],
         Assign: [],
-        Revoke: [],
-        View: [],
+        Create: [],
+        Delete: [],
         Manage: [],
         Others: [],
+        Revoke: [],
+        Update: [],
+        View: [],
       };
 
       permissions.forEach((perm) => {
@@ -156,20 +156,20 @@ const RoleView: React.FC<RoleViewProps> = React.memo(
 
         if (firstWord === 'access') {
           categories.Access.push(perm);
-        } else if (firstWord === 'update') {
-          categories.Update.push(perm);
-        } else if (firstWord === 'delete') {
-          categories.Delete.push(perm);
-        } else if (firstWord === 'create') {
-          categories.Create.push(perm);
         } else if (firstWord === 'assign') {
           categories.Assign.push(perm);
-        } else if (firstWord === 'revoke') {
-          categories.Revoke.push(perm);
-        } else if (firstWord === 'view') {
-          categories.View.push(perm);
+        } else if (firstWord === 'create') {
+          categories.Create.push(perm);
+        } else if (firstWord === 'delete') {
+          categories.Delete.push(perm);
         } else if (firstWord === 'manage') {
           categories.Manage.push(perm);
+        } else if (firstWord === 'revoke') {
+          categories.Revoke.push(perm);
+        } else if (firstWord === 'update') {
+          categories.Update.push(perm);
+        } else if (firstWord === 'view') {
+          categories.View.push(perm);
         } else {
           categories.Others.push(perm);
         }
@@ -195,10 +195,12 @@ const RoleView: React.FC<RoleViewProps> = React.memo(
           acc[perm.class].push({ ...perm, name: formattedName });
           return acc;
         }, {})
-      ).map(([className, perms]) => ({
-        className,
-        actions: categorizeByAction(perms),
-      }));
+      )
+        .sort(([classNameA], [classNameB]) => classNameA.localeCompare(classNameB))
+        .map(([className, perms]) => ({
+          className,
+          actions: categorizeByAction(perms),
+        }));
     }, [allPermissions, isSuperAdmin]);
 
     const filteredPermissions = useMemo(() => {
@@ -224,10 +226,12 @@ const RoleView: React.FC<RoleViewProps> = React.memo(
           acc[perm.class].push({ ...perm, name: formattedName });
           return acc;
         }, {})
-      ).map(([className, perms]) => ({
-        className,
-        actions: categorizeByAction(perms),
-      }));
+      )
+        .sort(([classNameA], [classNameB]) => classNameA.localeCompare(classNameB)) // Sort classes alphabetically
+        .map(([className, perms]) => ({
+          className,
+          actions: categorizeByAction(perms),
+        }));
     }, [allPermissions, permissionSearch, selectedCategory, isSuperAdmin]);
 
     const validateRoleName = useCallback((value: string): string => {
@@ -439,7 +443,7 @@ const RoleView: React.FC<RoleViewProps> = React.memo(
     const handleToggleAllPermissionsInAction = useCallback(
       (className: string, action: string) => {
         if (!userPermissions.canAssignPermissions) return;
-        const validActions = ['access', 'update', 'delete', 'create', 'assign', 'revoke', 'view', 'manage'];
+        const validActions = ['Access', 'Assign', 'Create', 'Delete', 'Manage', 'Others', 'Revoke', 'Update', 'View'];
 
         const actionPermissions = allPermissions.filter((p) => {
           if (p.class !== className) return false;
@@ -447,7 +451,7 @@ const RoleView: React.FC<RoleViewProps> = React.memo(
           const firstWord = nameParts[0].toLowerCase();
 
           if (action.toLowerCase() === 'others') {
-            return !validActions.includes(firstWord);
+            return !validActions.map(a => a.toLowerCase()).includes(firstWord);
           }
           return firstWord === action.toLowerCase();
         });
@@ -808,82 +812,84 @@ const RoleView: React.FC<RoleViewProps> = React.memo(
                                 </button>
                               )}
                             </div>
-                            {Object.entries(actions).map(([action, permissions]) =>
-                              permissions.length > 0 ? (
-                                <div key={action} className="permission-action">
-                                  <div
-                                    className="permission-action-header"
-                                    onClick={() => toggleActionExpansion(className, action)}
-                                    style={{ cursor: "pointer" }}
-                                  >
-                                    <h5>
-                                      {action} ({permissions.length})
-                                      <motion.span
-                                        animate={{ rotate: expandedActions[`${className}-${action}`.toLowerCase().replace(/\s+/g, '-')] ? 180 : 0 }}
-                                        transition={{ duration: 0.3, ease: "easeInOut" }}
-                                      >
-                                        {expandedActions[`${className}-${action}`.toLowerCase().replace(/\s+/g, '-')] ? <FaChevronUp /> : <FaChevronDown />}
-                                      </motion.span>
-                                    </h5>
-                                    {userPermissions.canAssignPermissions && (
-                                      <button
-                                        className="toggle-all-button"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleToggleAllPermissionsInAction(className, action);
-                                        }}
-                                        disabled={loading}
-                                      >
-                                        {permissions.every((p) =>
-                                          tempPermissions.some((tp) => tp.permissionID === p.permissionID)
-                                        )
-                                          ? "Deselect All"
-                                          : "Select All"}
-                                      </button>
-                                    )}
+                            {Object.entries(actions)
+                              .sort(([actionA], [actionB]) => actionA.localeCompare(actionB)) // Sort actions alphabetically
+                              .map(([action, permissions]) =>
+                                permissions.length > 0 ? (
+                                  <div key={action} className="permission-action">
+                                    <div
+                                      className="permission-action-header"
+                                      onClick={() => toggleActionExpansion(className, action)}
+                                      style={{ cursor: "pointer" }}
+                                    >
+                                      <h5>
+                                        {action} ({permissions.length})
+                                        <motion.span
+                                          animate={{ rotate: expandedActions[`${className}-${action}`.toLowerCase().replace(/\s+/g, '-')] ? 180 : 0 }}
+                                          transition={{ duration: 0.3, ease: "easeInOut" }}
+                                        >
+                                          {expandedActions[`${className}-${action}`.toLowerCase().replace(/\s+/g, '-')] ? <FaChevronUp /> : <FaChevronDown />}
+                                        </motion.span>
+                                      </h5>
+                                      {userPermissions.canAssignPermissions && (
+                                        <button
+                                          className="toggle-all-button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleToggleAllPermissionsInAction(className, action);
+                                          }}
+                                          disabled={loading}
+                                        >
+                                          {permissions.every((p) =>
+                                            tempPermissions.some((tp) => tp.permissionID === p.permissionID)
+                                          )
+                                            ? "Deselect All"
+                                            : "Select All"}
+                                        </button>
+                                      )}
+                                    </div>
+                                    <AnimatePresence>
+                                      {expandedActions[`${className}-${action}`.toLowerCase().replace(/\s+/g, '-')] && (
+                                        <motion.div
+                                          className="permissions-container"
+                                          initial={{ height: 0, opacity: 0 }}
+                                          animate={{ height: "auto", opacity: 1 }}
+                                          exit={{ height: 0, opacity: 0 }}
+                                          transition={{ duration: 0.3, ease: "easeInOut" }}
+                                          ref={(el) => {
+                                            containerRefs.current[`${className}-${action}`.toLowerCase().replace(/\s+/g, '-')] = el;
+                                          }}
+                                        >
+                                          {permissions.map((perm, index) => (
+                                            <motion.button
+                                              key={perm.permissionID}
+                                              className={`permission-button ${tempPermissions.some((p) => p.permissionID === perm.permissionID)
+                                                ? "assigned"
+                                                : ""
+                                                }`}
+                                              onClick={() => handleTogglePermission(perm)}
+                                              disabled={loading || !userPermissions.canAssignPermissions}
+                                              initial={{ opacity: 0, y: -10 }}
+                                              animate={{ opacity: 1, y: 0 }}
+                                              transition={{ delay: index * 0.05, duration: 0.2 }}
+                                            >
+                                              <span>{perm.name}</span>
+                                              <FaInfoCircle
+                                                className="permission-info-icon"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  setActivePermissionPopup(perm.permissionID);
+                                                }}
+                                                aria-label={`View details for ${perm.name}`}
+                                              />
+                                            </motion.button>
+                                          ))}
+                                        </motion.div>
+                                      )}
+                                    </AnimatePresence>
                                   </div>
-                                  <AnimatePresence>
-                                    {expandedActions[`${className}-${action}`.toLowerCase().replace(/\s+/g, '-')] && (
-                                      <motion.div
-                                        className="permissions-container"
-                                        initial={{ height: 0, opacity: 0 }}
-                                        animate={{ height: "auto", opacity: 1 }}
-                                        exit={{ height: 0, opacity: 0 }}
-                                        transition={{ duration: 0.3, ease: "easeInOut" }}
-                                        ref={(el) => {
-                                          containerRefs.current[`${className}-${action}`.toLowerCase().replace(/\s+/g, '-')] = el;
-                                        }}
-                                      >
-                                        {permissions.map((perm, index) => (
-                                          <motion.button
-                                            key={perm.permissionID}
-                                            className={`permission-button ${tempPermissions.some((p) => p.permissionID === perm.permissionID)
-                                              ? "assigned"
-                                              : ""
-                                              }`}
-                                            onClick={() => handleTogglePermission(perm)}
-                                            disabled={loading || !userPermissions.canAssignPermissions}
-                                            initial={{ opacity: 0, y: -10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            transition={{ delay: index * 0.05, duration: 0.2 }}
-                                          >
-                                            <span>{perm.name}</span>
-                                            <FaInfoCircle
-                                              className="permission-info-icon"
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                setActivePermissionPopup(perm.permissionID);
-                                              }}
-                                              aria-label={`View details for ${perm.name}`}
-                                            />
-                                          </motion.button>
-                                        ))}
-                                      </motion.div>
-                                    )}
-                                  </AnimatePresence>
-                                </div>
-                              ) : null
-                            )}
+                                ) : null
+                              )}
                           </div>
                         ))}
                       </div>

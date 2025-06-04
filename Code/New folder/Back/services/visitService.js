@@ -35,9 +35,33 @@ class VisitService {
                     transaction
                 });
                 if (!targetTimesheet) {
-                    const error = new Error('Specified timesheet not found');
-                    error.status = 404;
-                    throw error;
+                    targetTimesheet = await Timesheet.findOne({
+                        where: {
+                            weekNumber,
+                            year,
+                            supervisorID,
+                        },
+                        include: [{ model: Visit }, { model: User }],
+                        transaction,
+                    });
+                    if (!targetTimesheet) {
+                        targetTimesheet = await Timesheet.create(
+                            {
+                                weekNumber,
+                                year,
+                                supervisorID,
+                                status,
+                            },
+                            { transaction }
+                        );
+                        const user = await User.findByPk(supervisorID, { transaction });
+                        if (!user) {
+                            const error = new Error('Supervisor not found');
+                            error.status = 404;
+                            throw error;
+                        }
+                        targetTimesheet.User = user;
+                    }
                 }
                 if (!targetTimesheet.User) {
                     const error = new Error('Timesheet has no associated user');
@@ -45,6 +69,7 @@ class VisitService {
                     throw error;
                 }
             } else {
+                // Existing logic for no timesheetID
                 targetTimesheet = await Timesheet.findOne({
                     where: {
                         weekNumber,
@@ -532,10 +557,22 @@ class VisitService {
                 await visit.setReasons(updatedReasons, { transaction });
             }
 
+            // Fetch actor user to check role
+            let actorUser = null;
+            if (actorID) {
+                actorUser = await User.findByPk(actorID, { transaction });
+            }
+
+            // If actor is supervisor, force status to pending
+            let newStatus = status;
+            if (actorUser && actorUser.role === process.env.ROLE_SUPERVISOR) {
+                newStatus = 'pending';
+            }
+
             visit.date = newDate;
             visit.time = time || visit.time;
             visit.duration = duration !== undefined ? duration : visit.duration;
-            visit.status = ['pending', 'visited', 'rejected', 'validated'].includes(status) ? status : visit.status;
+            visit.status = ['pending', 'visited', 'rejected', 'validated'].includes(newStatus) ? newStatus : visit.status;
             visit.photos = photoPaths;
             visit.comment = comment !== undefined ? comment : visit.comment;
 
@@ -694,7 +731,7 @@ class VisitService {
             }
 
             const otp = await OTPService.generateOTP(visit.agentID, 'agent');
-            await sendSMS(agent.phone, `Your OTP for visit ${visitId} verification is ${otp.code}`);
+            await sendSMS(agent.phone, `Your OTP for visit verification is ${otp.code}`);
 
             return { valid: true, message: 'Verification successful, OTP sent to agent' };
         } catch (error) {

@@ -370,7 +370,6 @@ body.dark .table-head .table-row {
 
 .table-row-44 {
     grid-template-columns: 2fr 0.7fr 2.2fr 1.5fr 1fr 1fr 1fr 0.7fr;
-    overflow: scroll;
 
 }
 

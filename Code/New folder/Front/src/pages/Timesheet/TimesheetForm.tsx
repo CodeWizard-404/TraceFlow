@@ -1,8 +1,7 @@
 /* eslint-disable react-hooks/rules-of-hooks */
 /* eslint-disable react-hooks/exhaustive-deps */
-import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { debounce } from "lodash";
 import { toast } from "react-toastify";
 import "./TimesheetForm.css";
 import Agent from "../../models/Agent";
@@ -273,43 +272,7 @@ const TimesheetForm: React.FC = () => {
     return Math.ceil(((utcDate.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
   };
 
-  // Debounced fetch for agent by phone
-  const fetchAgentByPhone = useCallback(
-    debounce(async (phone: string) => {
-      if (phone.length !== 8 || isRecruitmentVisit) return;
-      setAgentLoading(true);
-      try {
-        const agent = await getAgentByPhone(phone);
-        if (agent) {
-          setAgents([agent]);
-          setSelectedAgent(agent.agentID);
-          if (agent.delegationID) {
-            const locationDetails = await getLocationDetailsById(agent.delegationID);
-            if (locationDetails.success && locationDetails.address) {
-              setAgentLocation(locationDetails.address);
-            } else {
-              setAgentLocation("");
-            }
-          }
-        } else {
-          setAgents([]);
-          setSelectedAgent("");
-          setAgentPhone("");
-          setAgentLocation("");
-          setError(t("timesheetForm.errors.agentNotFound"));
-        }
-      } catch (err) {
-        setAgents([]);
-        setSelectedAgent("");
-        setAgentPhone("");
-        setAgentLocation("");
-        setError(t("timesheetForm.errors.agentNotFound"));
-      } finally {
-        setAgentLoading(false);
-      }
-    }, 500),
-    [setError, t, isRecruitmentVisit]
-  );
+
 
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {

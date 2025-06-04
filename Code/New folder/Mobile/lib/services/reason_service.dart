@@ -9,10 +9,10 @@ class ReasonService {
   Future<List<Reason>> getReasonsByVisitId(String visitId) async {
     if (kDebugMode) print('ReasonService: Fetching reasons for visit ID: $visitId');
     try {
-      final headers = await CookieManager.getHeaders();
+      final headers = CookieManager.getHeaders();
       if (kDebugMode) print('Headers prepared: $headers');
       final response = await http.get(
-        Uri.parse('$baseUrl/visits/$visitId/reasons'), // Updated endpoint
+        Uri.parse('$baseUrl/reasons/visit/$visitId'),
         headers: headers,
       );
 
@@ -41,7 +41,7 @@ class ReasonService {
   Future<List<Reason>> getAllReasons() async {
     if (kDebugMode) print('ReasonService: Fetching all reasons');
     try {
-      final headers = await CookieManager.getHeaders();
+      final headers = CookieManager.getHeaders();
       if (kDebugMode) print('Headers prepared: $headers');
       final response = await http.get(
         Uri.parse('$baseUrl/reasons'),

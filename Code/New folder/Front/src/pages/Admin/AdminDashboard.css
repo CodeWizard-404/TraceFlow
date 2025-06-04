@@ -363,6 +363,16 @@ body.dark .table-head .table-row {
     border-radius: 0.75rem;
 }
 
+.table-row-55 {
+    grid-template-columns: 0.75fr 1fr 1.5fr 1.5fr 2fr;
+
+}
+
+.table-row-44 {
+    grid-template-columns: 2fr 0.7fr 2.2fr 1.5fr 1fr 1fr 1fr 0.7fr;
+
+}
+
 .table-body .table-row {
     background: #f8fafc;
     border-radius: 0.5rem;
@@ -932,7 +942,7 @@ body.dark .role-info-popup {
 }
 
 body.dark .role-info-popup h4 {
-    color: #3987c7;
+    color: #60a0dc;
 }
 
 .role-info-popup p {
@@ -980,7 +990,7 @@ body.dark .role-info-popup h5 {
 body.dark .class-toggle {
     background: #3f3f3f;
     color: #e5e7eb;
-    border-color: #3987c7;
+    border-color: #60a0dc;
 }
 
 .class-toggle:hover {
@@ -3459,7 +3469,7 @@ body.dark .custom-skeleton {
 }
 
 .notification-icon {
-    color: #4a90e2;
+    color: #60a0dc;
     font-size: 20px;
 }
 
@@ -3532,7 +3542,7 @@ body.dark .custom-skeleton {
 }
 
 .form-icon {
-    color: #4a90e2;
+    color: #60a0dc;
     font-size: 24px;
 }
 
@@ -3593,7 +3603,7 @@ body.dark .custom-skeleton {
 }
 
 .save-button {
-    background: #4a90e2;
+    background: #60a0dc;
     color: #fff;
 }
 
@@ -6177,10 +6187,283 @@ body.dark .sop-modal-button.sop-modal-revoke {
 }
 
 .multi-select .select__option--is-selected {
-    background-color: #007bff;
+    background-color: #4cb1c7;
     color: white;
+}
+
+body.dark .multi-select .select__option--is-selected {
+    background-color: #60a0dc;
 }
 
 .multi-select .select__option--is-focused {
     background-color: #e9ecef;
+}
+
+
+
+/* Styles for editable table rows */
+.table-row.editing {
+    border-left: 4px solid #4cb1c7;
+    transition: border-color 0.3s ease;
+}
+
+body.dark .table-row.editing {
+    border-left: 4px solid #63b3ed;
+}
+
+/* Styles for input fields in table cells */
+.table-cell input {
+    width: 100%;
+    padding: 0.5rem;
+    font-size: 0.875rem;
+    font-family: 'Inter', sans-serif;
+    border: 1px solid #ddd;
+    border-radius: 0.75rem;
+    background: #f8fafc;
+    color: #1f2937;
+    transition: border-color 0.3s ease;
+    box-sizing: border-box;
+}
+
+body.dark .table-cell input {
+    background: #363636;
+    border-color: #4b5563;
+    color: #e5e7eb;
+}
+
+.table-cell input:focus {
+    border-color: #4cb1c7;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(76, 177, 199, 0.1);
+}
+
+body.dark .table-cell input:focus {
+    border-color: #60a0dc;
+    box-shadow: 0 0 0 3px rgba(99, 179, 237, 0.1);
+}
+
+/* Styles for edit and cancel buttons */
+.edit-button {
+    background: #4cb1c7;
+    color: #fff;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    border: none;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+body.dark .edit-button {
+    background: #63b3ed;
+}
+
+.edit-button:hover {
+    background: #3a8fa2;
+}
+
+body.dark .edit-button:hover {
+    background: #4a83ce;
+}
+
+.cancel-button {
+    background: #6b7280;
+    color: #fff;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    border: none;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+body.dark .cancel-button {
+    background: #4b5563;
+}
+
+.cancel-button:hover {
+    background: #4b5563;
+}
+
+body.dark .cancel-button:hover {
+    background: #374151;
+}
+
+.edit-button:disabled,
+.cancel-button:disabled {
+    background: #e5e7eb;
+    color: #9ca3af;
+    cursor: not-allowed;
+}
+
+body.dark .edit-button:disabled,
+body.dark .cancel-button:disabled {
+    background: #4b5563;
+    color: #6b7280;
+}
+
+/* Ensure actions column is flex for better alignment */
+.table-cell.actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    align-items: center;
+}
+
+.action-button-55 {
+    margin-bottom: 0 !important;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content-44 {
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    max-width: 500px;
+    width: 100%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+body.dark .modal-content-44 {
+    background: #363636;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.modal-header h3 {
+    margin: 0;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+}
+
+.modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.modal-body label {
+    font-weight: bold;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 20px;
+}
+
+.log-details p {
+    margin: 10px 0;
+}
+
+.log-details pre {
+    background: #f5f5f5;
+    padding: 10px;
+    border-radius: 4px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.filter-section {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 15px;
+}
+
+.filter-input {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    width: 100%;
+}
+
+
+
+@media (max-width: 600px) {
+    .modal-content {
+        width: 90%;
+    }
+}
+
+
+.chart-container {
+    max-width: auto;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    font-size: 15rem;
+}
+
+body.dark .chart-container {
+    background: #363636;
+}
+
+.stats-panel {
+    margin-top: 20px;
+    padding: 20px;
+    background: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+body.dark .stats-panel {
+    background: #363636;
+    color: #fff;
+    font-size: x-large;
+}
+
+.stats-panel h3 {
+    margin-bottom: 15px;
+    font-size: 1.5em;
+}
+
+.stats-panel h4 {
+    margin-top: 20px;
+    margin-bottom: 10px;
+    font-size: 1.2em;
 }

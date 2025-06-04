@@ -479,7 +479,6 @@ class TimesheetService {
 
             for (const visit of aiSuggestions) {
                 if (!visit.date || !validDates.includes(visit.date) || visit.date < todayDate) {
-                    console.log('Invalid visit date:', visit.date);
                     continue;
                 }
 
@@ -490,13 +489,11 @@ class TimesheetService {
                     visitMinutes >= timeInterval.endHour * 60 ||
                     (visit.date === todayDate && visitMinutes <= todayMinutes)
                 ) {
-                    console.log('Invalid visit time:', visit.time);
                     continue;
                 }
 
                 const isRecruitment = includeRecruitmentVisits && visit.agentID === null;
                 if (!isRecruitment && (!visit.agentID || !agentMap.has(visit.agentID))) {
-                    console.log('Invalid agentID:', visit.agentID);
                     continue;
                 }
 
@@ -509,7 +506,6 @@ class TimesheetService {
 
                 // Allow recruitment visits with empty checklists but require at least one reason
                 if (reasons.length === 0 || (!isRecruitment && checklists.length === 0)) {
-                    console.log('No valid reasons or checklists for visit:', visit);
                     continue;
                 }
 
@@ -583,7 +579,6 @@ class TimesheetService {
                     : null,
             }));
         } catch (error) {
-            console.error('Error in cleanSuggestions:', error);
             throw Object.assign(new Error('Failed to clean suggestions: ' + error.message), { status: 500 });
         }
     }

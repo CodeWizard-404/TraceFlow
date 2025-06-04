@@ -88,7 +88,7 @@ class LoginScreenState extends State<LoginScreen> {
       } else if (authProvider.requires2FA) {
         Navigator.pushNamed(context, '/verify-2fa');
       } else if (authProvider.isAuthenticated && authProvider.permissionsLoaded) {
-        Navigator.pushReplacementNamed(context, '/timesheet/dashboard');
+        Navigator.pushReplacementNamed(context, '/timesheet-details');
       } else if (_successMessage != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
