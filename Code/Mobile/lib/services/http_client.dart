@@ -28,7 +28,7 @@ class CookieInterceptor implements InterceptorContract {
   @override
   Future<BaseResponse> interceptResponse({required BaseResponse response}) async {
     http.Response httpResponse = await _normalizeResponse(response);
-    CookieManager.extractCookies(httpResponse);
+    await CookieManager.extractCookies(httpResponse);
 
     if (httpResponse.statusCode == 401 && !_isRetrying && _retryCount < maxRetries) {
       _isRetrying = true;
@@ -36,7 +36,7 @@ class CookieInterceptor implements InterceptorContract {
       try {
         if (kDebugMode) print('401 detected: Attempting token refresh');
         final refreshToken = CookieManager.cookies['refreshToken'];
-        if (refreshToken == null) {
+        if (refreshToken == null || refreshToken.isEmpty) {
           throw Exception('No refresh token available');
         }
         final refreshResult = await AuthService.refreshToken(refreshToken);
@@ -58,7 +58,7 @@ class CookieInterceptor implements InterceptorContract {
             persistentConnection: retryResponse.persistentConnection,
             reasonPhrase: retryResponse.reasonPhrase,
           );
-          CookieManager.extractCookies(newResponse);
+          await CookieManager.extractCookies(newResponse);
           if (kDebugMode) print('Retry response: ${newResponse.statusCode}');
           return newResponse;
         } finally {
@@ -66,11 +66,8 @@ class CookieInterceptor implements InterceptorContract {
         }
       } catch (e) {
         if (kDebugMode) print('Token refresh failed: $e');
-        if (e.toString().contains('Invalid refresh token') || e.toString().contains('401')) {
-          await CookieManager.clearCookies();
-          throw Exception('Session expired. Please log in again.');
-        }
-        return httpResponse;
+        await CookieManager.clearCookies();
+        throw Exception('Session expired. Please log in again.');
       } finally {
         _isRetrying = false;
       }
@@ -209,23 +206,6 @@ class CustomHttpClient {
   static Future<http.Response> _authenticatedRequest(Future<http.Response> Function() request) async {
     try {
       final response = await request();
-      if (response.statusCode == 401) {
-        final refreshToken = CookieManager.cookies['refreshToken'];
-        if (refreshToken == null || refreshToken.isEmpty) {
-          throw Exception('No refresh token available');
-        }
-        try {
-          final refreshResult = await AuthService.refreshToken(refreshToken);
-          if (kDebugMode) print('Refresh result: $refreshResult');
-          return await request();
-        } catch (e) {
-          if (e.toString().contains('Invalid refresh token') || e.toString().contains('401')) {
-            await CookieManager.clearCookies();
-            throw Exception('Session expired. Please log in again.');
-          }
-          rethrow;
-        }
-      }
       return response;
     } catch (e) {
       if (kDebugMode) print('Authenticated request failed: $e');

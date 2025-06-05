@@ -59,6 +59,51 @@ class LoginScreenState extends State<LoginScreen> {
     await authProvider.login(_identifierController.text.trim(), _passwordController.text.trim());
   }
 
+  Future<void> _biometricLogin() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    if (await authProvider.isFingerprintEnabled() && await authProvider.canUseBiometrics()) {
+      try {
+        // Use the correct authenticate method for local_auth ^2.3.0
+        final authenticated = await authProvider.authenticateWithBiometrics();
+        if (authenticated) {
+          final email = await authProvider.readStoredEmail();
+          final password = await authProvider.readStoredPassword();
+          if (email != null && password != null) {
+            await authProvider.login(email, password);
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('No stored credentials found. Please log in manually.'),
+                backgroundColor: Theme.of(context).colorScheme.error,
+              ),
+            );
+          }
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Biometric authentication failed.'),
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error during biometric login: $e'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Biometric login not enabled or supported.'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+    }
+  }
+
   void _resetForm() {
     _identifierController.clear();
     _passwordController.clear();
@@ -74,7 +119,7 @@ class LoginScreenState extends State<LoginScreen> {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final theme = themeProvider.currentTheme;
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       if (authProvider.errorMessage != null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -88,6 +133,35 @@ class LoginScreenState extends State<LoginScreen> {
       } else if (authProvider.requires2FA) {
         Navigator.pushNamed(context, '/verify-2fa');
       } else if (authProvider.isAuthenticated && authProvider.permissionsLoaded) {
+        final fingerprintStatus = await authProvider.getFingerprintStatus();
+        if (fingerprintStatus == null && await authProvider.canUseBiometrics()) {
+          final enable = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Enable Biometric Login'),
+              content: const Text('Would you like to enable biometric login (fingerprint/face) for future sessions?'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('No'),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    await authProvider.enableFingerprintLogin(
+                      _identifierController.text.trim(),
+                      _passwordController.text.trim(),
+                    );
+                    Navigator.pop(context, true);
+                  },
+                  child: const Text('Yes'),
+                ),
+              ],
+            ),
+          );
+          if (enable != true) {
+            await authProvider.disableFingerprintLogin();
+          }
+        }
         Navigator.pushReplacementNamed(context, '/timesheet-details');
       } else if (_successMessage != null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -190,35 +264,53 @@ class LoginScreenState extends State<LoginScreen> {
                         autocorrect: false,
                         style: TextStyle(color: theme.colorScheme.onSurface),
                       ),
-                      const SizedBox(height: 24),
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: authProvider.isLoading || authProvider.deviceIdentifier == null
-                              ? null
-                              : _login,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: theme.colorScheme.primary,
-                            foregroundColor: theme.colorScheme.onPrimary,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              child: ElevatedButton(
+                                onPressed: authProvider.isLoading || authProvider.deviceIdentifier == null
+                                    ? null
+                                    : _login,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: theme.colorScheme.primary,
+                                  foregroundColor: theme.colorScheme.onPrimary,
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  elevation: 2,
+                                ),
+                                child: authProvider.isLoading
+                                    ? SpinKitFadingCircle(
+                                  color: theme.colorScheme.onPrimary,
+                                  size: 24,
+                                )
+                                    : Text(
+                                  'Sign In',
+                                  style: theme.textTheme.labelLarge?.copyWith(
+                                    color: theme.colorScheme.onPrimary,
+                                  ),
+                                ),
+                              ),
                             ),
-                            elevation: 2,
                           ),
-                          child: authProvider.isLoading
-                              ? SpinKitFadingCircle(
-                            color: theme.colorScheme.onPrimary,
-                            size: 24,
-                          )
-                              : Text(
-                            'Sign In',
-                            style: theme.textTheme.labelLarge?.copyWith(
-                              color: theme.colorScheme.onPrimary,
+                          const SizedBox(width: 8),
+                          IconButton(
+                            icon: Icon(
+                              Icons.fingerprint,
+                              color: theme.colorScheme.primary,
+                              size: 40,
                             ),
+                            onPressed: authProvider.isLoading || authProvider.deviceIdentifier == null
+                                ? null
+                                : _biometricLogin,
+                            tooltip: 'Login with Biometrics',
                           ),
-                        ),
+                        ],
                       ),
                       const SizedBox(height: 16),
                       Divider(color: theme.colorScheme.outline),

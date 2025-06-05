@@ -62,7 +62,7 @@ class DayView extends StatelessWidget {
                 visitId: droppedVisit.visitID,
                 date: newDate,
                 time: droppedVisit.time,
-                status: 'pending', // Always set status to 'pending'
+                status: 'pending',
               )
                   .then((_) {
                 timesheetProvider.fetchTimesheetsBySupervisor(authProvider.user!.userID!);
@@ -72,7 +72,7 @@ class DayView extends StatelessWidget {
                   SnackBar(content: Text('Failed to move visit: $error')),
                 );
               });
-            }
+            } // Always set status to 'pending'
           },
           builder: (context, candidateData, rejectedData) {
             return ListView.separated(

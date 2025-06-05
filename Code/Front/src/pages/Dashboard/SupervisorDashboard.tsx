@@ -9,7 +9,7 @@ import receiptBookAPI from '../../apis/receiptBookAPI';
 import timesheetAPI from '../../apis/timesheetAPI';
 import userAPI from '../../apis/userAPI';
 import MapComponent from '../../components/Google/MapComponent';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, LineChart, Line, AreaChart, Area, ScatterChart, Scatter } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import Agent from '../../models/Agent';
 import Delegation from '../../models/Delegation';
 import Governorate from '../../models/Governorate';
@@ -17,10 +17,9 @@ import ReceiptBook from '../../models/ReceiptBook';
 import Region from '../../models/Region';
 import Timesheet from '../../models/Timesheet';
 import User from '../../models/User';
-import Visit from '../../models/Visit';
 import './SupervisorDashboard.css';
 import { useTranslation } from 'react-i18next';
-import { FaUsers, FaBook, FaClock, FaMapMarkerAlt, FaChartBar, FaSitemap, FaFilter, FaCalendarAlt, FaChartLine, FaChartPie } from 'react-icons/fa';
+import { FaUsers, FaBook, FaClock, FaMapMarkerAlt, FaChartBar, FaSitemap } from 'react-icons/fa';
 
 // Error Boundary Component
 interface ErrorBoundaryProps {
@@ -56,16 +55,15 @@ const SupervisorDashboard: React.FC = () => {
     const navigate = useNavigate();
     const { t } = useTranslation();
 
-    // State Declarations
+    // Existing state
     const [agents, setAgents] = useState<Agent[]>([]);
     const [agentLocations, setAgentLocations] = useState<any>(null);
     const [delegations, setDelegations] = useState<Delegation[]>([]);
     const [governorates, setGovernorates] = useState<Governorate[]>([]);
     const [regions, setRegions] = useState<Region[]>([]);
     const [receiptBooks, setReceiptBooks] = useState<ReceiptBook[]>([]);
-    const [visits, setVisits] = useState<Visit[]>([]);
+    const [timesheets, setTimesheets] = useState<Timesheet[]>([]);
     const [regionalManager, setRegionalManager] = useState<User | null>(null);
-    const [director, setDirector] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [errors, setErrors] = useState<{ [key: string]: string | null }>({
         agents: null,
@@ -74,34 +72,24 @@ const SupervisorDashboard: React.FC = () => {
         governorates: null,
         regions: null,
         receiptBooks: null,
-        visits: null,
+        timesheets: null,
         regionalManager: null,
-        director: null,
+        visits: null,
     });
 
-    // Pagination State
+    // Pagination and search state
     const [agentPage, setAgentPage] = useState(1);
-    const [agentsPerPage] = useState(5);
+    const [agentsPerPage] = useState(10);
     const [agentSearch, setAgentSearch] = useState('');
-    const [agentFilterStatus, setAgentFilterStatus] = useState('');
 
     const [receiptBookPage, setReceiptBookPage] = useState(1);
-    const [receiptBooksPerPage] = useState(5);
+    const [receiptBooksPerPage] = useState(10);
     const [receiptBookSearch, setReceiptBookSearch] = useState('');
-    const [receiptBookFilterType, setReceiptBookFilterType] = useState('');
-    const [receiptBookFilterStatus, setReceiptBookFilterStatus] = useState('');
 
-    const [visitPage, setVisitPage] = useState(1);
-    const [visitsPerPage] = useState(5);
-    const [visitSearch, setVisitSearch] = useState('');
-    const [visitFilterPeriod, setVisitFilterPeriod] = useState('');
-    const [visitFilterStatus, setVisitFilterStatus] = useState('');
+    const [timesheetPage, setTimesheetPage] = useState(1);
+    const [timesheetsPerPage] = useState(10);
+    const [timesheetSearch, setTimesheetSearch] = useState('');
 
-    // Additional State for New Features
-    const [assignedLocations, setAssignedLocations] = useState<any>(null);
-    const [regionalManagerRegions, setRegionalManagerRegions] = useState<Region[]>([]);
-
-    // Fetch Data on Mount
     useEffect(() => {
         const fetchDashboardData = async () => {
             setIsLoading(true);
@@ -173,14 +161,14 @@ const SupervisorDashboard: React.FC = () => {
                     }
                 };
 
-                const fetchVisits = async () => {
+                const fetchTimesheets = async () => {
                     try {
                         const timesheetsData = await timesheetAPI.getTimesheetsBySupervisor(user.userID);
-                        const allVisits = timesheetsData.flatMap(ts => ts.Visits || []);
-                        setVisits(allVisits);
+                        const sortedTimesheets = (timesheetsData || []).sort((a, b) => a.weekNumber - b.weekNumber);
+                        setTimesheets(sortedTimesheets);
                     } catch (err) {
-                        newErrors.visits = t('dashboard.errors.visits');
-                        console.error('Error fetching visits:', err);
+                        newErrors.timesheets = t('dashboard.errors.timesheets');
+                        console.error('Error fetching timesheets:', err);
                     }
                 };
 
@@ -194,36 +182,6 @@ const SupervisorDashboard: React.FC = () => {
                     }
                 };
 
-                const fetchDirector = async () => {
-                    try {
-                        const directorData = await userAPI.getDirectorByUser(user.userID);
-                        setDirector(directorData[0] || null);
-                    } catch (err) {
-                        newErrors.director = t('dashboard.errors.director');
-                        console.error('Error fetching director:', err);
-                    }
-                };
-
-                const fetchAssignedLocations = async () => {
-                    try {
-                        const assignedData = await locationApi.getAssignedLocations(user.userID);
-                        setAssignedLocations(assignedData);
-                    } catch (err) {
-                        console.error('Error fetching assigned locations:', err);
-                    }
-                };
-
-                const fetchRegionalManagerRegions = async () => {
-                    if (regionalManager) {
-                        try {
-                            const regionsData = await locationApi.getRegionsByUser(regionalManager.userID);
-                            setRegionalManagerRegions(regionsData || []);
-                        } catch (err) {
-                            console.error('Error fetching regional manager regions:', err);
-                        }
-                    }
-                };
-
                 await Promise.all([
                     fetchAgents(),
                     fetchLocations(),
@@ -231,11 +189,8 @@ const SupervisorDashboard: React.FC = () => {
                     fetchGovernorates(),
                     fetchRegions(),
                     fetchReceiptBooks(),
-                    fetchVisits(),
+                    fetchTimesheets(),
                     fetchRegionalManager(),
-                    fetchDirector(),
-                    fetchAssignedLocations(),
-                    fetchRegionalManagerRegions(),
                 ]);
 
                 setErrors(newErrors);
@@ -250,9 +205,10 @@ const SupervisorDashboard: React.FC = () => {
     }, [user, t]);
 
     // KPI Calculations
-    const allVisits = visits;
+    const allVisits = timesheets.flatMap(ts => ts.Visits || []);
     const numAgents = agents.length;
     const numReceiptBooks = receiptBooks.length;
+    const numTimesheets = timesheets.length;
     const numVisits = allVisits.length;
 
     // Visits Per Agent
@@ -264,7 +220,7 @@ const SupervisorDashboard: React.FC = () => {
         };
     }).filter(agent => agent.visits > 0);
 
-    // Visits Per Delegation
+    // Move useMemo to the top of the hook declarations to ensure consistent order
     const visitsPerDelegationData = React.useMemo(() => {
         try {
             const agentDelegationMap = agents.reduce((map, agent) => {
@@ -296,73 +252,55 @@ const SupervisorDashboard: React.FC = () => {
         }
     }, [agents, allVisits, delegations]);
 
+    if (isLoading) {
+        return (
+            <div className="dashboard-container">
+                <div className="custom-skeleton pulsing" style={{ width: '100%', height: '100vh' }} />
+            </div>
+        );
+    }
+
+
+
     // Receipt Book Status Counts
     const receiptBookStatusCounts = receiptBooks.reduce((acc, book) => {
         acc[book.status] = (acc[book.status] || 0) + 1;
         return acc;
     }, {} as Record<string, number>);
-    const receiptBookPieData = Object.keys(receiptBookStatusCounts).map(status => ({
+    const pieData = Object.keys(receiptBookStatusCounts).map(status => ({
         name: status,
         value: receiptBookStatusCounts[status],
     }));
 
-    // Receipt Books by Type
-    const receiptBooksByTypeData = receiptBooks.reduce((acc, book) => {
-        acc[book.typeID] = (acc[book.typeID] || 0) + 1;
+    // Timesheet Status Counts
+    const timesheetStatusCounts = timesheets.reduce((acc, ts) => {
+        acc[ts.status] = (acc[ts.status] || 0) + 1;
         return acc;
     }, {} as Record<string, number>);
-    const receiptBooksByTypeChartData = Object.keys(receiptBooksByTypeData).map(type => ({
-        type: type,
-        count: receiptBooksByTypeData[type],
-    }));
-
-    // Visit Status Counts
-    const visitStatusCounts = allVisits.reduce((acc, visit) => {
-        acc[visit.status] = (acc[visit.status] || 0) + 1;
-        return acc;
-    }, {} as Record<string, number>);
-    const visitPieData = Object.keys(visitStatusCounts).map(status => ({
+    const timesheetPieData = Object.keys(timesheetStatusCounts).map(status => ({
         name: status,
-        value: visitStatusCounts[status],
+        value: timesheetStatusCounts[status],
     }));
 
     // Visit Trends
-    const visitTrends = React.useMemo(() => {
-        const visitsByWeek = allVisits.reduce((acc, visit) => {
-            const week = new Date(visit.date).toLocaleDateString('en-US', { week: 'numeric', year: 'numeric' });
-            acc[week] = (acc[week] || 0) + 1;
-            return acc;
-        }, {} as Record<string, number>);
-        return Object.keys(visitsByWeek).map(week => ({
-            week,
-            visits: visitsByWeek[week],
-        }));
-    }, [allVisits]);
-
-    // Visits by Month
-    const visitsByMonthData = React.useMemo(() => {
-        const visitsByMonth = allVisits.reduce((acc, visit) => {
-            const month = new Date(visit.date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-            acc[month] = (acc[month] || 0) + 1;
-            return acc;
-        }, {} as Record<string, number>);
-        return Object.keys(visitsByMonth).map(month => ({
-            month,
-            visits: visitsByMonth[month],
-        }));
-    }, [allVisits]);
+    const visitTrends = timesheets.map(ts => ({
+        week: `Week ${ts.weekNumber}`,
+        visits: ts.Visits?.length || 0,
+    }));
 
     // Average Visit Duration Per Agent
-    const agentStats = allVisits.reduce((acc, visit) => {
-        if (visit.agentID) {
-            if (!acc[visit.agentID]) {
-                acc[visit.agentID] = { visitCount: 0, durations: [] };
+    const agentStats = timesheets.reduce((acc, ts) => {
+        ts.Visits?.forEach(visit => {
+            if (visit.agentID) {
+                if (!acc[visit.agentID]) {
+                    acc[visit.agentID] = { visitCount: 0, durations: [] };
+                }
+                acc[visit.agentID].visitCount++;
+                if (visit.duration != null) {
+                    acc[visit.agentID].durations.push(visit.duration);
+                }
             }
-            acc[visit.agentID].visitCount++;
-            if (visit.duration != null) {
-                acc[visit.agentID].durations.push(visit.duration);
-            }
-        }
+        });
         return acc;
     }, {} as { [key: string]: { visitCount: number; durations: number[] } });
 
@@ -377,44 +315,30 @@ const SupervisorDashboard: React.FC = () => {
     }).filter(agent => agent.averageDuration > 0);
 
     // Agent Activity Over Time
-    const agentVisitTrendsData = React.useMemo(() => {
-        const visitsByWeekAndAgent = allVisits.reduce((acc, visit) => {
-            const week = new Date(visit.date).toLocaleDateString('en-US', { week: 'numeric', year: 'numeric' });
-            if (visit.agentID) {
-                if (!acc[week]) acc[week] = {};
-                acc[week][visit.agentID] = (acc[week][visit.agentID] || 0) + 1;
-            }
-            return acc;
-        }, {} as Record<string, Record<string, number>>);
-
-        const weeks = Object.keys(visitsByWeekAndAgent).sort();
-        return weeks.map(week => {
-            const weekData: { week: string;[key: string]: string | number } = { week };
-            agents.forEach(agent => {
-                weekData[`${agent.name} ${agent.lastname}`] = visitsByWeekAndAgent[week][agent.agentID] || 0;
-            });
-            return weekData;
+    const agentVisitTrendsData = timesheets.map(ts => {
+        const weekData: { week: string;[key: string]: string | number } = { week: `Week ${ts.weekNumber}` };
+        agents.forEach(agent => {
+            const agentVisits = (ts.Visits || []).filter(visit => visit.agentID === agent.agentID).length;
+            weekData[`${agent.name} ${agent.lastname}`] = agentVisits;
         });
-    }, [allVisits, agents]);
+        return weekData;
+    });
 
-    // Agent Performance (Scatter Data)
-    const agentPerformanceData = React.useMemo(() => {
-        return agents.map(agent => {
-            const agentVisits = allVisits.filter(visit => visit.agentID === agent.agentID);
-            const totalDuration = agentVisits.reduce((sum, visit) => sum + (visit.duration || 0), 0);
-            return {
-                name: `${agent.name} ${agent.lastname}`,
-                visits: agentVisits.length,
-                duration: totalDuration,
-            };
-        }).filter(data => data.visits > 0);
-    }, [agents, allVisits]);
+    // Visit Status Distribution
+    const visitStatusCounts = allVisits.reduce((acc, visit) => {
+        const status = visit.status || 'Unknown';
+        acc[status] = (acc[status] || 0) + 1;
+        return acc;
+    }, {} as Record<string, number>);
+    const visitStatusPieData = Object.keys(visitStatusCounts).map(status => ({
+        name: status,
+        value: visitStatusCounts[status],
+    }));
 
     // Pagination and Filtering
     const filteredAgents = agents.filter(agent =>
-        (`${agent.name} ${agent.lastname}`.toLowerCase().includes(agentSearch.toLowerCase()) ||
-            agent.phone.includes(agentSearch)) &&
-        (agentFilterStatus ? agent.status === agentFilterStatus : true)
+        `${agent.name} ${agent.lastname}`.toLowerCase().includes(agentSearch.toLowerCase()) ||
+        agent.phone.includes(agentSearch)
     );
     const indexOfLastAgent = agentPage * agentsPerPage;
     const indexOfFirstAgent = indexOfLastAgent - agentsPerPage;
@@ -422,26 +346,21 @@ const SupervisorDashboard: React.FC = () => {
     const totalAgentPages = Math.ceil(filteredAgents.length / agentsPerPage);
 
     const filteredReceiptBooks = receiptBooks.filter(book =>
-        book.number.toLowerCase().includes(receiptBookSearch.toLowerCase()) &&
-        (receiptBookFilterType ? book.typeID === receiptBookFilterType : true) &&
-        (receiptBookFilterStatus ? book.status === receiptBookFilterStatus : true)
+        book.number.toLowerCase().includes(receiptBookSearch.toLowerCase())
     );
     const indexOfLastReceiptBook = receiptBookPage * receiptBooksPerPage;
     const indexOfFirstReceiptBook = indexOfLastReceiptBook - receiptBooksPerPage;
     const currentReceiptBooks = filteredReceiptBooks.slice(indexOfFirstReceiptBook, indexOfLastReceiptBook);
     const totalReceiptBookPages = Math.ceil(filteredReceiptBooks.length / receiptBooksPerPage);
 
-    const filteredVisits = visits.filter(visit =>
-        (visit.date.includes(visitSearch) ||
-            visit.agentID?.includes(visitSearch) ||
-            visit.location?.includes(visitSearch)) &&
-        (visitFilterPeriod ? new Date(visit.date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) === visitFilterPeriod : true) &&
-        (visitFilterStatus ? visit.status === visitFilterStatus : true)
+    const filteredTimesheets = timesheets.filter(ts =>
+        ts.weekNumber.toString().includes(timesheetSearch) ||
+        ts.year.toString().includes(timesheetSearch)
     );
-    const indexOfLastVisit = visitPage * visitsPerPage;
-    const indexOfFirstVisit = indexOfLastVisit - visitsPerPage;
-    const currentVisits = filteredVisits.slice(indexOfFirstVisit, indexOfLastVisit);
-    const totalVisitPages = Math.ceil(filteredVisits.length / visitsPerPage);
+    const indexOfLastTimesheet = timesheetPage * timesheetsPerPage;
+    const indexOfFirstTimesheet = indexOfLastTimesheet - timesheetsPerPage;
+    const currentTimesheets = filteredTimesheets.slice(indexOfFirstTimesheet, indexOfLastTimesheet);
+    const totalTimesheetPages = Math.ceil(filteredTimesheets.length / timesheetsPerPage);
 
     // Agent Visits Map
     const agentVisitsMap = agents.reduce((map, agent) => {
@@ -494,9 +413,23 @@ const SupervisorDashboard: React.FC = () => {
                         )}
                     </div>
                 </ErrorBoundary>
-                <ErrorBoundary fallback={<div className="summary-card"><p className="error-text">{t('dashboard.errors.visits')}</p></div>}>
+                <ErrorBoundary fallback={<div className="summary-card"><p className="error-text">{t('dashboard.errors.timesheets')}</p></div>}>
                     <div className="summary-card">
                         <FaClock className="card-icon" />
+                        <h2>{t('dashboard.timesheets')}</h2>
+                        {errors.timesheets ? (
+                            <p className="error-text">{errors.timesheets}</p>
+                        ) : (
+                            <>
+                                <p className="card-value">{numTimesheets}</p>
+                                <p className="card-description">{t('dashboard.timesheetsSubmitted')}</p>
+                            </>
+                        )}
+                    </div>
+                </ErrorBoundary>
+                <ErrorBoundary fallback={<div className="summary-card"><p className="error-text">{t('dashboard.errors.visits')}</p></div>}>
+                    <div className="summary-card">
+                        <FaMapMarkerAlt className="card-icon" />
                         <h2>{t('dashboard.visits')}</h2>
                         {errors.visits ? (
                             <p className="error-text">{errors.visits}</p>
@@ -504,34 +437,6 @@ const SupervisorDashboard: React.FC = () => {
                             <>
                                 <p className="card-value">{numVisits}</p>
                                 <p className="card-description">{t('dashboard.visitsLogged')}</p>
-                            </>
-                        )}
-                    </div>
-                </ErrorBoundary>
-                <ErrorBoundary fallback={<div className="summary-card"><p className="error-text">{t('dashboard.errors.delegations')}</p></div>}>
-                    <div className="summary-card">
-                        <FaMapMarkerAlt className="card-icon" />
-                        <h2>{t('dashboard.delegations')}</h2>
-                        {errors.delegations ? (
-                            <p className="error-text">{errors.delegations}</p>
-                        ) : (
-                            <>
-                                <p className="card-value">{delegations.length}</p>
-                                <p className="card-description">{t('dashboard.delegationsAssigned')}</p>
-                            </>
-                        )}
-                    </div>
-                </ErrorBoundary>
-                <ErrorBoundary fallback={<div className="summary-card"><p className="error-text">{t('dashboard.errors.governorates')}</p></div>}>
-                    <div className="summary-card">
-                        <FaMapMarkerAlt className="card-icon" />
-                        <h2>{t('dashboard.governorates')}</h2>
-                        {errors.governorates ? (
-                            <p className="error-text">{errors.governorates}</p>
-                        ) : (
-                            <>
-                                <p className="card-value">{governorates.length}</p>
-                                <p className="card-description">{t('dashboard.governoratesAssigned')}</p>
                             </>
                         )}
                     </div>
@@ -551,32 +456,42 @@ const SupervisorDashboard: React.FC = () => {
                                     value={agentSearch}
                                     onChange={(e) => setAgentSearch(e.target.value)}
                                 />
-                                <select
-                                    value={agentFilterStatus}
-                                    onChange={(e) => setAgentFilterStatus(e.target.value)}
-                                >
-                                    <option value="">{t('dashboard.allStatuses')}</option>
-                                    <option value="active">{t('dashboard.active')}</option>
-                                    <option value="inactive">{t('dashboard.inactive')}</option>
-                                </select>
                             </div>
-                            <div className="card-grid">
-                                {currentAgents.map(agent => (
-                                    <div key={agent.agentID} className="agent-card">
-                                        <h3>{`${agent.name} ${agent.lastname}`}</h3>
-                                        <p>{t('dashboard.phone')}: {agent.phone}</p>
-                                        <p>{t('dashboard.email')}: {agent.email}</p>
-                                        <p>{t('dashboard.location')}: {agent.location || 'N/A'}</p>
-                                        <p>{t('dashboard.visits')}: {agentVisitsMap[agent.agentID] || 0}</p>
-                                        <button
-                                            className="action-btn"
-                                            onClick={() => navigate(`/visit-form?agentId=${agent.agentID}`)}
-                                        >
-                                            {t('dashboard.addVisit')}
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
+                            <table className="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>{t('dashboard.table.name')}</th>
+                                        <th>{t('dashboard.table.phone')}</th>
+                                        <th>{t('dashboard.table.email')}</th>
+                                        <th>{t('dashboard.table.location')}</th>
+                                        <th>{t('dashboard.table.visits')}</th>
+                                        <th>{t('dashboard.table.actions')}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {currentAgents.map(agent => (
+                                        <tr key={agent.agentID}>
+                                            <td>
+                                                <Link to={`/agents/${agent.agentID}`} className="table-link">
+                                                    {agent.name} {agent.lastname}
+                                                </Link>
+                                            </td>
+                                            <td>{agent.phone}</td>
+                                            <td>{agent.email}</td>
+                                            <td>{agent.location || 'N/A'}</td>
+                                            <td>{agentVisitsMap[agent.agentID] || 0}</td>
+                                            <td>
+                                                <button
+                                                    className="action-btn"
+                                                    onClick={() => navigate(`/agents/${agent.agentID}`)}
+                                                >
+                                                    {t('dashboard.viewDetails')}
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
                             {filteredAgents.length === 0 && <p className="no-data">{t('dashboard.noAgents')}</p>}
                             {totalAgentPages > 1 && (
                                 <Pagination
@@ -625,33 +540,6 @@ const SupervisorDashboard: React.FC = () => {
                                     </ul>
                                 </div>
                             </div>
-                            {assignedLocations && (
-                                <div className="assigned-locations">
-                                    <h3>{t('dashboard.assignedGovernorates')}</h3>
-                                    <ul className="location-list">
-                                        {assignedLocations.governorates.map((gov: Governorate) => (
-                                            <li key={gov.governorateID}>
-                                                {gov.name}
-                                                <ul>
-                                                    {assignedLocations.delegations.filter((del: Delegation) => del.governorateID === gov.governorateID).map((del: Delegation) => (
-                                                        <li key={del.delegationID}>{del.name}</li>
-                                                    ))}
-                                                </ul>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            )}
-                            {regionalManagerRegions.length > 0 && (
-                                <div className="regional-manager-regions">
-                                    <h3>{t('dashboard.regionalManagerRegions')}</h3>
-                                    <ul className="location-list">
-                                        {regionalManagerRegions.map(region => (
-                                            <li key={region.regionID}>{region.name}</li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            )}
                         </div>
                     </section>
                 )}
@@ -670,36 +558,27 @@ const SupervisorDashboard: React.FC = () => {
                                     value={receiptBookSearch}
                                     onChange={(e) => setReceiptBookSearch(e.target.value)}
                                 />
-                                <select
-                                    value={receiptBookFilterType}
-                                    onChange={(e) => setReceiptBookFilterType(e.target.value)}
-                                >
-                                    <option value="">{t('dashboard.allTypes')}</option>
-                                    {/* Populate with actual receipt book types */}
-                                    {Object.keys(receiptBooksByTypeData).map(type => (
-                                        <option key={type} value={type}>{type}</option>
-                                    ))}
-                                </select>
-                                <select
-                                    value={receiptBookFilterStatus}
-                                    onChange={(e) => setReceiptBookFilterStatus(e.target.value)}
-                                >
-                                    <option value="">{t('dashboard.allStatuses')}</option>
-                                    {Object.keys(receiptBookStatusCounts).map(status => (
-                                        <option key={status} value={status}>{status}</option>
-                                    ))}
-                                </select>
                             </div>
-                            <div className="card-grid">
-                                {currentReceiptBooks.map(book => (
-                                    <div key={book.bookID} className="receipt-book-card">
-                                        <h3>{book.number}</h3>
-                                        <p>{t('dashboard.type')}: {book.typeName || book.typeID}</p>
-                                        <p>{t('dashboard.status')}: {book.status}</p>
-                                        <p>{t('dashboard.holder')}: {book.holder ? `${book.holder.firstname} ${book.holder.lastname}` : 'N/A'}</p>
-                                    </div>
-                                ))}
-                            </div>
+                            <table className="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>{t('dashboard.table.number')}</th>
+                                        <th>{t('dashboard.table.type')}</th>
+                                        <th>{t('dashboard.table.status')}</th>
+                                        <th>{t('dashboard.table.holder')}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {currentReceiptBooks.map(book => (
+                                        <tr key={book.bookID}>
+                                            <td>{book.number}</td>
+                                            <td>{book.typeID}</td>
+                                            <td>{book.status}</td>
+                                            <td>{book.holder ? `${book.holder.firstname} ${book.holder.lastname}` : 'N/A'}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
                             {filteredReceiptBooks.length === 0 && <p className="no-data">{t('dashboard.noReceiptBooks')}</p>}
                             {totalReceiptBookPages > 1 && (
                                 <Pagination
@@ -708,107 +587,85 @@ const SupervisorDashboard: React.FC = () => {
                                     onPageChange={setReceiptBookPage}
                                 />
                             )}
-                            <div className="chart-container">
-                                <h3>{t('dashboard.receiptBookStatus')}</h3>
-                                <PieChart width={400} height={400}>
-                                    <Pie data={receiptBookPieData} cx={200} cy={200} labelLine={false} outerRadius={80} dataKey="value">
-                                        {receiptBookPieData.map((_, index) => (
-                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip />
-                                    <Legend />
-                                </PieChart>
-                            </div>
-                            <div className="chart-container">
-                                <h3>{t('dashboard.receiptBooksByType')}</h3>
-                                <BarChart width={600} height={300} data={receiptBooksByTypeChartData}>
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="type" />
-                                    <YAxis />
-                                    <Tooltip />
-                                    <Legend />
-                                    <Bar dataKey="count" fill="#4cb1c7" />
-                                </BarChart>
-                            </div>
+                            <ErrorBoundary fallback={<p className="error-text">{t('dashboard.errors.receiptBookChart')}</p>}>
+                                {pieData.length > 0 && (
+                                    <div className="chart-container">
+                                        <h3>{t('dashboard.receiptBookStatus')}</h3>
+                                        <PieChart width={400} height={400}>
+                                            <Pie data={pieData} cx={200} cy={200} labelLine={false} outerRadius={80} dataKey="value">
+                                                {pieData.map((_, index) => (
+                                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                                ))}
+                                            </Pie>
+                                            <Tooltip />
+                                            <Legend />
+                                        </PieChart>
+                                    </div>
+                                )}
+                            </ErrorBoundary>
                         </div>
                     </section>
                 )}
             </ErrorBoundary>
 
-            {/* Visits Section */}
-            <ErrorBoundary fallback={<section className="dashboard-section"><p className="error-text">{t('dashboard.errors.visits')}</p></section>}>
-                {!errors.visits && (
+            {/* Timesheets Section */}
+            <ErrorBoundary fallback={<section className="dashboard-section"><p className="error-text">{t('dashboard.errors.timesheets')}</p></section>}>
+                {!errors.timesheets && (
                     <section className="dashboard-section">
-                        <h2><FaCalendarAlt /> {t('dashboard.visits')}</h2>
+                        <h2><FaClock /> {t('dashboard.timesheets')}</h2>
                         <div className="section-card">
                             <div className="search-bar">
                                 <input
                                     type="text"
-                                    placeholder={t('dashboard.searchVisits')}
-                                    value={visitSearch}
-                                    onChange={(e) => setVisitSearch(e.target.value)}
+                                    placeholder={t('dashboard.searchTimesheets')}
+                                    value={timesheetSearch}
+                                    onChange={(e) => setTimesheetSearch(e.target.value)}
                                 />
-                                <select
-                                    value={visitFilterPeriod}
-                                    onChange={(e) => setVisitFilterPeriod(e.target.value)}
-                                >
-                                    <option value="">{t('dashboard.allPeriods')}</option>
-                                    {visitsByMonthData.map(data => (
-                                        <option key={data.month} value={data.month}>{data.month}</option>
-                                    ))}
-                                </select>
-                                <select
-                                    value={visitFilterStatus}
-                                    onChange={(e) => setVisitFilterStatus(e.target.value)}
-                                >
-                                    <option value="">{t('dashboard.allStatuses')}</option>
-                                    {Object.keys(visitStatusCounts).map(status => (
-                                        <option key={status} value={status}>{status}</option>
-                                    ))}
-                                </select>
                             </div>
-                            <div className="card-grid">
-                                {currentVisits.map(visit => (
-                                    <div key={visit.visitID} className="visit-card">
-                                        <h3>{visit.date}</h3>
-                                        <p>{t('dashboard.agent')}: {visit.agentID || 'N/A'}</p>
-                                        <p>{t('dashboard.location')}: {visit.location || 'N/A'}</p>
-                                        <p>{t('dashboard.status')}: {visit.status}</p>
-                                    </div>
-                                ))}
-                            </div>
-                            {filteredVisits.length === 0 && <p className="no-data">{t('dashboard.noVisits')}</p>}
-                            {totalVisitPages > 1 && (
+                            <table className="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>{t('dashboard.table.week')}</th>
+                                        <th>{t('dashboard.table.year')}</th>
+                                        <th>{t('dashboard.table.status')}</th>
+                                        <th>{t('dashboard.table.visits')}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {currentTimesheets.map(ts => (
+                                        <tr key={ts.timesheetID}>
+                                            <td>{ts.weekNumber}</td>
+                                            <td>{ts.year}</td>
+                                            <td>{ts.status}</td>
+                                            <td>{ts.Visits?.length || 0}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                            {filteredTimesheets.length === 0 && <p className="no-data">{t('dashboard.noTimesheets')}</p>}
+                            {totalTimesheetPages > 1 && (
                                 <Pagination
-                                    currentPage={visitPage}
-                                    totalPages={totalVisitPages}
-                                    onPageChange={setVisitPage}
+                                    currentPage={timesheetPage}
+                                    totalPages={totalTimesheetPages}
+                                    onPageChange={setTimesheetPage}
                                 />
                             )}
-                            <div className="chart-container">
-                                <h3>{t('dashboard.visitStatus')}</h3>
-                                <PieChart width={400} height={400}>
-                                    <Pie data={visitPieData} cx={200} cy={200} labelLine={false} outerRadius={80} dataKey="value">
-                                        {visitPieData.map((_, index) => (
-                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip />
-                                    <Legend />
-                                </PieChart>
-                            </div>
-                            <div className="chart-container">
-                                <h3>{t('dashboard.visitTrends')}</h3>
-                                <LineChart width={600} height={300} data={visitTrends}>
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="week" />
-                                    <YAxis />
-                                    <Tooltip />
-                                    <Legend />
-                                    <Line type="monotone" dataKey="visits" stroke="#4cb1c7" />
-                                </LineChart>
-                            </div>
+                            <ErrorBoundary fallback={<p className="error-text">{t('dashboard.errors.timesheetChart')}</p>}>
+                                {timesheetPieData.length > 0 && (
+                                    <div className="chart-container">
+                                        <h3>{t('dashboard.timesheetStatus')}</h3>
+                                        <PieChart width={400} height={400}>
+                                            <Pie data={timesheetPieData} cx={200} cy={200} labelLine={false} outerRadius={80} dataKey="value">
+                                                {timesheetPieData.map((_, index) => (
+                                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                                ))}
+                                            </Pie>
+                                            <Tooltip />
+                                            <Legend />
+                                        </PieChart>
+                                    </div>
+                                )}
+                            </ErrorBoundary>
                         </div>
                     </section>
                 )}
@@ -816,145 +673,129 @@ const SupervisorDashboard: React.FC = () => {
 
             {/* KPIs Section */}
             <ErrorBoundary fallback={<section className="dashboard-section"><p className="error-text">{t('dashboard.errors.kpis')}</p></section>}>
-                {!errors.agents && !errors.visits && (
+                {!errors.agents && !errors.timesheets && (
                     <section className="dashboard-section">
                         <h2><FaChartBar /> {t('dashboard.kpis')}</h2>
                         <div className="section-card">
-                            <div className="chart-container">
-                                <h3>{t('dashboard.visitsPerAgent')}</h3>
-                                <BarChart width={600} height={300} data={visitsPerAgent}>
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="name" />
-                                    <YAxis />
-                                    <Tooltip />
-                                    <Legend />
-                                    <Bar dataKey="visits" fill="#4cb1c7" />
-                                </BarChart>
-                            </div>
-                            <div className="chart-container">
-                                <h3>{t('dashboard.visitTrends')}</h3>
-                                <LineChart width={600} height={300} data={visitTrends}>
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="week" />
-                                    <YAxis />
-                                    <Tooltip />
-                                    <Legend />
-                                    <Line type="monotone" dataKey="visits" stroke="#4cb1c7" />
-                                </LineChart>
-                            </div>
-                            <div className="chart-container">
-                                <h3>{t('dashboard.averageVisitDuration')}</h3>
-                                <BarChart width={600} height={300} data={averageDurationPerAgent}>
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="name" />
-                                    <YAxis />
-                                    <Tooltip />
-                                    <Legend />
-                                    <Bar dataKey="averageDuration" fill="#4cb1c7" />
-                                </BarChart>
-                            </div>
-                            <div className="chart-container">
-                                <h3>{t('dashboard.agentActivity')}</h3>
-                                <LineChart width={600} height={300} data={agentVisitTrendsData}>
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="week" />
-                                    <YAxis />
-                                    <Tooltip />
-                                    <Legend />
-                                    {agents.map((agent, index) => (
-                                        <Line
-                                            key={agent.agentID}
-                                            type="monotone"
-                                            dataKey={`${agent.name} ${agent.lastname}`}
-                                            stroke={COLORS[index % COLORS.length]}
-                                        />
-                                    ))}
-                                </LineChart>
-                            </div>
-                            <div className="chart-container">
-                                <h3>{t('dashboard.visitsPerDelegation')}</h3>
-                                <BarChart width={600} height={300} data={visitsPerDelegationData}>
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="name" />
-                                    <YAxis />
-                                    <Tooltip />
-                                    <Legend />
-                                    <Bar dataKey="visits" fill="#4cb1c7" />
-                                </BarChart>
-                            </div>
-                            <div className="chart-container">
-                                <h3>{t('dashboard.visitStatusDistribution')}</h3>
-                                <PieChart width={400} height={400}>
-                                    <Pie data={visitPieData} cx={200} cy={200} labelLine={false} outerRadius={80} dataKey="value">
-                                        {visitPieData.map((_, index) => (
-                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip />
-                                    <Legend />
-                                </PieChart>
-                            </div>
-                            <div className="chart-container">
-                                <h3>{t('dashboard.visitsByMonth')}</h3>
-                                <AreaChart width={600} height={300} data={visitsByMonthData}>
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="month" />
-                                    <YAxis />
-                                    <Tooltip />
-                                    <Legend />
-                                    <Area type="monotone" dataKey="visits" stroke="#4cb1c7" fill="#4cb1c7" />
-                                </AreaChart>
-                            </div>
-                            <div className="chart-container">
-                                <h3>{t('dashboard.agentPerformance')}</h3>
-                                <ScatterChart width={600} height={300}>
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis type="number" dataKey="visits" name="Visits" />
-                                    <YAxis type="number" dataKey="duration" name="Duration (min)" />
-                                    <Tooltip cursor={{ strokeDasharray: '3 3' }} />
-                                    <Legend />
-                                    <Scatter name="Agents" data={agentPerformanceData} fill="#4cb1c7" />
-                                </ScatterChart>
-                            </div>
+                            <ErrorBoundary fallback={<p className="error-text">{t('dashboard.errors.visitsPerAgent')}</p>}>
+                                {visitsPerAgent.length > 0 && (
+                                    <div className="chart-container">
+                                        <h3>{t('dashboard.visitsPerAgent')}</h3>
+                                        <BarChart width={600} height={300} data={visitsPerAgent}>
+                                            <CartesianGrid strokeDasharray="3 3" />
+                                            <XAxis dataKey="name" />
+                                            <YAxis />
+                                            <Tooltip />
+                                            <Legend />
+                                            <Bar dataKey="visits" fill="#4cb1c7" />
+                                        </BarChart>
+                                    </div>
+                                )}
+                            </ErrorBoundary>
+                            <ErrorBoundary fallback={<p className="error-text">{t('dashboard.errors.visitTrends')}</p>}>
+                                {visitTrends.length > 0 && (
+                                    <div className="chart-container">
+                                        <h3>{t('dashboard.visitTrends')}</h3>
+                                        <LineChart width={600} height={300} data={visitTrends}>
+                                            <CartesianGrid strokeDasharray="3 3" />
+                                            <XAxis dataKey="week" />
+                                            <YAxis />
+                                            <Tooltip />
+                                            <Legend />
+                                            <Line type="monotone" dataKey="visits" stroke="#4cb1c7" />
+                                        </LineChart>
+                                    </div>
+                                )}
+                            </ErrorBoundary>
+                            <ErrorBoundary fallback={<p className="error-text">{t('dashboard.errors.averageVisitDuration')}</p>}>
+                                {averageDurationPerAgent.length > 0 && (
+                                    <div className="chart-container">
+                                        <h3>{t('dashboard.averageVisitDuration')}</h3>
+                                        <BarChart width={600} height={300} data={averageDurationPerAgent}>
+                                            <CartesianGrid strokeDasharray="3 3" />
+                                            <XAxis dataKey="name" />
+                                            <YAxis />
+                                            <Tooltip />
+                                            <Legend />
+                                            <Bar dataKey="averageDuration" fill="#4cb1c7" />
+                                        </BarChart>
+                                    </div>
+                                )}
+                            </ErrorBoundary>
+                            <ErrorBoundary fallback={<p className="error-text">{t('dashboard.errors.agentActivity')}</p>}>
+                                {agentVisitTrendsData.length > 0 && (
+                                    <div className="chart-container">
+                                        <h3>{t('dashboard.agentActivity')}</h3>
+                                        <LineChart width={600} height={300} data={agentVisitTrendsData}>
+                                            <CartesianGrid strokeDasharray="3 3" />
+                                            <XAxis dataKey="week" />
+                                            <YAxis />
+                                            <Tooltip />
+                                            <Legend />
+                                            {agents.map((agent, index) => (
+                                                <Line
+                                                    key={agent.agentID}
+                                                    type="monotone"
+                                                    dataKey={`${agent.name} ${agent.lastname}`}
+                                                    stroke={COLORS[index % COLORS.length]}
+                                                />
+                                            ))}
+                                        </LineChart>
+                                    </div>
+                                )}
+                            </ErrorBoundary>
+                            <ErrorBoundary fallback={<p className="error-text">{t('dashboard.errors.visitsPerDelegation')}</p>}>
+                                {visitsPerDelegationData.length > 0 && (
+                                    <div className="chart-container">
+                                        <h3>{t('dashboard.visitsPerDelegation')}</h3>
+                                        <BarChart width={600} height={300} data={visitsPerDelegationData}>
+                                            <CartesianGrid strokeDasharray="3 3" />
+                                            <XAxis dataKey="name" />
+                                            <YAxis />
+                                            <Tooltip />
+                                            <Legend />
+                                            <Bar dataKey="visits" fill="#4cb1c7" />
+                                        </BarChart>
+                                    </div>
+                                )}
+                            </ErrorBoundary>
+                            <ErrorBoundary fallback={<p className="error-text">{t('dashboard.errors.visitStatusDistribution')}</p>}>
+                                {visitStatusPieData.length > 0 && (
+                                    <div className="chart-container">
+                                        <h3>{t('dashboard.visitStatusDistribution')}</h3>
+                                        <PieChart width={400} height={400}>
+                                            <Pie data={visitStatusPieData} cx={200} cy={200} labelLine={false} outerRadius={80} dataKey="value">
+                                                {visitStatusPieData.map((_, index) => (
+                                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                                ))}
+                                            </Pie>
+                                            <Tooltip />
+                                            <Legend />
+                                        </PieChart>
+                                    </div>
+                                )}
+                            </ErrorBoundary>
+
                         </div>
                     </section>
                 )}
             </ErrorBoundary>
 
             {/* Hierarchy Section */}
-            <ErrorBoundary fallback={<section className="dashboard-section"><p className="error-text">{t('dashboard.errors.hierarchy')}</p></section>}>
-                {!errors.regionalManager && !errors.director && (
+            <ErrorBoundary fallback={<section className="dashboard-section"><p className="error-text">{t('dashboard.errors.regionalManager')}</p></section>}>
+                {!errors.regionalManager && (
                     <section className="dashboard-section">
                         <h2><FaSitemap /> {t('dashboard.hierarchy')}</h2>
-                        <div className="section-card hierarchy-card">
-                            {director && (
-                                <div className="hierarchy-level">
-                                    <h3>{t('dashboard.director')}</h3>
-                                    <p>{`${director.firstname} ${director.lastname}`}</p>
-                                    <p>{t('dashboard.email')}: {director.email}</p>
-                                    <p>{t('dashboard.phone')}: {director.phone}</p>
-                                </div>
-                            )}
-                            {regionalManager && (
-                                <div className="hierarchy-level">
-                                    <h3>{t('dashboard.regionalManager')}</h3>
-                                    <p>{`${regionalManager.firstname} ${regionalManager.lastname}`}</p>
+                        <div className="section-card">
+                            {regionalManager ? (
+                                <div className="hierarchy-info">
+                                    <p>{t('dashboard.reportsTo')}: <span className="highlight">{regionalManager.firstname} {regionalManager.lastname}</span></p>
                                     <p>{t('dashboard.email')}: {regionalManager.email}</p>
                                     <p>{t('dashboard.phone')}: {regionalManager.phone}</p>
-                                    <h4>{t('dashboard.assignedRegions')}</h4>
-                                    <ul>
-                                        {regionalManagerRegions.map(region => (
-                                            <li key={region.regionID}>{region.name}</li>
-                                        ))}
-                                    </ul>
                                 </div>
+                            ) : (
+                                <p className="no-data">{t('dashboard.noRegionalManager')}</p>
                             )}
-                            <div className="hierarchy-level">
-                                <h3>{t('dashboard.supervisor')}</h3>
-                                <p>{`${user?.firstname} ${user?.lastname}`}</p>
-                                <p>{t('dashboard.email')}: {user?.email}</p>
-                                <p>{t('dashboard.phone')}: {user?.phone}</p>
-                            </div>
                         </div>
                     </section>
                 )}
@@ -972,12 +813,6 @@ const SupervisorDashboard: React.FC = () => {
                     </button>
                     <button className="action-btn tertiary" onClick={() => navigate('/receipt-book-form')}>
                         {t('dashboard.assignReceiptBook')}
-                    </button>
-                    <button className="action-btn" onClick={() => navigate('/agents')}>
-                        {t('dashboard.manageAgents')}
-                    </button>
-                    <button className="action-btn" onClick={() => navigate('/reports')}>
-                        {t('dashboard.viewReports')}
                     </button>
                 </div>
             </section>

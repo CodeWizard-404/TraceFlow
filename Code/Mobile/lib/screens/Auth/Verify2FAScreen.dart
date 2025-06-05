@@ -64,7 +64,7 @@ class Verify2FAScreenState extends State<Verify2FAScreen> {
         );
         authProvider.clearError();
       } else if (authProvider.isAuthenticated && authProvider.permissionsLoaded) {
-        Navigator.pushReplacementNamed(context, '/timesheet/dashboard');
+        Navigator.pushReplacementNamed(context, '/timesheet-details');
       } else if (_successMessage != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

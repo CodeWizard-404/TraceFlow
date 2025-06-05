@@ -1,11 +1,14 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:TraceFlow/models/user.dart';
 import 'package:TraceFlow/services/auth_service.dart';
 import 'package:TraceFlow/services/cookie_manager.dart';
 import 'package:TraceFlow/utils/device_utils.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
+import 'package:local_auth/local_auth.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/role.dart';
 import '../services/http_client.dart';
 import '../utils/constants.dart';
@@ -29,6 +32,11 @@ class AuthProvider with ChangeNotifier {
   int? _tokenExpiry;
   Timer? _refreshTimer;
   String? _deviceIdentifier;
+  final LocalAuthentication _localAuth = LocalAuthentication();
+  final _storage = const FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+    iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
+  );
 
   String? get deviceIdentifier => _deviceIdentifier;
   User? get user => _user;
@@ -50,32 +58,97 @@ class AuthProvider with ChangeNotifier {
 
   AuthProvider() {
     _restoreSession();
+    _startProactiveRefreshTimer();
   }
 
-  void _startProactiveRefreshTimer() {
-    _refreshTimer?.cancel();
-    if (_tokenExpiry == null || _refreshToken == null) return;
-    final now = DateTime.now().millisecondsSinceEpoch;
-    final timeToExpiry = (_tokenExpiry! - now - 30000) / 1000; // 30s buffer
-    if (timeToExpiry <= 0) {
-      _refreshAccessToken();
-      return;
-    }
-    _refreshTimer = Timer(Duration(seconds: timeToExpiry.toInt()), () async {
-      if (_refreshToken != null) {
-        await _refreshAccessToken();
-        _startProactiveRefreshTimer(); // Restart timer after refresh
-      } else {
-        if (kDebugMode) print('No refresh token available, stopping refresh timer');
-        _refreshTimer?.cancel();
+  Future<bool> canUseBiometrics() async {
+    try {
+      final bool canAuthenticateWithBiometrics = await _localAuth.canCheckBiometrics;
+      final bool canAuthenticate = canAuthenticateWithBiometrics || await _localAuth.isDeviceSupported();
+      if (canAuthenticate) {
+        final List<BiometricType> availableBiometrics = await _localAuth.getAvailableBiometrics();
+        return availableBiometrics.isNotEmpty;
       }
-    });
+      return false;
+    } catch (e) {
+      if (kDebugMode) print('Error checking biometrics: $e');
+      return false;
+    }
   }
 
-  Future<bool> _isTokenExpired() async {
-    if (_tokenExpiry == null) return true;
-    final now = DateTime.now().millisecondsSinceEpoch;
-    return now >= _tokenExpiry! - 30000; // 30s buffer
+  Future<bool> authenticateWithBiometrics() async {
+    try {
+      return await _localAuth.authenticate(
+        localizedReason: 'Please authenticate to log in',
+        options: const AuthenticationOptions(
+          useErrorDialogs: true,
+          stickyAuth: true,
+          biometricOnly: true,
+        ),
+      );
+    } catch (e) {
+      if (kDebugMode) print('Biometric authentication error: $e');
+      return false;
+    }
+  }
+
+  Future<String?> readStoredEmail() async {
+    try {
+      return await _storage.read(key: 'userEmail');
+    } catch (e) {
+      if (kDebugMode) print('Failed to read stored email: $e');
+      return null;
+    }
+  }
+
+  Future<String?> readStoredPassword() async {
+    try {
+      return await _storage.read(key: 'userPassword');
+    } catch (e) {
+      if (kDebugMode) print('Failed to read stored password: $e');
+      return null;
+    }
+  }
+
+  Future<void> enableFingerprintLogin(String email, String password) async {
+    try {
+      await _storage.write(key: 'fingerprintEnabled', value: 'true');
+      await _storage.write(key: 'userEmail', value: email);
+      await _storage.write(key: 'userPassword', value: password);
+      if (kDebugMode) print('Fingerprint login enabled with credentials');
+    } catch (e) {
+      if (kDebugMode) print('Failed to enable fingerprint: $e');
+    }
+  }
+
+  Future<void> disableFingerprintLogin() async {
+    try {
+      await _storage.write(key: 'fingerprintEnabled', value: 'false');
+      await _storage.delete(key: 'userEmail');
+      await _storage.delete(key: 'userPassword');
+      if (kDebugMode) print('Fingerprint login disabled and credentials cleared');
+    } catch (e) {
+      if (kDebugMode) print('Failed to disable fingerprint: $e');
+    }
+  }
+
+  Future<bool> isFingerprintEnabled() async {
+    try {
+      final value = await _storage.read(key: 'fingerprintEnabled');
+      return value == 'true';
+    } catch (e) {
+      if (kDebugMode) print('Failed to read fingerprint status: $e');
+      return false;
+    }
+  }
+
+  Future<String?> getFingerprintStatus() async {
+    try {
+      return await _storage.read(key: 'fingerprintEnabled');
+    } catch (e) {
+      if (kDebugMode) print('Failed to get fingerprint status: $e');
+      return null;
+    }
   }
 
   Future<void> _restoreSession() async {
@@ -83,6 +156,29 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
     try {
       _deviceIdentifier = await DeviceUtils.getDeviceIdentifier();
+      final fingerprintEnabled = await isFingerprintEnabled();
+      if (fingerprintEnabled && await canUseBiometrics()) {
+        final authenticated = await authenticateWithBiometrics();
+        if (authenticated) {
+          final email = await readStoredEmail();
+          final password = await readStoredPassword();
+          if (email != null && password != null && _deviceIdentifier != null) {
+            if (kDebugMode) print('Biometric auth successful, attempting login with stored credentials');
+            await login(email, password);
+            return; // Exit if biometric login succeeds
+          } else {
+            if (kDebugMode) print('No stored credentials found');
+            _errorMessage = 'No stored credentials. Please log in manually.';
+          }
+        } else {
+          if (kDebugMode) print('Biometric authentication failed');
+          _errorMessage = 'Biometric authentication failed. Please log in manually.';
+        }
+      } else {
+        if (kDebugMode) print('Biometric login not enabled or not supported');
+      }
+
+      // Fallback to token-based session restoration
       await CookieManager.loadCookies();
       if (CookieManager.cookies.containsKey('accessToken') &&
           CookieManager.cookies.containsKey('refreshToken')) {
@@ -91,32 +187,87 @@ class AuthProvider with ChangeNotifier {
           await _refreshAccessToken();
         }
         await _checkAuthStatus();
-        _startProactiveRefreshTimer();
       } else {
         _errorMessage = 'Please log in to continue.';
       }
     } catch (e) {
+      if (kDebugMode) print('Session restore error: $e');
       _errorMessage = 'Please log in to continue.';
-      await CookieManager.clearCookies();
+      if (e.toString().contains('401') || e.toString().contains('403')) {
+        await CookieManager.clearCookies();
+      }
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
+  Future<bool> _isTokenExpired() async {
+    final accessToken = CookieManager.cookies['accessToken'];
+    if (accessToken == null) return true;
+    try {
+      final decoded = JwtDecoder.decode(accessToken);
+      final expiry = decoded['exp'] * 1000;
+      final now = DateTime.now().millisecondsSinceEpoch;
+      return now >= expiry - 30000; // 30 seconds before expiry
+    } catch (e) {
+      if (kDebugMode) print('Failed to decode token: $e');
+      return true;
+    }
+  }
+
   Future<void> _checkAuthStatus() async {
     try {
       final result = await AuthService.checkAuthStatus();
+      if (kDebugMode) print('Auth status result: $result');
       _user = User.fromJson(result['user']);
-      _tokenExpiry = DateTime.now().millisecondsSinceEpoch + (result['expiresIn'] as int);
+      _userRoles = _user!.roles
+          .map((r) => r.name)
+          .where((n) => n != null)
+          .cast<String>()
+          .toList();
+      _tokenExpiry = DateTime.now().millisecondsSinceEpoch + (result['expiresIn'] as int? ?? 900000);
       await _fetchPermissions();
       if (!isSupervisor) {
         throw Exception('Access denied: Supervisor role required');
       }
     } catch (e) {
-      _errorMessage = _parseError(e);
-      await CookieManager.clearCookies();
-      throw Exception(_errorMessage);
+      if (kDebugMode) print('Check auth status error: $e');
+      final accessToken = CookieManager.cookies['accessToken'];
+      if (accessToken != null) {
+        try {
+          final decoded = JwtDecoder.decode(accessToken);
+          final roles = (decoded['realm_access']?['roles'] as List<dynamic>? ?? [])
+              .asMap()
+              .entries
+              .map((e) => Role(
+            roleID: 'role_${e.key + 1}',
+            name: e.value.toString(),
+            description: null,
+            permissions: [],
+          ))
+              .toList();
+          _user = User(
+            userID: decoded['sub']?.toString() ?? 'unknown',
+            email: decoded['email']?.toString() ?? 'unknown@example.com',
+            roles: roles,
+          );
+          _userRoles = roles
+              .map((r) => r.name)
+              .where((n) => n != null)
+              .cast<String>()
+              .toList();
+          await _fetchPermissions();
+          if (!isSupervisor) {
+            throw Exception('Access denied: Supervisor role required');
+          }
+        } catch (tokenError) {
+          if (kDebugMode) print('Token decode error: $tokenError');
+          throw Exception('Authentication failed: $e');
+        }
+      } else {
+        throw Exception('Authentication failed: $e');
+      }
     }
   }
 
@@ -125,17 +276,19 @@ class AuthProvider with ChangeNotifier {
     if (kDebugMode) print('Starting permissions fetch for user: ${_user?.userID}');
     notifyListeners();
     try {
-      if (_user != null) {
+      if (_user != null && _user!.userID != 'unknown') {
         final success = await _loadPermissionsWithRetry(_user!.userID);
         if (!success) {
-          if (kDebugMode) print('Permissions load failed, triggering logout');
-          await logout();
-          _errorMessage = 'Failed to load permissions. Please log in again.';
+          if (kDebugMode) print('Permissions load failed, setting empty permissions');
+          _permissions = [];
+          _errorMessage = 'Unable to load permissions. Some features may be unavailable.';
         } else {
           if (kDebugMode) print('Permissions loaded successfully: $_permissions');
         }
       } else {
-        if (kDebugMode) print('No user, skipping permissions fetch');
+        if (kDebugMode) print('No valid user ID, setting empty permissions');
+        _permissions = [];
+        _errorMessage = 'Unable to load permissions due to invalid user ID.';
       }
     } catch (e) {
       if (kDebugMode) print('Permissions fetch error: $e');
@@ -202,7 +355,12 @@ class AuthProvider with ChangeNotifier {
         _startotpTimer();
       } else {
         await _handleSuccessfulLogin(result);
-        _startProactiveRefreshTimer();
+        final fingerprintEnabled = await isFingerprintEnabled();
+        if (fingerprintEnabled) {
+          await _storage.write(key: 'userEmail', value: identifier);
+          await _storage.write(key: 'userPassword', value: password);
+          if (kDebugMode) print('Stored credentials for biometric login');
+        }
         if (kDebugMode) print('After login, isSupervisor: $isSupervisor');
         if (!isSupervisor) {
           if (kDebugMode) print('Supervisor role not found, logging out');
@@ -237,7 +395,6 @@ class AuthProvider with ChangeNotifier {
         _startotpTimer();
       } else {
         await _handleSuccessfulLogin(result);
-        _startProactiveRefreshTimer();
         if (!isSupervisor) {
           await logout();
           throw Exception('Access denied: Supervisor role required');
@@ -269,7 +426,6 @@ class AuthProvider with ChangeNotifier {
         _startotpTimer();
       } else {
         await _handleSuccessfulLogin(result);
-        _startProactiveRefreshTimer();
         if (!isSupervisor) {
           await logout();
           throw Exception('Access denied: Supervisor role required');
@@ -308,7 +464,6 @@ class AuthProvider with ChangeNotifier {
       _refreshToken = result['refreshToken'] ?? '';
       await _handleSuccessfulLogin(result);
       _requires2FA = false;
-      _startProactiveRefreshTimer();
       if (!isSupervisor) {
         await logout();
         throw Exception('Access denied: Supervisor role required');
@@ -428,10 +583,13 @@ class AuthProvider with ChangeNotifier {
       _authTempToken = null;
       _refreshToken = null;
       _tokenExpiry = null;
+      await _storage.delete(key: 'userEmail');
+      await _storage.delete(key: 'userPassword');
       await CookieManager.clearCookies();
       _isLoading = false;
       if (kDebugMode) print('Logout completed');
       notifyListeners();
+      _startProactiveRefreshTimer();
     }
   }
 
@@ -455,13 +613,18 @@ class AuthProvider with ChangeNotifier {
       if (kDebugMode) print('Handling successful login with result: ${jsonEncode(result)}');
       if (result['user'] != null) {
         if (kDebugMode) print('Parsing user from response: ${result['user']}');
-        _user = User.fromJson(result['user']);
+        _user = User.fromJson(result['user'] is Map<String, dynamic>
+            ? result['user']
+            : {
+          'userID': result['userID'] ?? 'unknown',
+          'email': result['email'] ?? 'unknown@example.com',
+          'roles': result['roles'] ?? [],
+        });
         _userRoles = _user!.roles
-            ?.map((role) => role.name)
+            .map((role) => role.name)
             .where((name) => name != null)
             .cast<String>()
-            .toList() ??
-            [];
+            .toList();
         if (kDebugMode) print('User parsed: ${_user!.userID}, ${_user!.email}, Roles: $_userRoles');
       } else {
         if (kDebugMode) print('Warning: user is null in login response, decoding token');
@@ -476,10 +639,11 @@ class AuthProvider with ChangeNotifier {
             'unknown@example.com';
         final userID = decodedToken['sub']?.toString() ?? 'unknown';
         final roles = (decodedToken['realm_access']?['roles'] as List<dynamic>? ?? [])
-            .where((r) => r != null)
-            .map((r) => Role(
-          roleID: r.toString(),
-          name: r.toString(),
+            .asMap()
+            .entries
+            .map((e) => Role(
+          roleID: 'role_${e.key + 1}',
+          name: e.value.toString(),
           description: null,
           permissions: [],
         ))
@@ -492,7 +656,11 @@ class AuthProvider with ChangeNotifier {
           phone: null,
           roles: roles,
         );
-        _userRoles = roles.map((role) => role.name).where((name) => name != null).cast<String>().toList();
+        _userRoles = roles
+            .map((role) => role.name)
+            .where((name) => name != null)
+            .cast<String>()
+            .toList();
         if (kDebugMode) print('User from token: $userID, $email, Roles: $_userRoles');
       }
       _tokenExpiry = (result['expiresIn'] != null
@@ -520,13 +688,46 @@ class AuthProvider with ChangeNotifier {
       _tokenExpiry = (result['expiresIn'] != null
           ? DateTime.now().millisecondsSinceEpoch + result['expiresIn']
           : null) as int?;
-      if (kDebugMode) print('Token refreshed successfully, new expiry: $_tokenExpiry');
+      if (kDebugMode) print('Token refreshed successfully');
+      await _checkAuthStatus();
     } catch (e) {
       if (kDebugMode) print('Token refresh failed: $e');
       await logout();
       _errorMessage = 'Session expired. Please log in again.';
       notifyListeners();
     }
+  }
+
+  void _startProactiveRefreshTimer() {
+    _refreshTimer?.cancel();
+    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) async {
+      if (_refreshToken != null) {
+        final accessToken = CookieManager.cookies['accessToken'];
+        if (accessToken == null) {
+          await logout();
+          _errorMessage = 'Session expired. Please log in again.';
+          notifyListeners();
+          return;
+        }
+        try {
+          final decoded = JwtDecoder.decode(accessToken);
+          final expiry = decoded['exp'] * 1000;
+          final now = DateTime.now().millisecondsSinceEpoch;
+          final timeToExpiry = expiry - now;
+          if (timeToExpiry <= 60000) {
+            await _refreshAccessToken();
+          }
+        } catch (e) {
+          if (kDebugMode) print('Failed to decode token for refresh: $e');
+          await logout();
+          _errorMessage = 'Session expired. Please log in again.';
+          notifyListeners();
+        }
+      } else {
+        if (kDebugMode) print('No refresh token, stopping refresh timer');
+        _refreshTimer?.cancel();
+      }
+    });
   }
 
   String _parseError(dynamic error) {

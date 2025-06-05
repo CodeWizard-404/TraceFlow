@@ -67,7 +67,7 @@ class DayCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+                        padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
