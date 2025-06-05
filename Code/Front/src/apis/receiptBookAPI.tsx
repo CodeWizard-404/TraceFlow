@@ -67,7 +67,7 @@ export const createReceiptBook = async (data: Partial<ReceiptBook>): Promise<Cre
 // Get all receipt books
 export const getAllReceiptBooks = async (
     page = 1,
-    limit = 10,
+    limit = 1000,
     sortField: 'number' | 'holder' | 'bookStatus' | 'stubStatus' | 'type' = 'number',
     sortOrder: 'ASC' | 'DESC' = 'ASC',
     searchQuery = '',

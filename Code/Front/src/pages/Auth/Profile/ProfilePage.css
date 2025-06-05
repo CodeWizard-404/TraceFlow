@@ -694,7 +694,7 @@ body.dark .toggle-read-btn.active {
 }
 
 .filter-sidebar {
-    width: 280px;
+    width: 380px;
     background: #f8fafc;
     padding: 1.5rem;
     border-radius: 0.75rem;
@@ -997,6 +997,7 @@ body.dark .preference-group h3 {
     border-radius: 0.75rem;
     overflow: hidden;
     box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.05);
+
 }
 
 body.dark .preferences-table {

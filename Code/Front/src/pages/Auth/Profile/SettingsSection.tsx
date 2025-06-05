@@ -53,13 +53,7 @@ const SettingsSection: React.FC = React.memo(() => {
                         Update Password
                     </button>
                 </div>
-                <div className="settings-item">
-                    <h3>Two-Factor Authentication</h3>
-                    <p>
-                        Status: <span className="status">Enabled</span>
-                    </p>
-                    <button className="action-btn">Enable 2FA</button>
-                </div>
+
             </div>
         </section>
     );

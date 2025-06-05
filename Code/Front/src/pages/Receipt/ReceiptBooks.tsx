@@ -23,6 +23,7 @@ import {
   createReceiptBookType,
   updateReceiptBookType,
   deleteReceiptBookType,
+  getReceiptBooksByHolder,
 } from "../../apis/receiptBookAPI";
 import ReceiptBook from "../../models/ReceiptBook";
 import ReceiptBookType from "../../models/ReceiptBookType";
@@ -103,7 +104,8 @@ const ReceiptBooksList: React.FC<{
             <div className="table-cell">{t("receiptBooks.table.headers.stubStatus")}</div>
             <div className="table-cell">{t("receiptBooks.table.headers.holder")}</div>
             <div className="table-cell">{t("receiptBooks.table.headers.qrCode")}</div>
-            <div className="table-cell">{t("receiptBooks.table.headers.actions")}</div>
+            {!ROLES.SUPERVISOR &&
+              <div className="table-cell">{t("receiptBooks.table.headers.actions")}</div>}
           </div>
         </div>
         <div className="table-body">
@@ -412,7 +414,8 @@ const ReceiptBooksSkeleton: React.FC = () => (
           <div className="table-cell">{t("receiptBooks.table.headers.stubStatus")}</div>
           <div className="table-cell">{t("receiptBooks.table.headers.holder")}</div>
           <div className="table-cell">{t("receiptBooks.table.headers.qrCode")}</div>
-          <div className="table-cell">{t("receiptBooks.table.headers.actions")}</div>
+          {!ROLES.SUPERVISOR &&
+            <div className="table-cell">{t("receiptBooks.table.headers.actions")}</div>}
         </div>
       </div>
       <div className="table-body">
@@ -572,27 +575,38 @@ const ReceiptBooks: React.FC = memo(() => {
     }
     setLoading(true);
     try {
-      const response = await getAllReceiptBooks(
-        currentPage,
-        ITEMS_PER_PAGE,
-        sortField,
-        sortOrder.toUpperCase() as 'ASC' | 'DESC',
-        searchQuery,
-        filterType,
-        filterStatus
-      );
-      let filteredBooks = response.books.map((receipt: ReceiptBook) => ({
-        ...receipt,
-        qrCode: `data:image/png;base64,${receipt.qrCode}`,
-      }));
+      let filteredBooks = [];
+      let totalCount = 0;
+      let totalPages = 1;
 
-      // Apply role-based filtering
-      if (userCapabilities.isSupervisorLike) {
-        filteredBooks = filteredBooks.filter((r: { currentHolderID: string | undefined; }) => r.currentHolderID === currentUserID);
+      if (userCapabilities.isSupervisorLike || userCapabilities.isRegionalManagerLike) {
+        // Determine userType based on role
+        const books = await getReceiptBooksByHolder(currentUserID as string, "user");
+        filteredBooks = books.map((receipt: ReceiptBook) => ({
+          ...receipt,
+          qrCode: `data:image/png;base64,${receipt.qrCode}`,
+        }));
+        totalCount = books.length;
+        totalPages = 1;
+      } else {
+        const response = await getAllReceiptBooks(
+          currentPage,
+          ITEMS_PER_PAGE,
+          sortField,
+          sortOrder.toUpperCase() as 'ASC' | 'DESC',
+          searchQuery,
+          filterType,
+          filterStatus
+        );
+        filteredBooks = response.books.map((receipt: ReceiptBook) => ({
+          ...receipt,
+          qrCode: `data:image/png;base64,${receipt.qrCode}`,
+        }));
+        totalCount = response.totalCount;
+        totalPages = response.totalPages;
       }
-      if (userCapabilities.isRegionalManagerLike) {
-        filteredBooks = filteredBooks.filter((r: { currentHolderID: string | undefined; }) => r.currentHolderID === currentUserID);
-      }
+
+      // Apply additional role-based filtering
       if (userCapabilities.isStockManagerLike) {
         filteredBooks = filteredBooks.filter((r: { status: string; }) =>
           ["In Stock", "With Stock Manager", "Archived"].includes(r.status)
@@ -604,8 +618,8 @@ const ReceiptBooks: React.FC = memo(() => {
 
       setReceiptBooksCache({
         data: filteredBooks,
-        totalCount: response.totalCount,
-        totalPages: response.totalPages,
+        totalCount: totalCount,
+        totalPages: totalPages,
         timestamp: Date.now(),
       });
       setError(null);
@@ -625,6 +639,7 @@ const ReceiptBooks: React.FC = memo(() => {
     permissionsLoaded,
     user,
     userCapabilities,
+    currentUserID,
     t,
   ]);
 
@@ -1003,17 +1018,6 @@ const ReceiptBooks: React.FC = memo(() => {
             <>
               {loading && receiptBooksCache.timestamp === 0 ? (
                 <ReceiptBooksSkeleton />
-              ) : error ? (
-                <div className="error-message" role="alert">
-                  {error}
-                  <button
-                    onClick={fetchReceiptBooks}
-                    className="action-button-2"
-                    aria-label={t("receiptBooks.actions.aria.retry")}
-                  >
-                    {t("receiptBooks.actions.retry")}
-                  </button>
-                </div>
               ) : (
                 <>
                   <ReceiptBooksList
