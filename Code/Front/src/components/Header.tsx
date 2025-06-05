@@ -60,8 +60,14 @@ function Header() {
   };
 
   const ROLES = {
-    ADMIN: import.meta.env.VITE_ROLES_ADMIN,
+    REGIONAL_MANAGER: import.meta.env.VITE_ROLES_REGIONAL_MANAGER,
+    PURCHASE_TEAM: import.meta.env.VITE_ROLES_PURCHASE_TEAM,
     SUPER_ADMIN: import.meta.env.VITE_ROLES_SUPER_ADMIN,
+    DIRECTOR: import.meta.env.VITE_ROLES_DIRECTOR,
+    SUPERVISOR: import.meta.env.VITE_ROLES_SUPERVISOR,
+    ADMIN: import.meta.env.VITE_ROLES_ADMIN,
+    STOCK_MANAGER: import.meta.env.VITE_ROLES_STOCK_MANAGER,
+    HR: import.meta.env.VITE_ROLES_HR,
   };
 
   const hasPermission = (permission: string) =>
@@ -69,8 +75,37 @@ function Header() {
   const hasRole = (role: string) =>
     permissionsLoaded && userRoles?.some((r) => r.name === role);
 
+  // Determine dashboard path based on user's primary role
+  const getDashboardPath = () => {
+    if (!permissionsLoaded || !userRoles || userRoles.length === 0) {
+      return '/dashboard';
+    }
+
+    const primaryRole = userRoles[0].name; // Assuming first role is primary
+    switch (primaryRole) {
+      case ROLES.REGIONAL_MANAGER:
+        return '/regional-dashboard';
+      case ROLES.PURCHASE_TEAM:
+        return '/purchase-dashboard';
+      case ROLES.SUPER_ADMIN:
+        return '/super-admin-dashboard';
+      case ROLES.DIRECTOR:
+        return '/director-dashboard';
+      case ROLES.SUPERVISOR:
+        return '/supervisor-dashboard';
+      case ROLES.ADMIN:
+        return '/admin-dashboard';
+      case ROLES.STOCK_MANAGER:
+        return '/stock-dashboard';
+      case ROLES.HR:
+        return '/hr-dashboard';
+      default:
+        return '/dashboard';
+    }
+  };
+
   const navItems = [
-    { path: "/dashboard", label: t("header.navbar.dashboard"), visible: () => true },
+    { path: getDashboardPath(), label: t("header.navbar.dashboard"), visible: () => true },
     {
       path: "/admin",
       label: t("header.navbar.admin"),

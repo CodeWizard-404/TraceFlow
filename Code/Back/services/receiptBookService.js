@@ -501,6 +501,28 @@ class ReceiptBookService {
     static async getReceiptBooksByHolder(holderID, holderType = 'user') {
         try {
             const startTime = Date.now();
+
+            // Check if the user or agent exists before querying receipt books
+            if (holderType === 'user') {
+                const user = await User.findByPk(holderID, {
+                    attributes: ['userID', 'firstname', 'lastname', 'phone']
+                });
+                if (!user) {
+                    const error = new Error(`No user found with ID ${holderID}`);
+                    error.status = 404;
+                    throw error;
+                }
+            } else {
+                const agent = await Agent.findByPk(holderID, {
+                    attributes: ['agentID', 'name', 'lastname']
+                });
+                if (!agent) {
+                    const error = new Error(`No agent found with ID ${holderID}`);
+                    error.status = 404;
+                    throw error;
+                }
+            }
+
             const whereClause = holderType === 'user' ? { currentHolderID: holderID } : { agentID: holderID };
             const books = await ReceiptBook.findAll({
                 where: whereClause,
@@ -529,12 +551,9 @@ class ReceiptBookService {
                     },
                 ],
             });
-            if (!books.length) {
-                const error = new Error(`No receipt books found for this ${holderType}`);
-                error.status = 404;
-                throw error;
-            }
-            return books.map(book => {
+
+            // If no books are found, return an empty array instead of throwing an error
+            const processedBooks = books.map(book => {
                 const bookData = book.toJSON();
                 bookData.holder = bookData.CurrentHolder
                     ? {
@@ -549,6 +568,8 @@ class ReceiptBookService {
                 delete bookData.CurrentHolder;
                 return bookData;
             });
+
+            return processedBooks;
         } catch (error) {
             throw error;
         }

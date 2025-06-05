@@ -38,7 +38,7 @@ function setupCron() {
                 {
                     where: {
                         status: 'pending',
-                        createdAt: { [Op.lte]: twentyFourHoursAgo }, // Visits created before or at this time
+                        updatedAt: { [Op.lte]: twentyFourHoursAgo }, // Visits created before or at this time
                     },
                 }
             );

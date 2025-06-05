@@ -1,12 +1,11 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useEffect, useState, Component, ReactNode } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import agentAPI from '../../apis/agentAPI';
 import locationApi from '../../apis/locationApi';
 import receiptBookAPI from '../../apis/receiptBookAPI';
-import timesheetAPI from '../../apis/timesheetAPI';
+import timesheetAPI, { SyncTimesheetCalendarResponse, syncTimesheetToCalendar } from '../../apis/timesheetAPI';
 import userAPI from '../../apis/userAPI';
 import MapComponent from '../../components/Google/MapComponent';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, LineChart, Line, AreaChart, Area, ScatterChart, Scatter } from 'recharts';
@@ -17,10 +16,18 @@ import ReceiptBook from '../../models/ReceiptBook';
 import Region from '../../models/Region';
 import Timesheet from '../../models/Timesheet';
 import User from '../../models/User';
-import Visit from '../../models/Visit';
+import ReceiptBookType from '../../models/ReceiptBookType';
 import './SupervisorDashboard.css';
 import { useTranslation } from 'react-i18next';
-import { FaUsers, FaBook, FaClock, FaMapMarkerAlt, FaChartBar, FaSitemap, FaFilter, FaCalendarAlt, FaChartLine, FaChartPie } from 'react-icons/fa';
+import { FaUsers, FaBook, FaClock, FaMapMarkerAlt, FaChartBar, FaSitemap, FaUser, FaUserCheck, FaMapSigns, FaHourglassHalf, FaCheckCircle, FaCalendarAlt, FaMapMarkedAlt, FaRobot, FaUserEdit, FaBell, FaSync } from 'react-icons/fa';
+import { SlCalender } from "react-icons/sl";
+import { GiBookPile } from "react-icons/gi";
+import { toast } from 'react-toastify';
+import { cn } from '../../lib/utils';
+import { FixedSizeList } from 'react-window';
+import NotificationItem from '../../components/ui/notification';
+import { useNotification } from '../../context/NotificationContext';
+import Notifcation from '../../models/Notification';
 
 // Error Boundary Component
 interface ErrorBoundaryProps {
@@ -55,17 +62,17 @@ const SupervisorDashboard: React.FC = () => {
     const { user } = useAuth();
     const navigate = useNavigate();
     const { t } = useTranslation();
+    const { notifications, mergeNotifications, markAllAsRead } = useNotification();
 
-    // State Declarations
+    // State for data
     const [agents, setAgents] = useState<Agent[]>([]);
     const [agentLocations, setAgentLocations] = useState<any>(null);
     const [delegations, setDelegations] = useState<Delegation[]>([]);
     const [governorates, setGovernorates] = useState<Governorate[]>([]);
     const [regions, setRegions] = useState<Region[]>([]);
     const [receiptBooks, setReceiptBooks] = useState<ReceiptBook[]>([]);
-    const [visits, setVisits] = useState<Visit[]>([]);
+    const [timesheets, setTimesheets] = useState<Timesheet[]>([]);
     const [regionalManager, setRegionalManager] = useState<User | null>(null);
-    const [director, setDirector] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [errors, setErrors] = useState<{ [key: string]: string | null }>({
         agents: null,
@@ -74,34 +81,52 @@ const SupervisorDashboard: React.FC = () => {
         governorates: null,
         regions: null,
         receiptBooks: null,
-        visits: null,
+        timesheets: null,
         regionalManager: null,
-        director: null,
+        visits: null,
     });
-
-    // Pagination State
-    const [agentPage, setAgentPage] = useState(1);
-    const [agentsPerPage] = useState(5);
-    const [agentSearch, setAgentSearch] = useState('');
-    const [agentFilterStatus, setAgentFilterStatus] = useState('');
-
-    const [receiptBookPage, setReceiptBookPage] = useState(1);
-    const [receiptBooksPerPage] = useState(5);
-    const [receiptBookSearch, setReceiptBookSearch] = useState('');
-    const [receiptBookFilterType, setReceiptBookFilterType] = useState('');
-    const [receiptBookFilterStatus, setReceiptBookFilterStatus] = useState('');
-
-    const [visitPage, setVisitPage] = useState(1);
-    const [visitsPerPage] = useState(5);
-    const [visitSearch, setVisitSearch] = useState('');
-    const [visitFilterPeriod, setVisitFilterPeriod] = useState('');
-    const [visitFilterStatus, setVisitFilterStatus] = useState('');
-
-    // Additional State for New Features
-    const [assignedLocations, setAssignedLocations] = useState<any>(null);
+    const [receiptBookTypes, setReceiptBookTypes] = useState<ReceiptBookType[]>([]);
+    const [director, setDirector] = useState<User | null>(null);
     const [regionalManagerRegions, setRegionalManagerRegions] = useState<Region[]>([]);
+    const [visitFilters, setVisitFilters] = useState({
+        status: '',
+        agent: '',
+        dateStart: '',
+        dateEnd: '',
+    });
+    const [showMapPopup, setShowMapPopup] = useState(false);
+    const [todayVisits, setTodayVisits] = useState<any[]>([]);
+    const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+    const [notificationPage, setNotificationPage] = useState(1);
+    const [isNotificationLoading, setIsNotificationLoading] = useState(false);
+    const itemsPerPage = 20;
 
-    // Fetch Data on Mount
+    // Colors for charts
+    const COLORS = ['#4cb1c7', '#f5a800', '#036318', '#930744', '#8b8b8b', '#63b3ed', '#ff784e', '#00c49f', '#ffbb28', '#ff00ff'];
+
+    const handleSyncToCalendar = async () => {
+        if (!user || !isLoading) return;
+        setIsLoading(true);
+        try {
+            const response: SyncTimesheetCalendarResponse = await syncTimesheetToCalendar(user.userID);
+            const created = response.filter(r => r.status === 'created').length;
+            const updated = response.filter(r => r.status === 'updated').length;
+            toast.success(`Synced ${created} new and ${updated} updated events to calendar`);
+            console.log(`Timesheet for user ${user.userID} synced: ${created} created, ${updated} updated`);
+        } catch (err) {
+            const errorMsg = err instanceof Error ? err.message : 'Failed to sync timesheet to calendar';
+            toast.error(errorMsg);
+            console.error('Timesheet sync error:', err);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Placeholder function for fetching notifications
+    const getLatestNotifications = async (userID: string, limit: number): Promise<Notifcation[]> => {
+        return Promise.resolve([]);
+    };
+
     useEffect(() => {
         const fetchDashboardData = async () => {
             setIsLoading(true);
@@ -173,54 +198,62 @@ const SupervisorDashboard: React.FC = () => {
                     }
                 };
 
-                const fetchVisits = async () => {
+                const fetchTimesheets = async () => {
                     try {
                         const timesheetsData = await timesheetAPI.getTimesheetsBySupervisor(user.userID);
-                        const allVisits = timesheetsData.flatMap(ts => ts.Visits || []);
-                        setVisits(allVisits);
+                        const sortedTimesheets = (timesheetsData || []).sort((a, b) => a.weekNumber - b.weekNumber);
+                        setTimesheets(sortedTimesheets);
                     } catch (err) {
-                        newErrors.visits = t('dashboard.errors.visits');
-                        console.error('Error fetching visits:', err);
+                        newErrors.timesheets = t('dashboard.errors.timesheets');
+                        console.error('Error fetching timesheets:', err);
                     }
                 };
 
                 const fetchRegionalManager = async () => {
                     try {
                         const regionalManagerData = await userAPI.getRegionalManagerBySupervisor(user.userID);
-                        setRegionalManager(regionalManagerData[0] || null);
+                        const rm = regionalManagerData[0] || null;
+                        setRegionalManager(rm);
+                        if (rm) {
+                            const directorData = await userAPI.getDirectorByUser(rm.userID);
+                            setDirector(directorData[0] || null);
+                            const regionsData = await locationApi.getRegionsByUser(rm.userID);
+                            setRegionalManagerRegions(regionsData || []);
+                        }
                     } catch (err) {
                         newErrors.regionalManager = t('dashboard.errors.regionalManager');
                         console.error('Error fetching regional manager:', err);
                     }
                 };
 
-                const fetchDirector = async () => {
+                const fetchReceiptBookTypes = async () => {
                     try {
-                        const directorData = await userAPI.getDirectorByUser(user.userID);
-                        setDirector(directorData[0] || null);
+                        const typesData = await receiptBookAPI.getAllReceiptBookTypes();
+                        setReceiptBookTypes(typesData || []);
                     } catch (err) {
-                        newErrors.director = t('dashboard.errors.director');
-                        console.error('Error fetching director:', err);
+                        console.error('Error fetching receipt book types:', err);
                     }
                 };
 
-                const fetchAssignedLocations = async () => {
+                const fetchNotifications = async () => {
                     try {
-                        const assignedData = await locationApi.getAssignedLocations(user.userID);
-                        setAssignedLocations(assignedData);
-                    } catch (err) {
-                        console.error('Error fetching assigned locations:', err);
+                        const notifs = await getLatestNotifications(user.userID, 5);
+                        mergeNotifications(notifs);
+                    } catch (error) {
+                        console.error('Error fetching notifications:', error);
                     }
                 };
 
-                const fetchRegionalManagerRegions = async () => {
-                    if (regionalManager) {
-                        try {
-                            const regionsData = await locationApi.getRegionsByUser(regionalManager.userID);
-                            setRegionalManagerRegions(regionsData || []);
-                        } catch (err) {
-                            console.error('Error fetching regional manager regions:', err);
-                        }
+                const fetchUserLocation = () => {
+                    if (navigator.geolocation) {
+                        navigator.geolocation.getCurrentPosition(
+                            (position) => {
+                                setUserLocation({ lat: position.coords.latitude, lng: position.coords.longitude });
+                            },
+                            (error) => {
+                                console.error('Geolocation error:', error);
+                            }
+                        );
                     }
                 };
 
@@ -231,11 +264,11 @@ const SupervisorDashboard: React.FC = () => {
                     fetchGovernorates(),
                     fetchRegions(),
                     fetchReceiptBooks(),
-                    fetchVisits(),
+                    fetchTimesheets(),
                     fetchRegionalManager(),
-                    fetchDirector(),
-                    fetchAssignedLocations(),
-                    fetchRegionalManagerRegions(),
+                    fetchReceiptBookTypes(),
+                    fetchNotifications(),
+                    fetchUserLocation(),
                 ]);
 
                 setErrors(newErrors);
@@ -250,74 +283,34 @@ const SupervisorDashboard: React.FC = () => {
     }, [user, t]);
 
     // KPI Calculations
-    const allVisits = visits;
+    const allVisits = timesheets.flatMap(ts => ts.Visits || []);
     const numAgents = agents.length;
     const numReceiptBooks = receiptBooks.length;
     const numVisits = allVisits.length;
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const visitsLast7Days = allVisits.filter(visit => new Date(visit.date) >= sevenDaysAgo).length;
+    const pendingVisits = allVisits.filter(visit => visit.status === 'pending').length;
+    const agentsWithVisits = new Set(allVisits.map(visit => visit.agentID).filter(id => id)).size;
+    const activeAgents = agents.filter(agent => allVisits.some(visit => visit.agentID === agent.agentID && new Date(visit.date) >= sevenDaysAgo)).length;
+    const totalDelegations = delegations.length;
+    const avgVisitDuration = allVisits.length > 0 ? Number((allVisits.reduce((sum, visit) => sum + (visit.duration || 0), 0) / allVisits.length).toFixed(2)) : 0;
+    const ValidatedVists = allVisits.filter(visit => visit.status === 'validated').length;
+    const completionRate = allVisits.length > 0 ? Number(((allVisits.filter(visit => visit.status === 'visited').length / allVisits.length) * 100).toFixed(1)) : 0;
 
-    // Visits Per Agent
-    const visitsPerAgent = agents.map(agent => {
-        const agentVisits = allVisits.filter(visit => visit.agentID === agent.agentID);
-        return {
-            name: `${agent.name} ${agent.lastname}`,
-            visits: agentVisits.length,
-        };
-    }).filter(agent => agent.visits > 0);
+    // Filtered visits
+    const filteredVisits = allVisits.filter(visit => {
+        const statusMatch = !visitFilters.status || visit.status === visitFilters.status;
+        const agentMatch = !visitFilters.agent || visit.agentID === visitFilters.agent;
+        const date = new Date(visit.date);
+        const dateStart = visitFilters.dateStart ? new Date(visitFilters.dateStart) : null;
+        const dateEnd = visitFilters.dateEnd ? new Date(visitFilters.dateEnd) : null;
+        const dateMatch = (!dateStart || date >= dateStart) && (!dateEnd || date <= dateEnd);
+        return statusMatch && agentMatch && dateMatch;
+    });
 
-    // Visits Per Delegation
-    const visitsPerDelegationData = React.useMemo(() => {
-        try {
-            const agentDelegationMap = agents.reduce((map, agent) => {
-                map[agent.agentID] = agent.delegationID;
-                return map;
-            }, {} as Record<string, string>);
-
-            const visitsWithAgent = allVisits.filter(visit => visit.agentID);
-            const visitsByDelegation = visitsWithAgent.reduce((acc, visit) => {
-                const delegationID = agentDelegationMap[visit.agentID!];
-                if (delegationID) {
-                    acc[delegationID] = (acc[delegationID] || 0) + 1;
-                }
-                return acc;
-            }, {} as Record<string, number>);
-
-            const delegationNameMap = delegations.reduce((map, del) => {
-                map[del.delegationID] = del.name;
-                return map;
-            }, {} as Record<string, string>);
-
-            return Object.keys(visitsByDelegation).map(delegationID => ({
-                name: delegationNameMap[delegationID] || delegationID,
-                visits: visitsByDelegation[delegationID],
-            }));
-        } catch (err) {
-            console.error('Error computing visits per delegation:', err);
-            return [];
-        }
-    }, [agents, allVisits, delegations]);
-
-    // Receipt Book Status Counts
-    const receiptBookStatusCounts = receiptBooks.reduce((acc, book) => {
-        acc[book.status] = (acc[book.status] || 0) + 1;
-        return acc;
-    }, {} as Record<string, number>);
-    const receiptBookPieData = Object.keys(receiptBookStatusCounts).map(status => ({
-        name: status,
-        value: receiptBookStatusCounts[status],
-    }));
-
-    // Receipt Books by Type
-    const receiptBooksByTypeData = receiptBooks.reduce((acc, book) => {
-        acc[book.typeID] = (acc[book.typeID] || 0) + 1;
-        return acc;
-    }, {} as Record<string, number>);
-    const receiptBooksByTypeChartData = Object.keys(receiptBooksByTypeData).map(type => ({
-        type: type,
-        count: receiptBooksByTypeData[type],
-    }));
-
-    // Visit Status Counts
-    const visitStatusCounts = allVisits.reduce((acc, visit) => {
+    // Chart Data
+    const visitStatusCounts = filteredVisits.reduce((acc, visit) => {
         acc[visit.status] = (acc[visit.status] || 0) + 1;
         return acc;
     }, {} as Record<string, number>);
@@ -326,43 +319,51 @@ const SupervisorDashboard: React.FC = () => {
         value: visitStatusCounts[status],
     }));
 
-    // Visit Trends
-    const visitTrends = React.useMemo(() => {
-        const visitsByWeek = allVisits.reduce((acc, visit) => {
-            const week = new Date(visit.date).toLocaleDateString('en-US', { week: 'numeric', year: 'numeric' });
-            acc[week] = (acc[week] || 0) + 1;
-            return acc;
-        }, {} as Record<string, number>);
-        return Object.keys(visitsByWeek).map(week => ({
-            week,
-            visits: visitsByWeek[week],
-        }));
-    }, [allVisits]);
+    const visitsByDate = filteredVisits.reduce((acc, visit) => {
+        const date = visit.date.split('T')[0];
+        acc[date] = (acc[date] || 0) + 1;
+        return acc;
+    }, {} as Record<string, number>);
+    const visitTrendData = Object.keys(visitsByDate).sort().map(date => ({
+        date,
+        visits: visitsByDate[date],
+    }));
 
-    // Visits by Month
-    const visitsByMonthData = React.useMemo(() => {
-        const visitsByMonth = allVisits.reduce((acc, visit) => {
-            const month = new Date(visit.date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-            acc[month] = (acc[month] || 0) + 1;
-            return acc;
-        }, {} as Record<string, number>);
-        return Object.keys(visitsByMonth).map(month => ({
-            month,
-            visits: visitsByMonth[month],
-        }));
-    }, [allVisits]);
+    const receiptBooksByType = receiptBooks.reduce((acc, book) => {
+        const typeName = receiptBookTypes.find(type => type.typeID === book.typeID)?.name || 'Unknown';
+        acc[typeName] = (acc[typeName] || 0) + 1;
+        return acc;
+    }, {} as Record<string, number>);
+    const receiptBookBarData = Object.keys(receiptBooksByType).map(type => ({
+        type,
+        count: receiptBooksByType[type],
+    }));
 
-    // Average Visit Duration Per Agent
-    const agentStats = allVisits.reduce((acc, visit) => {
-        if (visit.agentID) {
-            if (!acc[visit.agentID]) {
-                acc[visit.agentID] = { visitCount: 0, durations: [] };
+    const visitsPerAgent = agents.map(agent => {
+        const agentVisits = allVisits.filter(visit => visit.agentID === agent.agentID);
+        return {
+            name: `${agent.name} ${agent.lastname}`,
+            visits: agentVisits.length,
+        };
+    }).filter(agent => agent.visits > 0);
+
+    const visitTrends = timesheets.map(ts => ({
+        week: `Week ${ts.weekNumber}`,
+        visits: ts.Visits?.length || 0,
+    }));
+
+    const agentStats = timesheets.reduce((acc, ts) => {
+        ts.Visits?.forEach(visit => {
+            if (visit.agentID) {
+                if (!acc[visit.agentID]) {
+                    acc[visit.agentID] = { visitCount: 0, durations: [] };
+                }
+                acc[visit.agentID].visitCount++;
+                if (visit.duration != null) {
+                    acc[visit.agentID].durations.push(visit.duration);
+                }
             }
-            acc[visit.agentID].visitCount++;
-            if (visit.duration != null) {
-                acc[visit.agentID].durations.push(visit.duration);
-            }
-        }
+        });
         return acc;
     }, {} as { [key: string]: { visitCount: number; durations: number[] } });
 
@@ -376,81 +377,294 @@ const SupervisorDashboard: React.FC = () => {
         };
     }).filter(agent => agent.averageDuration > 0);
 
-    // Agent Activity Over Time
-    const agentVisitTrendsData = React.useMemo(() => {
-        const visitsByWeekAndAgent = allVisits.reduce((acc, visit) => {
-            const week = new Date(visit.date).toLocaleDateString('en-US', { week: 'numeric', year: 'numeric' });
-            if (visit.agentID) {
-                if (!acc[week]) acc[week] = {};
-                acc[week][visit.agentID] = (acc[week][visit.agentID] || 0) + 1;
-            }
-            return acc;
-        }, {} as Record<string, Record<string, number>>);
-
-        const weeks = Object.keys(visitsByWeekAndAgent).sort();
-        return weeks.map(week => {
-            const weekData: { week: string;[key: string]: string | number } = { week };
-            agents.forEach(agent => {
-                weekData[`${agent.name} ${agent.lastname}`] = visitsByWeekAndAgent[week][agent.agentID] || 0;
-            });
-            return weekData;
+    const agentVisitTrendsData = timesheets.map(ts => {
+        const weekData: { week: string;[key: string]: string | number } = { week: `Week ${ts.weekNumber}` };
+        agents.forEach(agent => {
+            const agentVisits = (ts.Visits || []).filter(visit => visit.agentID === agent.agentID).length;
+            weekData[`${agent.name} ${agent.lastname}`] = agentVisits;
         });
-    }, [allVisits, agents]);
+        return weekData;
+    });
 
-    // Agent Performance (Scatter Data)
-    const agentPerformanceData = React.useMemo(() => {
-        return agents.map(agent => {
-            const agentVisits = allVisits.filter(visit => visit.agentID === agent.agentID);
-            const totalDuration = agentVisits.reduce((sum, visit) => sum + (visit.duration || 0), 0);
-            return {
-                name: `${agent.name} ${agent.lastname}`,
-                visits: agentVisits.length,
-                duration: totalDuration,
-            };
-        }).filter(data => data.visits > 0);
-    }, [agents, allVisits]);
-
-    // Pagination and Filtering
-    const filteredAgents = agents.filter(agent =>
-        (`${agent.name} ${agent.lastname}`.toLowerCase().includes(agentSearch.toLowerCase()) ||
-            agent.phone.includes(agentSearch)) &&
-        (agentFilterStatus ? agent.status === agentFilterStatus : true)
-    );
-    const indexOfLastAgent = agentPage * agentsPerPage;
-    const indexOfFirstAgent = indexOfLastAgent - agentsPerPage;
-    const currentAgents = filteredAgents.slice(indexOfFirstAgent, indexOfLastAgent);
-    const totalAgentPages = Math.ceil(filteredAgents.length / agentsPerPage);
-
-    const filteredReceiptBooks = receiptBooks.filter(book =>
-        book.number.toLowerCase().includes(receiptBookSearch.toLowerCase()) &&
-        (receiptBookFilterType ? book.typeID === receiptBookFilterType : true) &&
-        (receiptBookFilterStatus ? book.status === receiptBookFilterStatus : true)
-    );
-    const indexOfLastReceiptBook = receiptBookPage * receiptBooksPerPage;
-    const indexOfFirstReceiptBook = indexOfLastReceiptBook - receiptBooksPerPage;
-    const currentReceiptBooks = filteredReceiptBooks.slice(indexOfFirstReceiptBook, indexOfLastReceiptBook);
-    const totalReceiptBookPages = Math.ceil(filteredReceiptBooks.length / receiptBooksPerPage);
-
-    const filteredVisits = visits.filter(visit =>
-        (visit.date.includes(visitSearch) ||
-            visit.agentID?.includes(visitSearch) ||
-            visit.location?.includes(visitSearch)) &&
-        (visitFilterPeriod ? new Date(visit.date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) === visitFilterPeriod : true) &&
-        (visitFilterStatus ? visit.status === visitFilterStatus : true)
-    );
-    const indexOfLastVisit = visitPage * visitsPerPage;
-    const indexOfFirstVisit = indexOfLastVisit - visitsPerPage;
-    const currentVisits = filteredVisits.slice(indexOfFirstVisit, indexOfLastVisit);
-    const totalVisitPages = Math.ceil(filteredVisits.length / visitsPerPage);
-
-    // Agent Visits Map
-    const agentVisitsMap = agents.reduce((map, agent) => {
-        const agentVisits = allVisits.filter(visit => visit.agentID === agent.agentID);
-        map[agent.agentID] = agentVisits.length;
+    const agentDelegationMap = agents.reduce((map, agent) => {
+        map[agent.agentID] = agent.delegationID;
         return map;
+    }, {} as Record<string, string>);
+
+    const visitsByDelegation = allVisits.reduce((acc, visit) => {
+        const delegationID = agentDelegationMap[visit.agentID!];
+        if (delegationID) {
+            acc[delegationID] = (acc[delegationID] || 0) + 1;
+        }
+        return acc;
     }, {} as Record<string, number>);
 
-    const COLORS = ['#4cb1c7', '#f5a800', '#036318', '#930744', '#8b8b8b', '#63b3ed', '#ff784e', '#00c49f', '#ffbb28', '#ff00ff'];
+    const delegationNameMap = delegations.reduce((map, del) => {
+        map[del.delegationID] = del.name;
+        return map;
+    }, {} as Record<string, string>);
+
+    const visitsPerDelegationData = Object.keys(visitsByDelegation).map(delegationID => ({
+        name: delegationNameMap[delegationID] || delegationID,
+        visits: visitsByDelegation[delegationID],
+    }));
+
+
+
+    const visitsPerDayLast30 = (() => {
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        const visitsByDay = allVisits.reduce((acc, visit) => {
+            const date = visit.date.split('T')[0];
+            if (new Date(date) >= thirtyDaysAgo) {
+                acc[date] = (acc[date] || 0) + 1;
+            }
+            return acc;
+        }, {} as Record<string, number>);
+        return Object.keys(visitsByDay).sort().map(date => ({
+            date,
+            visits: visitsByDay[date],
+        }));
+    })();
+
+    const durationTrends = allVisits.reduce((acc, visit) => {
+        const date = visit.date.split('T')[0];
+        if (visit.duration) {
+            if (!acc[date]) acc[date] = [];
+            acc[date].push(visit.duration);
+        }
+        return acc;
+    }, {} as Record<string, number[]>);
+    const avgDurationPerDay = Object.keys(durationTrends).sort().map(date => ({
+        date,
+        avgDuration: durationTrends[date].reduce((sum, d) => sum + d, 0) / durationTrends[date].length,
+    }));
+
+    const visitsScatterData = allVisits.map(visit => ({
+        date: visit.date.split('T')[0],
+        duration: visit.duration || 0,
+        agent: agents.find(a => a.agentID === visit.agentID)?.name || 'Unknown',
+    }));
+
+    // Quick Action Handlers
+    const handleStartVisit = () => {
+        const today = new Date().toISOString().split('T')[0];
+        const todayVisitsFiltered = allVisits.filter(visit => visit.date.split('T')[0] === today);
+        setTodayVisits(todayVisitsFiltered);
+        setShowMapPopup(true);
+    };
+
+    const handleGenerateTimesheets = () => {
+        navigate('/timesheet', { state: { openSuggestionModal: true } });
+    };
+
+    const handleEditProfile = () => {
+        navigate('/profile');
+    };
+
+    const handleEditNotificationPreferences = () => {
+        navigate('/profile', { state: { scrollTo: 'notification-preferences' } });
+    };
+
+    const handleRefreshNotifications = async () => {
+        setIsNotificationLoading(true);
+        try {
+            const fetchedNotifications = await getLatestNotifications(user!.userID, itemsPerPage);
+            mergeNotifications(fetchedNotifications);
+            setNotificationPage(1);
+        } catch (error) {
+            console.error('Failed to refresh notifications:', error);
+        } finally {
+            setIsNotificationLoading(false);
+        }
+    };
+
+    const handleMarkAllRead = async () => {
+        try {
+            await markAllAsRead();
+        } catch (error) {
+            console.error('Failed to mark all as read:', error);
+        }
+    };
+
+    const loadMoreNotifications = () => {
+        if (paginatedNotifications.length < filteredNotifications.length) {
+            setNotificationPage((prev) => prev + 1);
+        }
+    };
+
+    const filteredNotifications = notifications
+        .filter((n) => n.status !== 'read' && n.channel === 'in-app')
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    const paginatedNotifications = filteredNotifications.slice(0, notificationPage * itemsPerPage);
+    const unreadCount = filteredNotifications.length;
+
+    const NotificationRow = ({ index, style }: { index: number; style: React.CSSProperties }) => (
+        <div style={style}>
+            <NotificationItem
+                notification={paginatedNotifications[index]}
+            />
+        </div>
+    );
+
+    if (isLoading) {
+        return (
+            <div className="dashboard-container">
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.3 }}
+                    className="dashboard-container supervisor-container"
+                >
+                    {/* Skeleton for Header */}
+                    <header className="dashboard-header dashboard-header-1">
+                        <div className="header-top">
+                            <div className="header-left">
+                                <div className="custom-skeleton pulsing" style={{ width: '200px', height: '30px' }} />
+                            </div>
+                            <div className="user-profile">
+                                <div className="custom-skeleton pulsing" style={{ width: '24px', height: '24px', borderRadius: '50%' }} />
+                                <div className="custom-skeleton pulsing" style={{ width: '100px', height: '20px', marginLeft: '10px' }} />
+                            </div>
+                        </div>
+                        <div className="header-stats">
+                            {[...Array(9)].map((_, i) => (
+                                <div key={i} className="stat-card">
+                                    <div className="custom-skeleton pulsing" style={{ width: '40px', height: '40px', margin: '10px' }} />
+                                    <div className="stat-content">
+                                        <div className="custom-skeleton pulsing" style={{ width: '100px', height: '20px', margin: '5px 0' }} />
+                                        <div className="custom-skeleton pulsing" style={{ width: '60px', height: '30px', margin: '5px 0' }} />
+                                        <div className="custom-skeleton pulsing" style={{ width: '120px', height: '15px', margin: '5px 0' }} />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </header>
+
+                    {/* Skeleton for Main Dashboard Grid */}
+                    <div className="dashboard-grid">
+                        {/* Skeleton for Quick Actions Card */}
+                        <section className="dashboard-card quick-actions-card">
+                            <div className="custom-skeleton pulsing" style={{ width: '150px', height: '25px', margin: '10px 0' }} />
+                            <hr />
+                            <div className="action-grid">
+                                {[...Array(7)].map((_, i) => (
+                                    <div key={i} className="custom-skeleton pulsing" style={{ width: '100%', height: '40px', margin: '5px' }} />
+                                ))}
+                            </div>
+                        </section>
+
+                        <div className="dashboard-card-22">
+                            {/* Skeleton for Agents Assigned Card */}
+                            <section className="dashboard-card medium-card">
+                                <div className="custom-skeleton pulsing" style={{ width: '150px', height: '25px', margin: '10px 0' }} />
+                                <hr />
+                                <div className="card-content agents-card">
+                                    <div className="custom-skeleton pulsing" style={{ width: '100%', height: '20px', margin: '10px 0' }} />
+                                    <div className="custom-skeleton pulsing" style={{ width: '100%', height: '20px', margin: '10px 0' }} />
+                                    <div className="custom-skeleton pulsing" style={{ width: '120px', height: '35px', margin: '10px 0' }} />
+                                </div>
+                            </section>
+
+                            {/* Skeleton for Notifications Card */}
+                            <section className="dashboard-card medium-card notifications-card">
+                                <div className="custom-skeleton pulsing" style={{ width: '150px', height: '25px', margin: '10px 0' }} />
+                                <hr />
+                                <div>
+                                    <div className="notification-panel-header">
+                                        <div className="notification-panel-controls">
+                                            <div className="custom-skeleton pulsing" style={{ width: '30px', height: '30px', margin: '5px' }} />
+                                            <div className="custom-skeleton pulsing" style={{ width: '60px', height: '30px', margin: '5px' }} />
+                                        </div>
+                                    </div>
+                                    <div className="notification-skeleton">
+                                        {[...Array(3)].map((_, i) => (
+                                            <div key={i} className="custom-skeleton pulsing" style={{ width: '100%', height: '50px', margin: '5px 0' }} />
+                                        ))}
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+
+                        {/* Skeleton for Hierarchy Card */}
+                        <section className="dashboard-card medium-card">
+                            <div className="custom-skeleton pulsing" style={{ width: '150px', height: '25px', margin: '10px 0' }} />
+                            <hr />
+                            <div className="card-content">
+                                {[...Array(3)].map((_, i) => (
+                                    <div key={i} className="hierarchy-level">
+                                        <div className="custom-skeleton pulsing" style={{ width: '100px', height: '20px', margin: '5px 0' }} />
+                                        <div className="custom-skeleton pulsing" style={{ width: '150px', height: '15px', margin: '5px 0' }} />
+                                        <div className="custom-skeleton pulsing" style={{ width: '150px', height: '15px', margin: '5px 0' }} />
+                                        <div className="custom-skeleton pulsing" style={{ width: '100px', height: '15px', margin: '5px 0' }} />
+                                    </div>
+                                ))}
+                            </div>
+                        </section>
+
+                        {/* Skeleton for Receipt Books Card */}
+                        <section className="dashboard-card medium-card">
+                            <div className="custom-skeleton pulsing" style={{ width: '150px', height: '25px', margin: '10px 0' }} />
+                            <hr />
+                            <div className="card-content">
+                                <div className="custom-skeleton pulsing" style={{ width: '100%', height: '20px', margin: '10px 0' }} />
+                                <div className="chart-container">
+                                    <div className="custom-skeleton pulsing" style={{ width: '270px', height: '400px', margin: '10px 0' }} />
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* Skeleton for Visits Card */}
+                        <section className="dashboard-card large-card">
+                            <div className="custom-skeleton pulsing" style={{ width: '150px', height: '25px', margin: '10px 0' }} />
+                            <hr />
+                            <div className="card-content">
+                                <div className="filter-bar">
+                                    {[...Array(4)].map((_, i) => (
+                                        <div key={i} className="custom-skeleton pulsing" style={{ width: '150px', height: '30px', margin: '5px' }} />
+                                    ))}
+                                </div>
+                                <div className="custom-skeleton pulsing" style={{ width: '100%', height: '20px', margin: '10px 0' }} />
+                                <div className="chart-grid chart-grid-2">
+                                    <div className="chart-container">
+                                        <div className="custom-skeleton pulsing" style={{ width: '300px', height: '300px', margin: '10px 0' }} />
+                                    </div>
+                                    <div className="chart-container">
+                                        <div className="custom-skeleton pulsing" style={{ width: '500px', height: '300px', margin: '10px 0' }} />
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* Skeleton for Locations Card */}
+                        <section className="dashboard-card full-width-card">
+                            <div className="custom-skeleton pulsing" style={{ width: '150px', height: '25px', margin: '10px 0' }} />
+                            <hr />
+                            <div className="card-content">
+                                <div className="custom-skeleton pulsing" style={{ width: '100%', height: '400px', margin: '10px 0' }} />
+                            </div>
+                        </section>
+
+                        {/* Skeleton for KPIs Card */}
+                        <section className="dashboard-card full-width-card">
+                            <div className="custom-skeleton pulsing" style={{ width: '150px', height: '25px', margin: '10px 0' }} />
+                            <hr />
+                            <div className="card-content">
+                                <div className="chart-grid chart-grid-1">
+                                    {[...Array(8)].map((_, i) => (
+                                        <div key={i} className="chart-container">
+                                            <div className="custom-skeleton pulsing" style={{ width: '600px', height: '300px', margin: '10px 0' }} />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                </motion.div>
+            </div>
+        );
+    }
 
     return (
         <motion.div
@@ -459,556 +673,546 @@ const SupervisorDashboard: React.FC = () => {
             transition={{ duration: 0.3 }}
             className="dashboard-container supervisor-container"
         >
-            <header className="dashboard-header">
-                <h1>{t('dashboard.title')}</h1>
-                <p className="welcome-text">{t('dashboard.welcome', { name: `${user?.firstname} ${user?.lastname}` })}</p>
+            {/* Enhanced Header */}
+            <header className="dashboard-header dashboard-header-1">
+                <div className="header-top">
+                    <div className="header-left">
+                        <h1>{t('dashboard.title')}</h1>
+                    </div>
+                    <div className="user-profile">
+                        <FaUser className="user-icon" />
+                        <span>{`${user?.firstname} ${user?.lastname}`}</span>
+                    </div>
+                </div>
+                <div className="header-stats">
+                    <div className="stat-card">
+                        <FaUsers className="card-icon" />
+                        <div className="stat-content">
+                            <h3>{t('dashboard.agents')}</h3>
+                            <p className="stat-value">{numAgents}</p>
+                            <p className="stat-description">{t('dashboard.agentsAssigned')}</p>
+                        </div>
+                    </div>
+                    <div className="stat-card">
+                        <FaBook className="card-icon" />
+                        <div className="stat-content">
+                            <h3>{t('dashboard.receiptBooks')}</h3>
+                            <p className="stat-value">{numReceiptBooks}</p>
+                            <p className="stat-description">{t('dashboard.receiptBooksNetwork')}</p>
+                        </div>
+                    </div>
+                    <div className="stat-card">
+                        <FaMapMarkerAlt className="card-icon" />
+                        <div className="stat-content">
+                            <h3>{t('dashboard.visits')}</h3>
+                            <p className="stat-value">{numVisits}</p>
+                            <p className="stat-description">{t('dashboard.visitsLogged')}</p>
+                        </div>
+                    </div>
+                    <div className="stat-card">
+                        <FaClock className="card-icon" />
+                        <div className="stat-content">
+                            <h3>{t('dashboard.visitsLast7Days')}</h3>
+                            <p className="stat-value">{visitsLast7Days}</p>
+                            <p className="stat-description">{t('dashboard.visitsInLast7Days')}</p>
+                        </div>
+                    </div>
+                    <div className="stat-card">
+                        <FaClock className="card-icon" />
+                        <div className="stat-content">
+                            <h3>{t('dashboard.pendingVisits')}</h3>
+                            <p className="stat-value">{pendingVisits}</p>
+                            <p className="stat-description">{t('dashboard.pendingVisitsDescription')}</p>
+                        </div>
+                    </div>
+                    <div className="stat-card">
+                        <FaUserCheck className="card-icon" />
+                        <div className="stat-content">
+                            <h3>{t('dashboard.activeAgents')}</h3>
+                            <p className="stat-value">{activeAgents}</p>
+                            <p className="stat-description">{t('dashboard.activeAgentsLast7Days')}</p>
+                        </div>
+                    </div>
+                    <div className="stat-card">
+                        <FaMapSigns className="card-icon" />
+                        <div className="stat-content">
+                            <h3>{t('dashboard.totalDelegations')}</h3>
+                            <p className="stat-value">{totalDelegations}</p>
+                            <p className="stat-description">{t('dashboard.delegationsAssigned')}</p>
+                        </div>
+                    </div>
+                    <div className="stat-card">
+                        <FaHourglassHalf className="card-icon" />
+                        <div className="stat-content">
+                            <h3>{t('dashboard.avgVisitDuration')}</h3>
+                            <p className="stat-value">{avgVisitDuration}</p>
+                            <p className="stat-description">{t('dashboard.avgDurationMinutes')}</p>
+                        </div>
+                    </div>
+                    <div className="stat-card">
+                        <FaCheckCircle className="card-icon" />
+                        <div className="stat-content">
+                            <h3>{t('dashboard.validatedVisits')}</h3>
+                            <p className="stat-value">{ValidatedVists}</p>
+                            <p className="stat-description">{t('dashboard.validatedVisitsNb')}</p>
+                        </div>
+                    </div>
+                    <div className="stat-card">
+                        <FaCheckCircle className="card-icon" />
+                        <div className="stat-content">
+                            <h3>{t('dashboard.completionRate')}</h3>
+                            <p className="stat-value">{completionRate}%</p>
+                            <p className="stat-description">{t('dashboard.validatedVisitsRate')}</p>
+                        </div>
+                    </div>
+                </div>
             </header>
 
-            {/* Summary Cards */}
-            <section className="summary-cards">
-                <ErrorBoundary fallback={<div className="summary-card"><p className="error-text">{t('dashboard.errors.agents')}</p></div>}>
-                    <div className="summary-card">
-                        <FaUsers className="card-icon" />
-                        <h2>{t('dashboard.agents')}</h2>
-                        {errors.agents ? (
-                            <p className="error-text">{errors.agents}</p>
-                        ) : (
-                            <>
-                                <p className="card-value">{numAgents}</p>
-                                <p className="card-description">{t('dashboard.agentsAssigned')}</p>
-                            </>
-                        )}
+            {/* Main Dashboard Grid */}
+            <div className="dashboard-grid">
+                {/* Quick Actions Card */}
+                <section className="dashboard-card quick-actions-card">
+                    <h2>{t('dashboard.quickActions')}</h2>
+                    <hr />
+                    <div className="action-grid">
+                        <button className="action-btn action-btn-88" onClick={() => navigate('/timesheet-form')}>
+                            <SlCalender /><span>{t('dashboard.addTimesheet')}</span>
+                        </button>
+                        <button className="action-btn action-btn-88" onClick={() => navigate('/transfer-receipt-books')}>
+                            <GiBookPile /><span>{t('dashboard.assignReceiptBook')}</span>
+                        </button>
+                        <button className="action-btn action-btn-88" onClick={handleSyncToCalendar}>
+                            <FaCalendarAlt /> <span>Sync to Calendar</span>
+                        </button>
+                        <button className="action-btn action-btn-88" onClick={handleStartVisit}>
+                            <FaMapMarkedAlt /> <span>Start Visit</span>
+                        </button>
+                        <button className="action-btn action-btn-88" onClick={handleGenerateTimesheets}>
+                            <FaRobot /> <span>Generate Timesheets</span>
+                        </button>
+                        <button className="action-btn action-btn-88" onClick={handleEditProfile}>
+                            <FaUserEdit /> <span>Edit Profile</span>
+                        </button>
+                        <button className="action-btn action-btn-88" onClick={handleEditNotificationPreferences}>
+                            <FaBell /> <span>Notification Preferences</span>
+                        </button>
                     </div>
-                </ErrorBoundary>
-                <ErrorBoundary fallback={<div className="summary-card"><p className="error-text">{t('dashboard.errors.receiptBooks')}</p></div>}>
-                    <div className="summary-card">
-                        <FaBook className="card-icon" />
-                        <h2>{t('dashboard.receiptBooks')}</h2>
-                        {errors.receiptBooks ? (
-                            <p className="error-text">{errors.receiptBooks}</p>
-                        ) : (
-                            <>
-                                <p className="card-value">{numReceiptBooks}</p>
-                                <p className="card-description">{t('dashboard.receiptBooksNetwork')}</p>
-                            </>
+                </section>
+                <div className="dashboard-card-22">
+
+                    {/* Agents Assigned Card */}
+                    <ErrorBoundary fallback={<div className="dashboard-card"><p className="error-text">{t('dashboard.errors.agents')}</p></div>}>
+                        {!errors.agents && (
+                            <section className="dashboard-card medium-card">
+                                <h2><FaUsers /> {t('dashboard.agentsAssigned')}</h2>
+                                <hr />
+                                <div className="card-content agents-card">
+                                    <p style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.5rem',
+                                        fontFamily: "'Inter', sans-serif",
+                                        fontSize: '0.875rem',
+                                        color: '#6b7280',
+                                        margin: '0.25rem 0',
+                                        padding: '0.5rem 0',
+                                        borderBottom: '1px solid #eee'
+                                    }}>
+                                        <FaUsers style={{ color: '#4cb1c7', fontSize: '1.5rem' }} />
+                                        {t('dashboard.totalAgents')}: {agents.length}
+                                    </p>
+                                    <p style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.5rem',
+                                        fontFamily: "'Inter', sans-serif",
+                                        fontSize: '0.875rem',
+                                        color: '#6b7280',
+                                        margin: '0.25rem 0',
+                                        padding: '0.5rem 0',
+                                        borderBottom: '1px solid #eee'
+                                    }}>
+                                        <FaUserCheck style={{ color: '#4cb1c7', fontSize: '1.5rem' }} />
+                                        {t('dashboard.agentsWithVisits')}: {agentsWithVisits}
+                                    </p>
+                                    <button className="action-btn primary" onClick={() => navigate('/agents')}>
+                                        {t('dashboard.viewAllAgents')}
+                                    </button>
+                                </div>
+                            </section>
                         )}
-                    </div>
-                </ErrorBoundary>
-                <ErrorBoundary fallback={<div className="summary-card"><p className="error-text">{t('dashboard.errors.visits')}</p></div>}>
-                    <div className="summary-card">
-                        <FaClock className="card-icon" />
-                        <h2>{t('dashboard.visits')}</h2>
-                        {errors.visits ? (
-                            <p className="error-text">{errors.visits}</p>
-                        ) : (
-                            <>
-                                <p className="card-value">{numVisits}</p>
-                                <p className="card-description">{t('dashboard.visitsLogged')}</p>
-                            </>
-                        )}
-                    </div>
-                </ErrorBoundary>
-                <ErrorBoundary fallback={<div className="summary-card"><p className="error-text">{t('dashboard.errors.delegations')}</p></div>}>
-                    <div className="summary-card">
-                        <FaMapMarkerAlt className="card-icon" />
-                        <h2>{t('dashboard.delegations')}</h2>
-                        {errors.delegations ? (
-                            <p className="error-text">{errors.delegations}</p>
-                        ) : (
-                            <>
-                                <p className="card-value">{delegations.length}</p>
-                                <p className="card-description">{t('dashboard.delegationsAssigned')}</p>
-                            </>
-                        )}
-                    </div>
-                </ErrorBoundary>
-                <ErrorBoundary fallback={<div className="summary-card"><p className="error-text">{t('dashboard.errors.governorates')}</p></div>}>
-                    <div className="summary-card">
-                        <FaMapMarkerAlt className="card-icon" />
-                        <h2>{t('dashboard.governorates')}</h2>
-                        {errors.governorates ? (
-                            <p className="error-text">{errors.governorates}</p>
-                        ) : (
-                            <>
-                                <p className="card-value">{governorates.length}</p>
-                                <p className="card-description">{t('dashboard.governoratesAssigned')}</p>
-                            </>
-                        )}
-                    </div>
-                </ErrorBoundary>
-            </section>
+                    </ErrorBoundary>
 
-            {/* Agents Section */}
-            <ErrorBoundary fallback={<section className="dashboard-section"><p className="error-text">{t('dashboard.errors.agents')}</p></section>}>
-                {!errors.agents && (
-                    <section className="dashboard-section">
-                        <h2><FaUsers /> {t('dashboard.agentsAssigned')}</h2>
-                        <div className="section-card">
-                            <div className="search-bar">
-                                <input
-                                    type="text"
-                                    placeholder={t('dashboard.searchAgents')}
-                                    value={agentSearch}
-                                    onChange={(e) => setAgentSearch(e.target.value)}
-                                />
-                                <select
-                                    value={agentFilterStatus}
-                                    onChange={(e) => setAgentFilterStatus(e.target.value)}
-                                >
-                                    <option value="">{t('dashboard.allStatuses')}</option>
-                                    <option value="active">{t('dashboard.active')}</option>
-                                    <option value="inactive">{t('dashboard.inactive')}</option>
-                                </select>
-                            </div>
-                            <div className="card-grid">
-                                {currentAgents.map(agent => (
-                                    <div key={agent.agentID} className="agent-card">
-                                        <h3>{`${agent.name} ${agent.lastname}`}</h3>
-                                        <p>{t('dashboard.phone')}: {agent.phone}</p>
-                                        <p>{t('dashboard.email')}: {agent.email}</p>
-                                        <p>{t('dashboard.location')}: {agent.location || 'N/A'}</p>
-                                        <p>{t('dashboard.visits')}: {agentVisitsMap[agent.agentID] || 0}</p>
-                                        <button
-                                            className="action-btn"
-                                            onClick={() => navigate(`/visit-form?agentId=${agent.agentID}`)}
-                                        >
-                                            {t('dashboard.addVisit')}
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                            {filteredAgents.length === 0 && <p className="no-data">{t('dashboard.noAgents')}</p>}
-                            {totalAgentPages > 1 && (
-                                <Pagination
-                                    currentPage={agentPage}
-                                    totalPages={totalAgentPages}
-                                    onPageChange={setAgentPage}
-                                />
-                            )}
-                        </div>
-                    </section>
-                )}
-            </ErrorBoundary>
-
-            {/* Locations Section */}
-            <ErrorBoundary fallback={<section className="dashboard-section"><p className="error-text">{t('dashboard.errors.locations')}</p></section>}>
-                {!errors.locations && !errors.delegations && !errors.governorates && !errors.regions && (
-                    <section className="dashboard-section">
-                        <h2><FaMapMarkerAlt /> {t('dashboard.assignedLocations')}</h2>
-                        <div className="section-card">
-                            <ErrorBoundary fallback={<p className="error-text">{t('dashboard.errors.map')}</p>}>
-                                {agentLocations ? <MapComponent /> : <p className="no-data">{t('dashboard.loadingMap')}</p>}
-                            </ErrorBoundary>
-                            <div className="location-grid">
-                                <div>
-                                    <h3>{t('dashboard.regions')}</h3>
-                                    <ul className="location-list">
-                                        {regions.map(region => (
-                                            <li key={region.regionID}>{region.name}</li>
-                                        ))}
-                                    </ul>
-                                </div>
-                                <div>
-                                    <h3>{t('dashboard.governorates')}</h3>
-                                    <ul className="location-list">
-                                        {governorates.map(gov => (
-                                            <li key={gov.governorateID}>{gov.name}</li>
-                                        ))}
-                                    </ul>
-                                </div>
-                                <div>
-                                    <h3>{t('dashboard.delegations')}</h3>
-                                    <ul className="location-list">
-                                        {delegations.map(del => (
-                                            <li key={del.delegationID}>{del.name}</li>
-                                        ))}
-                                    </ul>
+                    {/* Notifications Card */}
+                    <section className="dashboard-card medium-card notifications-card">
+                        <h2>Latest Notifications {unreadCount > 0 && <span className="unread-count">{unreadCount}</span>}</h2>
+                        <hr />
+                        <div>
+                            <div className="notification-panel-header">
+                                <div className="notification-panel-controls">
+                                    <button onClick={handleRefreshNotifications} className="control-button" disabled={isNotificationLoading}>
+                                        <FaSync className={cn(isNotificationLoading && 'spinning')} />
+                                    </button>
+                                    <button onClick={handleMarkAllRead} className="control-button" disabled={isNotificationLoading || unreadCount === 0}>
+                                        Clear
+                                    </button>
                                 </div>
                             </div>
-                            {assignedLocations && (
-                                <div className="assigned-locations">
-                                    <h3>{t('dashboard.assignedGovernorates')}</h3>
-                                    <ul className="location-list">
-                                        {assignedLocations.governorates.map((gov: Governorate) => (
-                                            <li key={gov.governorateID}>
-                                                {gov.name}
-                                                <ul>
-                                                    {assignedLocations.delegations.filter((del: Delegation) => del.governorateID === gov.governorateID).map((del: Delegation) => (
-                                                        <li key={del.delegationID}>{del.name}</li>
-                                                    ))}
-                                                </ul>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            )}
-                            {regionalManagerRegions.length > 0 && (
-                                <div className="regional-manager-regions">
-                                    <h3>{t('dashboard.regionalManagerRegions')}</h3>
-                                    <ul className="location-list">
-                                        {regionalManagerRegions.map(region => (
-                                            <li key={region.regionID}>{region.name}</li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            )}
-                        </div>
-                    </section>
-                )}
-            </ErrorBoundary>
-
-            {/* Receipt Books Section */}
-            <ErrorBoundary fallback={<section className="dashboard-section"><p className="error-text">{t('dashboard.errors.receiptBooks')}</p></section>}>
-                {!errors.receiptBooks && (
-                    <section className="dashboard-section">
-                        <h2><FaBook /> {t('dashboard.receiptBooks')}</h2>
-                        <div className="section-card">
-                            <div className="search-bar">
-                                <input
-                                    type="text"
-                                    placeholder={t('dashboard.searchReceiptBooks')}
-                                    value={receiptBookSearch}
-                                    onChange={(e) => setReceiptBookSearch(e.target.value)}
-                                />
-                                <select
-                                    value={receiptBookFilterType}
-                                    onChange={(e) => setReceiptBookFilterType(e.target.value)}
-                                >
-                                    <option value="">{t('dashboard.allTypes')}</option>
-                                    {/* Populate with actual receipt book types */}
-                                    {Object.keys(receiptBooksByTypeData).map(type => (
-                                        <option key={type} value={type}>{type}</option>
+                            {isNotificationLoading && (
+                                <div className="notification-skeleton">
+                                    {[...Array(3)].map((_, i) => (
+                                        <div key={i} className="skeleton-item pulsing" />
                                     ))}
-                                </select>
-                                <select
-                                    value={receiptBookFilterStatus}
-                                    onChange={(e) => setReceiptBookFilterStatus(e.target.value)}
-                                >
-                                    <option value="">{t('dashboard.allStatuses')}</option>
-                                    {Object.keys(receiptBookStatusCounts).map(status => (
-                                        <option key={status} value={status}>{status}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div className="card-grid">
-                                {currentReceiptBooks.map(book => (
-                                    <div key={book.bookID} className="receipt-book-card">
-                                        <h3>{book.number}</h3>
-                                        <p>{t('dashboard.type')}: {book.typeName || book.typeID}</p>
-                                        <p>{t('dashboard.status')}: {book.status}</p>
-                                        <p>{t('dashboard.holder')}: {book.holder ? `${book.holder.firstname} ${book.holder.lastname}` : 'N/A'}</p>
-                                    </div>
-                                ))}
-                            </div>
-                            {filteredReceiptBooks.length === 0 && <p className="no-data">{t('dashboard.noReceiptBooks')}</p>}
-                            {totalReceiptBookPages > 1 && (
-                                <Pagination
-                                    currentPage={receiptBookPage}
-                                    totalPages={totalReceiptBookPages}
-                                    onPageChange={setReceiptBookPage}
-                                />
-                            )}
-                            <div className="chart-container">
-                                <h3>{t('dashboard.receiptBookStatus')}</h3>
-                                <PieChart width={400} height={400}>
-                                    <Pie data={receiptBookPieData} cx={200} cy={200} labelLine={false} outerRadius={80} dataKey="value">
-                                        {receiptBookPieData.map((_, index) => (
-                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip />
-                                    <Legend />
-                                </PieChart>
-                            </div>
-                            <div className="chart-container">
-                                <h3>{t('dashboard.receiptBooksByType')}</h3>
-                                <BarChart width={600} height={300} data={receiptBooksByTypeChartData}>
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="type" />
-                                    <YAxis />
-                                    <Tooltip />
-                                    <Legend />
-                                    <Bar dataKey="count" fill="#4cb1c7" />
-                                </BarChart>
-                            </div>
-                        </div>
-                    </section>
-                )}
-            </ErrorBoundary>
-
-            {/* Visits Section */}
-            <ErrorBoundary fallback={<section className="dashboard-section"><p className="error-text">{t('dashboard.errors.visits')}</p></section>}>
-                {!errors.visits && (
-                    <section className="dashboard-section">
-                        <h2><FaCalendarAlt /> {t('dashboard.visits')}</h2>
-                        <div className="section-card">
-                            <div className="search-bar">
-                                <input
-                                    type="text"
-                                    placeholder={t('dashboard.searchVisits')}
-                                    value={visitSearch}
-                                    onChange={(e) => setVisitSearch(e.target.value)}
-                                />
-                                <select
-                                    value={visitFilterPeriod}
-                                    onChange={(e) => setVisitFilterPeriod(e.target.value)}
-                                >
-                                    <option value="">{t('dashboard.allPeriods')}</option>
-                                    {visitsByMonthData.map(data => (
-                                        <option key={data.month} value={data.month}>{data.month}</option>
-                                    ))}
-                                </select>
-                                <select
-                                    value={visitFilterStatus}
-                                    onChange={(e) => setVisitFilterStatus(e.target.value)}
-                                >
-                                    <option value="">{t('dashboard.allStatuses')}</option>
-                                    {Object.keys(visitStatusCounts).map(status => (
-                                        <option key={status} value={status}>{status}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div className="card-grid">
-                                {currentVisits.map(visit => (
-                                    <div key={visit.visitID} className="visit-card">
-                                        <h3>{visit.date}</h3>
-                                        <p>{t('dashboard.agent')}: {visit.agentID || 'N/A'}</p>
-                                        <p>{t('dashboard.location')}: {visit.location || 'N/A'}</p>
-                                        <p>{t('dashboard.status')}: {visit.status}</p>
-                                    </div>
-                                ))}
-                            </div>
-                            {filteredVisits.length === 0 && <p className="no-data">{t('dashboard.noVisits')}</p>}
-                            {totalVisitPages > 1 && (
-                                <Pagination
-                                    currentPage={visitPage}
-                                    totalPages={totalVisitPages}
-                                    onPageChange={setVisitPage}
-                                />
-                            )}
-                            <div className="chart-container">
-                                <h3>{t('dashboard.visitStatus')}</h3>
-                                <PieChart width={400} height={400}>
-                                    <Pie data={visitPieData} cx={200} cy={200} labelLine={false} outerRadius={80} dataKey="value">
-                                        {visitPieData.map((_, index) => (
-                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip />
-                                    <Legend />
-                                </PieChart>
-                            </div>
-                            <div className="chart-container">
-                                <h3>{t('dashboard.visitTrends')}</h3>
-                                <LineChart width={600} height={300} data={visitTrends}>
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="week" />
-                                    <YAxis />
-                                    <Tooltip />
-                                    <Legend />
-                                    <Line type="monotone" dataKey="visits" stroke="#4cb1c7" />
-                                </LineChart>
-                            </div>
-                        </div>
-                    </section>
-                )}
-            </ErrorBoundary>
-
-            {/* KPIs Section */}
-            <ErrorBoundary fallback={<section className="dashboard-section"><p className="error-text">{t('dashboard.errors.kpis')}</p></section>}>
-                {!errors.agents && !errors.visits && (
-                    <section className="dashboard-section">
-                        <h2><FaChartBar /> {t('dashboard.kpis')}</h2>
-                        <div className="section-card">
-                            <div className="chart-container">
-                                <h3>{t('dashboard.visitsPerAgent')}</h3>
-                                <BarChart width={600} height={300} data={visitsPerAgent}>
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="name" />
-                                    <YAxis />
-                                    <Tooltip />
-                                    <Legend />
-                                    <Bar dataKey="visits" fill="#4cb1c7" />
-                                </BarChart>
-                            </div>
-                            <div className="chart-container">
-                                <h3>{t('dashboard.visitTrends')}</h3>
-                                <LineChart width={600} height={300} data={visitTrends}>
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="week" />
-                                    <YAxis />
-                                    <Tooltip />
-                                    <Legend />
-                                    <Line type="monotone" dataKey="visits" stroke="#4cb1c7" />
-                                </LineChart>
-                            </div>
-                            <div className="chart-container">
-                                <h3>{t('dashboard.averageVisitDuration')}</h3>
-                                <BarChart width={600} height={300} data={averageDurationPerAgent}>
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="name" />
-                                    <YAxis />
-                                    <Tooltip />
-                                    <Legend />
-                                    <Bar dataKey="averageDuration" fill="#4cb1c7" />
-                                </BarChart>
-                            </div>
-                            <div className="chart-container">
-                                <h3>{t('dashboard.agentActivity')}</h3>
-                                <LineChart width={600} height={300} data={agentVisitTrendsData}>
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="week" />
-                                    <YAxis />
-                                    <Tooltip />
-                                    <Legend />
-                                    {agents.map((agent, index) => (
-                                        <Line
-                                            key={agent.agentID}
-                                            type="monotone"
-                                            dataKey={`${agent.name} ${agent.lastname}`}
-                                            stroke={COLORS[index % COLORS.length]}
-                                        />
-                                    ))}
-                                </LineChart>
-                            </div>
-                            <div className="chart-container">
-                                <h3>{t('dashboard.visitsPerDelegation')}</h3>
-                                <BarChart width={600} height={300} data={visitsPerDelegationData}>
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="name" />
-                                    <YAxis />
-                                    <Tooltip />
-                                    <Legend />
-                                    <Bar dataKey="visits" fill="#4cb1c7" />
-                                </BarChart>
-                            </div>
-                            <div className="chart-container">
-                                <h3>{t('dashboard.visitStatusDistribution')}</h3>
-                                <PieChart width={400} height={400}>
-                                    <Pie data={visitPieData} cx={200} cy={200} labelLine={false} outerRadius={80} dataKey="value">
-                                        {visitPieData.map((_, index) => (
-                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip />
-                                    <Legend />
-                                </PieChart>
-                            </div>
-                            <div className="chart-container">
-                                <h3>{t('dashboard.visitsByMonth')}</h3>
-                                <AreaChart width={600} height={300} data={visitsByMonthData}>
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="month" />
-                                    <YAxis />
-                                    <Tooltip />
-                                    <Legend />
-                                    <Area type="monotone" dataKey="visits" stroke="#4cb1c7" fill="#4cb1c7" />
-                                </AreaChart>
-                            </div>
-                            <div className="chart-container">
-                                <h3>{t('dashboard.agentPerformance')}</h3>
-                                <ScatterChart width={600} height={300}>
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis type="number" dataKey="visits" name="Visits" />
-                                    <YAxis type="number" dataKey="duration" name="Duration (min)" />
-                                    <Tooltip cursor={{ strokeDasharray: '3 3' }} />
-                                    <Legend />
-                                    <Scatter name="Agents" data={agentPerformanceData} fill="#4cb1c7" />
-                                </ScatterChart>
-                            </div>
-                        </div>
-                    </section>
-                )}
-            </ErrorBoundary>
-
-            {/* Hierarchy Section */}
-            <ErrorBoundary fallback={<section className="dashboard-section"><p className="error-text">{t('dashboard.errors.hierarchy')}</p></section>}>
-                {!errors.regionalManager && !errors.director && (
-                    <section className="dashboard-section">
-                        <h2><FaSitemap /> {t('dashboard.hierarchy')}</h2>
-                        <div className="section-card hierarchy-card">
-                            {director && (
-                                <div className="hierarchy-level">
-                                    <h3>{t('dashboard.director')}</h3>
-                                    <p>{`${director.firstname} ${director.lastname}`}</p>
-                                    <p>{t('dashboard.email')}: {director.email}</p>
-                                    <p>{t('dashboard.phone')}: {director.phone}</p>
                                 </div>
                             )}
-                            {regionalManager && (
-                                <div className="hierarchy-level">
-                                    <h3>{t('dashboard.regionalManager')}</h3>
-                                    <p>{`${regionalManager.firstname} ${regionalManager.lastname}`}</p>
-                                    <p>{t('dashboard.email')}: {regionalManager.email}</p>
-                                    <p>{t('dashboard.phone')}: {regionalManager.phone}</p>
-                                    <h4>{t('dashboard.assignedRegions')}</h4>
-                                    <ul>
-                                        {regionalManagerRegions.map(region => (
-                                            <li key={region.regionID}>{region.name}</li>
-                                        ))}
-                                    </ul>
-                                </div>
+                            {!isNotificationLoading && paginatedNotifications.length === 0 ? (
+                                <p className="no-notifications">No unread notifications</p>
+                            ) : (
+                                <FixedSizeList
+                                    height={150}
+                                    width="100%"
+                                    itemCount={paginatedNotifications.length}
+                                    itemSize={62}
+                                    onItemsRendered={({ visibleStopIndex }) => {
+                                        if (visibleStopIndex >= paginatedNotifications.length - 1) loadMoreNotifications();
+                                    }}
+                                >
+                                    {NotificationRow}
+                                </FixedSizeList>
                             )}
-                            <div className="hierarchy-level">
-                                <h3>{t('dashboard.supervisor')}</h3>
-                                <p>{`${user?.firstname} ${user?.lastname}`}</p>
-                                <p>{t('dashboard.email')}: {user?.email}</p>
-                                <p>{t('dashboard.phone')}: {user?.phone}</p>
-                            </div>
                         </div>
                     </section>
-                )}
-            </ErrorBoundary>
-
-            {/* Quick Actions Section */}
-            <section className="dashboard-section">
-                <h2>{t('dashboard.quickActions')}</h2>
-                <div className="section-card action-grid">
-                    <button className="action-btn primary" onClick={() => navigate('/visit-form')}>
-                        {t('dashboard.recordVisit')}
-                    </button>
-                    <button className="action-btn secondary" onClick={() => navigate('/timesheet-form')}>
-                        {t('dashboard.addTimesheet')}
-                    </button>
-                    <button className="action-btn tertiary" onClick={() => navigate('/receipt-book-form')}>
-                        {t('dashboard.assignReceiptBook')}
-                    </button>
-                    <button className="action-btn" onClick={() => navigate('/agents')}>
-                        {t('dashboard.manageAgents')}
-                    </button>
-                    <button className="action-btn" onClick={() => navigate('/reports')}>
-                        {t('dashboard.viewReports')}
-                    </button>
                 </div>
-            </section>
 
-            {/* Footer */}
-            <footer className="dashboard-footer">
-                <p>© {new Date().getFullYear()} TraceFlow. {t('dashboard.allRightsReserved')}</p>
-            </footer>
+                {/* Hierarchy Card */}
+                <ErrorBoundary fallback={<div className="dashboard-card medium-card"><p className="error-text">{t('dashboard.errors.regionalManager')}</p></div>}>
+                    {!errors.regionalManager && (
+                        <section className="dashboard-card medium-card">
+                            <h2><FaSitemap /> {t('dashboard.hierarchy')}</h2>
+                            <hr />
+                            <div className="card-content">
+                                {director && (
+                                    <div className="hierarchy-level">
+                                        <h3>{t('dashboard.director')}</h3>
+                                        <p>{`${director.firstname} ${director.lastname}`}</p>
+                                        <p>{t('dashboard.email')}: {director.email}</p>
+                                        <p>{t('dashboard.phone')}: {director.phone}</p>
+                                    </div>
+                                )}
+                                {regionalManager && (
+                                    <div className="hierarchy-level">
+                                        <h3>{t('dashboard.regionalManager')}</h3>
+                                        <p>{`${regionalManager.firstname} ${regionalManager.lastname}`}</p>
+                                        <p>{t('dashboard.email')}: {regionalManager.email}</p>
+                                        <p>{t('dashboard.phone')}: {regionalManager.phone}</p>
+                                        <h4>{t('dashboard.assignedRegions')}</h4>
+                                        <ul>
+                                            {regionalManagerRegions.map(region => (
+                                                <li key={region.regionID}>{region.name}</li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+                                <div className="hierarchy-level">
+                                    <h3>{t('dashboard.supervisor')}</h3>
+                                    <p>{`${user?.firstname} ${user?.lastname}`}</p>
+                                    <h4>{t('dashboard.assignedGovernorates')}</h4>
+                                    {governorates.map(gov => (
+                                        <div key={gov.governorateID}>
+                                            <h5>{gov.name}</h5>
+                                            <ul>
+                                                {delegations.filter(del => del.governorateID === gov.governorateID).map(del => (
+                                                    <li key={del.delegationID}>{del.name}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </section>
+                    )}
+                </ErrorBoundary>
+
+                {/* Receipt Books Card */}
+                <ErrorBoundary fallback={<div className="dashboard-card medium-card"><p className="error-text">{t('dashboard.errors.receiptBooks')}</p></div>}>
+                    {!errors.receiptBooks && (
+                        <section className="dashboard-card medium-card">
+                            <h2><FaBook /> {t('dashboard.receiptBooks')}</h2>
+                            <hr />
+                            <div className="card-content">
+                                <p>{t('dashboard.totalReceiptBooks')}: {receiptBooks.length}</p>
+                                <ErrorBoundary fallback={<p className="error-text">{t('dashboard.errors.receiptBookTypeChart')}</p>}>
+                                    {receiptBookBarData.length > 0 && (
+                                        <div className="chart-container">
+                                            <h3>{t('dashboard.receiptBooksByType')}</h3>
+                                            <BarChart width={270} height={400} data={receiptBookBarData}>
+                                                <CartesianGrid strokeDasharray="3 3" />
+                                                <XAxis dataKey="type" />
+                                                <YAxis />
+                                                <Tooltip />
+                                                <Legend />
+                                                <Bar dataKey="count" fill="#4cb1c7" />
+                                            </BarChart>
+                                        </div>
+                                    )}
+                                </ErrorBoundary>
+                            </div>
+                        </section>
+                    )}
+                </ErrorBoundary>
+
+                {/* Visits Card */}
+                <ErrorBoundary fallback={<div className="dashboard-card large-card"><p className="error-text">{t('dashboard.errors.timesheets')}</p></div>}>
+                    {!errors.timesheets && (
+                        <section className="dashboard-card large-card">
+                            <h2><FaClock /> {t('dashboard.visits')}</h2>
+                            <hr />
+                            <div className="card-content">
+                                <div className="filter-bar">
+                                    <select
+                                        value={visitFilters.status}
+                                        onChange={(e) => setVisitFilters({ ...visitFilters, status: e.target.value })}
+                                    >
+                                        <option value="">{t('dashboard.allStatuses')}</option>
+                                        <option value="pending">{t('dashboard.pending')}</option>
+                                        <option value="validated">{t('dashboard.validated')}</option>
+                                    </select>
+                                    <select
+                                        value={visitFilters.agent}
+                                        onChange={(e) => setVisitFilters({ ...visitFilters, agent: e.target.value })}
+                                    >
+                                        <option value="">{t('dashboard.allAgents')}</option>
+                                        {agents.map(agent => (
+                                            <option key={agent.agentID} value={agent.agentID}>{`${agent.name} ${agent.lastname}`}</option>
+                                        ))}
+                                    </select>
+                                    <input
+                                        type="date"
+                                        value={visitFilters.dateStart}
+                                        onChange={(e) => setVisitFilters({ ...visitFilters, dateStart: e.target.value })}
+                                    />
+                                    <input
+                                        type="date"
+                                        value={visitFilters.dateEnd}
+                                        onChange={(e) => setVisitFilters({ ...visitFilters, dateEnd: e.target.value })}
+                                    />
+                                </div>
+                                <p>{t('dashboard.totalVisits')}: {filteredVisits.length}</p>
+                                <div className="chart-grid chart-grid-2">
+                                    <ErrorBoundary fallback={<p className="error-text">{t('dashboard.errors.visitStatusChart')}</p>}>
+                                        {visitPieData.length > 0 && (
+                                            <div className="chart-container">
+                                                <h3>{t('dashboard.visitStatusDistribution')}</h3>
+                                                <PieChart width={300} height={300}>
+                                                    <Pie data={visitPieData} cx={150} cy={150} labelLine={false} outerRadius={80} dataKey="value">
+                                                        {visitPieData.map((_, index) => (
+                                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                                        ))}
+                                                    </Pie>
+                                                    <Tooltip />
+                                                    <Legend />
+                                                </PieChart>
+                                            </div>
+                                        )}
+                                    </ErrorBoundary>
+                                    <ErrorBoundary fallback={<p className="error-text">{t('dashboard.errors.visitTrendChart')}</p>}>
+                                        {visitTrendData.length > 0 && (
+                                            <div className="chart-container">
+                                                <h3>{t('dashboard.visitTrends')}</h3>
+                                                <LineChart width={500} height={300} data={visitTrendData}>
+                                                    <CartesianGrid strokeDasharray="3 3" />
+                                                    <XAxis dataKey="date" />
+                                                    <YAxis />
+                                                    <Tooltip />
+                                                    <Legend />
+                                                    <Line type="monotone" dataKey="visits" stroke="#4cb1c7" />
+                                                </LineChart>
+                                            </div>
+                                        )}
+                                    </ErrorBoundary>
+                                </div>
+                            </div>
+                        </section>
+                    )}
+                </ErrorBoundary>
+
+                {/* Locations Card */}
+                <ErrorBoundary fallback={<div className="dashboard-card full-width-card"><p className="error-text">{t('dashboard.errors.locations')}</p></div>}>
+                    {(
+                        <section className="dashboard-card full-width-card">
+                            <h2><FaMapMarkerAlt /> {t('dashboard.assignedLocations')}</h2>
+                            <hr />
+                            <div className="card-content">
+                                <MapComponent />
+                            </div>
+                        </section>
+                    )}
+                </ErrorBoundary>
+
+                {/* KPIs Card */}
+                <ErrorBoundary fallback={<div className="dashboard-card full-width-card"><p className="error-text">{t('dashboard.errors.kpis')}</p></div>}>
+                    {!errors.agents && !errors.timesheets && (
+                        <section className="dashboard-card full-width-card">
+                            <h2><FaChartBar /> {t('dashboard.kpis')}</h2>
+                            <hr />
+                            <div className="card-content">
+                                <div className="chart-grid chart-grid-1">
+                                    <ErrorBoundary fallback={<p className="error-text">{t('dashboard.errors.visitsPerAgent')}</p>}>
+                                        {visitsPerAgent.length > 0 && (
+                                            <div className="chart-container">
+                                                <h3>{t('dashboard.visitsPerAgent')}</h3>
+                                                <BarChart width={600} height={300} data={visitsPerAgent}>
+                                                    <CartesianGrid strokeDasharray="3 3" />
+                                                    <XAxis dataKey="name" />
+                                                    <YAxis />
+                                                    <Tooltip />
+                                                    <Legend />
+                                                    <Bar dataKey="visits" fill="#4cb1c7" />
+                                                </BarChart>
+                                            </div>
+                                        )}
+                                    </ErrorBoundary>
+                                    <ErrorBoundary fallback={<p className="error-text">{t('dashboard.errors.visitTrends')}</p>}>
+                                        {visitTrends.length > 0 && (
+                                            <div className="chart-container">
+                                                <h3>{t('dashboard.visitTrends')}</h3>
+                                                <LineChart width={600} height={300} data={visitTrends}>
+                                                    <CartesianGrid strokeDasharray="3 3" />
+                                                    <XAxis dataKey="week" />
+                                                    <YAxis />
+                                                    <Tooltip />
+                                                    <Legend />
+                                                    <Line type="monotone" dataKey="visits" stroke="#4cb1c7" />
+                                                </LineChart>
+                                            </div>
+                                        )}
+                                    </ErrorBoundary>
+                                    <ErrorBoundary fallback={<p className="error-text">{t('dashboard.errors.averageVisitDuration')}</p>}>
+                                        {averageDurationPerAgent.length > 0 && (
+                                            <div className="chart-container">
+                                                <h3>{t('dashboard.averageVisitDuration')}</h3>
+                                                <BarChart width={600} height={300} data={averageDurationPerAgent}>
+                                                    <CartesianGrid strokeDasharray="3 3" />
+                                                    <XAxis dataKey="name" />
+                                                    <YAxis />
+                                                    <Tooltip />
+                                                    <Legend />
+                                                    <Bar dataKey="averageDuration" fill="#4cb1c7" />
+                                                </BarChart>
+                                            </div>
+                                        )}
+                                    </ErrorBoundary>
+                                    <ErrorBoundary fallback={<p className="error-text">{t('dashboard.errors.agentActivity')}</p>}>
+                                        {agentVisitTrendsData.length > 0 && (
+                                            <div className="chart-container">
+                                                <h3>{t('dashboard.agentActivity')}</h3>
+                                                <LineChart width={600} height={300} data={agentVisitTrendsData}>
+                                                    <CartesianGrid strokeDasharray="3 3" />
+                                                    <XAxis dataKey="week" />
+                                                    <YAxis />
+                                                    <Tooltip />
+                                                    <Legend />
+                                                    {agents.map((agent, index) => (
+                                                        <Line
+                                                            key={agent.agentID}
+                                                            type="monotone"
+                                                            dataKey={`${agent.name} ${agent.lastname}`}
+                                                            stroke={COLORS[index % COLORS.length]}
+                                                        />
+                                                    ))}
+                                                </LineChart>
+                                            </div>
+                                        )}
+                                    </ErrorBoundary>
+                                    <ErrorBoundary fallback={<p className="error-text">{t('dashboard.errors.visitsPerDelegation')}</p>}>
+                                        {visitsPerDelegationData.length > 0 && (
+                                            <div className="chart-container">
+                                                <h3>{t('dashboard.visitsPerDelegation')}</h3>
+                                                <BarChart width={600} height={300} data={visitsPerDelegationData}>
+                                                    <CartesianGrid strokeDasharray="3 3" />
+                                                    <XAxis dataKey="name" />
+                                                    <YAxis />
+                                                    <Tooltip />
+                                                    <Legend />
+                                                    <Bar dataKey="visits" fill="#4cb1c7" />
+                                                </BarChart>
+                                            </div>
+                                        )}
+                                    </ErrorBoundary>
+                                    <ErrorBoundary fallback={<p className="error-text">{t('dashboard.errors.visitsPerDayLast30')}</p>}>
+                                        {visitsPerDayLast30.length > 0 && (
+                                            <div className="chart-container">
+                                                <h3>{t('dashboard.visitsPerDayLast30')}</h3>
+                                                <AreaChart width={600} height={300} data={visitsPerDayLast30}>
+                                                    <CartesianGrid strokeDasharray="3 3" />
+                                                    <XAxis dataKey="date" />
+                                                    <YAxis />
+                                                    <Tooltip />
+                                                    <Legend />
+                                                    <Area type="monotone" dataKey="visits" stroke="#4cb1c7" fill="#4cb1c7" fillOpacity={0.3} />
+                                                </AreaChart>
+                                            </div>
+                                        )}
+                                    </ErrorBoundary>
+                                    <ErrorBoundary fallback={<p className="error-text">{t('dashboard.errors.avgDurationPerDay')}</p>}>
+                                        {avgDurationPerDay.length > 0 && (
+                                            <div className="chart-container">
+                                                <h3>{t('dashboard.avgDurationPerDay')}</h3>
+                                                <LineChart width={600} height={300} data={avgDurationPerDay}>
+                                                    <CartesianGrid strokeDasharray="3 3" />
+                                                    <XAxis dataKey="date" />
+                                                    <YAxis />
+                                                    <Tooltip />
+                                                    <Legend />
+                                                    <Line type="monotone" dataKey="avgDuration" stroke="#4cb1c7" />
+                                                </LineChart>
+                                            </div>
+                                        )}
+                                    </ErrorBoundary>
+                                    <ErrorBoundary fallback={<p className="error-text">{t('dashboard.errors.visitsScatter')}</p>}>
+                                        {visitsScatterData.length > 0 && (
+                                            <div className="chart-container">
+                                                <h3>{t('dashboard.visitsScatter')}</h3>
+                                                <ScatterChart width={600} height={300}>
+                                                    <CartesianGrid strokeDasharray="3 3" />
+                                                    <XAxis dataKey="date" />
+                                                    <YAxis dataKey="duration" />
+                                                    <Tooltip cursor={{ strokeDasharray: '3 3' }} />
+                                                    <Legend />
+                                                    <Scatter name="Visits" data={visitsScatterData} fill="#4cb1c7" />
+                                                </ScatterChart>
+                                            </div>
+                                        )}
+                                    </ErrorBoundary>
+                                </div>
+                            </div>
+                        </section>
+                    )}
+                </ErrorBoundary>
+            </div>
+
+            {/* Map Popup */}
+            {showMapPopup && (
+                <div className="map-popup">
+                    <button className="map-popup-close" onClick={() => setShowMapPopup(false)}>Close</button>
+                    <MapComponent
+                        visits={todayVisits.map(visit => ({
+                            visitID: visit.visitID,
+                            latitude: visit.latitude || 0,
+                            longitude: visit.longitude || 0,
+                            location: visit.location || 'Unknown',
+                            time: visit.time,
+                            reasons: visit.Reasons ? visit.Reasons.map((r: any) => r.item).join(', ') : '',
+                            agentName: agents.find(a => a.agentID === visit.agentID)?.name || 'Unknown'
+                        }))}
+                        userLocation={userLocation}
+                        isTimesheetModal={true}
+                    />
+                </div>
+            )}
         </motion.div>
     );
 };
 
-// Pagination Component
-const Pagination: React.FC<{ currentPage: number; totalPages: number; onPageChange: (page: number) => void }> = ({ currentPage, totalPages, onPageChange }) => {
-    const pages = [];
-    for (let i = 1; i <= totalPages; i++) {
-        pages.push(i);
-    }
-    return (
-        <div className="pagination">
-            {pages.map(page => (
-                <button
-                    key={page}
-                    onClick={() => onPageChange(page)}
-                    className={page === currentPage ? 'active' : ''}
-                >
-                    {page}
-                </button>
-            ))}
-        </div>
-    );
-};
-
 export default SupervisorDashboard;
+

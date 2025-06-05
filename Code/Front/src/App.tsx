@@ -203,7 +203,7 @@ const AppContent: React.FC = React.memo(() => {
               }
             />
             <Route
-              path="/dashboard/Supervsior"
+              path="/supervisor-dashboard"
               element={
                 <ProtectedRoute>
                   <SupervisorDashboard />
@@ -211,7 +211,7 @@ const AppContent: React.FC = React.memo(() => {
               }
             />
             <Route
-              path="/dashboard/Manger"
+              path="/regional-dashboard"
               element={
                 <ProtectedRoute>
                   <ManagerDashboard />

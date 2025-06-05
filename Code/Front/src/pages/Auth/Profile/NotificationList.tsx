@@ -388,6 +388,10 @@ const NotificationList: React.FC = React.memo(() => {
                                     value={startDate}
                                     onChange={(e) => setStartDate(e.target.value)}
                                 />
+
+                            </div>
+                            <div className="filter-group">
+
                                 <label>End Date</label>
                                 <input
                                     type="date"

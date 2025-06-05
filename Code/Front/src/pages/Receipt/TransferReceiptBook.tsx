@@ -179,7 +179,7 @@ const ROLE_TRANSFER_RULES = {
   },
 };
 
-const ITEMS_PER_PAGE = 6;
+const ITEMS_PER_PAGE = 10;
 const OTP_EXPIRY_SECONDS = 600;
 
 const TransferReceiptBook: React.FC = () => {
@@ -424,11 +424,6 @@ const TransferReceiptBook: React.FC = () => {
             setError(t("transferReceiptBook.errors.invalidStubStatusForArchive", { number: matchingBook.number }));
             return;
           }
-        }
-        if (recipientType === "ToAgent" && userRoleSet.has("Supervisor") && selectedBookIDs.length >= 1) {
-          console.log("Error: Supervisor book limit reached");
-          setError(t("transferReceiptBook.errors.supervisorLimit"));
-          return;
         }
         setSelectedBookIDs((prev) => {
           if (prev.includes(matchingBook.bookID)) {
@@ -1047,10 +1042,6 @@ const TransferReceiptBook: React.FC = () => {
     e.preventDefault();
     if (selectedBookIDs.length === 0) {
       setError(t("transferReceiptBook.errors.noBooksSelected"));
-      return;
-    }
-    if (recipientType === "ToAgent" && userRoleSet.has("Supervisor") && selectedBookIDs.length > 1) {
-      setError(t("transferReceiptBook.errors.supervisorLimit"));
       return;
     }
     if (!recipientType) {
