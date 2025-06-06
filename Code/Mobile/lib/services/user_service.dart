@@ -280,7 +280,17 @@ class UserService {
           throw Exception('Failed to fetch regional manager by supervisor: ${response.statusCode}');
         },
       );
-      return User.fromJson(jsonDecode(response.body));
+      // The response is already decoded JSON from makeAuthenticatedRequest
+      if (response is List<dynamic>) {
+        if (response.isEmpty) {
+          throw Exception('No regional manager found for supervisor ID: $supervisorID');
+        }
+        return User.fromJson(response.first as Map<String, dynamic>);
+      } else if (response is Map<String, dynamic>) {
+        return User.fromJson(response);
+      } else {
+        throw Exception('Unexpected response format: $response');
+      }
     } catch (e) {
       if (kDebugMode) print('Error fetching regional manager by supervisor: $e');
       rethrow;

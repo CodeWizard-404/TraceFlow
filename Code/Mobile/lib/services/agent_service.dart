@@ -182,22 +182,29 @@ class AgentService {
     try {
       final response = await AuthService.makeAuthenticatedRequest(
         request: () async {
-          final url = Uri.parse('$baseUrl/agents/delegation/$delegationID');
+          final url = Uri.parse('$baseUrl/agents/delegation?delegationID=$delegationID');
+          if (kDebugMode) print('Fetching agents for delegation with URL: $url');
           final response = await http.get(
             url,
             headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
           );
           CookieManager.extractCookies(response);
           if (response.statusCode == 200) return response;
+          if (response.statusCode == 404) {
+            throw Exception('No agents found for this delegation');
+          }
           throw Exception('Failed to fetch agents by delegation: ${response.statusCode}');
         },
       );
-      return (response['agents'] ?? response as List).map((json) => Agent.fromJson(json)).toList();
+      // Response is already a decoded JSON map from makeAuthenticatedRequest
+      final agentList = (response['agents'] as List<dynamic>?) ?? [];
+      return agentList.map((json) => Agent.fromJson(json as Map<String, dynamic>)).toList();
     } catch (e) {
       if (kDebugMode) print('Error fetching agents by delegation: $e');
-      rethrow;
+      return []; // Return an empty list instead of rethrowing
     }
   }
+
 
   Future<List<String>> fetchUniqueLocations() async {
     try {
@@ -243,7 +250,7 @@ class AgentService {
 
   Future<List<Agent>> getAgentsByUser(String userID) async {
     try {
-      final response = await AuthService.makeAuthenticatedRequest(
+      final decodedResponse = await AuthService.makeAuthenticatedRequest(
         request: () async {
           final url = Uri.parse('$baseUrl/agents/user/$userID');
           final response = await http.get(
@@ -252,21 +259,20 @@ class AgentService {
           );
           CookieManager.extractCookies(response);
           if (kDebugMode) print('AgentService: Fetching agents by user ID: $userID');
-          return response; // Return the http.Response object
+          if (response.statusCode != 200) {
+            throw Exception('Failed to fetch agents by user: ${response.statusCode}');
+          }
+          return response;
         },
       );
-      if (response.statusCode == 200) {
-        final decodedResponse = jsonDecode(response.body);
-        final agentList = decodedResponse['agents'] as List<dynamic>? ?? [];
-        final agents = agentList.map((json) => Agent.fromJson(json as Map<String, dynamic>)).toList();
-        if (kDebugMode) print('Agents fetched: ${agents.length}');
-        return agents;
-      } else {
-        throw Exception('Failed to fetch agents by user: ${response.statusCode}');
-      }
+      // decodedResponse is the decoded JSON body from a successful request
+      final agentList = decodedResponse['agents'] as List<dynamic>? ?? [];
+      final agents = agentList.map((json) => Agent.fromJson(json as Map<String, dynamic>)).toList();
+      if (kDebugMode) print('Agents fetched: ${agents.length}');
+      return agents;
     } catch (e) {
       if (kDebugMode) print('Error fetching agents by user: $e');
-      rethrow;
+      throw Exception('Failed to fetch agents by user: $e');
     }
   }
 

@@ -235,19 +235,21 @@ class UserProvider with ChangeNotifier {
     }
   }
 
-  Future<void> getRegionalManagerBySupervisor(String supervisorID) async {
+  Future<User> getRegionalManagerBySupervisor(String supervisorID) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
     try {
-      final managers = await UserService.getRegionalManagerBySupervisor(supervisorID);
-      _currentUser = managers;
+      final manager = await UserService.getRegionalManagerBySupervisor(supervisorID);
+      _currentUser = manager;
+      return manager;
     } catch (e) {
       _currentUser = null;
       _errorMessage = _parseError(e);
       if (e.toString().contains('401')) {
         await AuthService.logout();
       }
+      rethrow;
     } finally {
       _isLoading = false;
       notifyListeners();

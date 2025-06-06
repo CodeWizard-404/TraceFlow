@@ -27,14 +27,15 @@ class CookieManager {
     final setCookie = response.headers['set-cookie'];
     if (setCookie == null) return;
 
-    final cookieList = setCookie.split(RegExp(r',(?=\s*\w+=)')).map((c) => c.trim()).toList();
+    final cookieList =
+    setCookie.split(RegExp(r',(?=\s*\w+=)')).map((c) => c.trim()).toList();
     Map<String, String> newCookies = {};
     for (var cookie in cookieList) {
       final parts = cookie.split(';')[0].split('=');
       if (parts.length < 2) continue;
       final key = parts[0].trim();
       final value = parts[1].trim();
-      if (['accessToken', 'refreshToken', 'userData'].contains(key)) {
+      if (['accessToken', 'refreshToken'].contains(key)) {
         newCookies[key] = value;
       }
     }

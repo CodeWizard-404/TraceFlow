@@ -39,11 +39,16 @@ class LocationService {
             headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
           );
           CookieManager.extractCookies(response);
+          if (kDebugMode) print('All governorates response: ${response.body}');
           if (response.statusCode == 200) return response;
           throw Exception('Failed to fetch governorates: ${response.statusCode}');
         },
       );
-      return response['governorates'] ?? response as List<dynamic>;
+      if (kDebugMode) print('Decoded all governorates: $response');
+      if (response is! List<dynamic>) {
+        throw Exception('Unexpected response format: expected List, got ${response.runtimeType}');
+      }
+      return response;
     } catch (e) {
       if (kDebugMode) print('Error fetching governorates: $e');
       rethrow;
@@ -81,11 +86,16 @@ class LocationService {
             headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
           );
           CookieManager.extractCookies(response);
+          if (kDebugMode) print('Delegations by governorate response: ${response.body}');
           if (response.statusCode == 200) return response;
           throw Exception('Failed to fetch delegations by governorate: ${response.statusCode}');
         },
       );
-      return response['delegations'] ?? response as List<dynamic>;
+      if (kDebugMode) print('Decoded delegations by governorate: $response');
+      if (response is! List<dynamic>) {
+        throw Exception('Unexpected response format: expected List, got ${response.runtimeType}');
+      }
+      return response;
     } catch (e) {
       if (kDebugMode) print('Error fetching delegations by governorate: $e');
       rethrow;
@@ -106,7 +116,8 @@ class LocationService {
           throw Exception('Failed to fetch governorates by region: ${response.statusCode}');
         },
       );
-      return response['governorates'] ?? response as List<dynamic>;
+      if (kDebugMode) print('Decoded governorates by region: $response');
+      return response as List<dynamic>;
     } catch (e) {
       if (kDebugMode) print('Error fetching governorates by region: $e');
       rethrow;
@@ -171,7 +182,8 @@ class LocationService {
         },
       );
       if (kDebugMode) print('Decoded regions by user: $response');
-      return response['regions'] ?? response as List<dynamic>;
+      // Directly return the response as a List<dynamic>
+      return response as List<dynamic>;
     } catch (e) {
       if (kDebugMode) print('Error fetching regions by user: $e');
       rethrow;
@@ -188,11 +200,16 @@ class LocationService {
             headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
           );
           CookieManager.extractCookies(response);
+          if (kDebugMode) print('Governorates by user response: ${response.body}');
           if (response.statusCode == 200) return response;
           throw Exception('Failed to fetch governorates by user: ${response.statusCode}');
         },
       );
-      return response['governorates'] ?? response as List<dynamic>;
+      if (kDebugMode) print('Decoded governorates by user: $response');
+      if (response is! List<dynamic>) {
+        throw Exception('Unexpected response format: expected List, got ${response.runtimeType}');
+      }
+      return response;
     } catch (e) {
       if (kDebugMode) print('Error fetching governorates by user: $e');
       rethrow;
@@ -209,11 +226,16 @@ class LocationService {
             headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
           );
           CookieManager.extractCookies(response);
+          if (kDebugMode) print('Delegations by user response: ${response.body}');
           if (response.statusCode == 200) return response;
           throw Exception('Failed to fetch delegations by user: ${response.statusCode}');
         },
       );
-      return response['delegations'] ?? response as List<dynamic>;
+      if (kDebugMode) print('Decoded delegations by user: $response');
+      if (response is! List<dynamic>) {
+        throw Exception('Unexpected response format: expected List, got ${response.runtimeType}');
+      }
+      return response;
     } catch (e) {
       if (kDebugMode) print('Error fetching delegations by user: $e');
       rethrow;

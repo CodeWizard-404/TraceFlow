@@ -37,6 +37,7 @@ class AuthProvider with ChangeNotifier {
     aOptions: AndroidOptions(encryptedSharedPreferences: true),
     iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
   );
+  DateTime? _lastRefreshTime;
 
   String? get deviceIdentifier => _deviceIdentifier;
   User? get user => _user;
@@ -72,6 +73,8 @@ class AuthProvider with ChangeNotifier {
       return false;
     } catch (e) {
       if (kDebugMode) print('Error checking biometrics: $e');
+      _errorMessage = 'Biometric check failed: $e';
+      notifyListeners();
       return false;
     }
   }
@@ -88,6 +91,8 @@ class AuthProvider with ChangeNotifier {
       );
     } catch (e) {
       if (kDebugMode) print('Biometric authentication error: $e');
+      _errorMessage = 'Biometric authentication failed: $e';
+      notifyListeners();
       return false;
     }
   }
@@ -118,6 +123,8 @@ class AuthProvider with ChangeNotifier {
       if (kDebugMode) print('Fingerprint login enabled with credentials');
     } catch (e) {
       if (kDebugMode) print('Failed to enable fingerprint: $e');
+      _errorMessage = 'Failed to enable fingerprint login';
+      notifyListeners();
     }
   }
 
@@ -129,6 +136,8 @@ class AuthProvider with ChangeNotifier {
       if (kDebugMode) print('Fingerprint login disabled and credentials cleared');
     } catch (e) {
       if (kDebugMode) print('Failed to disable fingerprint: $e');
+      _errorMessage = 'Failed to disable fingerprint login';
+      notifyListeners();
     }
   }
 
@@ -157,34 +166,33 @@ class AuthProvider with ChangeNotifier {
     try {
       _deviceIdentifier = await DeviceUtils.getDeviceIdentifier();
       final fingerprintEnabled = await isFingerprintEnabled();
-      if (fingerprintEnabled && await canUseBiometrics()) {
+      final email = await readStoredEmail();
+      final password = await readStoredPassword();
+      if (fingerprintEnabled && email != null && password != null && await canUseBiometrics()) {
         final authenticated = await authenticateWithBiometrics();
         if (authenticated) {
-          final email = await readStoredEmail();
-          final password = await readStoredPassword();
-          if (email != null && password != null && _deviceIdentifier != null) {
+          if (_deviceIdentifier != null) {
             if (kDebugMode) print('Biometric auth successful, attempting login with stored credentials');
             await login(email, password);
-            return; // Exit if biometric login succeeds
+            return;
           } else {
-            if (kDebugMode) print('No stored credentials found');
-            _errorMessage = 'No stored credentials. Please log in manually.';
+            if (kDebugMode) print('No device identifier found');
+            _errorMessage = 'Device identifier missing. Please log in manually.';
           }
         } else {
           if (kDebugMode) print('Biometric authentication failed');
           _errorMessage = 'Biometric authentication failed. Please log in manually.';
         }
       } else {
-        if (kDebugMode) print('Biometric login not enabled or not supported');
+        if (kDebugMode) print('Biometric login not enabled, not supported, or no credentials stored');
       }
 
-      // Fallback to token-based session restoration
       await CookieManager.loadCookies();
       if (CookieManager.cookies.containsKey('accessToken') &&
           CookieManager.cookies.containsKey('refreshToken')) {
         _refreshToken = CookieManager.cookies['refreshToken'];
         if (await _isTokenExpired()) {
-          await _refreshAccessToken();
+          await _refreshAccessToken(silent: true);
         }
         await _checkAuthStatus();
       } else {
@@ -355,12 +363,6 @@ class AuthProvider with ChangeNotifier {
         _startotpTimer();
       } else {
         await _handleSuccessfulLogin(result);
-        final fingerprintEnabled = await isFingerprintEnabled();
-        if (fingerprintEnabled) {
-          await _storage.write(key: 'userEmail', value: identifier);
-          await _storage.write(key: 'userPassword', value: password);
-          if (kDebugMode) print('Stored credentials for biometric login');
-        }
         if (kDebugMode) print('After login, isSupervisor: $isSupervisor');
         if (!isSupervisor) {
           if (kDebugMode) print('Supervisor role not found, logging out');
@@ -583,6 +585,7 @@ class AuthProvider with ChangeNotifier {
       _authTempToken = null;
       _refreshToken = null;
       _tokenExpiry = null;
+      _lastRefreshTime = null;
       await _storage.delete(key: 'userEmail');
       await _storage.delete(key: 'userPassword');
       await CookieManager.clearCookies();
@@ -675,11 +678,17 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  Future<void> _refreshAccessToken() async {
+  Future<void> _refreshAccessToken({bool silent = false}) async {
     if (_refreshToken == null) {
       await logout();
       _errorMessage = 'Session expired. Please log in again.';
-      notifyListeners();
+      if (!silent) notifyListeners();
+      return;
+    }
+    // Prevent refreshing too soon
+    if (_lastRefreshTime != null &&
+        DateTime.now().difference(_lastRefreshTime!).inSeconds < 870) {
+      if (kDebugMode) print('Skipping token refresh: too soon since last refresh');
       return;
     }
     try {
@@ -688,19 +697,21 @@ class AuthProvider with ChangeNotifier {
       _tokenExpiry = (result['expiresIn'] != null
           ? DateTime.now().millisecondsSinceEpoch + result['expiresIn']
           : null) as int?;
+      _lastRefreshTime = DateTime.now();
       if (kDebugMode) print('Token refreshed successfully');
-      await _checkAuthStatus();
+      // Only check auth status if not silent to avoid UI rebuilds
+      if (!silent) await _checkAuthStatus();
     } catch (e) {
       if (kDebugMode) print('Token refresh failed: $e');
       await logout();
       _errorMessage = 'Session expired. Please log in again.';
-      notifyListeners();
+      if (!silent) notifyListeners();
     }
   }
 
   void _startProactiveRefreshTimer() {
     _refreshTimer?.cancel();
-    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) async {
+    _refreshTimer = Timer.periodic(const Duration(seconds: 60), (_) async {
       if (_refreshToken != null) {
         final accessToken = CookieManager.cookies['accessToken'];
         if (accessToken == null) {
@@ -714,8 +725,8 @@ class AuthProvider with ChangeNotifier {
           final expiry = decoded['exp'] * 1000;
           final now = DateTime.now().millisecondsSinceEpoch;
           final timeToExpiry = expiry - now;
-          if (timeToExpiry <= 60000) {
-            await _refreshAccessToken();
+          if (timeToExpiry <= 30000) { // 30 seconds before expiry
+            await _refreshAccessToken(silent: true);
           }
         } catch (e) {
           if (kDebugMode) print('Failed to decode token for refresh: $e');

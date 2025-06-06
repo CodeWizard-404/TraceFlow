@@ -190,18 +190,19 @@ class AgentProvider with ChangeNotifier {
     }
   }
 
-  Future<void> fetchAgentsByDelegation(String delegationID) async {
+  Future<List<Agent>> fetchAgentsByDelegation(String delegationID) async {
     if (kDebugMode) print('AgentProvider: Fetching agents for delegation: $delegationID');
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
     try {
-      _agents = await _agentService.fetchAgentsByDelegation(delegationID);
-      if (kDebugMode) print('Fetched ${_agents.length} agents for delegation: $delegationID');
+      final agents = await _agentService.fetchAgentsByDelegation(delegationID);
+      if (kDebugMode) print('Fetched ${agents.length} agents for delegation: $delegationID');
+      return agents;
     } catch (e) {
-      _agents = [];
       _errorMessage = 'Failed to fetch agents by delegation: $e';
       if (kDebugMode) print(_errorMessage);
+      return [];
     } finally {
       _isLoading = false;
       notifyListeners();

@@ -89,8 +89,10 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
 
       // Fetch regional manager
       developer.log('[CreateVisitScreen] Fetching regional manager for supervisor ID: $supervisorID', name: 'CreateVisitScreen.loadInitialData');
-      await userProvider.getRegionalManagerBySupervisor(supervisorID);
-      final regionalManagerID = userProvider.currentUser?.userID;
+
+      final regionalManager = await userProvider.getRegionalManagerBySupervisor(supervisorID);
+      final regionalManagerID = regionalManager.userID;
+
       developer.log(
         '[CreateVisitScreen] Regional manager ID fetched: ${regionalManagerID ?? 'null'}',
         name: 'CreateVisitScreen.loadInitialData',
@@ -217,6 +219,9 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
       });
     }
   }
+
+  Map<String, dynamic>? _selectedGovernorate;
+  Map<String, dynamic>? _selectedDelegation;
 
   Future<void> _showLocationDialog(BuildContext context, String type) async {
     final locationProvider = Provider.of<LocationProvider>(context, listen: false);
@@ -353,19 +358,24 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                             if (type == 'region') {
                               _selectedRegionId = value;
                               _selectedGovernorateId = null;
+                              _selectedGovernorate = null;
                               _selectedDelegationId = null;
+                              _selectedDelegation = null;
                               developer.log(
                                 '[CreateVisitScreen] Selected region: ${item['name']} (ID: $value), resetting governorate and delegation',
                                 name: 'CreateVisitScreen.showLocationDialog',
                               );
                             } else if (type == 'governorate') {
+                              _selectedGovernorate = item;
                               _selectedGovernorateId = value;
                               _selectedDelegationId = null;
+                              _selectedDelegation = null;
                               developer.log(
                                 '[CreateVisitScreen] Selected governorate: ${item['name']} (ID: $value), resetting delegation',
                                 name: 'CreateVisitScreen.showLocationDialog',
                               );
                             } else {
+                              _selectedDelegation = item;
                               _selectedDelegationId = value;
                               developer.log(
                                 '[CreateVisitScreen] Selected delegation: ${item['name']} (ID: $value)',
@@ -408,54 +418,62 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
   }
 
   Future<void> _showAgentDialog(BuildContext context, AgentProvider agentProvider) async {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    developer.log(
-      '[CreateVisitScreen] Opening agent dialog for delegation ID: $_selectedDelegationId',
-      name: 'CreateVisitScreen.showAgentDialog',
-    );
+    // Early exit if widget is not mounted
+    if (!mounted) {
+      developer.log('[CreateVisitScreen] Widget not mounted, aborting agent dialog', name: 'CreateVisitScreen.showAgentDialog');
+      return;
+    }
+
+    // Store the context in a local variable to ensure stability
+    final dialogContext = context;
+    final authProvider = Provider.of<AuthProvider>(dialogContext, listen: false);
+
+    developer.log('[CreateVisitScreen] Opening agent dialog for delegation ID: $_selectedDelegationId', name: 'CreateVisitScreen.showAgentDialog');
     setState(() => _isLoading = true);
+
     try {
-      developer.log(
-        '[CreateVisitScreen] Fetching agents for supervisor ID: ${authProvider.user!.userID}',
-        name: 'CreateVisitScreen.showAgentDialog',
-      );
+      developer.log('[CreateVisitScreen] Fetching agents for supervisor ID: ${authProvider.user!.userID}', name: 'CreateVisitScreen.showAgentDialog');
       await agentProvider.getAgentsByUser(authProvider.user!.userID);
       final supervisorAgents = List<Agent>.from(agentProvider.agents);
-      developer.log(
-        '[CreateVisitScreen] Supervisor agents fetched: ${supervisorAgents.map((a) => '${a.name} ${a.lastname} (ID: ${a.agentID})').toList()}',
-        name: 'CreateVisitScreen.showAgentDialog',
-      );
+      developer.log('[CreateVisitScreen] Supervisor agents fetched: ${supervisorAgents.map((a) => '${a.name} ${a.lastname} (${a.phone})').toList()}', name: 'CreateVisitScreen.showAgentDialog');
 
-      developer.log(
-        '[CreateVisitScreen] Fetching agents for delegation ID: $_selectedDelegationId',
-        name: 'CreateVisitScreen.showAgentDialog',
-      );
-      await agentProvider.fetchAgentsByDelegation(_selectedDelegationId!);
-      final delegationAgents = agentProvider.agents;
-      developer.log(
-        '[CreateVisitScreen] Delegation agents fetched: ${delegationAgents.map((a) => '${a.name} ${a.lastname} (ID: ${a.agentID})').toList()}',
-        name: 'CreateVisitScreen.showAgentDialog',
-      );
+      developer.log('[CreateVisitScreen] Fetching agents for delegation ID: $_selectedDelegationId', name: 'CreateVisitScreen.showAgentDialog');
+      final delegationAgents = await agentProvider.fetchAgentsByDelegation(_selectedDelegationId!);
+      developer.log('[CreateVisitScreen] Delegation agents fetched: ${delegationAgents.map((a) => '${a.name} ${a.lastname} (${a.phone})').toList()}', name: 'CreateVisitScreen.showAgentDialog');
 
       final filteredAgents = supervisorAgents.where((a) => delegationAgents.any((da) => da.agentID == a.agentID)).toList();
-      developer.log(
-        '[CreateVisitScreen] Filtered agents (intersection): ${filteredAgents.map((a) => '${a.name} ${a.lastname} (ID: ${a.agentID})').toList()}',
-        name: 'CreateVisitScreen.showAgentDialog',
-      );
+      developer.log('[CreateVisitScreen] Filtered agents (intersection): ${filteredAgents.map((a) => '${a.name} ${a.lastname} (${a.phone})').toList()}', name: 'CreateVisitScreen.showAgentDialog');
+
+      // Check if widget is still mounted before updating UI
+      if (!mounted) {
+        developer.log('[CreateVisitScreen] Widget not mounted after fetching agents, aborting dialog', name: 'CreateVisitScreen.showAgentDialog');
+        return;
+      }
 
       setState(() => _isLoading = false);
 
+      // Initialize dialog content
       final TextEditingController searchController = TextEditingController();
       List<Agent> filteredItems = List.from(filteredAgents);
 
-      await showDialog(
-        context: context,
-        builder: (context) => StatefulBuilder(
-          builder: (context, setDialogState) => AlertDialog(
-            backgroundColor: Theme.of(context).cardTheme.color,
+      // Verify context validity before showing dialog
+      if (!mounted || !dialogContext.mounted) {
+        developer.log('[CreateVisitScreen] Context not valid for dialog, aborting', name: 'CreateVisitScreen.showAgentDialog');
+        if (mounted) {
+          _showSnackBar('Unable to show agents: Screen is no longer active');
+        }
+        return;
+      }
+
+      // Show dialog with stable context
+      await showDialog<void>(
+        context: dialogContext,
+        builder: (BuildContext dialogBuilderContext) => StatefulBuilder(
+          builder: (BuildContext dialogBuilderContext, StateSetter setDialogState) => AlertDialog(
+            backgroundColor: Theme.of(dialogBuilderContext).cardTheme.color,
             title: Text(
               'Select Agent',
-              style: Theme.of(context).textTheme.headlineSmall,
+              style: Theme.of(dialogBuilderContext).textTheme.headlineSmall,
             ),
             content: SizedBox(
               width: double.maxFinite,
@@ -468,7 +486,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                       hintText: 'Search agents...',
                       prefixIcon: Icon(
                         Icons.search,
-                        color: Theme.of(context).colorScheme.primary,
+                        color: Theme.of(dialogBuilderContext).colorScheme.primary,
                       ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -477,16 +495,11 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                     onChanged: (value) {
                       setDialogState(() {
                         filteredItems = filteredAgents
-                            .where(
-                              (agent) =>
-                          '${agent.name} ${agent.lastname}'.toLowerCase().contains(value.toLowerCase()) ||
-                              agent.agentID.toLowerCase().contains(value.toLowerCase()),
-                        )
+                            .where((agent) =>
+                        '${agent.name} ${agent.lastname}'.toLowerCase().contains(value.toLowerCase()) ||
+                            agent.agentID.toLowerCase().contains(value.toLowerCase()))
                             .toList();
-                        developer.log(
-                          '[CreateVisitScreen] Filtered agents: ${filteredItems.map((a) => '${a.name} ${a.lastname} (ID: ${a.agentID})').toList()}',
-                          name: 'CreateVisitScreen.showAgentDialog',
-                        );
+                        developer.log('[CreateVisitScreen] Filtered agents: ${filteredItems.map((a) => '${a.name} ${a.lastname} (ID: ${a.agentID})').toList()}', name: 'CreateVisitScreen.showAgentDialog');
                       });
                     },
                   ),
@@ -504,18 +517,17 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                           value: agent.agentID,
                           groupValue: _selectedAgentId,
                           onChanged: (value) {
-                            setState(() {
-                              _selectedAgentId = value;
-                              _phoneController.text = agent.phone ?? '';
-                              _agentPhone = agent.phone ?? '';
-                              developer.log(
-                                '[CreateVisitScreen] Selected agent: ${agent.name} ${agent.lastname} (ID: $value, Phone: ${agent.phone})',
-                                name: 'CreateVisitScreen.showAgentDialog',
-                              );
-                            });
-                            Navigator.pop(context);
+                            if (mounted) {
+                              setState(() {
+                                _selectedAgentId = value;
+                                _phoneController.text = agent.phone ?? '';
+                                _agentPhone = agent.phone ?? '';
+                                developer.log('[CreateVisitScreen] Selected agent: ${agent.name} ${agent.lastname} (ID: $value, Phone: ${agent.phone})', name: 'CreateVisitScreen.showAgentDialog');
+                              });
+                              Navigator.pop(dialogBuilderContext);
+                            }
                           },
-                          activeColor: Theme.of(context).colorScheme.primary,
+                          activeColor: Theme.of(dialogBuilderContext).colorScheme.primary,
                         );
                       },
                     ),
@@ -525,11 +537,11 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(context),
+                onPressed: () => Navigator.pop(dialogBuilderContext),
                 child: Text(
                   'Cancel',
                   style: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                    color: Theme.of(dialogBuilderContext).colorScheme.onSurface.withOpacity(0.6),
                   ),
                 ),
               ),
@@ -538,17 +550,13 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
         ),
       );
     } catch (e, stackTrace) {
-      setState(() => _isLoading = false);
-      _showSnackBar('Failed to load agents: $e');
-      developer.log(
-        '[CreateVisitScreen] Error fetching agents: $e',
-        name: 'CreateVisitScreen.showAgentDialog',
-        error: e,
-        stackTrace: stackTrace,
-      );
+      if (mounted) {
+        setState(() => _isLoading = false);
+        _showSnackBar('Failed to load agents: $e');
+      }
+      developer.log('[CreateVisitScreen] Error in showAgentDialog: $e', name: 'CreateVisitScreen.showAgentDialog', error: e, stackTrace: stackTrace);
     }
   }
-
   Future<void> _showChecklistDialog(BuildContext context, ChecklistProvider checklistProvider) async {
     final allChecklists = checklistProvider.allChecklists;
     final selectedChecklists = List<Checklist>.from(_selectedChecklists);
@@ -1037,393 +1045,526 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
   }
 
   @override
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: CustomAppBar(title: 'Create Visit', showBackButton: true),
       drawer: const AppSidebar(),
-      body: Container(
-        color: Theme.of(context).scaffoldBackgroundColor,
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : Form(
-            key: _formKey,
-            child: ListView(
-              children: [
-                _buildSectionCard(
-                  title: 'Date & Time',
-                  child: Column(
+      body: Builder(
+        builder: (scaffoldContext) { // Capture stable Scaffold context
+          return Container(
+              color: Theme.of(scaffoldContext).scaffoldBackgroundColor,
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : Form(
+                  key: _formKey,
+                  child: ListView(
                     children: [
-                      _buildTile(
-                        icon: Icons.calendar_today,
-                        title: _selectedDate == null ? 'Select Date' : '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
-                        onTap: () => _selectDate(context),
+                      _buildSectionCard(
+                        title: 'Date & Time',
+                        child: Column(
+                          children: [
+                            _buildTile(
+                              icon: Icons.calendar_today,
+                              title: _selectedDate == null
+                                  ? 'Select Date'
+                                  : '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
+                              onTap: () => _selectDate(scaffoldContext),
+                            ),
+                            const CustomSpacer(height: 12),
+                            _buildTile(
+                              icon: Icons.access_time,
+                              title: _selectedTime == null
+                                  ? 'Select Time'
+                                  : _selectedTime!.format(scaffoldContext),
+                              onTap: () => _selectTime(scaffoldContext),
+                            ),
+                          ],
+                        ),
                       ),
-                      const CustomSpacer(height: 12),
-                      _buildTile(
-                        icon: Icons.access_time,
-                        title: _selectedTime == null ? 'Select Time' : _selectedTime!.format(context),
-                        onTap: () => _selectTime(context),
+                      const CustomSpacer(height: 16),
+                      _buildSectionCard(
+                        title: 'Location & Agent',
+                        child: Consumer2<AgentProvider, LocationProvider>(
+                          builder: (context, agentProvider, locationProvider, child) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(scaffoldContext).colorScheme.surface,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                        color: Theme.of(scaffoldContext)
+                                            .colorScheme
+                                            .onSurface
+                                            .withOpacity(0.2)),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.phone,
+                                          color: Theme.of(scaffoldContext).colorScheme.primary,
+                                          size: 24),
+                                      const CustomSpacer(width: 12),
+                                      Expanded(
+                                        child: TextField(
+                                          controller: _phoneController,
+                                          keyboardType: TextInputType.number,
+                                          inputFormatters: [
+                                            FilteringTextInputFormatter.digitsOnly
+                                          ],
+                                          maxLength: 8,
+                                          decoration: InputDecoration(
+                                            hintText: 'Enter agent\'s phone number',
+                                            border: InputBorder.none,
+                                            hintStyle: TextStyle(
+                                                color: Theme.of(scaffoldContext)
+                                                    .colorScheme
+                                                    .onSurface
+                                                    .withOpacity(0.6)),
+                                            counterText: '',
+                                          ),
+                                          style: TextStyle(
+                                              fontSize: 16,
+                                              color: Theme.of(scaffoldContext)
+                                                  .colorScheme
+                                                  .onSurface),
+                                          onChanged: (value) =>
+                                              _onPhoneChanged(value, agentProvider),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                if (_phoneError != null) ...[
+                                  const CustomSpacer(height: 8),
+                                  Text(
+                                    _phoneError!,
+                                    style: TextStyle(
+                                        color: Theme.of(scaffoldContext).colorScheme.error,
+                                        fontSize: 12),
+                                  ),
+                                ],
+                                const CustomSpacer(height: 12),
+                                GestureDetector(
+                                  onTap: _agentPhone.isNotEmpty
+                                      ? null
+                                      : () => _showLocationDialog(scaffoldContext, 'region'),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(scaffoldContext).colorScheme.surface,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                          color: Theme.of(scaffoldContext)
+                                              .colorScheme
+                                              .onSurface
+                                              .withOpacity(0.2)),
+                                      backgroundBlendMode:
+                                      _agentPhone.isNotEmpty ? BlendMode.saturation : null,
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.location_on,
+                                          color: _agentPhone.isNotEmpty
+                                              ? Theme.of(scaffoldContext)
+                                              .colorScheme
+                                              .onSurface
+                                              .withOpacity(0.6)
+                                              : Theme.of(scaffoldContext).colorScheme.primary,
+                                        ),
+                                        const CustomSpacer(width: 12),
+                                        Expanded(
+                                          child: Text(
+                                            _selectedRegionId == null
+                                                ? 'Select Region'
+                                                : _regions.firstWhere(
+                                                    (r) => r['regionID'] == _selectedRegionId)['name'],
+                                            style: TextStyle(
+                                              color: _agentPhone.isNotEmpty
+                                                  ? Theme.of(scaffoldContext)
+                                                  .colorScheme
+                                                  .onSurface
+                                                  .withOpacity(0.6)
+                                                  : Theme.of(scaffoldContext)
+                                                  .colorScheme
+                                                  .onSurface,
+                                            ),
+                                          ),
+                                        ),
+                                        Icon(
+                                          Icons.arrow_drop_down,
+                                          color: Theme.of(scaffoldContext)
+                                              .colorScheme
+                                              .onSurface
+                                              .withOpacity(0.6),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                const CustomSpacer(height: 12),
+                                GestureDetector(
+                                  onTap: _agentPhone.isNotEmpty || _selectedRegionId == null
+                                      ? null
+                                      : () => _showLocationDialog(scaffoldContext, 'governorate'),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(scaffoldContext).colorScheme.surface,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                          color: Theme.of(scaffoldContext)
+                                              .colorScheme
+                                              .onSurface
+                                              .withOpacity(0.2)),
+                                      backgroundBlendMode: _agentPhone.isNotEmpty ||
+                                          _selectedRegionId == null
+                                          ? BlendMode.saturation
+                                          : null,
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.location_city,
+                                          color: _agentPhone.isNotEmpty || _selectedRegionId == null
+                                              ? Theme.of(scaffoldContext)
+                                              .colorScheme
+                                              .onSurface
+                                              .withOpacity(0.6)
+                                              : Theme.of(scaffoldContext).colorScheme.primary,
+                                        ),
+                                        const CustomSpacer(width: 12),
+                                        Expanded(
+                                          child: Text(
+                                            _selectedGovernorate == null
+                                                ? 'Select Governorate'
+                                                : _selectedGovernorate!['name'],
+                                            style: TextStyle(
+                                              color: _agentPhone.isNotEmpty ||
+                                                  _selectedRegionId == null
+                                                  ? Theme.of(scaffoldContext)
+                                                  .colorScheme
+                                                  .onSurface
+                                                  .withOpacity(0.6)
+                                                  : Theme.of(scaffoldContext)
+                                                  .colorScheme
+                                                  .onSurface,
+                                            ),
+                                          ),
+                                        ),
+                                        Icon(
+                                          Icons.arrow_drop_down,
+                                          color: Theme.of(scaffoldContext)
+                                              .colorScheme
+                                              .onSurface
+                                              .withOpacity(0.6),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                const CustomSpacer(height: 12),
+                                GestureDetector(
+                                  onTap: _agentPhone.isNotEmpty || _selectedGovernorateId == null
+                                      ? null
+                                      : () => _showLocationDialog(scaffoldContext, 'delegation'),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(scaffoldContext).colorScheme.surface,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                          color: Theme.of(scaffoldContext)
+                                              .colorScheme
+                                              .onSurface
+                                              .withOpacity(0.2)),
+                                      backgroundBlendMode: _agentPhone.isNotEmpty ||
+                                          _selectedGovernorateId == null
+                                          ? BlendMode.saturation
+                                          : null,
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.place,
+                                          color: _agentPhone.isNotEmpty ||
+                                              _selectedGovernorateId == null
+                                              ? Theme.of(scaffoldContext)
+                                              .colorScheme
+                                              .onSurface
+                                              .withOpacity(0.6)
+                                              : Theme.of(scaffoldContext).colorScheme.primary,
+                                        ),
+                                        const CustomSpacer(width: 12),
+                                        Expanded(
+                                          child: Text(
+                                            _selectedDelegation == null
+                                                ? 'Select Delegation'
+                                                : _selectedDelegation!['name'],
+                                            style: TextStyle(
+                                              color: _agentPhone.isNotEmpty ||
+                                                  _selectedGovernorateId == null
+                                                  ? Theme.of(scaffoldContext)
+                                                  .colorScheme
+                                                  .onSurface
+                                                  .withOpacity(0.6)
+                                                  : Theme.of(scaffoldContext)
+                                                  .colorScheme
+                                                  .onSurface,
+                                            ),
+                                          ),
+                                        ),
+                                        Icon(
+                                          Icons.arrow_drop_down,
+                                          color: Theme.of(scaffoldContext)
+                                              .colorScheme
+                                              .onSurface
+                                              .withOpacity(0.6),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                const CustomSpacer(height: 12),
+                                GestureDetector(
+                                  onTap: _agentPhone.isNotEmpty || _selectedDelegationId == null
+                                      ? null
+                                      : () => _showAgentDialog(scaffoldContext, agentProvider),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(scaffoldContext).colorScheme.surface,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                          color: Theme.of(scaffoldContext)
+                                              .colorScheme
+                                              .onSurface
+                                              .withOpacity(0.2)),
+                                      backgroundBlendMode: _agentPhone.isNotEmpty ||
+                                          _selectedDelegationId == null
+                                          ? BlendMode.saturation
+                                          : null,
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.person,
+                                          color: _agentPhone.isNotEmpty ||
+                                              _selectedDelegationId == null
+                                              ? Theme.of(scaffoldContext)
+                                              .colorScheme
+                                              .onSurface
+                                              .withOpacity(0.6)
+                                              : Theme.of(scaffoldContext).colorScheme.primary,
+                                        ),
+                                        const CustomSpacer(width: 12),
+                                        Expanded(
+                                          child: Text(
+                                            _selectedAgentId == null
+                                                ? (_agentPhone.isNotEmpty
+                                                ? 'Selected via phone'
+                                                : _selectedDelegationId == null
+                                                ? 'Select a delegation first'
+                                                : 'Select Agent')
+                                                : '${agentProvider.agents.firstWhere((agent) => agent.agentID == _selectedAgentId, orElse: () => Agent(agentID: '', name: 'Unknown', lastname: '', delegationID: '')).name} ${agentProvider.agents.firstWhere((agent) => agent.agentID == _selectedAgentId, orElse: () => Agent(agentID: '', name: '', lastname: 'Unknown', delegationID: '')).lastname}',
+                                            style: TextStyle(
+                                              color: _agentPhone.isNotEmpty ||
+                                                  _selectedDelegationId == null
+                                                  ? Theme.of(scaffoldContext)
+                                                  .colorScheme
+                                                  .onSurface
+                                                  .withOpacity(0.6)
+                                                  : Theme.of(scaffoldContext)
+                                                  .colorScheme
+                                                  .onSurface,
+                                            ),
+                                          ),
+                                        ),
+                                        Icon(
+                                          Icons.arrow_drop_down,
+                                          color: Theme.of(scaffoldContext)
+                                              .colorScheme
+                                              .onSurface
+                                              .withOpacity(0.6),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                      ),
+                      const CustomSpacer(height: 16),
+                      _buildSectionCard(
+                        title: 'Checklists',
+                        child: Consumer<ChecklistProvider>(
+                          builder: (context, checklistProvider, child) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                GestureDetector(
+                                  onTap: () => _showChecklistDialog(scaffoldContext, checklistProvider),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(scaffoldContext).colorScheme.surface,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                          color: Theme.of(scaffoldContext)
+                                              .colorScheme
+                                              .onSurface
+                                              .withOpacity(0.2)),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.checklist,
+                                            color: Theme.of(scaffoldContext).colorScheme.primary),
+                                        const CustomSpacer(width: 12),
+                                        Expanded(
+                                          child: Text(
+                                            _selectedChecklists.isEmpty
+                                                ? 'Select Checklists'
+                                                : '${_selectedChecklists.length} selected',
+                                            style: Theme.of(scaffoldContext).textTheme.bodyMedium,
+                                          ),
+                                        ),
+                                        Icon(
+                                          Icons.arrow_drop_down,
+                                          color: Theme.of(scaffoldContext)
+                                              .colorScheme
+                                              .onSurface
+                                              .withOpacity(0.6),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                if (_selectedChecklists.isNotEmpty) ...[
+                                  const CustomSpacer(height: 8),
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 8,
+                                    children: _selectedChecklists
+                                        .map(
+                                          (checklist) => Chip(
+                                        label: Text(checklist.item),
+                                        deleteIcon: const Icon(Icons.close, size: 18),
+                                        onDeleted: () => setState(
+                                                () => _selectedChecklists.remove(checklist)),
+                                        backgroundColor: Theme.of(scaffoldContext)
+                                            .colorScheme
+                                            .primary
+                                            .withOpacity(0.1),
+                                        labelStyle: TextStyle(
+                                            color:
+                                            Theme.of(scaffoldContext).colorScheme.primary),
+                                      ),
+                                    )
+                                        .toList(),
+                                  ),
+                                ],
+                              ],
+                            );
+                          },
+                        ),
+                      ),
+                      const CustomSpacer(height: 16),
+                      _buildSectionCard(
+                        title: 'Reasons',
+                        child: Consumer<ReasonProvider>(
+                          builder: (context, reasonProvider, child) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                GestureDetector(
+                                  onTap: () => _showReasonDialog(scaffoldContext, reasonProvider),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(scaffoldContext).colorScheme.surface,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                          color: Theme.of(scaffoldContext)
+                                              .colorScheme
+                                              .onSurface
+                                              .withOpacity(0.2)),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.list_alt,
+                                            color: Theme.of(scaffoldContext).colorScheme.primary),
+                                        const CustomSpacer(width: 12),
+                                        Expanded(
+                                          child: Text(
+                                            _selectedReasons.isEmpty
+                                                ? 'Select Reasons'
+                                                : '${_selectedReasons.length} selected',
+                                            style: Theme.of(scaffoldContext).textTheme.bodyMedium,
+                                          ),
+                                        ),
+                                        Icon(
+                                          Icons.arrow_drop_down,
+                                          color: Theme.of(scaffoldContext)
+                                              .colorScheme
+                                              .onSurface
+                                              .withOpacity(0.6),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                if (_selectedReasons.isNotEmpty) ...[
+                                  const CustomSpacer(height: 8),
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 8,
+                                    children: _selectedReasons
+                                        .map(
+                                          (reason) => Chip(
+                                        label: Text(reason.item),
+                                        deleteIcon: const Icon(Icons.close, size: 18),
+                                        onDeleted: () =>
+                                            setState(() => _selectedReasons.remove(reason)),
+                                        backgroundColor: Theme.of(scaffoldContext)
+                                            .colorScheme
+                                            .primary
+                                            .withOpacity(0.1),
+                                        labelStyle: TextStyle(
+                                            color:
+                                            Theme.of(scaffoldContext).colorScheme.primary),
+                                      ),
+                                    )
+                                        .toList(),
+                                  ),
+                                ],
+                              ],
+                            );
+                          },
+                        ),
+                      ),
+                      const CustomSpacer(height: 24),
+                      CustomButton(
+                        label: 'Create Visit',
+                        onPressed: _submitVisit,
+                        isLoading: _isLoading,
                       ),
                     ],
                   ),
                 ),
-                const CustomSpacer(height: 16),
-                _buildSectionCard(
-                  title: 'Location & Agent',
-                  child: Consumer2<AgentProvider, LocationProvider>(
-                    builder: (context, agentProvider, locationProvider, child) {
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.surface,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(Icons.phone, color: Theme.of(context).colorScheme.primary, size: 24),
-                                const CustomSpacer(width: 12),
-                                Expanded(
-                                  child: TextField(
-                                    controller: _phoneController,
-                                    keyboardType: TextInputType.number,
-                                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                                    maxLength: 8,
-                                    decoration: InputDecoration(
-                                      hintText: 'Enter agent\'s phone number',
-                                      border: InputBorder.none,
-                                      hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
-                                      counterText: '',
-                                    ),
-                                    style: TextStyle(fontSize: 16, color: Theme.of(context).colorScheme.onSurface),
-                                    onChanged: (value) => _onPhoneChanged(value, agentProvider),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          if (_phoneError != null) ...[
-                            const CustomSpacer(height: 8),
-                            Text(
-                              _phoneError!,
-                              style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12),
-                            ),
-                          ],
-                          const CustomSpacer(height: 12),
-                          GestureDetector(
-                            onTap: _agentPhone.isNotEmpty ? null : () => _showLocationDialog(context, 'region'),
-                            child: Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.surface,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
-                                backgroundBlendMode: _agentPhone.isNotEmpty ? BlendMode.saturation : null,
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.location_on,
-                                    color: _agentPhone.isNotEmpty
-                                        ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
-                                        : Theme.of(context).colorScheme.primary,
-                                  ),
-                                  const CustomSpacer(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      _selectedRegionId == null
-                                          ? 'Select Region'
-                                          : _regions.firstWhere((r) => r['regionID'] == _selectedRegionId)['name'],
-                                      style: TextStyle(
-                                        color: _agentPhone.isNotEmpty
-                                            ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
-                                            : Theme.of(context).colorScheme.onSurface,
-                                      ),
-                                    ),
-                                  ),
-                                  Icon(
-                                    Icons.arrow_drop_down,
-                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          const CustomSpacer(height: 12),
-                          GestureDetector(
-                            onTap: _agentPhone.isNotEmpty || _selectedRegionId == null
-                                ? null
-                                : () => _showLocationDialog(context, 'governorate'),
-                            child: Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.surface,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
-                                backgroundBlendMode: _agentPhone.isNotEmpty || _selectedRegionId == null ? BlendMode.saturation : null,
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.location_city,
-                                    color: _agentPhone.isNotEmpty || _selectedRegionId == null
-                                        ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
-                                        : Theme.of(context).colorScheme.primary,
-                                  ),
-                                  const CustomSpacer(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      _selectedGovernorateId == null
-                                          ? 'Select Governorate'
-                                          : locationProvider.governorates.firstWhere(
-                                            (g) => g['governorateID'] == _selectedGovernorateId,
-                                        orElse: () => {'name': 'Unknown'},
-                                      )['name'],
-                                      style: TextStyle(
-                                        color: _agentPhone.isNotEmpty || _selectedRegionId == null
-                                            ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
-                                            : Theme.of(context).colorScheme.onSurface,
-                                      ),
-                                    ),
-                                  ),
-                                  Icon(
-                                    Icons.arrow_drop_down,
-                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          const CustomSpacer(height: 12),
-                          GestureDetector(
-                            onTap: _agentPhone.isNotEmpty || _selectedGovernorateId == null
-                                ? null
-                                : () => _showLocationDialog(context, 'delegation'),
-                            child: Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.surface,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
-                                backgroundBlendMode: _agentPhone.isNotEmpty || _selectedGovernorateId == null ? BlendMode.saturation : null,
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.place,
-                                    color: _agentPhone.isNotEmpty || _selectedGovernorateId == null
-                                        ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
-                                        : Theme.of(context).colorScheme.primary,
-                                  ),
-                                  const CustomSpacer(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      _selectedDelegationId == null
-                                          ? 'Select Delegation'
-                                          : locationProvider.delegations.firstWhere(
-                                            (d) => d['delegationID'] == _selectedDelegationId,
-                                        orElse: () => {'name': 'Unknown'},
-                                      )['name'],
-                                      style: TextStyle(
-                                        color: _agentPhone.isNotEmpty || _selectedGovernorateId == null
-                                            ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
-                                            : Theme.of(context).colorScheme.onSurface,
-                                      ),
-                                    ),
-                                  ),
-                                  Icon(
-                                    Icons.arrow_drop_down,
-                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          const CustomSpacer(height: 12),
-                          GestureDetector(
-                            onTap: _agentPhone.isNotEmpty || _selectedDelegationId == null
-                                ? null
-                                : () => _showAgentDialog(context, agentProvider),
-                            child: Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.surface,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
-                                backgroundBlendMode: _agentPhone.isNotEmpty || _selectedDelegationId == null ? BlendMode.saturation : null,
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.person,
-                                    color: _agentPhone.isNotEmpty || _selectedDelegationId == null
-                                        ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
-                                        : Theme.of(context).colorScheme.primary,
-                                  ),
-                                  const CustomSpacer(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      _selectedAgentId == null
-                                          ? (_agentPhone.isNotEmpty
-                                          ? 'Selected via phone'
-                                          : _selectedDelegationId == null
-                                          ? 'Select a delegation first'
-                                          : 'Select Agent')
-                                          : '${agentProvider.agents.firstWhere((agent) => agent.agentID == _selectedAgentId, orElse: () => Agent(agentID: '', name: 'Unknown', lastname: '', delegationID: '')).name} ${agentProvider.agents.firstWhere((agent) => agent.agentID == _selectedAgentId, orElse: () => Agent(agentID: '', name: '', lastname: 'Unknown', delegationID: '')).lastname}',
-                                      style: TextStyle(
-                                        color: _agentPhone.isNotEmpty || _selectedDelegationId == null
-                                            ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
-                                            : Theme.of(context).colorScheme.onSurface,
-                                      ),
-                                    ),
-                                  ),
-                                  Icon(
-                                    Icons.arrow_drop_down,
-                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                ),
-                const CustomSpacer(height: 16),
-                _buildSectionCard(
-                  title: 'Checklists',
-                  child: Consumer<ChecklistProvider>(
-                    builder: (context, checklistProvider, child) {
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          GestureDetector(
-                            onTap: () => _showChecklistDialog(context, checklistProvider),
-                            child: Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.surface,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(Icons.checklist, color: Theme.of(context).colorScheme.primary),
-                                  const CustomSpacer(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      _selectedChecklists.isEmpty ? 'Select Checklists' : '${_selectedChecklists.length} selected',
-                                      style: Theme.of(context).textTheme.bodyMedium,
-                                    ),
-                                  ),
-                                  Icon(
-                                    Icons.arrow_drop_down,
-                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          if (_selectedChecklists.isNotEmpty) ...[
-                            const CustomSpacer(height: 8),
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: _selectedChecklists
-                                  .map(
-                                    (checklist) => Chip(
-                                  label: Text(checklist.item),
-                                  deleteIcon: const Icon(Icons.close, size: 18),
-                                  onDeleted: () => setState(() => _selectedChecklists.remove(checklist)),
-                                  backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                                  labelStyle: TextStyle(color: Theme.of(context).colorScheme.primary),
-                                ),
-                              )
-                                  .toList(),
-                            ),
-                          ],
-                        ],
-                      );
-                    },
-                  ),
-                ),
-                const CustomSpacer(height: 16),
-                _buildSectionCard(
-                  title: 'Reasons',
-                  child: Consumer<ReasonProvider>(
-                    builder: (context, reasonProvider, child) {
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          GestureDetector(
-                            onTap: () => _showReasonDialog(context, reasonProvider),
-                            child: Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.surface,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(Icons.list_alt, color: Theme.of(context).colorScheme.primary),
-                                  const CustomSpacer(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      _selectedReasons.isEmpty ? 'Select Reasons' : '${_selectedReasons.length} selected',
-                                      style: Theme.of(context).textTheme.bodyMedium,
-                                    ),
-                                  ),
-                                  Icon(
-                                    Icons.arrow_drop_down,
-                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          if (_selectedReasons.isNotEmpty) ...[
-                            const CustomSpacer(height: 8),
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: _selectedReasons
-                                  .map(
-                                    (reason) => Chip(
-                                  label: Text(reason.item),
-                                  deleteIcon: const Icon(Icons.close, size: 18),
-                                  onDeleted: () => setState(() => _selectedReasons.remove(reason)),
-                                  backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                                  labelStyle: TextStyle(color: Theme.of(context).colorScheme.primary),
-                                ),
-                              )
-                                  .toList(),
-                            ),
-                          ],
-                        ],
-                      );
-                    },
-                  ),
-                ),
-                const CustomSpacer(height: 24),
-                CustomButton(
-                  label: 'Create Visit',
-                  onPressed: _submitVisit,
-                  isLoading: _isLoading,
-                ),
-              ],
-            ),
-          ),
-        ),
+              ),
+          );
+        },
       ),
     );
   }
+
 
   Widget _buildSectionCard({required String title, required Widget child}) {
     return Container(

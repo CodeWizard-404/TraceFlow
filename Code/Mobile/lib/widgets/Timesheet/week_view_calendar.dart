@@ -408,27 +408,7 @@ class WeekViewCalendar extends StatelessWidget {
                                                           textAlign:
                                                               TextAlign.center,
                                                         ),
-                                                        Text(
-                                                          visit.location ??
-                                                              'Visit',
-                                                          style: theme
-                                                              .textTheme
-                                                              .labelSmall
-                                                              ?.copyWith(
-                                                                color: theme
-                                                                    .colorScheme
-                                                                    .onSurface
-                                                                    .withOpacity(
-                                                                      0.8,
-                                                                    ),
-                                                                fontSize: 9,
-                                                              ),
-                                                          textAlign:
-                                                              TextAlign.center,
-                                                          overflow:
-                                                              TextOverflow
-                                                                  .ellipsis,
-                                                        ),
+
                                                       ],
                                                     ),
                                                   ),

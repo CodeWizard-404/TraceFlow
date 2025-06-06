@@ -7,41 +7,7 @@ import './auth_service.dart';
 import './cookie_manager.dart';
 
 class TimesheetService {
-  static Future<Timesheet> createTimesheetForManager({
-    required int weekNumber,
-    required int year,
-    required String supervisorID,
-    required List<Map<String, dynamic>> visits,
-    String status = 'pending',
-  }) async {
-    if (kDebugMode) print('Creating timesheet for manager: $supervisorID');
-    return await AuthService.makeAuthenticatedRequest(
-      request: () async {
-        final url = Uri.parse('$baseUrl/timesheets/manager');
-        if (kDebugMode) print('POST $url');
-        final response = await http.post(
-          url,
-          headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
-          body: json.encode({
-            'weekNumber': weekNumber,
-            'year': year,
-            'supervisorID': supervisorID,
-            'visits': visits,
-            'status': status,
-          }),
-        );
-        if (kDebugMode) print('Response: ${response.statusCode}, ${response.body}');
-        CookieManager.extractCookies(response);
-        if (response.statusCode == 201) {
-          return response;
-        }
-        throw Exception('Failed to create timesheet: ${response.body}');
-      },
-    ).then((response) {
-      final data = json.decode(response.body);
-      return Timesheet.fromJson(data['timesheet']);
-    });
-  }
+
 
   static Future<Timesheet> createTimesheetForSupervisor({
     required int weekNumber,
@@ -73,8 +39,7 @@ class TimesheetService {
         }
         throw Exception('Failed to create timesheet: ${response.body}');
       },
-    ).then((response) {
-      final data = json.decode(response.body);
+    ).then((data) {
       return Timesheet.fromJson(data['timesheet']);
     });
   }
@@ -96,8 +61,7 @@ class TimesheetService {
         }
         throw Exception('Failed to fetch timesheet: ${response.body}');
       },
-    ).then((response) {
-      final data = json.decode(response.body);
+    ).then((data) {
       return Timesheet.fromJson(data);
     });
   }
@@ -152,9 +116,8 @@ class TimesheetService {
         }
         throw Exception('Failed to fetch timesheet: ${response.body}');
       },
-    ).then((response) {
-      final data = json.decode(response.body);
-      return Timesheet.fromJson(data);
+    ).then((data) {
+    return Timesheet.fromJson(data);
     });
   }
 

@@ -13,37 +13,7 @@ class TimesheetProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
-  Future<void> createTimesheetForManager({
-    required int weekNumber,
-    required int year,
-    required String supervisorID,
-    required List<Map<String, dynamic>> visits,
-    String status = 'pending',
-  }) async {
-    if (kDebugMode) print('TimesheetProvider.createTimesheetForManager called');
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
-    try {
-      final timesheet = await TimesheetService.createTimesheetForManager(
-        weekNumber: weekNumber,
-        year: year,
-        supervisorID: supervisorID,
-        visits: visits,
-        status: status,
-      );
-      _timesheets.add(timesheet);
-      _currentTimesheet = timesheet;
-      if (kDebugMode) print('Created timesheet: ${timesheet.timesheetID}');
-    } catch (e) {
-      _errorMessage = 'Failed to create timesheet: $e';
-      if (kDebugMode) print(_errorMessage);
-      rethrow;
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
+
 
   Future<void> createTimesheetForSupervisor({
     required int weekNumber,

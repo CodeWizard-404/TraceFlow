@@ -56,24 +56,32 @@ class LoginScreenState extends State<LoginScreen> {
   Future<void> _login() async {
     if (!_validateForm()) return;
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    await authProvider.login(_identifierController.text.trim(), _passwordController.text.trim());
+    await authProvider.login(
+        _identifierController.text.trim(), _passwordController.text.trim());
   }
 
   Future<void> _biometricLogin() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    if (await authProvider.isFingerprintEnabled() && await authProvider.canUseBiometrics()) {
+    if (await authProvider.isFingerprintEnabled() &&
+        await authProvider.canUseBiometrics()) {
       try {
-        // Use the correct authenticate method for local_auth ^2.3.0
         final authenticated = await authProvider.authenticateWithBiometrics();
         if (authenticated) {
           final email = await authProvider.readStoredEmail();
           final password = await authProvider.readStoredPassword();
           if (email != null && password != null) {
             await authProvider.login(email, password);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Biometric login successful'),
+                backgroundColor: Theme.of(context).colorScheme.primary,
+              ),
+            );
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('No stored credentials found. Please log in manually.'),
+                content: Text(
+                    'No stored credentials found. Please log in manually.'),
                 backgroundColor: Theme.of(context).colorScheme.error,
               ),
             );
@@ -97,7 +105,8 @@ class LoginScreenState extends State<LoginScreen> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Biometric login not enabled or supported.'),
+          content:
+          Text('Biometric login not enabled or not supported on this device.'),
           backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
@@ -133,13 +142,46 @@ class LoginScreenState extends State<LoginScreen> {
       } else if (authProvider.requires2FA) {
         Navigator.pushNamed(context, '/verify-2fa');
       } else if (authProvider.isAuthenticated && authProvider.permissionsLoaded) {
-        final fingerprintStatus = await authProvider.getFingerprintStatus();
-        if (fingerprintStatus == null && await authProvider.canUseBiometrics()) {
+        final fingerprintEnabled = await authProvider.isFingerprintEnabled();
+        if (fingerprintEnabled &&
+            _identifierController.text.isNotEmpty &&
+            _passwordController.text.isNotEmpty) {
+          final update = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Update Biometric Login'),
+              content: const Text(
+                  'Do you want to update the stored credentials for biometric login?'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('No'),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    await authProvider.enableFingerprintLogin(
+                      _identifierController.text.trim(),
+                      _passwordController.text.trim(),
+                    );
+                    Navigator.pop(context, true);
+                  },
+                  child: const Text('Yes'),
+                ),
+              ],
+            ),
+          );
+          if (update != true) {
+            // No action needed; existing credentials are preserved
+          }
+        } else if (await authProvider.canUseBiometrics() &&
+            _identifierController.text.isNotEmpty &&
+            _passwordController.text.isNotEmpty) {
           final enable = await showDialog<bool>(
             context: context,
             builder: (context) => AlertDialog(
               title: const Text('Enable Biometric Login'),
-              content: const Text('Would you like to enable biometric login (fingerprint/face) for future sessions?'),
+              content: const Text(
+                  'Would you like to enable biometric login for future sessions?'),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context, false),
@@ -202,26 +244,32 @@ class LoginScreenState extends State<LoginScreen> {
                         controller: _identifierController,
                         decoration: InputDecoration(
                           labelText: 'Email or Phone',
-                          labelStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant),
-                          prefixIcon: Icon(Icons.person, color: theme.colorScheme.primary),
+                          labelStyle:
+                          TextStyle(color: theme.colorScheme.onSurfaceVariant),
+                          prefixIcon:
+                          Icon(Icons.person, color: theme.colorScheme.primary),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: theme.colorScheme.outline),
+                            borderSide:
+                            BorderSide(color: theme.colorScheme.outline),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: theme.colorScheme.outline),
+                            borderSide:
+                            BorderSide(color: theme.colorScheme.outline),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: theme.colorScheme.primary, width: 2),
+                            borderSide: BorderSide(
+                                color: theme.colorScheme.primary, width: 2),
                           ),
                           errorText: _errors['identifier']?.isNotEmpty == true
                               ? _errors['identifier']
                               : null,
                           errorStyle: TextStyle(color: theme.colorScheme.error),
                         ),
-                        enabled: !authProvider.isLoading && authProvider.deviceIdentifier != null,
+                        enabled: !authProvider.isLoading &&
+                            authProvider.deviceIdentifier != null,
                         onChanged: (_) => _validateForm(),
                         keyboardType: TextInputType.emailAddress,
                         autocorrect: false,
@@ -232,33 +280,42 @@ class LoginScreenState extends State<LoginScreen> {
                         controller: _passwordController,
                         decoration: InputDecoration(
                           labelText: 'Password',
-                          labelStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant),
-                          prefixIcon: Icon(Icons.lock, color: theme.colorScheme.primary),
+                          labelStyle:
+                          TextStyle(color: theme.colorScheme.onSurfaceVariant),
+                          prefixIcon:
+                          Icon(Icons.lock, color: theme.colorScheme.primary),
                           suffixIcon: IconButton(
                             icon: Icon(
-                              _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                              _obscurePassword
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
                               color: theme.colorScheme.onSurfaceVariant,
                             ),
-                            onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                            onPressed: () =>
+                                setState(() => _obscurePassword = !_obscurePassword),
                           ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: theme.colorScheme.outline),
+                            borderSide:
+                            BorderSide(color: theme.colorScheme.outline),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: theme.colorScheme.outline),
+                            borderSide:
+                            BorderSide(color: theme.colorScheme.outline),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: theme.colorScheme.primary, width: 2),
+                            borderSide: BorderSide(
+                                color: theme.colorScheme.primary, width: 2),
                           ),
                           errorText: _errors['password']?.isNotEmpty == true
                               ? _errors['password']
                               : null,
                           errorStyle: TextStyle(color: theme.colorScheme.error),
                         ),
-                        enabled: !authProvider.isLoading && authProvider.deviceIdentifier != null,
+                        enabled: !authProvider.isLoading &&
+                            authProvider.deviceIdentifier != null,
                         obscureText: _obscurePassword,
                         onChanged: (_) => _validateForm(),
                         autocorrect: false,
@@ -272,13 +329,15 @@ class LoginScreenState extends State<LoginScreen> {
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 200),
                               child: ElevatedButton(
-                                onPressed: authProvider.isLoading || authProvider.deviceIdentifier == null
+                                onPressed: authProvider.isLoading ||
+                                    authProvider.deviceIdentifier == null
                                     ? null
                                     : _login,
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: theme.colorScheme.primary,
                                   foregroundColor: theme.colorScheme.onPrimary,
-                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                  padding:
+                                  const EdgeInsets.symmetric(vertical: 16),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(8),
                                   ),
@@ -291,7 +350,8 @@ class LoginScreenState extends State<LoginScreen> {
                                 )
                                     : Text(
                                   'Sign In',
-                                  style: theme.textTheme.labelLarge?.copyWith(
+                                  style: theme.textTheme.labelLarge
+                                      ?.copyWith(
                                     color: theme.colorScheme.onPrimary,
                                   ),
                                 ),
@@ -305,7 +365,8 @@ class LoginScreenState extends State<LoginScreen> {
                               color: theme.colorScheme.primary,
                               size: 40,
                             ),
-                            onPressed: authProvider.isLoading || authProvider.deviceIdentifier == null
+                            onPressed: authProvider.isLoading ||
+                                authProvider.deviceIdentifier == null
                                 ? null
                                 : _biometricLogin,
                             tooltip: 'Login with Biometrics',
@@ -318,7 +379,8 @@ class LoginScreenState extends State<LoginScreen> {
                       const GoogleLoginButton(),
                       const SizedBox(height: 16),
                       TextButton(
-                        onPressed: () => Navigator.pushNamed(context, '/forgot-password'),
+                        onPressed: () =>
+                            Navigator.pushNamed(context, '/forgot-password'),
                         child: Text(
                           'Forgot Password?',
                           style: theme.textTheme.bodyMedium?.copyWith(

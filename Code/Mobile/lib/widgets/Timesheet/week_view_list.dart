@@ -14,7 +14,7 @@ class WeekViewList extends StatelessWidget {
 
   List<DateTime> _getWeekDays(DateTime date) {
     final startOfWeek = date.subtract(Duration(days: date.weekday - 1));
-    return List.generate(5, (index) => startOfWeek.add(Duration(days: index)));
+    return List.generate(7, (index) => startOfWeek.add(Duration(days: index)));
   }
 
   @override
@@ -22,7 +22,7 @@ class WeekViewList extends StatelessWidget {
     final theme = Theme.of(context);
     final weekDays = _getWeekDays(date);
     final authProvider = Provider.of<AuthProvider>(context);
-    final isSupervisor = authProvider.user?.roles?.contains('SUPERVISOR') ?? false;
+    final isSupervisor = authProvider.user?.roles?.contains('Supervisor') ?? false;
 
     return Consumer<TimesheetProvider>(
       builder: (context, provider, child) {

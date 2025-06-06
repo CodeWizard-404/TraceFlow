@@ -17,7 +17,7 @@ class User {
   final List<String>? governorateIDs;
   final List<String>? delegationIDs;
   final List<String>? supervisorIDs;
-  final List<String>? regionalManagerIDs;
+  final String? regionalManagerID;
   final String? directorID;
 
   User({
@@ -36,7 +36,7 @@ class User {
     this.governorateIDs,
     this.delegationIDs,
     this.supervisorIDs,
-    this.regionalManagerIDs,
+    this.regionalManagerID,
     this.directorID,
   });
 
@@ -96,10 +96,7 @@ class User {
             .where((e) => e != null)
             .map((e) => e.toString())
             .toList(),
-        regionalManagerIDs: (json['regionalManagerIDs'] as List<dynamic>? ?? [])
-            .where((e) => e != null)
-            .map((e) => e.toString())
-            .toList(),
+        regionalManagerID: json['regionalManagerID']?.toString(),
         directorID: json['directorID']?.toString(),
       );
     } catch (e) {
@@ -124,7 +121,7 @@ class User {
     'governorateIDs': governorateIDs,
     'delegationIDs': delegationIDs,
     'supervisorIDs': supervisorIDs,
-    'regionalManagerIDs': regionalManagerIDs,
+    'regionalManagerID': regionalManagerID,
     'directorID': directorID,
   };
 }
