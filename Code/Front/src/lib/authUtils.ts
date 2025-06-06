@@ -25,8 +25,9 @@ export const protectedRoutes: { [key: string]: string[] } = {
 export const determineTargetRoute = (roles: Role[]): string => {
     if (!roles || roles.length === 0) return "/login";
     if (roles.some((r) => [ROLES.ADMIN, ROLES.SUPER_ADMIN].includes(r.name))) return "/admin";
-    if (roles.some((r) => [ROLES.MANAGER, ROLES.SUPERVISOR].includes(r.name))) return "/timesheet";
-    if (roles.some((r) => [ROLES.PURCHASE_TEAM, ROLES.REGIONAL_MANAGER, ROLES.STOCK_MANAGER].includes(r.name))) return "/receipt-books";
+    if (roles.some((r) => [ROLES.SUPERVISOR].includes(r.name))) return "/timesheet";
+    if (roles.some((r) => [ROLES.PURCHASE_TEAM, ROLES.STOCK_MANAGER].includes(r.name))) return "/receipt-books";
+    if (roles.some((r) => [ROLES.REGIONAL_MANAGER].includes(r.name))) return "/regional-dashboard";
     return "/login";
 };
 

@@ -6,7 +6,7 @@ import agentAPI from '../../apis/agentAPI';
 import locationApi from '../../apis/locationApi';
 import receiptBookAPI from '../../apis/receiptBookAPI';
 import timesheetAPI, { SyncTimesheetCalendarResponse, syncTimesheetToCalendar } from '../../apis/timesheetAPI';
-import userAPI from '../../apis/userAPI';
+import userAPI, { fetchUserProfile } from '../../apis/userAPI';
 import MapComponent from '../../components/Google/MapComponent';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, LineChart, Line, AreaChart, Area, ScatterChart, Scatter } from 'recharts';
 import Agent from '../../models/Agent';
@@ -65,6 +65,7 @@ const SupervisorDashboard: React.FC = () => {
     const { notifications, mergeNotifications, markAllAsRead } = useNotification();
 
     // State for data
+    const [profile, setProfile] = useState<User | null>(null);
     const [agents, setAgents] = useState<Agent[]>([]);
     const [agentLocations, setAgentLocations] = useState<any>(null);
     const [delegations, setDelegations] = useState<Delegation[]>([]);
@@ -138,7 +139,7 @@ const SupervisorDashboard: React.FC = () => {
                 const fetchAgents = async () => {
                     try {
                         const agentsData = await agentAPI.getAgentsByUser(user.userID);
-                        setAgents(agentsData || []);
+                        setAgents(agentsData.agents || []);
                     } catch (err) {
                         newErrors.agents = t('dashboard.errors.agents');
                         console.error('Error fetching agents:', err);
@@ -508,6 +509,19 @@ const SupervisorDashboard: React.FC = () => {
         </div>
     );
 
+    useEffect(() => {
+        const fecthUserProfile = async () => {
+            try {
+                const userProfile = await fetchUserProfile();
+                setProfile(userProfile);
+            } catch (error) {
+                console.error('Failed to fetch user profile:', error);
+            }
+        };
+        fecthUserProfile();
+    }, []);
+
+
     if (isLoading) {
         return (
             <div className="dashboard-container">
@@ -651,7 +665,7 @@ const SupervisorDashboard: React.FC = () => {
                             <div className="custom-skeleton pulsing" style={{ width: '150px', height: '25px', margin: '10px 0' }} />
                             <hr />
                             <div className="card-content">
-                                <div className="chart-grid chart-grid-1">
+                                <div className="chart-grid ">
                                     {[...Array(8)].map((_, i) => (
                                         <div key={i} className="chart-container">
                                             <div className="custom-skeleton pulsing" style={{ width: '600px', height: '300px', margin: '10px 0' }} />
@@ -681,7 +695,7 @@ const SupervisorDashboard: React.FC = () => {
                     </div>
                     <div className="user-profile">
                         <FaUser className="user-icon" />
-                        <span>{`${user?.firstname} ${user?.lastname}`}</span>
+                        <span>{`${profile?.firstname} ${profile?.lastname}`}</span>
                     </div>
                 </div>
                 <div className="header-stats">
@@ -945,7 +959,7 @@ const SupervisorDashboard: React.FC = () => {
                                     {receiptBookBarData.length > 0 && (
                                         <div className="chart-container">
                                             <h3>{t('dashboard.receiptBooksByType')}</h3>
-                                            <BarChart width={270} height={400} data={receiptBookBarData}>
+                                            <BarChart width={350} height={350} data={receiptBookBarData}>
                                                 <CartesianGrid strokeDasharray="3 3" />
                                                 <XAxis dataKey="type" />
                                                 <YAxis />
@@ -1056,7 +1070,7 @@ const SupervisorDashboard: React.FC = () => {
                             <h2><FaChartBar /> {t('dashboard.kpis')}</h2>
                             <hr />
                             <div className="card-content">
-                                <div className="chart-grid chart-grid-1">
+                                <div className="chart-grid chart-grid-2">
                                     <ErrorBoundary fallback={<p className="error-text">{t('dashboard.errors.visitsPerAgent')}</p>}>
                                         {visitsPerAgent.length > 0 && (
                                             <div className="chart-container">

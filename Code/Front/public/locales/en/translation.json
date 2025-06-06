@@ -2356,6 +2356,7 @@
     "visitsPerDayLast30": "Visits per Day (Last 30 Days)",
     "avgDurationPerDay": "Avg. Duration per Day",
     "visitsScatter": "Visits Scatter",
+    "validateTimesheets": "Validate Timesheets",
     "errors": {
       "agents": "Error loading agents data",
       "locations": "Error loading locations data",

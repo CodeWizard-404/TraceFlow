@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { useNotification } from '../../context/NotificationContext';
-import userAPI from '../../apis/userAPI';
+import userAPI, { fetchUserProfile } from '../../apis/userAPI';
 import timesheetAPI from '../../apis/timesheetAPI';
 import receiptBookAPI from '../../apis/receiptBookAPI';
 import locationApi from '../../apis/locationApi';
@@ -12,7 +12,8 @@ import reportAPI from '../../apis/reportAPI';
 import agentAPI from '../../apis/agentAPI';
 import MapComponent from '../../components/Google/MapComponent';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, LineChart, Line, ScatterChart, Scatter } from 'recharts';
-import { FaUsers, FaBook, FaClock, FaMapMarkerAlt, FaChartBar, FaSitemap, FaUser, FaCheckCircle, FaCalendarAlt, FaMapMarkedAlt, FaRobot, FaUserEdit, FaBell, FaSync, FaGlobe, FaFileAlt, FaHourglassHalf, FaMapSigns, FaUserCheck } from 'react-icons/fa';
+import { FaUsers, FaBook, FaClock, FaMapMarkerAlt, FaChartBar, FaSitemap, FaUser, FaCalendarAlt, FaMapMarkedAlt, FaUserEdit, FaBell, FaSync, FaGlobe, FaFileAlt, FaHourglassHalf, FaMapSigns, FaUserCheck } from 'react-icons/fa';
+import { FiDownload } from "react-icons/fi";
 import { cn } from '../../lib/utils';
 import { FixedSizeList } from 'react-window';
 import NotificationItem from '../../components/ui/notification';
@@ -25,6 +26,7 @@ import Delegation from '../../models/Delegation';
 import Agent from '../../models/Agent';
 import { ReportSchedule, GeneratedReport } from '../../models/Report';
 import './ManagerDashbaord.css';
+import { getNotifications } from '../../apis/notificationAPI';
 
 const RegionalManagerDashboard: React.FC = () => {
     const { user } = useAuth();
@@ -33,6 +35,7 @@ const RegionalManagerDashboard: React.FC = () => {
     const { notifications, mergeNotifications, markAllAsRead } = useNotification();
 
     // State Definitions
+    const [profile, setProfile] = useState<User | null>(null);
     const [director, setDirector] = useState<User | null>(null);
     const [supervisors, setSupervisors] = useState<User[]>([]);
     const [timesheets, setTimesheets] = useState<Timesheet[]>([]);
@@ -56,6 +59,7 @@ const RegionalManagerDashboard: React.FC = () => {
     const [visitFilters, setVisitFilters] = useState({ status: '', supervisor: '', region: '', dateStart: '', dateEnd: '' });
     const [notificationPage, setNotificationPage] = useState(1);
     const [isNotificationLoading, setIsNotificationLoading] = useState(false);
+    const [receiptBookTypes, setReceiptBookTypes] = useState<{ typeID: string; name: string }[]>([]);
     const itemsPerPage = 20;
 
     const COLORS = ['#4cb1c7', '#f5a800', '#036318', '#930744', '#8b8b8b', '#63b3ed', '#ff784e', '#00c49f', '#ffbb28', '#ff00ff'];
@@ -70,7 +74,7 @@ const RegionalManagerDashboard: React.FC = () => {
                 if (!user) throw new Error('User not authenticated');
 
                 // Fetch Director
-                const directorData = await userAPI.getDirectorByUser(user.userID).catch(err => { newErrors.director = t('dashboard.errors.director'); throw err; });
+                const directorData = await userAPI.getDirectorByRegionalManager(user.userID).catch(err => { newErrors.director = t('dashboard.errors.director'); throw err; });
                 setDirector(directorData[0] || null);
 
                 // Fetch Supervisors
@@ -91,6 +95,10 @@ const RegionalManagerDashboard: React.FC = () => {
                 );
                 setReceiptBooks([...(rmReceiptBooks || []), ...supervisorsReceiptBooks.flat()]);
 
+                // Fetch Receipt Book Types
+                const receiptBookTypesData = await receiptBookAPI.getAllReceiptBookTypes().catch(err => { newErrors.receiptBooks = t('dashboard.errors.receiptBookTypes'); throw err; });
+                setReceiptBookTypes(receiptBookTypesData || []);
+
                 // Fetch Regions
                 const regionsData = await locationApi.getRegionsByUser(user.userID).catch(err => { newErrors.regions = t('dashboard.errors.regions'); throw err; });
                 setRegions(regionsData || []);
@@ -104,12 +112,13 @@ const RegionalManagerDashboard: React.FC = () => {
                         return { supervisorID: sup.userID, governorates, delegations, agents: supAgents };
                     });
                     const locationsData = await Promise.all(locationsPromises);
+                    const AllAgents = await agentAPI.getAllAgents();
                     const locationsMap = locationsData.reduce((acc, { supervisorID, governorates, delegations }) => {
                         acc[supervisorID] = { governorates, delegations };
                         return acc;
                     }, {} as { [key: string]: { governorates: Governorate[]; delegations: Delegation[] } });
                     setSupervisorLocations(locationsMap);
-                    setAgents(locationsData.flatMap(data => data.agents as Agent[]));
+                    setAgents(AllAgents.agents || []);
                 }
 
                 // Fetch Reports
@@ -129,12 +138,25 @@ const RegionalManagerDashboard: React.FC = () => {
         fetchDashboardData();
     }, [t]);
 
+
+    useEffect(() => {
+        const fecthUserProfile = async () => {
+            try {
+                const userProfile = await fetchUserProfile();
+                setProfile(userProfile);
+            } catch (error) {
+                console.error('Failed to fetch user profile:', error);
+            }
+        };
+        fecthUserProfile();
+    }, []);
+
     // Data Processing
     const allVisits = timesheets.flatMap(ts => ts.Visits || []);
     const filteredVisits = allVisits.filter(visit => {
         const statusMatch = !visitFilters.status || visit.status === visitFilters.status;
         const supervisorMatch = !visitFilters.supervisor || timesheets.find(ts => ts.timesheetID === visit.timesheetID)?.supervisorID === visitFilters.supervisor;
-        const regionMatch = !visitFilters.region || agents.find(a => a.agentID === visit.agentID)?.Delegation?.Governorate?.Region.regionID === visitFilters.region;
+        const regionMatch = !visitFilters.region || agents.find(a => a.agentID === visit.agentID)?.Delegation?.Governorate?.Region?.regionID === visitFilters.region;
         const date = new Date(visit.date);
         const dateStart = visitFilters.dateStart ? new Date(visitFilters.dateStart) : null;
         const dateEnd = visitFilters.dateEnd ? new Date(visitFilters.dateEnd) : null;
@@ -154,7 +176,6 @@ const RegionalManagerDashboard: React.FC = () => {
     const avgVisitDuration = allVisits.length > 0 ? Number((allVisits.reduce((sum, v) => sum + (v.duration || 0), 0) / allVisits.length).toFixed(2)) : 0;
     const visitsLast7Days = allVisits.filter(v => new Date(v.date) >= new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)).length;
     const activeSupervisors = supervisors.filter(sup => allVisits.some(v => timesheets.find(ts => ts.timesheetID === v.timesheetID)?.supervisorID === sup.userID)).length;
-    const completionRate = allVisits.length > 0 ? Number(((validatedVisits / numVisits) * 100).toFixed(1)) : 0;
 
     // Chart Data
     const visitStatusCounts = filteredVisits.reduce((acc, visit) => { acc[visit.status] = (acc[visit.status] || 0) + 1; return acc; }, {} as Record<string, number>);
@@ -168,7 +189,12 @@ const RegionalManagerDashboard: React.FC = () => {
         return { name: `${sup.firstname} ${sup.lastname}`, visits: supVisits.length };
     });
 
-    const receiptBooksByType = receiptBooks.reduce((acc, book) => { acc[book.typeID] = (acc[book.typeID] || 0) + 1; return acc; }, {} as Record<string, number>);
+    const receiptBooksByType = receiptBooks.reduce((acc, book) => {
+        const type = receiptBookTypes.find(t => t.typeID === book.typeID);
+        const typeName = type ? type.name : book.typeID || 'Unknown';
+        acc[typeName] = (acc[typeName] || 0) + 1;
+        return acc;
+    }, {} as Record<string, number>);
     const receiptBookPieData = Object.keys(receiptBooksByType).map(type => ({ name: type, value: receiptBooksByType[type] }));
 
     const receiptBooksPerSupervisor = supervisors.map(sup => {
@@ -182,14 +208,18 @@ const RegionalManagerDashboard: React.FC = () => {
         return { name: `${sup.firstname} ${sup.lastname}`, avgDuration: Number(avg.toFixed(2)) };
     });
 
-    const anomalies = allVisits.filter(v => v.duration && (v.duration < 5 || v.duration > 120)).map(v => ({
-        supervisor: supervisors.find(s => timesheets.find(ts => ts.timesheetID === v.timesheetID)?.supervisorID === s.userID)?.firstname || 'Unknown',
-        duration: v.duration,
-        date: v.date.split('T')[0],
-    }));
+    const anomalies = notifications
+        .filter(n => n.type === 'anomaly' && n.userID === user?.userID)
+        .map(n => ({
+            supervisor: supervisors.find(s => s.userID === n.userID)?.firstname || 'Unknown',
+            date: new Date(n.createdAt).toISOString().split('T')[0],
+        }));
 
     const visitsPerRegion = regions.map(region => {
-        const regionVisits = allVisits.filter(v => agents.find(a => a.agentID === v.agentID)?.Delegation?.Governorate?.Region.regionID === region.regionID);
+        const regionVisits = allVisits.filter(v => {
+            const agent = agents.find(a => a.agentID === v.agentID);
+            return agent?.Delegation?.Governorate?.Region?.regionID === region.regionID;
+        });
         return { name: region.name, visits: regionVisits.length };
     });
 
@@ -201,11 +231,19 @@ const RegionalManagerDashboard: React.FC = () => {
     const receiptBookStatusCounts = receiptBooks.reduce((acc, book) => { acc[book.status] = (acc[book.status] || 0) + 1; return acc; }, {} as Record<string, number>);
     const receiptBookStatusPieData = Object.keys(receiptBookStatusCounts).map(status => ({ name: status, value: receiptBookStatusCounts[status] }));
 
+    // Convert cron expression to user-friendly format
+    const formatCronExpression = (cron: string): string => {
+        if (cron === '0 0 * * 0') return 'Weekly';
+        if (cron === '0 0 1 * *') return 'Monthly';
+        if (cron === '0 0 * * *') return 'Daily';
+        return cron; // Fallback to raw cron if unrecognized
+    };
+
     // Notification Handlers
     const handleRefreshNotifications = async () => {
         setIsNotificationLoading(true);
         try {
-            const fetchedNotifications = await Promise.resolve([]); // Placeholder
+            let fetchedNotifications = await getNotifications();
             mergeNotifications(fetchedNotifications);
             setNotificationPage(1);
         } catch (error) {
@@ -243,6 +281,8 @@ const RegionalManagerDashboard: React.FC = () => {
         return <div>Loading...</div>;
     }
 
+
+
     return (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }} className="dashboard-container regional-manager-container">
             {/* Enhanced Header */}
@@ -251,25 +291,24 @@ const RegionalManagerDashboard: React.FC = () => {
                     <h1>{t('dashboard.regionalManagerTitle')}</h1>
                     <div className="user-profile">
                         <FaUser className="user-icon" />
-                        <span>{`${user?.firstname} ${user?.lastname}`}</span>
+                        <span>{user ? `${profile!.firstname} ${profile!.lastname}` : 'Guest'}</span>
                     </div>
                 </div>
                 <div className="header-stats">
-                    <div className="stat-card"><FaUsers /><div><h3>{t('dashboard.totalSupervisors')}</h3><p>{numSupervisors}</p></div></div>
-                    <div className="stat-card"><FaUserCheck /><div><h3>{t('dashboard.activeSupervisors')}</h3><p>{activeSupervisors}</p></div></div>
-                    <div className="stat-card"><FaUsers /><div><h3>{t('dashboard.totalAgents')}</h3><p>{numAgents}</p></div></div>
-                    <div className="stat-card"><FaClock /><div><h3>{t('dashboard.totalVisits')}</h3><p>{numVisits}</p></div></div>
-                    <div className="stat-card"><FaBook /><div><h3>{t('dashboard.totalReceiptBooks')}</h3><p>{numReceiptBooks}</p></div></div>
-                    <div className="stat-card"><FaMapMarkerAlt /><div><h3>{t('dashboard.totalRegions')}</h3><p>{numRegions}</p></div></div>
-                    <div className="stat-card"><FaGlobe /><div><h3>{t('dashboard.totalGovernorates')}</h3><p>{totalGovernorates}</p></div></div>
-                    <div className="stat-card"><FaMapSigns /><div><h3>{t('dashboard.totalDelegations')}</h3><p>{totalDelegations}</p></div></div>
-                    <div className="stat-card"><FaClock /><div><h3>{t('dashboard.visitsLast7Days')}</h3><p>{visitsLast7Days}</p></div></div>
-                    <div className="stat-card"><FaHourglassHalf /><div><h3>{t('dashboard.avgVisitDuration')}</h3><p>{avgVisitDuration} min</p></div></div>
-                    <div className="stat-card"><FaCheckCircle /><div><h3>{t('dashboard.completionRate')}</h3><p>{completionRate}%</p></div></div>
+                    <div className="stat-card stat-card-1"><FaUsers /><div><h3>{t('dashboard.totalSupervisors')}</h3><p>{numSupervisors}</p></div></div>
+                    <div className="stat-card stat-card-1"><FaUserCheck /><div><h3>{t('dashboard.activeSupervisors')}</h3><p>{activeSupervisors}</p></div></div>
+                    <div className="stat-card stat-card-1"><FaUsers /><div><h3>{t('dashboard.totalAgents')}</h3><p>{numAgents}</p></div></div>
+                    <div className="stat-card stat-card-1"><FaClock /><div><h3>{t('dashboard.totalVisits')}</h3><p>{numVisits}</p></div></div>
+                    <div className="stat-card stat-card-1"><FaBook /><div><h3>{t('dashboard.totalReceiptBooks')}</h3><p>{numReceiptBooks}</p></div></div>
+                    <div className="stat-card stat-card-1"><FaMapMarkerAlt /><div><h3>{t('dashboard.totalRegions')}</h3><p>{numRegions}</p></div></div>
+                    <div className="stat-card stat-card-1"><FaGlobe /><div><h3>{t('dashboard.totalGovernorates')}</h3><p>{totalGovernorates}</p></div></div>
+                    <div className="stat-card stat-card-1"><FaMapSigns /><div><h3>{t('dashboard.totalDelegations')}</h3><p>{totalDelegations}</p></div></div>
+                    <div className="stat-card stat-card-1"><FaClock /><div><h3>{t('dashboard.visitsLast7Days')}</h3><p>{visitsLast7Days}</p></div></div>
+                    <div className="stat-card stat-card-1"><FaHourglassHalf /><div><h3>{t('dashboard.avgVisitDuration')}</h3><p>{avgVisitDuration} min</p></div></div>
                 </div>
             </header>
 
-            <div className="dashboard-grid">
+            <div className="dashboard-grid dashboard-grid-1">
                 {/* Quick Actions */}
                 <section className="dashboard-card quick-actions-card">
                     <h2>{t('dashboard.quickActions')}</h2>
@@ -277,9 +316,8 @@ const RegionalManagerDashboard: React.FC = () => {
                     <div className="action-grid">
                         <button className="action-btn" onClick={() => navigate('/timesheet-form')}><FaCalendarAlt /><span>{t('dashboard.addTimesheet')}</span></button>
                         <button className="action-btn" onClick={() => navigate('/reports')}><FaChartBar /><span>{t('dashboard.generateReport')}</span></button>
-                        <button className="action-btn" onClick={() => navigate('/supervisors')}><FaUsers /><span>{t('dashboard.viewSupervisors')}</span></button>
                         <button className="action-btn" onClick={() => navigate('/transfer-receipt-books')}><FaBook /><span>{t('dashboard.assignReceiptBook')}</span></button>
-                        <button className="action-btn" onClick={() => navigate('/timesheet')}><FaRobot /><span>{t('dashboard.generateTimesheets')}</span></button>
+                        <button className="action-btn" onClick={() => navigate('/timesheet')}><FaCalendarAlt /><span>{t('dashboard.validateTimesheets')}</span></button>
                         <button className="action-btn" onClick={() => navigate('/profile')}><FaUserEdit /><span>{t('dashboard.editProfile')}</span></button>
                         <button className="action-btn" onClick={() => navigate('/profile', { state: { scrollTo: 'notification-preferences' } })}><FaBell /><span>{t('dashboard.notificationPreferences')}</span></button>
                     </div>
@@ -290,13 +328,15 @@ const RegionalManagerDashboard: React.FC = () => {
                     <h2><FaSitemap /> {t('dashboard.hierarchy')}</h2>
                     <hr />
                     <div className="card-content">
-                        {director && (
+                        {director ? (
                             <div className="hierarchy-level">
                                 <h3>{t('dashboard.director')}</h3>
                                 <p>{`${director.firstname} ${director.lastname}`}</p>
-                                <p>{t('dashboard.email')}: {director.email}</p>
-                                <p>{t('dashboard.phone')}: {director.phone}</p>
+                                <p>{t('dashboard.email')}: {director.email || 'N/A'}</p>
+                                <p>{t('dashboard.phone')}: {director.phone || 'N/A'}</p>
                             </div>
+                        ) : (
+                            <p>{t('dashboard.noDirectorAssigned')}</p>
                         )}
                         <div className="hierarchy-level">
                             <h3>{t('dashboard.supervisors')}</h3>
@@ -372,17 +412,13 @@ const RegionalManagerDashboard: React.FC = () => {
                                 <option value="">{t('dashboard.allStatuses')}</option>
                                 <option value="pending">{t('dashboard.pending')}</option>
                                 <option value="validated">{t('dashboard.validated')}</option>
+                                <option value="rejected">{t('dashboard.rejected')}</option>
+                                <option value="visisted">{t('dashboard.visisted')}</option>
                             </select>
                             <select value={visitFilters.supervisor} onChange={e => setVisitFilters({ ...visitFilters, supervisor: e.target.value })}>
                                 <option value="">{t('dashboard.allSupervisors')}</option>
                                 {supervisors.map(sup => (
                                     <option key={sup.userID} value={sup.userID}>{`${sup.firstname} ${sup.lastname}`}</option>
-                                ))}
-                            </select>
-                            <select value={visitFilters.region} onChange={e => setVisitFilters({ ...visitFilters, region: e.target.value })}>
-                                <option value="">{t('dashboard.allRegions')}</option>
-                                {regions.map(region => (
-                                    <option key={region.regionID} value={region.regionID}>{region.name}</option>
                                 ))}
                             </select>
                             <input type="date" value={visitFilters.dateStart} onChange={e => setVisitFilters({ ...visitFilters, dateStart: e.target.value })} />
@@ -440,7 +476,7 @@ const RegionalManagerDashboard: React.FC = () => {
                     <hr />
                     <div className="card-content">
                         <h4>{t('dashboard.regionsAssigned')}</h4>
-                        <ul>{regions.map(region => <li key={region.regionID}>{region.name} - Visits: {visitsPerRegion.find(r => r.name === region.name)?.visits || 0}</li>)}</ul>
+                        <ul>{regions.map(region => <li key={region.regionID}>{region.name}</li>)}</ul>
                         <h4>{t('dashboard.supervisorsAssignments')}</h4>
                         {supervisors.map(sup => (
                             <div key={sup.userID}>
@@ -458,13 +494,23 @@ const RegionalManagerDashboard: React.FC = () => {
                     <hr />
                     <div className="card-content">
                         <h3>{t('dashboard.scheduledReports')}</h3>
-                        <ul>{scheduledReports.slice(0, 5).map(report => <li key={report.scheduleID}>{report.reportType} - {report.cronExpression}</li>)}</ul>
+                        {scheduledReports.length === 0 ? (
+                            <p>{t('dashboard.noScheduledReports')}</p>
+                        ) : (
+                            <ul>
+                                {scheduledReports.slice(0, 5).map(report => (
+                                    <li key={report.scheduleID}>
+                                        {report.reportType} - {formatCronExpression(report.cronExpression)}
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
                         <h3>{t('dashboard.generatedReports')}</h3>
                         <ul>
                             {generatedReports.slice(0, 5).map(report => (
                                 <li key={report.generatedReportID}>
                                     {report.reportType} - {new Date(report.generatedAt).toLocaleDateString()}
-                                    <button onClick={() => reportAPI.downloadReport(report.filePath).then(blob => {/* Download logic */ })}>{t('dashboard.download')}</button>
+                                    <button className='Download-report-btn' onClick={() => reportAPI.downloadReport(report.filePath).then(blob => {/* Download logic */ })}><FiDownload /></button>
                                 </li>
                             ))}
                         </ul>
@@ -521,8 +567,6 @@ const RegionalManagerDashboard: React.FC = () => {
                         <MapComponent />
                     </div>
                 </section>
-
-
 
                 {/* Additional KPIs */}
                 <section className="dashboard-card full-width-card">

@@ -21,7 +21,6 @@ import {
 import { getUsersByRole, getSupervisorsByUser, fetchUserProfile } from "../../apis/userAPI";
 import { updateVisit } from '../../apis/visitAPI';
 import { FaClock, FaMapMarkerAlt, FaRegUser, FaFilter } from "react-icons/fa";
-import TimesheetStatus from "../../models/Enum/TimesheetStatus";
 import VisitStatus from "../../models/Enum/VisitStatus";
 import { useTranslation } from "react-i18next";
 import CalendarSyncButton from "../../components/Google/CalendarSyncButton";
