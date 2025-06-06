@@ -15,6 +15,7 @@ import {
   AgentsByBoundsResponse,
   AgentBulkUploadResponse,
 } from "./index";
+import Agent from "models/Agent";
 
 // Generic error handler
 const handleApiError = (error: unknown, defaultMessage: string): string => {
@@ -92,10 +93,10 @@ export const getAgentSupervisor = async (id: string): Promise<SupervisorResponse
 // Get agents by user (supervisor)
 export const getAgentsByUser = async (
   userID: string
-): Promise<AgentsByDelegationResponse> => {
+): Promise<Agent[]> => {
   try {
     if (!userID) throw new Error("User ID is required.");
-    const response = await api.get<AgentsByDelegationResponse>(
+    const response = await api.get<Agent[]>(
       `/agents/user/${userID}`
     );
     return response.data;

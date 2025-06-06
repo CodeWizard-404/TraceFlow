@@ -14,6 +14,8 @@ import LoginPage from './pages/Auth/Login';
 import ProfilePage from './pages/Auth/Profile/ProfilePage';
 import AgentManagement from './pages/Dashboard/AgentManagement';
 import Reports from './pages/Report/Reports';
+import SupervisorDashboard from './pages/Dashboard/SupervisorDashboard';
+import ManagerDashboard from './pages/Dashboard/ManagerDashboard';
 
 // Lazy load route components
 const Timesheets = React.lazy(() => import('./pages/Timesheet/Timesheets'));
@@ -197,6 +199,22 @@ const AppContent: React.FC = React.memo(() => {
               element={
                 <ProtectedRoute>
                   <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/supervisor-dashboard"
+              element={
+                <ProtectedRoute>
+                  <SupervisorDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/regional-dashboard"
+              element={
+                <ProtectedRoute>
+                  <ManagerDashboard />
                 </ProtectedRoute>
               }
             />

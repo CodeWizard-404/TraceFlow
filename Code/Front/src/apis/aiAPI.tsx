@@ -130,3 +130,14 @@ export const testAIConfig = async (configID: string): Promise<TestAIConfigRespon
         throw new Error(handleApiError(error, 'Unable to test AI configuration.'));
     }
 };
+
+
+
+export default {
+    createAIConfig,
+    updateAIConfig,
+    getAIConfig,
+    deleteAIConfig,
+    listAIConfigs,
+    testAIConfig,
+};

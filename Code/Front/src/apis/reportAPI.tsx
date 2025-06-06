@@ -11,6 +11,7 @@ import {
     ReportSchedule,
     GeneratedReport,
 } from "../models/Report";
+import { de } from "date-fns/locale";
 
 
 // Generic error handler
@@ -290,4 +291,14 @@ export const deleteGeneratedReport = async (reportID: string): Promise<{ message
     } catch (error: unknown) {
         throw new Error(handleApiError(error, "Unable to delete generated report."));
     }
+};
+
+export default {
+    generateReport,
+    scheduleReport,
+    downloadReport,
+    listSchedules,
+    listGeneratedReports,
+    deleteSchedule,
+    deleteGeneratedReport,
 };

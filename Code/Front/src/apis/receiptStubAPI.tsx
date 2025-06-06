@@ -73,3 +73,11 @@ export const archiveStub = async (bookIDs: string[]): Promise<ArchiveStubRespons
         throw new Error(handleApiError(error, "Unable to archive stubs."));
     }
 };
+
+
+export default {
+    collectStub,
+    validateStubCollection,
+    archiveStub
+
+}

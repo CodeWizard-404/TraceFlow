@@ -10,10 +10,9 @@ import { useAuth } from "../../../context/AuthContext";
 import { useProfile } from "./useProfile";
 import ProfileInfoSection from "./ProfileInfoSection";
 import SettingsSection from "./SettingsSection";
-import ActivitySection from "./ActivitySection";
 import NotificationList from "./NotificationList";
 import NotificationPreferences from "./NotificationPreferences";
-import { FaUser, FaCog, FaHistory, FaBell, FaCamera, FaTimes, FaTrash } from "react-icons/fa";
+import { FaUser, FaCog, FaBell, FaCamera, FaTimes, FaTrash } from "react-icons/fa";
 import "./ProfilePage.css";
 
 const ProfilePage: React.FC = React.memo(() => {
@@ -84,7 +83,7 @@ const ProfilePage: React.FC = React.memo(() => {
           </div>
         </header>
         <nav className="profile-nav">
-          {[...Array(4)].map((_, i) => (
+          {[...Array(3)].map((_, i) => (
             <div key={i} className="custom-skeleton pulsing" style={{ width: '120px', height: '40px', marginRight: '8px' }} />
           ))}
         </nav>
@@ -210,12 +209,6 @@ const ProfilePage: React.FC = React.memo(() => {
             <FaCog /> Settings
           </button>
           <button
-            className={`nav-tab ${activeTab === "activity" ? "active" : ""}`}
-            onClick={() => handleTabChange("activity")}
-          >
-            <FaHistory /> Activity
-          </button>
-          <button
             className={`nav-tab ${activeTab === "notifications" ? "active" : ""}`}
             onClick={() => handleTabChange("notifications")}
           >
@@ -226,7 +219,6 @@ const ProfilePage: React.FC = React.memo(() => {
         <main className="profile-content">
           {activeTab === "info" && <ProfileInfoSection />}
           {activeTab === "settings" && <SettingsSection />}
-          {activeTab === "activity" && <ActivitySection />}
           {activeTab === "notifications" && (
             <div className="notifications-section">
               <div className="notification-toggle">

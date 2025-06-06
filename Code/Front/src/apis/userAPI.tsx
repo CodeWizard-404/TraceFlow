@@ -570,4 +570,5 @@ export default {
   getUsersByRegion,
   getUsersByDelegation,
   getRegionalManagerBySupervisor,
+  getSupervisorsByRegionalManager,
 };

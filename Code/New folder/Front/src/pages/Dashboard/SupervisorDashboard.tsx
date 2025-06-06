@@ -138,7 +138,7 @@ const SupervisorDashboard: React.FC = () => {
                 const fetchAgents = async () => {
                     try {
                         const agentsData = await agentAPI.getAgentsByUser(user.userID);
-                        setAgents(agentsData || []);
+                        setAgents(agentsData.agents || []);
                     } catch (err) {
                         newErrors.agents = t('dashboard.errors.agents');
                         console.error('Error fetching agents:', err);

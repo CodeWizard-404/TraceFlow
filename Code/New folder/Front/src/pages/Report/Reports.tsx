@@ -981,7 +981,7 @@ const ReportingPage: React.FC = () => {
       <div className="form-group toggle-group">
         <label className="filter-label">{t(`reports.filters.${filter}`)}</label>
         <div
-          className={`toggle-switch ${filterValues[filter] ? 'active' : ''}`}
+          className={`toggle-switch-2 toggle-switch ${filterValues[filter] ? 'active' : ''}`}
           onClick={() => setFilterValues(prev => ({ ...prev, [filter]: !prev[filter] }))}
         >
           <span className="toggle-slider"></span>
@@ -1688,7 +1688,7 @@ const ReportingPage: React.FC = () => {
       <div className="form-group toggle-group">
         <label className="filter-label">{t(`reports.filters.${filter}`)}</label>
         <div
-          className={`toggle-switch ${filterValues[filter] ? 'active' : ''}`}
+          className={`toggle-switch-2 toggle-switch ${filterValues[filter] ? 'active' : ''}`}
           onClick={() => setFilterValues(prev => ({ ...prev, [filter]: !prev[filter] }))}
         >
           <span className="toggle-slider"></span>
