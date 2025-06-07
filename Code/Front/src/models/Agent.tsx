@@ -20,6 +20,10 @@ interface Agent {
     Governorate: {
       governorateID: string;
       name: string;
+      Region: {
+        regionID: string;
+        name: string;
+      }
     };
   };
 }

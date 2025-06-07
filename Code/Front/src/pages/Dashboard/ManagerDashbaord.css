@@ -508,41 +508,7 @@ body.dark .notifications-card .unread-count {
     margin-bottom: 0.5rem;
 }
 
-.notification-panel-controls {
-    display: flex;
-    gap: 0.5rem;
-}
 
-.notification-panel-controls button {
-    padding: 0.5rem;
-    font-size: 0.875rem;
-    font-weight: 500;
-    border-radius: 0.5rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    background: #f8fafc;
-    border: 1px solid #d1d5db;
-    color: #1f2937;
-}
-
-.notification-panel-controls button:hover {
-    background: #f1f5f9;
-}
-
-body.dark .notification-panel-controls button {
-    background: #334155;
-    border: 1px solid #4b5563;
-    color: #e5e7eb;
-}
-
-body.dark .notification-panel-controls button:hover {
-    background: #424242;
-}
-
-.notification-panel-controls button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
 
 .spinning {
     animation: spin 1s linear infinite;

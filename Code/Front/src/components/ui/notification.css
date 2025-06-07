@@ -113,6 +113,7 @@ body.dark .control-select:hover {
     display: flex;
     align-items: center;
     gap: 0.25rem;
+    margin-left: 0.5rem;
 }
 
 body.dark .control-button {
@@ -124,7 +125,7 @@ body.dark .control-button {
 }
 
 body.dark .control-button:hover {
-    background: #3b82f6;
+    background: #274866;
 }
 
 .control-button:disabled {
