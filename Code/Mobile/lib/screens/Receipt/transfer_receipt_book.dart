@@ -1,23 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:TraceFlow/providers/auth_provider.dart';
 import 'package:TraceFlow/providers/receipt_book_provider.dart';
 import 'package:TraceFlow/providers/agent_provider.dart';
 import 'package:TraceFlow/providers/receipt_stub_provider.dart';
+import 'package:TraceFlow/providers/location_provider.dart';
+import 'package:TraceFlow/providers/user_provider.dart';
 import 'package:TraceFlow/widgets/appbar/app_bar.dart';
 import 'package:TraceFlow/widgets/appbar/sidebar.dart';
 import 'package:TraceFlow/widgets/commen/button.dart';
-import 'package:TraceFlow/widgets/commen/progress_indicator.dart';
 import 'package:TraceFlow/widgets/commen/spacer.dart';
 import 'package:TraceFlow/models/receipt_book.dart';
 import 'package:TraceFlow/widgets/Receipt/RecipientTypeSelector.dart';
-import 'package:TraceFlow/widgets/Receipt/AgentSelector.dart';
 import 'package:TraceFlow/widgets/Receipt/BookScanner.dart';
 import 'package:TraceFlow/widgets/Receipt/OtpValidator.dart';
 import 'package:TraceFlow/widgets/qr_scanner/qr_scanner_widget.dart';
 import 'dart:async';
+import 'dart:developer' as developer;
 
+import '../../models/agent.dart';
 import '../../models/receipt_book_type.dart';
+import '../../services/location_service.dart';
+import '../../widgets/commen/progress_indicator.dart';
+import '../../widgets/commen/snack_bar.dar.dart';
 
 class TransferReceiptBookScreen extends StatefulWidget {
   final String? initialBookID;
@@ -30,9 +36,12 @@ class TransferReceiptBookScreen extends StatefulWidget {
 class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
   final TextEditingController _otpController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
+  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
   String? _recipientType;
   String? _recipientID;
-  String? _selectedLocation;
+  String? _selectedRegionId;
+  String? _selectedGovernorateId;
+  String? _selectedDelegationId;
   List<String> _selectedBookIDs = [];
   bool _transferInitiated = false;
   String? _error;
@@ -41,21 +50,37 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
   int _otpSecondsRemaining = 600;
   Set<String> _scannedQRCodes = {};
   bool _scanLock = false;
+  List<dynamic> _regions = [];
+  Map<String, dynamic>? _selectedGovernorate;
+  Map<String, dynamic>? _selectedDelegation;
+  bool _isLoading = false;
+  String? _phoneError;
+  Timer? _debounce;
 
   @override
   void initState() {
     super.initState();
     if (widget.initialBookID != null) _selectedBookIDs.add(widget.initialBookID!);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _fetchInitialData();
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _fetchInitialData());
   }
 
   Future<void> _fetchInitialData() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final agentProvider = Provider.of<AgentProvider>(context, listen: false);
     final receiptBookProvider = Provider.of<ReceiptBookProvider>(context, listen: false);
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final locationProvider = Provider.of<LocationProvider>(context, listen: false);
+    setState(() => _isLoading = true);
     try {
+      final supervisorID = authProvider.user!.userID;
+      final regionalManager = await userProvider.getRegionalManagerBySupervisor(supervisorID);
+      final regionalManagerID = regionalManager.userID;
+      if (regionalManagerID != null) {
+        await locationProvider.getRegionsByUser(regionalManagerID);
+      } else {
+        await locationProvider.getAllRegions();
+      }
+      _regions = locationProvider.regions;
       await Future.wait([
         receiptBookProvider.fetchReceiptBooksByHolder(authProvider.user!.userID!),
         receiptBookProvider.fetchAllReceiptBookTypes(),
@@ -63,6 +88,8 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
       ]);
     } catch (e) {
       setState(() => _error = 'Error loading initial data: $e');
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 
@@ -170,7 +197,7 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
 
   Future<void> _initiateTransfer() async {
     if (_selectedBookIDs.isEmpty) {
-      setState(() => _error = 'Select at least one book.');
+      setState(() => _error = 'Select at least one region.');
       return;
     }
     if (_recipientType == null) {
@@ -244,20 +271,739 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
     setState(() {
       _recipientType = null;
       _recipientID = null;
-      _selectedLocation = null;
+      _selectedRegionId = null;
+      _selectedGovernorateId = null;
+      _selectedDelegationId = null;
       _selectedBookIDs.clear();
       _scannedQRCodes.clear();
       _phoneController.clear();
       _error = null;
       _isScannerActive = false;
       _transferInitiated = false;
+      _phoneError = null;
     });
     await _fetchInitialData();
+  }
+
+  Future<void> _onPhoneChanged(String value, AgentProvider agentProvider) async {
+    developer.log('[TransferReceiptBookScreen] Phone input changed: $value', name: 'TransferReceiptBookScreen.onPhoneChanged');
+    setState(() {
+      _phoneController.text = value;
+      _phoneError = null;
+    });
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    _debounce = Timer(const Duration(milliseconds: 500), () async {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      if (value.isEmpty) {
+        setState(() {
+          _recipientID = null;
+          _selectedRegionId = null;
+          _selectedGovernorateId = null;
+          _selectedDelegationId = null;
+          _phoneError = null;
+        });
+      } else if (value.length >= 8) {
+        setState(() => _isLoading = true);
+        try {
+          final agent = await agentProvider.fetchAgentByPhone(value);
+          if (agent != null) {
+            await agentProvider.getAgentsByUser(authProvider.user!.userID);
+            final supervisorAgents = agentProvider.agents;
+            if (supervisorAgents.any((a) => a.agentID == agent.agentID)) {
+              setState(() {
+                _recipientID = agent.agentID;
+                _selectedDelegationId = agent.delegationID;
+                _phoneError = null;
+              });
+              final locationDetails = await LocationService.getLocationDetailsById(agent.delegationID);
+              if (locationDetails['success'] == true && locationDetails.containsKey('address')) {
+                setState(() {
+                  _selectedRegionId = locationDetails['regionID'] as String?;
+                  _selectedGovernorateId = locationDetails['governorateID'] as String?;
+                });
+              } else {
+                setState(() => _phoneError = 'Invalid location data for agent');
+              }
+            } else {
+              setState(() {
+                _phoneError = 'Agent not assigned to supervisor';
+                _recipientID = null;
+                _selectedDelegationId = null;
+              });
+            }
+          } else {
+            setState(() {
+              _phoneError = 'Agent not found';
+              _recipientID = null;
+              _selectedDelegationId = null;
+            });
+          }
+        } catch (e) {
+          setState(() {
+            _phoneError = 'Error fetching agent: $e';
+            _recipientID = null;
+            _selectedDelegationId = null;
+          });
+        } finally {
+          setState(() => _isLoading = false);
+        }
+      }
+    });
+  }
+
+  Future<void> _showLocationDialog(BuildContext context, String type) async {
+    final locationProvider = Provider.of<LocationProvider>(context, listen: false);
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    List<dynamic> items;
+    String? selectedValue;
+
+    developer.log(
+      '[TransferReceiptBookScreen] Opening location dialog for type: $type',
+      name: 'TransferReceiptBookScreen.showLocationDialog',
+    );
+
+    switch (type) {
+      case 'region':
+        items = _regions;
+        selectedValue = _selectedRegionId;
+        developer.log(
+          '[TransferReceiptBookScreen] Displaying regions: ${items.map((r) => r['name']).toList()}',
+          name: 'TransferReceiptBookScreen.showLocationDialog',
+        );
+        break;
+      case 'governorate':
+        developer.log(
+          '[TransferReceiptBookScreen] Fetching governorates for region ID: $_selectedRegionId',
+          name: 'TransferReceiptBookScreen.showLocationDialog',
+        );
+        final regionGovs = await LocationService.getGovernoratesByRegion(_selectedRegionId!);
+        developer.log(
+          '[TransferReceiptBookScreen] Governorates fetched for region: ${regionGovs.map((g) => g['name']).toList()}',
+          name: 'TransferReceiptBookScreen.showLocationDialog',
+        );
+        developer.log(
+          '[TransferReceiptBookScreen] Fetching supervisor governorates for user ID: ${authProvider.user!.userID}',
+          name: 'TransferReceiptBookScreen.showLocationDialog',
+        );
+        final supervisorGovs = await LocationService.getGovernoratesByUser(authProvider.user!.userID);
+        developer.log(
+          '[TransferReceiptBookScreen] Supervisor governorates fetched: ${supervisorGovs.map((g) => g['name']).toList()}',
+          name: 'TransferReceiptBookScreen.showLocationDialog',
+        );
+        items = regionGovs.where((g) => supervisorGovs.any((sg) => sg['governorateID'] == g['governorateID'])).toList();
+        developer.log(
+          '[TransferReceiptBookScreen] Filtered governorates: ${items.map((g) => g['name']).toList()}',
+          name: 'TransferReceiptBookScreen.showLocationDialog',
+        );
+        selectedValue = _selectedGovernorateId;
+        break;
+      case 'delegation':
+        developer.log(
+          '[TransferReceiptBookScreen] Fetching delegations for governorate ID: $_selectedGovernorateId',
+          name: 'TransferReceiptBookScreen.showLocationDialog',
+        );
+        final govDels = await LocationService.getDelegationsByGovernorate(_selectedGovernorateId!);
+        developer.log(
+          '[TransferReceiptBookScreen] Delegations fetched for governorate: ${govDels.map((d) => d['name']).toList()}',
+          name: 'TransferReceiptBookScreen.showLocationDialog',
+        );
+        developer.log(
+          '[TransferReceiptBookScreen] Fetching supervisor delegations for user ID: ${authProvider.user!.userID}',
+          name: 'TransferReceiptBookScreen.showLocationDialog',
+        );
+        final supervisorDels = await LocationService.getDelegationsByUser(authProvider.user!.userID);
+        developer.log(
+          '[TransferReceiptBookScreen] Supervisor delegations fetched: ${supervisorDels.map((d) => d['name']).toList()}',
+          name: 'TransferReceiptBookScreen.showLocationDialog',
+        );
+        items = govDels.where((d) => supervisorDels.any((sd) => sd['delegationID'] == d['delegationID'])).toList();
+        developer.log(
+          '[TransferReceiptBookScreen] Filtered delegations: ${items.map((d) => d['name']).toList()}',
+          name: 'TransferReceiptBookScreen.showLocationDialog',
+        );
+        selectedValue = _selectedDelegationId;
+        break;
+      default:
+        developer.log(
+          '[TransferReceiptBookScreen] Invalid location type: $type',
+          name: 'TransferReceiptBookScreen.showLocationDialog',
+        );
+        return;
+    }
+
+    final TextEditingController searchController = TextEditingController();
+    List<dynamic> filteredItems = List.from(items);
+
+    await showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: Theme.of(context).cardTheme.color,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          title: Text(
+            'Select $type',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Search ${type}s...',
+                    prefixIcon: Icon(
+                      Icons.search,
+                      color: Theme.of(context).colorScheme.primary,
+                      size: 18,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(
+                        color: Theme.of(context).colorScheme.primary,
+                        width: 1.5,
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(
+                        color: Theme.of(context).colorScheme.primary.withOpacity(0.7),
+                        width: 1.5,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(
+                        color: Theme.of(context).colorScheme.primary,
+                        width: 2,
+                      ),
+                    ),
+                  ),
+                  onChanged: (value) {
+                    setDialogState(() {
+                      filteredItems = items.where((item) => item['name'].toLowerCase().contains(value.toLowerCase())).toList();
+                      developer.log(
+                        '[TransferReceiptBookScreen] Filtered $type items: ${filteredItems.map((item) => item['name']).toList()}',
+                        name: 'TransferReceiptBookScreen.showLocationDialog',
+                      );
+                    });
+                  },
+                ),
+                const CustomSpacer(height: 8),
+                SizedBox(
+                  height: 300,
+                  child: ListView.builder(
+                    itemCount: filteredItems.length,
+                    itemBuilder: (context, index) {
+                      final item = filteredItems[index];
+                      return ListTile(
+                        leading: Icon(
+                          Icons.location_on_outlined,
+                          color: Theme.of(context).colorScheme.primary,
+                          size: 18,
+                        ),
+                        title: Text(
+                          item['name'],
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
+                        trailing: selectedValue == item['${type}ID']
+                            ? Icon(
+                          Icons.check_circle,
+                          color: Theme.of(context).colorScheme.primary,
+                          size: 18,
+                        )
+                            : null,
+                        onTap: () {
+                          setState(() {
+                            if (type == 'region') {
+                              _selectedRegionId = item['${type}ID'];
+                              _selectedGovernorateId = null;
+                              _selectedGovernorate = null;
+                              _selectedDelegationId = null;
+                              _selectedDelegation = null;
+                              developer.log(
+                                '[TransferReceiptBookScreen] Selected region: ${item['name']} (ID: ${item['${type}ID']}), resetting governorate and delegation',
+                                name: 'TransferReceiptBookScreen.showLocationDialog',
+                              );
+                            } else if (type == 'governorate') {
+                              _selectedGovernorate = item;
+                              _selectedGovernorateId = item['${type}ID'];
+                              _selectedDelegationId = null;
+                              _selectedDelegation = null;
+                              developer.log(
+                                '[TransferReceiptBookScreen] Selected governorate: ${item['name']} (ID: ${item['${type}ID']}), resetting delegation',
+                                name: 'TransferReceiptBookScreen.showLocationDialog',
+                              );
+                            } else {
+                              _selectedDelegation = item;
+                              _selectedDelegationId = item['${type}ID'];
+                              developer.log(
+                                '[TransferReceiptBookScreen] Selected delegation: ${item['name']} (ID: ${item['${type}ID']})',
+                                name: 'TransferReceiptBookScreen.showLocationDialog',
+                              );
+                            }
+                            _recipientID = null;
+                            _phoneController.clear();
+                            _phoneError = null;
+                            developer.log(
+                              '[TransferReceiptBookScreen] Reset agent selection and phone input due to $type change',
+                              name: 'TransferReceiptBookScreen.showLocationDialog',
+                            );
+                          });
+                          Navigator.pop(context);
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                'Cancel',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showAgentDialog(BuildContext context, AgentProvider agentProvider) async {
+    if (!mounted) {
+      developer.log('[TransferReceiptBookScreen] Widget not mounted, aborting agent dialog', name: 'TransferReceiptBookScreen.showAgentDialog');
+      return;
+    }
+
+    // Use navigatorKey's context as a fallback
+    final BuildContext dialogContext = _navigatorKey.currentContext ?? context;
+    final authProvider = Provider.of<AuthProvider>(dialogContext, listen: false);
+
+    developer.log('[TransferReceiptBookScreen] Opening agent dialog for delegation ID: $_selectedDelegationId', name: 'TransferReceiptBookScreen.showAgentDialog');
+    setState(() => _isLoading = true);
+
+    try {
+      developer.log('[TransferReceiptBookScreen] Fetching agents for supervisor ID: ${authProvider.user!.userID}', name: 'TransferReceiptBookScreen.showAgentDialog');
+      await agentProvider.getAgentsByUser(authProvider.user!.userID);
+      final supervisorAgents = List<Agent>.from(agentProvider.agents);
+      developer.log('[TransferReceiptBookScreen] Supervisor agents fetched: ${supervisorAgents.map((a) => '${a.name} ${a.lastname} (${a.phone})').toList()}', name: 'TransferReceiptBookScreen.showAgentDialog');
+
+      developer.log('[TransferReceiptBookScreen] Fetching agents for delegation ID: $_selectedDelegationId', name: 'TransferReceiptBookScreen.showAgentDialog');
+      final delegationAgents = await agentProvider.fetchAgentsByDelegation(_selectedDelegationId!);
+      developer.log('[TransferReceiptBookScreen] Delegation agents fetched: ${delegationAgents.map((a) => '${a.name} ${a.lastname} (${a.phone})').toList()}', name: 'TransferReceiptBookScreen.showAgentDialog');
+
+      final filteredAgents = supervisorAgents.where((a) => delegationAgents.any((da) => da.agentID == a.agentID)).toList();
+      developer.log('[TransferReceiptBookScreen] Filtered agents (intersection): ${filteredAgents.map((a) => '${a.name} ${a.lastname} (${a.phone})').toList()}', name: 'TransferReceiptBookScreen.showAgentDialog');
+
+      if (!mounted) {
+        developer.log('[TransferReceiptBookScreen] Widget not mounted after fetching agents, aborting dialog', name: 'TransferReceiptBookScreen.showAgentDialog');
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      setState(() => _isLoading = false);
+
+      final TextEditingController searchController = TextEditingController();
+      List<Agent> filteredItems = List.from(filteredAgents);
+
+      // Check if dialogContext is valid for showing dialog
+      if (dialogContext.mounted) {
+        await showDialog<void>(
+          context: dialogContext,
+          builder: (BuildContext dialogBuilderContext) => StatefulBuilder(
+            builder: (BuildContext dialogBuilderContext, StateSetter setDialogState) => AlertDialog(
+              backgroundColor: Theme.of(dialogBuilderContext).cardTheme.color,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              title: Text(
+                'Select Agent',
+                style: Theme.of(dialogBuilderContext).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: Theme.of(dialogBuilderContext).colorScheme.primary,
+                ),
+              ),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: searchController,
+                      decoration: InputDecoration(
+                        hintText: 'Search agents...',
+                        prefixIcon: Icon(
+                          Icons.search,
+                          color: Theme.of(dialogBuilderContext).colorScheme.primary,
+                          size: 18,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(
+                            color: Theme.of(dialogBuilderContext).colorScheme.primary,
+                            width: 1.5,
+                          ),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(
+                            color: Theme.of(dialogBuilderContext).colorScheme.primary.withOpacity(0.7),
+                            width: 1.5,
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(
+                            color: Theme.of(dialogBuilderContext).colorScheme.primary,
+                            width: 2,
+                          ),
+                        ),
+                      ),
+                      onChanged: (value) {
+                        setDialogState(() {
+                          filteredItems = filteredAgents
+                              .where((agent) =>
+                          '${agent.name} ${agent.lastname}'.toLowerCase().contains(value.toLowerCase()) ||
+                              agent.agentID.toLowerCase().contains(value.toLowerCase()))
+                              .toList();
+                          developer.log('[TransferReceiptBookScreen] Filtered agents: ${filteredItems.map((a) => '${a.name} ${a.lastname} (ID: ${a.agentID})').toList()}', name: 'TransferReceiptBookScreen.showAgentDialog');
+                        });
+                      },
+                    ),
+                    const CustomSpacer(height: 8),
+                    SizedBox(
+                      height: 300,
+                      child: filteredItems.isEmpty
+                          ? Center(
+                        child: Text(
+                          'No agents available',
+                          style: Theme.of(dialogBuilderContext).textTheme.bodyMedium?.copyWith(
+                            color: Colors.grey,
+                          ),
+                        ),
+                      )
+                          : ListView.builder(
+                        itemCount: filteredItems.length,
+                        itemBuilder: (context, index) {
+                          final agent = filteredItems[index];
+                          return ListTile(
+                            leading: Icon(
+                              Icons.person_outline,
+                              color: Theme.of(context).colorScheme.primary,
+                              size: 18,
+                            ),
+                            title: Text(
+                              '${agent.name} ${agent.lastname}',
+                              style: Theme.of(dialogBuilderContext).textTheme.bodyMedium?.copyWith(
+                                color: Theme.of(dialogBuilderContext).colorScheme.onSurface,
+                              ),
+                            ),
+                            trailing: _recipientID == agent.agentID
+                                ? Icon(
+                              Icons.check_circle,
+                              color: Theme.of(context).colorScheme.primary,
+                              size: 18,
+                            )
+                                : null,
+                            onTap: () {
+                              if (mounted) {
+                                setState(() {
+                                  _recipientID = agent.agentID;
+                                  _phoneController.text = agent.phone ?? '';
+                                  _phoneError = null;
+                                  developer.log('[TransferReceiptBookScreen] Selected agent: ${agent.name} ${agent.lastname} (ID: ${agent.agentID}, Phone: ${agent.phone})', name: 'TransferReceiptBookScreen.showAgentDialog');
+                                });
+                                Navigator.pop(dialogBuilderContext);
+                              }
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogBuilderContext),
+                  child: Text(
+                    'Cancel',
+                    style: TextStyle(
+                      color: Theme.of(dialogBuilderContext).colorScheme.onSurface.withOpacity(0.6),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      } else {
+        developer.log('[TransferReceiptBookScreen] Dialog context not valid, showing snackbar', name: 'TransferReceiptBookScreen.showAgentDialog');
+        _showSnackBar('Unable to show agents: Screen is no longer active');
+      }
+    } catch (e, stackTrace) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        _showSnackBar('Failed to load agents: $e');
+      }
+      developer.log('[TransferReceiptBookScreen] Error in showAgentDialog: $e', name: 'TransferReceiptBookScreen.showAgentDialog', error: e, stackTrace: stackTrace);
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+  void _showSnackBar(String message) {
+    if (mounted) {
+      CustomSnackBar.show(
+        context: context,
+        message: message,
+        backgroundColor: message.contains('successfully')
+            ? Theme.of(context).colorScheme.primary.withOpacity(0.9)
+            : Theme.of(context).colorScheme.error.withOpacity(0.9),
+      );
+    }
+  }
+
+  Widget _buildAgentSelector(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: theme.colorScheme.primary.withOpacity(0.7),
+          width: 1.5,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+            child: Text(
+              'Agent',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ),
+          const Divider(height: 1, thickness: 1, color: Colors.grey),
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Consumer2<AgentProvider, LocationProvider>(
+              builder: (context, agentProvider, locationProvider, child) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSelector(
+                      context: context,
+                      label: 'Region',
+                      value: _selectedRegionId == null
+                          ? 'Select Region'
+                          : _regions.firstWhere((r) => r['regionID'] == _selectedRegionId)['name'],
+                      icon: Icons.location_on_outlined,
+                      onTap: () => _showLocationDialog(context, 'region'),
+                    ),
+                    _buildSelector(
+                      context: context,
+                      label: 'Governorate',
+                      value: _selectedGovernorate == null ? 'Select Governorate' : _selectedGovernorate!['name'],
+                      icon: Icons.location_city_outlined,
+                      onTap: _selectedRegionId == null ? null : () => _showLocationDialog(context, 'governorate'),
+                      disabled: _selectedRegionId == null,
+                    ),
+                    _buildSelector(
+                      context: context,
+                      label: 'Delegation',
+                      value: _selectedDelegation == null ? 'Select Delegation' : _selectedDelegation!['name'],
+                      icon: Icons.place_outlined,
+                      onTap: _selectedGovernorateId == null ? null : () => _showLocationDialog(context, 'delegation'),
+                      disabled: _selectedGovernorateId == null,
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: TextField(
+                        controller: _phoneController,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                        maxLength: 8,
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: theme.colorScheme.background,
+                          hintText: "Enter agent's phone number",
+                          prefixIcon: Icon(
+                            Icons.phone_outlined,
+                            color: theme.colorScheme.primary,
+                            size: 18,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(
+                              color: theme.colorScheme.primary,
+                              width: 1.5,
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(
+                              color: theme.colorScheme.primary.withOpacity(0.7),
+                              width: 1.5,
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(
+                              color: theme.colorScheme.primary,
+                              width: 2,
+                            ),
+                          ),
+                          counterText: '',
+                          hintStyle: TextStyle(
+                            color: theme.colorScheme.onSurface.withOpacity(0.6),
+                          ),
+                        ),
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                        onChanged: (value) => _onPhoneChanged(value, agentProvider),
+                      ),
+                    ),
+                    if (_phoneError != null) ...[
+                      Padding(
+                        padding: const EdgeInsets.only(left: 8),
+                        child: Text(
+                          _phoneError!,
+                          style: TextStyle(
+                            color: theme.colorScheme.error,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ],
+                    _buildSelector(
+                      context: context,
+                      label: 'Agent',
+                      value: _recipientID == null
+                          ? (_phoneController.text.isNotEmpty
+                          ? 'Selected via phone'
+                          : _selectedDelegationId == null
+                          ? 'Select a delegation first'
+                          : 'Select Agent')
+                          : '${agentProvider.agents.firstWhere((agent) => agent.agentID == _recipientID, orElse: () => Agent(agentID: '', name: 'Unknown', lastname: '', delegationID: '')).name} ${agentProvider.agents.firstWhere((agent) => agent.agentID == _recipientID, orElse: () => Agent(agentID: '', name: '', lastname: 'Unknown', delegationID: '')).lastname}',
+                      icon: Icons.person_outline,
+                      onTap: _phoneController.text.isNotEmpty || _selectedDelegationId == null
+                          ? null
+                          : () => _showAgentDialog(context, agentProvider),
+                      disabled: _phoneController.text.isNotEmpty || _selectedDelegationId == null,
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSelector({
+    required BuildContext context,
+    required String label,
+    required String value,
+    required IconData icon,
+    VoidCallback? onTap,
+    bool disabled = false,
+  }) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: InkWell(
+        onTap: disabled ? null : onTap,
+        borderRadius: BorderRadius.circular(8),
+        splashColor: theme.colorScheme.primary.withOpacity(0.2),
+        highlightColor: theme.colorScheme.primary.withOpacity(0.1),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: disabled
+                  ? theme.colorScheme.onSurface.withOpacity(0.3)
+                  : theme.colorScheme.primary.withOpacity(0.7),
+              width: 1.5,
+            ),
+            borderRadius: BorderRadius.circular(8),
+            color: disabled
+                ? theme.colorScheme.background.withOpacity(0.5)
+                : theme.colorScheme.background,
+          ),
+          child: Row(
+            children: [
+              Icon(
+                icon,
+                color: disabled
+                    ? theme.colorScheme.onSurface.withOpacity(0.5)
+                    : theme.colorScheme.primary,
+                size: 18,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: disabled
+                            ? theme.colorScheme.onSurface.withOpacity(0.5)
+                            : theme.colorScheme.onSurface.withOpacity(0.7),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      value,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: disabled
+                            ? theme.colorScheme.onSurface.withOpacity(0.5)
+                            : theme.colorScheme.onSurface,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.arrow_drop_down,
+                color: disabled
+                    ? theme.colorScheme.onSurface.withOpacity(0.5)
+                    : theme.colorScheme.primary,
+                size: 24,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override
   void dispose() {
     _otpTimer?.cancel();
+    _debounce?.cancel();
     _otpController.dispose();
     _phoneController.dispose();
     super.dispose();
@@ -268,94 +1014,96 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
     return Scaffold(
       appBar: CustomAppBar(title: 'Transfer Receipt Books', showBackButton: true),
       drawer: const AppSidebar(),
-      body: MultiProvider(
-        providers: [
-          ChangeNotifierProvider.value(value: Provider.of<ReceiptBookProvider>(context)),
-          ChangeNotifierProvider.value(value: Provider.of<AuthProvider>(context)),
-          ChangeNotifierProvider.value(value: Provider.of<AgentProvider>(context)),
-          ChangeNotifierProvider.value(value: Provider.of<ReceiptStubProvider>(context)),
-        ],
-        builder: (context, child) {
-          final receiptBookProvider = Provider.of<ReceiptBookProvider>(context);
-          final agentProvider = Provider.of<AgentProvider>(context);
-          final isLoading = receiptBookProvider.isLoading || agentProvider.isLoading;
-          if (isLoading) return const Center(child: CustomProgressIndicator());
+      body: Navigator( // Wrap body in Navigator for stable context
+        key: _navigatorKey,
+        onGenerateRoute: (settings) => MaterialPageRoute(
+          builder: (context) => MultiProvider(
+            providers: [
+              ChangeNotifierProvider.value(value: Provider.of<ReceiptBookProvider>(context)),
+              ChangeNotifierProvider.value(value: Provider.of<AuthProvider>(context)),
+              ChangeNotifierProvider.value(value: Provider.of<AgentProvider>(context)),
+              ChangeNotifierProvider.value(value: Provider.of<ReceiptStubProvider>(context)),
+              ChangeNotifierProvider.value(value: Provider.of<LocationProvider>(context)),
+              ChangeNotifierProvider.value(value: Provider.of<UserProvider>(context)),
+            ],
+            builder: (context, child) {
+              final receiptBookProvider = Provider.of<ReceiptBookProvider>(context);
+              final agentProvider = Provider.of<AgentProvider>(context);
+              final isLoading = _isLoading || receiptBookProvider.isLoading || agentProvider.isLoading;
+              if (isLoading) return const Center(child: CustomProgressIndicator());
 
-          return RefreshIndicator(
-            onRefresh: _onRefresh,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (!_transferInitiated) ...[
-                      RecipientTypeSelector(
-                        recipientType: _recipientType,
-                        onChanged: (value) {
-                          setState(() {
-                            _recipientType = value;
-                            _recipientID = null;
-                            _selectedLocation = null;
-                            _selectedBookIDs.clear();
-                            _scannedQRCodes.clear();
-                            _phoneController.clear();
-                            _error = null;
-                            _isScannerActive = false;
-                          });
-                        },
-                      ),
-                      const CustomSpacer(height: 16),
-                      if (_recipientType == "Agent")
-                        AgentSelector(
-                          recipientID: _recipientID,
-                          selectedLocation: _selectedLocation,
-                          phoneController: _phoneController,
-                          onRecipientIDChanged: (value) => setState(() => _recipientID = value),
-                          onLocationChanged: (value) async {
-                            setState(() => _selectedLocation = value);
-                            if (value != null) {
-                              await Provider.of<AgentProvider>(context, listen: false).fetchAgentsByDelegation(value);
-                            }
-                          },
-                        ),
-                      if (_recipientType != null && (_recipientType == "Stub Collection" || _recipientID != null)) ...[
-                        const CustomSpacer(height: 16),
-                        BookScanner(
-                          selectedBookIDs: _selectedBookIDs,
-                          error: _error,
-                          recipientType: _recipientType,
-                          onScanQR: _scanQRCode,
-                          onRemoveBook: (bookID) => setState(() {
-                            _selectedBookIDs.remove(bookID);
-                            _scannedQRCodes.removeWhere((qr) => qr.contains(bookID));
-                          }),
-                        ),
-                        const CustomSpacer(height: 16),
-                        CustomButton(
-                          label: _recipientType == "Stub Collection" ? 'Initiate Stub Collection' : 'Initiate Transfer',
-                          icon: Icons.send,
-                          onPressed: _initiateTransfer,
-                        ),
+              return RefreshIndicator(
+                onRefresh: _onRefresh,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (!_transferInitiated) ...[
+                          RecipientTypeSelector(
+                            recipientType: _recipientType,
+                            onChanged: (value) {
+                              setState(() {
+                                _recipientType = value;
+                                _recipientID = null;
+                                _selectedRegionId = null;
+                                _selectedGovernorateId = null;
+                                _selectedDelegationId = null;
+                                _selectedGovernorate = null;
+                                _selectedDelegation = null;
+                                _selectedBookIDs.clear();
+                                _scannedQRCodes.clear();
+                                _phoneController.clear();
+                                _error = null;
+                                _phoneError = null;
+                                _isScannerActive = false;
+                              });
+                            },
+                          ),
+                          const CustomSpacer(height: 16),
+                          if (_recipientType == "Agent") ...[
+                            _buildAgentSelector(context),
+                          ],
+                          if (_recipientType != null && (_recipientType == "Stub Collection" || _recipientID != null)) ...[
+                            const CustomSpacer(height: 16),
+                            BookScanner(
+                              selectedBookIDs: _selectedBookIDs,
+                              error: _error,
+                              recipientType: _recipientType,
+                              onScanQR: _scanQRCode,
+                              onRemoveBook: (bookID) => setState(() {
+                                _selectedBookIDs.remove(bookID);
+                                _scannedQRCodes.removeWhere((qr) => qr.contains(bookID));
+                              }),
+                            ),
+                            const CustomSpacer(height: 16),
+                            CustomButton(
+                              label: _recipientType == "Stub Collection" ? 'Initiate Stub Collection' : 'Initiate Transfer',
+                              icon: Icons.send,
+                              onPressed: _initiateTransfer,
+                            ),
+                          ],
+                        ] else ...[
+                          OtpValidator(
+                            recipientType: _recipientType,
+                            recipientID: _recipientID,
+                            otpSecondsRemaining: _otpSecondsRemaining,
+                            error: _error,
+                            otpController: _otpController,
+                            onValidateTransfer: _validateTransfer,
+                            formatTime: _formatTime,
+                          ),
+                        ],
                       ],
-                    ] else ...[
-                      OtpValidator(
-                        recipientType: _recipientType,
-                        recipientID: _recipientID,
-                        otpSecondsRemaining: _otpSecondsRemaining,
-                        error: _error,
-                        otpController: _otpController,
-                        onValidateTransfer: _validateTransfer,
-                        formatTime: _formatTime,
-                      ),
-                    ],
-                  ],
+                    ),
+                  ),
                 ),
-              ),
-            ),
-          );
-        },
+              );
+            },
+          ),
+        ),
       ),
     );
   }

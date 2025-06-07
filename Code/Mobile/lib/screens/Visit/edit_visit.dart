@@ -70,7 +70,7 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
     super.initState();
     _visit = widget.visit;
     final now = DateTime.now();
-    _selectedDate = _visit.date.isBefore(now) ? now : _visit.date;
+    _selectedDate = _visit.date.isBefore(now) ? now : _visit.date; 
     _selectedTime = TimeOfDay.fromDateTime(DateFormat('HH:mm').parse(_visit.time));
     _selectedAgentId = _visit.agentID;
     _selectedChecklists = List.from(_visit.checklists ?? []);
@@ -924,7 +924,7 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
     return true;
   }
 
-  void _submitVisit() async {
+  Future<void> _submitVisit() async {
     if (_isLoading || !_formKey.currentState!.validate() || !_validateInputs()) return;
     setState(() => _isLoading = true);
     final visitProvider = Provider.of<VisitProvider>(context, listen: false);
@@ -943,7 +943,21 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
         location = _visit.location;
       }
 
-      final checklistUpdates = _selectedChecklists.map((c) => {'id': c.checklistID, 'checked': c.visitChecklist?.checked ?? false}).toList();
+      // Filter out new checklists
+      final checklistUpdates = _selectedChecklists
+          .where((c) => c.visitChecklist != null)
+          .map((c) => {
+        'id': c.checklistID,
+        'checked': c.visitChecklist!.checked,
+      })
+          .toList();
+
+      // Warn about new checklists
+      final newChecklists = _selectedChecklists.where((c) => c.visitChecklist == null).toList();
+      if (newChecklists.isNotEmpty) {
+        _showSnackBar('New checklists will be added after saving. Please edit again to include: ${newChecklists.map((c) => c.item).join(', ')}');
+      }
+
       final reasonUpdates = _selectedReasons.map((r) => {'id': r.reasonID}).toList();
 
       int? updatedDuration = _visit.duration;
@@ -957,7 +971,7 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
         time: _selectedTime!.format(context).toLowerCase().replaceAll(' ', ''),
         location: location,
         agentID: _isRecruitmentVisit ? null : _selectedAgentId,
-        checklists: checklistUpdates,
+        checklists: checklistUpdates.isNotEmpty ? checklistUpdates : null,
         reasons: _visit.status == 'visited' ? null : reasonUpdates,
         status: _visit.status == 'visited' ? 'visited' : 'pending',
         duration: updatedDuration,
@@ -975,6 +989,7 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
     }
   }
 
+  
   void _showSnackBar(String message) {
     if (mounted) {
       CustomSnackBar.show(

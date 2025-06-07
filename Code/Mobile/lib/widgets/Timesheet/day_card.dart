@@ -29,6 +29,13 @@ class DayCard extends StatelessWidget {
         final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
         return DragTarget<Visit>(
+          onWillAccept: (data) {
+            // Prevent dropping on days before today
+            final today = DateTime.now();
+            final targetDate = DateTime(day.year, day.month, day.day);
+            final todayDate = DateTime(today.year, today.month, today.day);
+            return !targetDate.isBefore(todayDate);
+          },
           onAcceptWithDetails: (details) {
             final droppedVisit = details.data;
             final newDate = DateFormat('yyyy-MM-dd').format(day);
@@ -38,7 +45,7 @@ class DayCard extends StatelessWidget {
                 visitId: droppedVisit.visitID,
                 date: newDate,
                 time: droppedVisit.time,
-                status: 'pending', // Always set status to 'pending'
+                status: 'pending',
               )
                   .then((_) {
                 timesheetProvider.fetchTimesheetsBySupervisor(authProvider.user!.userID!);

@@ -52,6 +52,13 @@ class DayView extends StatelessWidget {
         }
 
         return DragTarget<Visit>(
+          onWillAccept: (data) {
+            // Prevent dropping on days before today
+            final today = DateTime.now();
+            final targetDate = DateTime(day.year, day.month, day.day);
+            final todayDate = DateTime(today.year, today.month, today.day);
+            return !targetDate.isBefore(todayDate);
+          },
           onAcceptWithDetails: (details) {
             final droppedVisit = details.data;
             if (droppedVisit.date != day) {
@@ -72,7 +79,7 @@ class DayView extends StatelessWidget {
                   SnackBar(content: Text('Failed to move visit: $error')),
                 );
               });
-            } // Always set status to 'pending'
+            }
           },
           builder: (context, candidateData, rejectedData) {
             return ListView.separated(
@@ -92,7 +99,7 @@ class DayView extends StatelessWidget {
                           .updateVisit(
                         visitId: droppedVisit.visitID,
                         time: newTime,
-                        status: 'pending', // Always set status to 'pending'
+                        status: 'pending',
                       )
                           .then((_) {
                         timesheetProvider.fetchTimesheetsBySupervisor(authProvider.user!.userID!);
