@@ -31,17 +31,22 @@ class Agent {
 
   factory Agent.fromJson(Map<String, dynamic> json) {
     return Agent(
-      agentID: json['agentID'] as String,
-      name: json['name'] as String,
-      lastname: json['lastname'] as String,
+      agentID: json['agentID'] as String? ?? '',
+      name: json['name'] as String? ?? 'Unknown',
+      lastname: json['lastname'] as String? ?? 'Unknown',
       email: json['email'] as String?,
       phone: json['phone'] as String?,
       location: json['location'] as String?,
-      latitude: json['latitude'] != null ? double.parse(json['latitude'].toString()) : null,
-      longitude: json['longitude'] != null ? double.parse(json['longitude'].toString()) : null,
+      latitude: json['latitude'] != null
+          ? double.tryParse(json['latitude'].toString())
+          : null,
+      longitude: json['longitude'] != null
+          ? double.tryParse(json['longitude'].toString())
+          : null,
       supervisorID: json['supervisorID'] as String?,
-      delegationID: json['delegationID'] as String,
-      Supervisor: json['Supervisor'] != null ? User.fromJson(json['Supervisor']) : null,
+      delegationID: json['delegationID'] as String? ?? '',
+      Supervisor:
+      json['Supervisor'] != null ? User.fromJson(json['Supervisor']) : null,
     );
   }
 

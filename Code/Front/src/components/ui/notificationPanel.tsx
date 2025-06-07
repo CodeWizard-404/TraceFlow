@@ -1,11 +1,11 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { FaSync } from 'react-icons/fa';
 import { useNotification } from '../../context/NotificationContext';
 import NotificationItem from './notification';
 import { cn } from '../../lib/utils';
 import './notification.css';
-import { getNotifications } from '../../apis/notificationAPI';
 import { FixedSizeList } from 'react-window';
+import { getNotifications } from '../../apis/notificationAPI';
 
 interface NotificationPanelProps {
     className?: string;
@@ -15,8 +15,8 @@ interface NotificationPanelProps {
 const NotificationPanel: React.FC<NotificationPanelProps> = ({ className, onClose }) => {
     const { notifications, mergeNotifications, markAllAsRead } = useNotification();
     const panelRef = useRef<HTMLDivElement>(null);
-    const [isLoading, setIsLoading] = useState(false);
-    const [page, setPage] = useState(1);
+    const [isLoading, setIsLoading] = React.useState(false);
+    const [page, setPage] = React.useState(1);
     const itemsPerPage = 20;
 
     useEffect(() => {

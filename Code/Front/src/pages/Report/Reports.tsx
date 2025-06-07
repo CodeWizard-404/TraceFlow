@@ -560,12 +560,12 @@ const ReportingPage: React.FC = () => {
               getAgentsByUser(supervisorID),
               getAgentsByDelegation(delegationID),
             ]);
-            filteredAgents = bySupervisor.agents.filter(agent =>
+            filteredAgents = bySupervisor.filter(agent =>
               byDelegation.agents.some(d => d.agentID === agent.agentID)
             );
           } else if (supervisorID) {
             const data = await getAgentsByUser(supervisorID);
-            filteredAgents = data.agents;
+            filteredAgents = data;
           } else if (delegationID) {
             const data = await getAgentsByDelegation(delegationID);
             filteredAgents = data.agents;

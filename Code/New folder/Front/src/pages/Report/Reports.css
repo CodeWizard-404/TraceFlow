@@ -494,7 +494,7 @@ body.dark .range-divider {
   justify-content: space-between;
 }
 
-.toggle-switch {
+.toggle-switch-2 {
   width: 3rem;
   height: 1.5rem;
   background: #d1d5db;
@@ -504,15 +504,15 @@ body.dark .range-divider {
   transition: background 0.3s ease;
 }
 
-body.dark .toggle-switch {
+body.dark .toggle-switch-2 {
   background: #4b5563;
 }
 
-.toggle-switch.active {
+.toggle-switch-2.active {
   background: #4cb1c7;
 }
 
-body.dark .toggle-switch.active {
+body.dark .toggle-switch-2.active {
   background: #63b3ed;
 }
 
@@ -527,7 +527,7 @@ body.dark .toggle-switch.active {
   transition: transform 0.3s ease;
 }
 
-.toggle-switch.active .toggle-slider {
+.toggle-switch-2.active .toggle-slider {
   transform: translateX(1.5rem);
 }
 
@@ -1149,7 +1149,7 @@ body.dark .range-divider {
   justify-content: space-between;
 }
 
-.toggle-switch {
+.toggle-switch-2 {
   width: 3rem;
   height: 1.5rem;
   background: #d1d5db;
@@ -1159,15 +1159,15 @@ body.dark .range-divider {
   transition: background 0.3s ease;
 }
 
-body.dark .toggle-switch {
+body.dark .toggle-switch-2 {
   background: #4b5563;
 }
 
-.toggle-switch.active {
+.toggle-switch-2.active {
   background: #4cb1c7;
 }
 
-body.dark .toggle-switch.active {
+body.dark .toggle-switch-2.active {
   background: #63b3ed;
 }
 
@@ -1182,7 +1182,7 @@ body.dark .toggle-switch.active {
   transition: transform 0.3s ease;
 }
 
-.toggle-switch.active .toggle-slider {
+.toggle-switch-2.active .toggle-slider {
   transform: translateX(1.5rem);
 }
 

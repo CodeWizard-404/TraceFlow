@@ -38,6 +38,7 @@ io.use(async (socket, next) => {
 
 
 io.on('connection', async (socket) => {
+    console.log('User connected:', socket.user.userID);
     socket.join(socket.user.userID);
     const userId = socket.handshake.auth?.token ? socket.handshake.auth.userId : null;
     if (userId) {
@@ -45,6 +46,7 @@ io.on('connection', async (socket) => {
         socket.join(userId);
 
         socket.on('disconnect', async () => {
+            console.log('User disconnected:', socket.user.userID);
             await User.update({ isOnline: false }, { where: { userID: userId } });
         });
     }

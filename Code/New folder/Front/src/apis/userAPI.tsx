@@ -552,3 +552,22 @@ export const deleteUser = async (userID: string): Promise<DeleteUserResponse> =>
     throw new Error(handleApiError(error, "Unable to delete user"));
   }
 };
+
+
+export default {
+  getAllUsers,
+  getUserByPhone,
+  getUserById,
+  getUsersByRole,
+  createUser,
+  updateUser,
+  deleteUser,
+  fetchUserProfile,
+  updateProfile,
+  getSupervisorsByUser,
+  getRegionalManagersByUser,
+  getDirectorByUser,
+  getUsersByRegion,
+  getUsersByDelegation,
+  getRegionalManagerBySupervisor,
+};

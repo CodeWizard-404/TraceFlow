@@ -16,11 +16,13 @@ class LocationService {
             headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
           );
           CookieManager.extractCookies(response);
+          if (kDebugMode) print('All regions response: ${response.body}');
           if (response.statusCode == 200) return response;
           throw Exception('Failed to fetch regions: ${response.statusCode}');
         },
       );
-      return jsonDecode(response.body);
+      if (kDebugMode) print('Decoded all regions: $response');
+      return response['regions'] ?? response as List<dynamic>;
     } catch (e) {
       if (kDebugMode) print('Error fetching regions: $e');
       rethrow;
@@ -41,7 +43,7 @@ class LocationService {
           throw Exception('Failed to fetch governorates: ${response.statusCode}');
         },
       );
-      return jsonDecode(response.body);
+      return response['governorates'] ?? response as List<dynamic>;
     } catch (e) {
       if (kDebugMode) print('Error fetching governorates: $e');
       rethrow;
@@ -62,7 +64,7 @@ class LocationService {
           throw Exception('Failed to fetch delegations: ${response.statusCode}');
         },
       );
-      return jsonDecode(response.body);
+      return response['delegations'] ?? response as List<dynamic>;
     } catch (e) {
       if (kDebugMode) print('Error fetching delegations: $e');
       rethrow;
@@ -83,7 +85,7 @@ class LocationService {
           throw Exception('Failed to fetch delegations by governorate: ${response.statusCode}');
         },
       );
-      return jsonDecode(response.body);
+      return response['delegations'] ?? response as List<dynamic>;
     } catch (e) {
       if (kDebugMode) print('Error fetching delegations by governorate: $e');
       rethrow;
@@ -104,7 +106,7 @@ class LocationService {
           throw Exception('Failed to fetch governorates by region: ${response.statusCode}');
         },
       );
-      return jsonDecode(response.body);
+      return response['governorates'] ?? response as List<dynamic>;
     } catch (e) {
       if (kDebugMode) print('Error fetching governorates by region: $e');
       rethrow;
@@ -125,7 +127,7 @@ class LocationService {
           throw Exception('Failed to fetch regions by governorate: ${response.statusCode}');
         },
       );
-      return jsonDecode(response.body);
+      return response['regions'] ?? response as List<dynamic>;
     } catch (e) {
       if (kDebugMode) print('Error fetching regions by governorate: $e');
       rethrow;
@@ -146,7 +148,7 @@ class LocationService {
           throw Exception('Failed to fetch governorates by delegation: ${response.statusCode}');
         },
       );
-      return jsonDecode(response.body);
+      return response['governorates'] ?? response as List<dynamic>;
     } catch (e) {
       if (kDebugMode) print('Error fetching governorates by delegation: $e');
       rethrow;
@@ -163,11 +165,13 @@ class LocationService {
             headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
           );
           CookieManager.extractCookies(response);
+          if (kDebugMode) print('Regions by user response: ${response.body}');
           if (response.statusCode == 200) return response;
           throw Exception('Failed to fetch regions by user: ${response.statusCode}');
         },
       );
-      return jsonDecode(response.body);
+      if (kDebugMode) print('Decoded regions by user: $response');
+      return response['regions'] ?? response as List<dynamic>;
     } catch (e) {
       if (kDebugMode) print('Error fetching regions by user: $e');
       rethrow;
@@ -188,7 +192,7 @@ class LocationService {
           throw Exception('Failed to fetch governorates by user: ${response.statusCode}');
         },
       );
-      return jsonDecode(response.body);
+      return response['governorates'] ?? response as List<dynamic>;
     } catch (e) {
       if (kDebugMode) print('Error fetching governorates by user: $e');
       rethrow;
@@ -209,7 +213,7 @@ class LocationService {
           throw Exception('Failed to fetch delegations by user: ${response.statusCode}');
         },
       );
-      return jsonDecode(response.body);
+      return response['delegations'] ?? response as List<dynamic>;
     } catch (e) {
       if (kDebugMode) print('Error fetching delegations by user: $e');
       rethrow;
@@ -231,7 +235,7 @@ class LocationService {
           throw Exception('Failed to update user location: ${response.statusCode}');
         },
       );
-      return jsonDecode(response.body);
+      return response['location'] ?? response;
     } catch (e) {
       if (kDebugMode) print('Error updating user location: $e');
       rethrow;
@@ -253,7 +257,7 @@ class LocationService {
           throw Exception('Failed to geocode address: ${response.statusCode}');
         },
       );
-      return jsonDecode(response.body);
+      return response['location'] ?? response;
     } catch (e) {
       if (kDebugMode) print('Error geocoding address: $e');
       rethrow;
@@ -287,7 +291,7 @@ class LocationService {
           throw Exception('Failed to fetch directions: ${response.statusCode}');
         },
       );
-      return jsonDecode(response.body);
+      return response['directions'] ?? response;
     } catch (e) {
       if (kDebugMode) print('Error fetching directions: $e');
       rethrow;
@@ -309,7 +313,7 @@ class LocationService {
           throw Exception('Failed to search places: ${response.statusCode}');
         },
       );
-      return jsonDecode(response.body);
+      return response['places'] ?? response as List<dynamic>;
     } catch (e) {
       if (kDebugMode) print('Error searching places: $e');
       rethrow;
@@ -331,7 +335,7 @@ class LocationService {
           throw Exception('Failed to fetch distance matrix: ${response.statusCode}');
         },
       );
-      return jsonDecode(response.body);
+      return response['matrix'] ?? response as List<dynamic>;
     } catch (e) {
       if (kDebugMode) print('Error fetching distance matrix: $e');
       rethrow;
@@ -353,7 +357,7 @@ class LocationService {
           throw Exception('Failed to fetch place details: ${response.statusCode}');
         },
       );
-      return jsonDecode(response.body);
+      return response['place'] ?? response;
     } catch (e) {
       if (kDebugMode) print('Error fetching place details: $e');
       rethrow;
@@ -375,7 +379,7 @@ class LocationService {
           throw Exception('Failed to fetch nearby places: ${response.statusCode}');
         },
       );
-      return jsonDecode(response.body);
+      return response['places'] ?? response as List<dynamic>;
     } catch (e) {
       if (kDebugMode) print('Error fetching nearby places: $e');
       rethrow;
@@ -397,7 +401,7 @@ class LocationService {
           throw Exception('Failed to fetch current user location: ${response.statusCode}');
         },
       );
-      return jsonDecode(response.body);
+      return response['location'] ?? response;
     } catch (e) {
       if (kDebugMode) print('Error fetching current location: $e');
       rethrow;
@@ -418,7 +422,7 @@ class LocationService {
           throw Exception('Failed to fetch specific user location: ${response.statusCode}');
         },
       );
-      return jsonDecode(response.body);
+      return response['location'] ?? response;
     } catch (e) {
       if (kDebugMode) print('Error getting specific user location: $e');
       rethrow;
@@ -439,7 +443,7 @@ class LocationService {
           throw Exception('Failed to fetch location details: ${response.statusCode}');
         },
       );
-      return jsonDecode(response.body);
+      return response['location'] ?? response;
     } catch (e) {
       if (kDebugMode) print('Error fetching location details: $e');
       rethrow;

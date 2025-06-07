@@ -16,6 +16,7 @@ import AgentManagement from './pages/Dashboard/AgentManagement';
 import Reports from './pages/Report/Reports';
 import SupervisorDashboard from './pages/Dashboard/SupervisorDashboard';
 import ManagerDashboard from './pages/Dashboard/ManagerDashboard';
+import HRDashboard from './pages/Dashboard/HRDashboard';
 
 // Lazy load route components
 const Timesheets = React.lazy(() => import('./pages/Timesheet/Timesheets'));
@@ -215,6 +216,14 @@ const AppContent: React.FC = React.memo(() => {
               element={
                 <ProtectedRoute>
                   <ManagerDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/HR-dashboard"
+              element={
+                <ProtectedRoute>
+                  <HRDashboard />
                 </ProtectedRoute>
               }
             />

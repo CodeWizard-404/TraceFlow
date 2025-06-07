@@ -342,3 +342,19 @@ export const cancelTimesheetSuggestion = async (requestId: string): Promise<Canc
     throw new Error(handleApiError(error, "Unable to cancel timesheet suggestion."));
   }
 };
+
+
+
+export default {
+  createTimesheet,
+  updateTimesheet,
+  deleteTimesheet,
+  getAllTimesheets,
+  getTimesheetById,
+  getTimesheetByWeekNumberAndYear,
+  validateTimesheet,
+  getTimesheetsBySupervisor,
+  syncTimesheetToCalendar,
+  suggestTimesheet,
+  cancelTimesheetSuggestion,
+};

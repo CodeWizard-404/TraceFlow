@@ -67,7 +67,7 @@ export const createReceiptBook = async (data: Partial<ReceiptBook>): Promise<Cre
 // Get all receipt books
 export const getAllReceiptBooks = async (
     page = 1,
-    limit = 10,
+    limit = 1000,
     sortField: 'number' | 'holder' | 'bookStatus' | 'stubStatus' | 'type' = 'number',
     sortOrder: 'ASC' | 'DESC' = 'ASC',
     searchQuery = '',
@@ -346,3 +346,25 @@ export const getReceiptBookHolders = async (): Promise<User[]> => {
         throw new Error(handleApiError(error, 'Failed to fetch receipt book holders.'));
     }
 };
+
+
+
+export default {
+    getAllReceiptBooks,
+    getReceiptBookById,
+    createReceiptBook,
+    updateReceiptBook,
+    deleteReceiptBook,
+    validateTransfer,
+    getTransferHistory,
+    getAllReceiptBookTypes,
+    getReceiptBookTypeById,
+    createReceiptBookType,
+    updateReceiptBookType,
+    deleteReceiptBookType,
+    uploadReceiptBooks,
+    getReceiptBooksByHolder,
+    getReceiptBookHolders
+};
+
+

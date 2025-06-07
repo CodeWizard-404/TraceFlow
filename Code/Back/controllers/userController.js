@@ -2,6 +2,8 @@ const UserService = require('../services/userService');
 const NotificationService = require('../services/notificationService');
 const logger = require('../utils/logger');
 
+
+
 /**
  * Controller for managing user operations with structured logging.
  */
@@ -256,7 +258,7 @@ class UserController {
             const user = await UserService.createUser(email, password, firstname, lastname, phone, req.user.userID);
             await NotificationService.triggerNotification({
                 event: 'user:created',
-                data: { userID: user.userID, email },
+                data: user.toJSON(),
                 metadata: { createdBy: req.user.email || 'unknown' }
             });
             logger.info('Successfully created user', {

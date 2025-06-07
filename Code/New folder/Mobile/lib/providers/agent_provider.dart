@@ -266,12 +266,14 @@ class AgentProvider with ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
     try {
-      _agents = await _agentService.getAgentsByUser(userID);
+      final agents = await _agentService.getAgentsByUser(userID);
+      _agents = agents;
       if (kDebugMode) print('Fetched ${_agents.length} agents for user: $userID');
     } catch (e) {
       _agents = [];
       _errorMessage = 'Failed to fetch agents by user: $e';
       if (kDebugMode) print(_errorMessage);
+      throw Exception(_errorMessage); // Throw to allow UI to catch
     } finally {
       _isLoading = false;
       notifyListeners();

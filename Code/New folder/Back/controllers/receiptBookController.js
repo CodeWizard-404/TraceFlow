@@ -522,6 +522,7 @@ class ReceiptBookController {
                 });
                 return res.status(400).json({ error: 'Holder ID and user type are required' });
             }
+
             const receiptBooks = await ReceiptBookService.getReceiptBooksByHolder(holderID, userType);
             const responseBooks = Array.isArray(receiptBooks)
                 ? receiptBooks.map(book => ({
@@ -532,6 +533,7 @@ class ReceiptBookController {
                     ...receiptBooks,
                     qrCode: receiptBooks.qrCode ? Buffer.from(receiptBooks.qrCode).toString('base64') : null,
                 };
+
             logger.info('Successfully fetched receipt books by holder', {
                 route: 'receipt-books/holder',
                 method: req.method,
@@ -542,19 +544,21 @@ class ReceiptBookController {
                 userId: actorID,
                 metadata: { holderID, userType, bookCount: Array.isArray(responseBooks) ? responseBooks.length : 1 }
             });
+
+            // Always return 200, even if the array is empty
             return res.status(200).json(responseBooks);
         } catch (error) {
             logger.error('Failed to fetch receipt books by holder', {
                 route: 'receipt-books/holder',
                 method: req.method,
                 url: req.originalUrl,
-                status: error.status || 404,
+                status: error.status || 500,
                 ip: req.ip,
                 traceId: req.traceId,
                 userId: actorID,
                 metadata: { error: error.message }
             });
-            return res.status(error.status || 404).json({ error: error.message || 'Receipt books not found' });
+            return res.status(error.status || 500).json({ error: error.message || 'An error occurred while fetching receipt books' });
         }
     }
 
