@@ -129,13 +129,22 @@ class UserService {
             headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
           );
           CookieManager.extractCookies(response);
-          if (response.statusCode == 200) return response;
-          throw Exception('Failed to fetch users by role: ${response.statusCode}');
+          print('Raw response for getUsersByRole ($role): ${response.body}');
+          if (response.statusCode != 200) {
+            throw Exception('Failed to fetch users by role: ${response.statusCode} - ${response.body}');
+          }
+          return response; // Return http.Response
         },
       );
-      return (jsonDecode(response.body) as List).map((json) => User.fromJson(json)).toList();
+      // Assume response is the decoded JSON (List<dynamic>) from makeAuthenticatedRequest
+      if (response is List<dynamic>) {
+        return response.map((json) => User.fromJson(json)).toList();
+      } else {
+        print('Unexpected response format for getUsersByRole ($role): $response');
+        throw Exception('Expected a list of users, got: $response');
+      }
     } catch (e) {
-      if (kDebugMode) print('Error fetching users by role: $e');
+      print('Error fetching users by role ($role): $e');
       rethrow;
     }
   }

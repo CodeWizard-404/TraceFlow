@@ -1,124 +1,305 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:TraceFlow/models/user.dart';
-import 'package:TraceFlow/providers/user_provider.dart';
-import 'package:TraceFlow/widgets/commen/spacer.dart';
-import 'package:TraceFlow/widgets/commen/text_field.dart';
+
+import '../../models/user.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/user_provider.dart';
+import '../commen/spacer.dart';
 
 class UserSelector extends StatefulWidget {
-  final String? recipientType;
-  final String? recipientID;
-  final void Function(String?) onRecipientIDChanged;
+  final String role;
+  final Function(User) onUserSelected;
 
   const UserSelector({
-    required this.recipientType,
-    required this.recipientID,
-    required this.onRecipientIDChanged,
-    super.key,
-  });
+    Key? key,
+    required this.role,
+    required this.onUserSelected,
+  }) : super(key: key);
 
   @override
   _UserSelectorState createState() => _UserSelectorState();
 }
 
 class _UserSelectorState extends State<UserSelector> {
-  final TextEditingController _searchController = TextEditingController();
-  List<User> _filteredUsers = [];
-  int _visibleUsersLimit = 10; // Cap at 10 initially
+  User? _selectedUser;
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _searchController.addListener(_filterUsers);
-    // Initialize filtered list with all users
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
-    _filteredUsers = List.from(userProvider.users);
-  }
-
-  @override
-  void dispose() {
-    _searchController.removeListener(_filterUsers);
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  void _filterUsers() {
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
-    final query = _searchController.text.toLowerCase();
-    setState(() {
-      _filteredUsers = userProvider.users.where((user) {
-        final fullName = '${user.firstName} ${user.lastName}'.toLowerCase();
-        final phone = user.phone?.toLowerCase() ?? '';
-        return fullName.contains(query) || phone.contains(query);
-      }).toList();
-      _visibleUsersLimit = 10; // Reset limit when filtering
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _fetchUsersByRole();
     });
+  }
+
+  Future<void> _fetchUsersByRole() async {
+    setState(() => _isLoading = true);
+    try {
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      await userProvider.getUsersByRole(widget.role);
+
+      // Filter out the logged-in supervisor if role is 'supervisor'
+      final filteredUsers = widget.role == 'Supervisor'
+          ? userProvider.users.where((user) => user.userID != authProvider.user!.userID).toList()
+          : userProvider.users;
+
+      if (filteredUsers.isNotEmpty) {
+        // Auto-select if only one user is available
+        if (filteredUsers.length == 1) {
+          setState(() => _selectedUser = filteredUsers.first);
+          widget.onUserSelected(filteredUsers.first);
+        }
+      }
+    } catch (e) {
+      print('Error fetching users in UserSelector: $e');
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final userProvider = Provider.of<UserProvider>(context);
-    final usersToShow = _searchController.text.isEmpty ? userProvider.users : _filteredUsers;
-    final visibleUsers = usersToShow.take(_visibleUsersLimit).toList();
-    final hasMore = usersToShow.length > _visibleUsersLimit;
+    final authProvider = Provider.of<AuthProvider>(context);
 
-    final selectedUser = widget.recipientID != null
-        ? usersToShow.firstWhere(
-          (user) => user.userID == widget.recipientID,
-      orElse: () => userProvider.currentUser ??
-          User(userID: '', firstName: 'Unknown', lastName: '', phone: '', email: ''),
-    )
-        : null;
+    // Filter out the logged-in supervisor
+    final filteredUsers = widget.role == 'Supervisor'
+        ? userProvider.users.where((user) => user.userID != authProvider.user!.userID).toList()
+        : userProvider.users;
 
-    print('Building UI, recipientID: ${widget.recipientID}, selectedUser: ${selectedUser?.firstName}, users: ${userProvider.users.length}, filtered: ${usersToShow.length}, visible: ${visibleUsers.length}');
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        CustomTextField(
-          controller: _searchController,
-          label: 'Search ${widget.recipientType} (Name, Lastname, Phone)',
+    if (_isLoading) {
+      return const CircularProgressIndicator();
+    }
+    if (userProvider.errorMessage != null) {
+      return Text(
+        'Error: ${userProvider.errorMessage}',
+        style: TextStyle(color: theme.colorScheme.error),
+      );
+    }
+    if (filteredUsers.isEmpty) {
+      return Text(
+        'No users found',
+        style: theme.textTheme.bodyMedium?.copyWith(
+          color: theme.colorScheme.onSurface,
         ),
-        const CustomSpacer(height: 16),
-        if (usersToShow.isEmpty)
-          const Text('No users match your search', style: TextStyle(color: Colors.red))
-        else ...[
-          SizedBox(
-            height: 200,
-            child: ListView.builder(
-              itemCount: visibleUsers.length,
-              itemBuilder: (context, index) {
-                final user = visibleUsers[index];
-                return RadioListTile<String>(
-                  title: Text('${user.firstName} ${user.lastName} (${user.phone ?? "No phone"})'),
-                  value: user.userID!,
-                  groupValue: widget.recipientID,
-                  onChanged: (value) {
-                    print('Selected user ID: $value');
-                    widget.onRecipientIDChanged(value);
-                    setState(() {}); // Force rebuild
-                  },
-                );
-              },
+      );
+    }
+
+    return _buildSelector(
+      context: context,
+      label: widget.role,
+      value: _selectedUser == null
+          ? 'Select ${widget.role}'
+          : '${_selectedUser!.firstName ?? ''} ${_selectedUser!.lastName ?? ''} (${_selectedUser!.email})',
+      icon: Icons.person_outline,
+      onTap: () async {
+        final TextEditingController searchController = TextEditingController();
+        List<User> dialogFilteredUsers = List.from(filteredUsers);
+
+        await showDialog(
+          context: context,
+          builder: (context) => StatefulBuilder(
+              builder: (context, setDialogState) => AlertDialog(
+                  backgroundColor: theme.cardTheme.color,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  title: Text(
+                    'Select ${widget.role}',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                  content: SizedBox(
+                    width: double.maxFinite,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        TextField(
+                          controller: searchController,
+                          decoration: InputDecoration(
+                            hintText: 'Search users...',
+                            prefixIcon: Icon(
+                              Icons.search,
+                              color: theme.colorScheme.primary,
+                              size: 18,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(
+                                color: theme.colorScheme.primary,
+                                width: 1.5,
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(
+                                color: theme.colorScheme.primary.withOpacity(0.7),
+                                width: 1.5,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(
+                                color: theme.colorScheme.primary,
+                                width: 2,
+                              ),
+                            ),
+                          ),
+                          onChanged: (value) {
+                            setDialogState(() {
+                              dialogFilteredUsers = filteredUsers
+                                  .where((user) =>
+                              '${user.firstName} ${user.lastName}'
+                                  .toLowerCase()
+                                  .contains(value.toLowerCase()) ||
+                                  user.email.toLowerCase().contains(value.toLowerCase()))
+                                  .toList();
+                            });
+                          },
+                        ),
+                        const CustomSpacer(height: 8),
+                        SizedBox(
+                          height: 300,
+                          child: ListView.builder(
+                            itemCount: dialogFilteredUsers.length,
+                            itemBuilder: (context, index) {
+                              final user = dialogFilteredUsers[index];
+                              return ListTile(
+                                leading: Icon(
+                                  Icons.person_outline,
+                                  color: theme.colorScheme.primary,
+                                  size: 18,
+                                ),
+                                title: Text(
+                                  '${user.firstName ?? ''} ${user.lastName ?? ''}',
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: theme.colorScheme.onSurface,
+                                  ),
+                                ),
+                                subtitle: Text(
+                                  user.email,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.onSurface.withOpacity(0.6),
+                                  ),
+                                ),
+                                trailing: _selectedUser == user
+                                    ? Icon(
+                                  Icons.check_circle,
+                                  color: theme.colorScheme.primary,
+                                  size: 18,
+                                )
+                                    : null,
+                                onTap: () {
+                                  setState(() {
+                                    _selectedUser = user;
+                                    widget.onUserSelected(user);
+                                  });
+                                  Navigator.pop(context);
+                                },
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  actions: [
+                  TextButton(
+                  onPressed: () => Navigator.pop(context),
+          child: Text(
+            'Cancel',
+            style: TextStyle(
+              color: theme.colorScheme.onSurface.withOpacity(0.6),
             ),
           ),
-          if (hasMore) ...[
-            const CustomSpacer(height: 8),
-            ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  _visibleUsersLimit += 10; // Load 10 more
-                });
-              },
-              child: const Text('Show More'),
+        ),
+        ],
+        ),
+        ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSelector({
+    required BuildContext context,
+    required String label,
+    required String value,
+    required IconData icon,
+    VoidCallback? onTap,
+    bool disabled = false,
+  }) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: InkWell(
+        onTap: disabled ? null : onTap,
+        borderRadius: BorderRadius.circular(8),
+        splashColor: theme.colorScheme.primary.withOpacity(0.2),
+        highlightColor: theme.colorScheme.primary.withOpacity(0.1),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: disabled
+                  ? theme.colorScheme.onSurface.withOpacity(0.3)
+                  : theme.colorScheme.primary.withOpacity(0.7),
+              width: 1.5,
             ),
-          ],
-        ],
-        if (selectedUser != null && widget.recipientID != null) ...[
-          const CustomSpacer(height: 16),
-          Text('Selected ${widget.recipientType}: ${selectedUser.firstName} ${selectedUser.lastName}'),
-        ],
-      ],
+            borderRadius: BorderRadius.circular(8),
+            color: disabled
+                ? theme.colorScheme.background.withOpacity(0.5)
+                : theme.colorScheme.background,
+          ),
+          child: Row(
+            children: [
+              Icon(
+                icon,
+                color: disabled
+                    ? theme.colorScheme.onSurface.withOpacity(0.5)
+                    : theme.colorScheme.primary,
+                size: 18,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: disabled
+                            ? theme.colorScheme.onSurface.withOpacity(0.5)
+                            : theme.colorScheme.onSurface.withOpacity(0.7),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      value,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: disabled
+                            ? theme.colorScheme.onSurface.withOpacity(0.5)
+                            : theme.colorScheme.onSurface,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.arrow_drop_down,
+                color: disabled
+                    ? theme.colorScheme.onSurface.withOpacity(0.5)
+                    : theme.colorScheme.primary,
+                size: 24,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

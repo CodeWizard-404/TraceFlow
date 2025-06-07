@@ -126,7 +126,9 @@ class AuthService {
           'email': userDataRaw['email']?.toString() ??
               result['email']?.toString() ??
               'unknown@example.com',
-          'roles': userDataRaw['roles'] ?? result['roles'] ?? [],
+          'roles': userDataRaw['roles'] ??
+              result['roles'] ??
+              [],
         };
         final accessToken = CookieManager.cookies['accessToken'];
         if (accessToken != null) _ensureRoles(userData, accessToken);
@@ -143,7 +145,10 @@ class AuthService {
   }
 
   static Future<Map<String, dynamic>> login(
-      String identifier, String password, String deviceIdentifier) async {
+      String identifier,
+      String password,
+      String deviceIdentifier,
+      ) async {
     try {
       final response = await CustomHttpClient.post(
         Uri.parse('$baseUrl/auth/login'),
@@ -180,7 +185,8 @@ class AuthService {
       bool trustDevice,
       String tempToken,
       String refreshToken,
-      String deviceIdentifier) async {
+      String deviceIdentifier,
+      ) async {
     try {
       final response = await CustomHttpClient.post(
         Uri.parse('$baseUrl/auth/2fa/verify'),
@@ -236,8 +242,7 @@ class AuthService {
       }
     } catch (e) {
       if (kDebugMode) print('Refresh token error: $e');
-      if (e.toString().contains('Invalid refresh token') ||
-          e.toString().contains('401')) {
+      if (e.toString().contains('Invalid refresh token') || e.toString().contains('401')) {
         await CookieManager.clearCookies();
         throw Exception('Session expired. Please log in again.');
       }
@@ -273,7 +278,10 @@ class AuthService {
     }
   }
 
-  static Future<Map<String, dynamic>> resend2FA(String userID, String otpMethod) async {
+  static Future<Map<String, dynamic>> resend2FA(
+      String userID,
+      String otpMethod,
+      ) async {
     try {
       final response = await CustomHttpClient.post(
         Uri.parse('$baseUrl/auth/2fa/resend'),
@@ -286,7 +294,9 @@ class AuthService {
     }
   }
 
-  static Future<Map<String, dynamic>> initiatePasswordReset(String identifier) async {
+  static Future<Map<String, dynamic>> initiatePasswordReset(
+      String identifier,
+      ) async {
     try {
       final response = await CustomHttpClient.post(
         Uri.parse('$baseUrl/auth/password/reset/initiate'),
@@ -300,7 +310,9 @@ class AuthService {
   }
 
   static Future<Map<String, dynamic>> verifyPasswordResetOTP(
-      String userID, String otpCode) async {
+      String userID,
+      String otpCode,
+      ) async {
     try {
       final response = await CustomHttpClient.post(
         Uri.parse('$baseUrl/auth/password/reset/verify'),
@@ -314,7 +326,10 @@ class AuthService {
   }
 
   static Future<void> resetPassword(
-      String userID, String newPassword, String tempToken) async {
+      String userID,
+      String newPassword,
+      String tempToken,
+      ) async {
     try {
       final response = await CustomHttpClient.post(
         Uri.parse('$baseUrl/auth/password/reset'),

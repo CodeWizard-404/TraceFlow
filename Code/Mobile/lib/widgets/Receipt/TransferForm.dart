@@ -62,22 +62,41 @@ class TransferForm extends StatelessWidget {
         .name;
   }
 
+  String? _mapRecipientTypeToRole(String? recipientType) {
+    switch (recipientType) {
+      case 'Regional Manager':
+        return 'Regional manager';
+      case 'Supervisor':
+        return 'Supervisor';
+      case 'Stock Manager':
+        return 'Stock manager';
+      default:
+        return null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final receiptBookProvider = Provider.of<ReceiptBookProvider>(context);
     final userProvider = Provider.of<UserProvider>(context);
     final agentProvider = Provider.of<AgentProvider>(context);
-    final recipientOptions = [
-      "Supervisor",
-      "Regional Manager",
+    const recipientOptions = [
       "Agent",
+      "Stub Collection",
+      "Regional Manager",
+      "Supervisor",
       "Stock Manager",
-      "Stub Collection"
     ];
-    final filteredUsers = userProvider.users
-        .where((u) => u.roles.any((r) => r.name?.toLowerCase() == recipientType?.toLowerCase()))
-        .toList();
+
+    // Fetch users by role when recipientType changes
+    final role = _mapRecipientTypeToRole(recipientType);
+    if (role != null && !userProvider.isLoading && userProvider.users.isEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        userProvider.getUsersByRole(role);
+      });
+    }
+
     final filteredAgents = agentProvider.agents.where((a) =>
     (a.name.toLowerCase().contains(searchController.text.toLowerCase()) ||
         a.lastname.toLowerCase().contains(searchController.text.toLowerCase()) ||
@@ -94,7 +113,16 @@ class TransferForm extends StatelessWidget {
                 value: recipientType,
                 items: recipientOptions,
                 hint: 'Select Recipient Type',
-                onChanged: onRecipientTypeChanged,
+                onChanged: (value) {
+                  onRecipientTypeChanged(value);
+                  // Clear users and fetch new ones for the selected role
+                  if (value != null) {
+                    final newRole = _mapRecipientTypeToRole(value);
+                    if (newRole != null) {
+                      userProvider.getUsersByRole(newRole);
+                    }
+                  }
+                },
               ),
               const CustomSpacer(height: 16),
               if (recipientType != null) ...[
@@ -160,19 +188,25 @@ class TransferForm extends StatelessWidget {
                   ),
                 ],
                 if (recipientType != "Agent" && recipientType != "Stub Collection") ...[
-                  CustomTextField(
-                    controller: searchController,
-                    label: 'Search $recipientType (Name, Lastname, Phone)',
-                  ),
-                  const CustomSpacer(height: 16),
-                  CustomDropdown<String>(
-                    value: recipientID,
-                    items: filteredUsers.map((u) => u.userID!).toList(),
-                    hint: 'Select $recipientType',
-                    itemToString: (id) =>
-                    '${filteredUsers.firstWhere((u) => u.userID == id).firstName} ${filteredUsers.firstWhere((u) => u.userID == id).lastName} (${filteredUsers.firstWhere((u) => u.userID == id).phone})',
-                    onChanged: onRecipientIDChanged,
-                  ),
+                  if (userProvider.isLoading) ...[
+                    const CustomProgressIndicator(),
+                  ] else if (userProvider.errorMessage != null) ...[
+                    Text(userProvider.errorMessage!, style: const TextStyle(color: Colors.red)),
+                  ] else ...[
+                    CustomTextField(
+                      controller: searchController,
+                      label: 'Search $recipientType (Name, Lastname, Phone)',
+                    ),
+                    const CustomSpacer(height: 16),
+                    CustomDropdown<String>(
+                      value: recipientID,
+                      items: userProvider.users.map((u) => u.userID!).toList(),
+                      hint: 'Select $recipientType',
+                      itemToString: (id) =>
+                      '${userProvider.users.firstWhere((u) => u.userID == id).firstName} ${userProvider.users.firstWhere((u) => u.userID == id).lastName} (${userProvider.users.firstWhere((u) => u.userID == id).phone})',
+                      onChanged: onRecipientIDChanged,
+                    ),
+                  ],
                 ],
                 if (recipientType == "Stub Collection" || recipientID != null) ...[
                   const CustomSpacer(height: 16),
@@ -207,8 +241,8 @@ class TransferForm extends StatelessWidget {
                             icon: const Icon(Icons.qr_code_scanner, size: 24),
                             label: const Text('Scan QR Code', style: TextStyle(fontSize: 16)),
                             style: ElevatedButton.styleFrom(
-                              foregroundColor: Colors.white,
-                              backgroundColor: theme.primaryColor,
+                              foregroundColor: theme.colorScheme.primary,
+                              backgroundColor: theme.colorScheme.primary,
                               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                               elevation: 2,
@@ -225,8 +259,8 @@ class TransferForm extends StatelessWidget {
                               style: const TextStyle(fontSize: 16),
                             ),
                             style: ElevatedButton.styleFrom(
-                              foregroundColor: Colors.white,
-                              backgroundColor: Colors.green,
+                              foregroundColor: theme.colorScheme.primary,
+                              backgroundColor: theme.colorScheme.primary,
                               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                               elevation: 2,

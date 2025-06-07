@@ -1,29 +1,31 @@
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:TraceFlow/providers/auth_provider.dart';
-import 'package:TraceFlow/providers/receipt_book_provider.dart';
-import 'package:TraceFlow/providers/agent_provider.dart';
-import 'package:TraceFlow/providers/receipt_stub_provider.dart';
-import 'package:TraceFlow/providers/location_provider.dart';
-import 'package:TraceFlow/providers/user_provider.dart';
-import 'package:TraceFlow/widgets/appbar/app_bar.dart';
-import 'package:TraceFlow/widgets/appbar/sidebar.dart';
-import 'package:TraceFlow/widgets/commen/button.dart';
-import 'package:TraceFlow/widgets/commen/spacer.dart';
-import 'package:TraceFlow/models/receipt_book.dart';
-import 'package:TraceFlow/widgets/Receipt/RecipientTypeSelector.dart';
-import 'package:TraceFlow/widgets/Receipt/BookScanner.dart';
-import 'package:TraceFlow/widgets/Receipt/OtpValidator.dart';
-import 'package:TraceFlow/widgets/qr_scanner/qr_scanner_widget.dart';
 import 'dart:async';
 import 'dart:developer' as developer;
 
 import '../../models/agent.dart';
+import '../../models/receipt_book.dart';
 import '../../models/receipt_book_type.dart';
+import '../../models/user.dart';
+import '../../providers/agent_provider.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/location_provider.dart';
+import '../../providers/receipt_book_provider.dart';
+import '../../providers/receipt_stub_provider.dart';
+import '../../providers/user_provider.dart';
 import '../../services/location_service.dart';
-import '../../widgets/commen/progress_indicator.dart';
+import '../../widgets/appbar/app_bar.dart';
+import '../../widgets/appbar/sidebar.dart';
+import '../../widgets/commen/button.dart';
 import '../../widgets/commen/snack_bar.dar.dart';
+import '../../widgets/commen/spacer.dart';
+import '../../widgets/Receipt/RecipientTypeSelector.dart';
+import '../../widgets/Receipt/BookScanner.dart';
+import '../../widgets/Receipt/OtpValidator.dart';
+import '../../widgets/Receipt/UserSelector.dart';
+import '../../widgets/qr_scanner/qr_scanner_widget.dart';
 
 class TransferReceiptBookScreen extends StatefulWidget {
   final String? initialBookID;
@@ -82,10 +84,12 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
       }
       _regions = locationProvider.regions;
       await Future.wait([
-        receiptBookProvider.fetchReceiptBooksByHolder(authProvider.user!.userID!),
+        receiptBookProvider.fetchReceiptBooksByHolder(authProvider.user!.userID!), // Ensure this fetches all relevant books
         receiptBookProvider.fetchAllReceiptBookTypes(),
         agentProvider.fetchUniqueLocations(),
       ]);
+      // Log the fetched books for debugging
+      print('Fetched receipt books: ${receiptBookProvider.receiptBooks.map((b) => "${b.number} (${b.typeID})").toList()}');
     } catch (e) {
       setState(() => _error = 'Error loading initial data: $e');
     } finally {
@@ -94,14 +98,22 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
   }
 
   bool _isTransferable(ReceiptBook book, String userID, String? recipientType) {
-    switch (recipientType) {
-      case "Agent":
-        return book.currentHolderID == userID && book.status == "With Supervisor";
-      case "Stub Collection":
-        return book.status == "Assigned to Agent" && book.currentHolderID == userID;
-      default:
-        return false;
+    final validStatuses = [
+      "With Supervisor",
+      "Stub Collected",
+      "Assigned to Agent",
+    ];
+    final isValidStatus = validStatuses.contains(book.status);
+    final isHolderMatch = book.currentHolderID == userID || book.agentID == userID;
+
+    if (recipientType == "Agent") {
+      return book.currentHolderID == userID && book.status == "With Supervisor";
+    } else if (recipientType == "Stub Collection") {
+      return book.status == "Assigned to Agent" && book.currentHolderID == userID;
+    } else if (recipientType == "Regional Manager" || recipientType == "Supervisor" || recipientType == "Stock Manager") {
+      return isValidStatus && isHolderMatch;
     }
+    return false;
   }
 
   String _getTypeName(String typeID, ReceiptBookProvider provider) {
@@ -121,7 +133,20 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
       final number = decodedText.substring(4, 4 + numberLength);
       final typeStart = 4 + numberLength + 2;
       final typeLength = int.parse(decodedText.substring(typeStart, typeStart + 2));
-      final typeID = decodedText.substring(typeStart + 2, typeStart + 2 + typeLength);
+      final typeIDFromQR = decodedText.substring(typeStart + 2, typeStart + 2 + typeLength);
+
+      // Map QR code typeID to database typeID
+      String? mappedTypeID;
+      final matchingType = receiptBookProvider.receiptBookTypes.firstWhere(
+            (t) => t.name.toLowerCase() == typeIDFromQR.toLowerCase() || t.typeID == typeIDFromQR,
+        orElse: () => ReceiptBookType(typeID: '', name: ''),
+      );
+      if (matchingType.typeID.isNotEmpty) {
+        mappedTypeID = matchingType.typeID;
+      } else {
+        setState(() => _error = 'Invalid typeID in QR code: $typeIDFromQR');
+        return;
+      }
 
       if (_recipientType == "Stub Collection") {
         if (_scannedQRCodes.contains(decodedText)) {
@@ -144,7 +169,7 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
         });
       } else {
         final matchingBook = receiptBookProvider.receiptBooks.firstWhere(
-              (r) => r.number == number && r.typeID == typeID,
+              (r) => r.number == number && r.typeID == mappedTypeID,
           orElse: () => ReceiptBook(bookID: '', number: '', status: '', qrCode: '', typeID: ''),
         );
         if (matchingBook.bookID.isEmpty) {
@@ -172,6 +197,7 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
     }
   }
 
+
   Future<void> _scanQRCode() async {
     final result = await Navigator.push<String>(
       context,
@@ -197,7 +223,7 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
 
   Future<void> _initiateTransfer() async {
     if (_selectedBookIDs.isEmpty) {
-      setState(() => _error = 'Select at least one region.');
+      setState(() => _error = 'Select at least one book.');
       return;
     }
     if (_recipientType == null) {
@@ -763,6 +789,7 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
       }
     }
   }
+
   void _showSnackBar(String message) {
     if (mounted) {
       CustomSnackBar.show(
@@ -776,6 +803,127 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
   }
 
   Widget _buildAgentSelector(BuildContext context) {
+    final theme = Theme.of(context);
+    return _buildSectionCard(
+      context,
+      title: 'Agent',
+      children: [
+        Consumer2<AgentProvider, LocationProvider>(
+          builder: (context, agentProvider, locationProvider, child) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildSelector(
+                  context: context,
+                  label: 'Region',
+                  value: _selectedRegionId == null
+                      ? 'Select Region'
+                      : _regions.firstWhere((r) => r['regionID'] == _selectedRegionId)['name'],
+                  icon: Icons.location_on_outlined,
+                  onTap: () => _showLocationDialog(context, 'region'),
+                ),
+                _buildSelector(
+                  context: context,
+                  label: 'Governorate',
+                  value: _selectedGovernorate == null ? 'Select Governorate' : _selectedGovernorate!['name'],
+                  icon: Icons.location_city_outlined,
+                  onTap: _selectedRegionId == null ? null : () => _showLocationDialog(context, 'governorate'),
+                  disabled: _selectedRegionId == null,
+                ),
+                _buildSelector(
+                  context: context,
+                  label: 'Delegation',
+                  value: _selectedDelegation == null ? 'Select Delegation' : _selectedDelegation!['name'],
+                  icon: Icons.place_outlined,
+                  onTap: _selectedGovernorateId == null ? null : () => _showLocationDialog(context, 'delegation'),
+                  disabled: _selectedGovernorateId == null,
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: TextField(
+                    controller: _phoneController,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    maxLength: 8,
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: theme.colorScheme.background,
+                      hintText: "Enter agent's phone number",
+                      prefixIcon: Icon(
+                        Icons.phone_outlined,
+                        color: theme.colorScheme.primary,
+                        size: 18,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(
+                          color: theme.colorScheme.primary,
+                          width: 1.5,
+                        ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(
+                          color: theme.colorScheme.primary.withOpacity(0.7),
+                          width: 1.5,
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(
+                          color: theme.colorScheme.primary,
+                          width: 2,
+                        ),
+                      ),
+                      counterText: '',
+                      hintStyle: TextStyle(
+                        color: theme.colorScheme.onSurface.withOpacity(0.6),
+                      ),
+                    ),
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                    onChanged: (value) => _onPhoneChanged(value, agentProvider),
+                  ),
+                ),
+                if (_phoneError != null) ...[
+                  Padding(
+                    padding: const EdgeInsets.only(left: 8),
+                    child: Text(
+                      _phoneError!,
+                      style: TextStyle(
+                        color: theme.colorScheme.error,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
+                _buildSelector(
+                  context: context,
+                  label: 'Agent',
+                  value: _recipientID == null
+                      ? (_phoneController.text.isNotEmpty
+                      ? 'Selected via phone'
+                      : _selectedDelegationId == null
+                      ? 'Select a delegation first'
+                      : 'Select Agent')
+                      : '${agentProvider.agents.firstWhere((agent) => agent.agentID == _recipientID, orElse: () => Agent(agentID: '', name: 'Unknown', lastname: '', delegationID: '')).name} ${agentProvider.agents.firstWhere((agent) => agent.agentID == _recipientID, orElse: () => Agent(agentID: '', name: '', lastname: 'Unknown', delegationID: '')).lastname}',
+                  icon: Icons.person_outline,
+                  onTap: _phoneController.text.isNotEmpty || _selectedDelegationId == null
+                      ? null
+                      : () => _showAgentDialog(context, agentProvider),
+                  disabled: _phoneController.text.isNotEmpty || _selectedDelegationId == null,
+                ),
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSectionCard(BuildContext context, {required String title, required List<Widget> children}) {
     final theme = Theme.of(context);
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4),
@@ -793,7 +941,7 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
             child: Text(
-              'Agent',
+              title,
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w700,
                 color: theme.colorScheme.primary,
@@ -803,117 +951,7 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
           const Divider(height: 1, thickness: 1, color: Colors.grey),
           Padding(
             padding: const EdgeInsets.all(12),
-            child: Consumer2<AgentProvider, LocationProvider>(
-              builder: (context, agentProvider, locationProvider, child) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildSelector(
-                      context: context,
-                      label: 'Region',
-                      value: _selectedRegionId == null
-                          ? 'Select Region'
-                          : _regions.firstWhere((r) => r['regionID'] == _selectedRegionId)['name'],
-                      icon: Icons.location_on_outlined,
-                      onTap: () => _showLocationDialog(context, 'region'),
-                    ),
-                    _buildSelector(
-                      context: context,
-                      label: 'Governorate',
-                      value: _selectedGovernorate == null ? 'Select Governorate' : _selectedGovernorate!['name'],
-                      icon: Icons.location_city_outlined,
-                      onTap: _selectedRegionId == null ? null : () => _showLocationDialog(context, 'governorate'),
-                      disabled: _selectedRegionId == null,
-                    ),
-                    _buildSelector(
-                      context: context,
-                      label: 'Delegation',
-                      value: _selectedDelegation == null ? 'Select Delegation' : _selectedDelegation!['name'],
-                      icon: Icons.place_outlined,
-                      onTap: _selectedGovernorateId == null ? null : () => _showLocationDialog(context, 'delegation'),
-                      disabled: _selectedGovernorateId == null,
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: TextField(
-                        controller: _phoneController,
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                        maxLength: 8,
-                        decoration: InputDecoration(
-                          filled: true,
-                          fillColor: theme.colorScheme.background,
-                          hintText: "Enter agent's phone number",
-                          prefixIcon: Icon(
-                            Icons.phone_outlined,
-                            color: theme.colorScheme.primary,
-                            size: 18,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(
-                              color: theme.colorScheme.primary,
-                              width: 1.5,
-                            ),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(
-                              color: theme.colorScheme.primary.withOpacity(0.7),
-                              width: 1.5,
-                            ),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(
-                              color: theme.colorScheme.primary,
-                              width: 2,
-                            ),
-                          ),
-                          counterText: '',
-                          hintStyle: TextStyle(
-                            color: theme.colorScheme.onSurface.withOpacity(0.6),
-                          ),
-                        ),
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: theme.colorScheme.onSurface,
-                        ),
-                        onChanged: (value) => _onPhoneChanged(value, agentProvider),
-                      ),
-                    ),
-                    if (_phoneError != null) ...[
-                      Padding(
-                        padding: const EdgeInsets.only(left: 8),
-                        child: Text(
-                          _phoneError!,
-                          style: TextStyle(
-                            color: theme.colorScheme.error,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-                    ],
-                    _buildSelector(
-                      context: context,
-                      label: 'Agent',
-                      value: _recipientID == null
-                          ? (_phoneController.text.isNotEmpty
-                          ? 'Selected via phone'
-                          : _selectedDelegationId == null
-                          ? 'Select a delegation first'
-                          : 'Select Agent')
-                          : '${agentProvider.agents.firstWhere((agent) => agent.agentID == _recipientID, orElse: () => Agent(agentID: '', name: 'Unknown', lastname: '', delegationID: '')).name} ${agentProvider.agents.firstWhere((agent) => agent.agentID == _recipientID, orElse: () => Agent(agentID: '', name: '', lastname: 'Unknown', delegationID: '')).lastname}',
-                      icon: Icons.person_outline,
-                      onTap: _phoneController.text.isNotEmpty || _selectedDelegationId == null
-                          ? null
-                          : () => _showAgentDialog(context, agentProvider),
-                      disabled: _phoneController.text.isNotEmpty || _selectedDelegationId == null,
-                    ),
-                  ],
-                );
-              },
-            ),
+            child: Column(children: children),
           ),
         ],
       ),
@@ -1011,10 +1049,11 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: CustomAppBar(title: 'Transfer Receipt Books', showBackButton: true),
       drawer: const AppSidebar(),
-      body: Navigator( // Wrap body in Navigator for stable context
+      body: Navigator(
         key: _navigatorKey,
         onGenerateRoute: (settings) => MaterialPageRoute(
           builder: (context) => MultiProvider(
@@ -1030,76 +1069,137 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
               final receiptBookProvider = Provider.of<ReceiptBookProvider>(context);
               final agentProvider = Provider.of<AgentProvider>(context);
               final isLoading = _isLoading || receiptBookProvider.isLoading || agentProvider.isLoading;
-              if (isLoading) return const Center(child: CustomProgressIndicator());
 
-              return RefreshIndicator(
-                onRefresh: _onRefresh,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
+              return Builder(
+                builder: (scaffoldContext) {
+                  return Padding(
+                    padding: const EdgeInsets.all(8.0),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (!_transferInitiated) ...[
-                          RecipientTypeSelector(
-                            recipientType: _recipientType,
-                            onChanged: (value) {
-                              setState(() {
-                                _recipientType = value;
-                                _recipientID = null;
-                                _selectedRegionId = null;
-                                _selectedGovernorateId = null;
-                                _selectedDelegationId = null;
-                                _selectedGovernorate = null;
-                                _selectedDelegation = null;
-                                _selectedBookIDs.clear();
-                                _scannedQRCodes.clear();
-                                _phoneController.clear();
-                                _error = null;
-                                _phoneError = null;
-                                _isScannerActive = false;
-                              });
-                            },
-                          ),
-                          const CustomSpacer(height: 16),
-                          if (_recipientType == "Agent") ...[
-                            _buildAgentSelector(context),
-                          ],
-                          if (_recipientType != null && (_recipientType == "Stub Collection" || _recipientID != null)) ...[
-                            const CustomSpacer(height: 16),
-                            BookScanner(
-                              selectedBookIDs: _selectedBookIDs,
-                              error: _error,
-                              recipientType: _recipientType,
-                              onScanQR: _scanQRCode,
-                              onRemoveBook: (bookID) => setState(() {
-                                _selectedBookIDs.remove(bookID);
-                                _scannedQRCodes.removeWhere((qr) => qr.contains(bookID));
-                              }),
+                        Expanded(
+                          child: isLoading
+                              ? const Center(child: CircularProgressIndicator())
+                              : RefreshIndicator(
+                            onRefresh: _onRefresh,
+                            child: ListView(
+                              children: [
+                                _buildSectionCard(
+                                  scaffoldContext,
+                                  title: 'Recipient Type',
+                                  children: [
+                                    RecipientTypeSelector(
+                                      recipientType: _recipientType,
+                                      onChanged: (value) {
+                                        setState(() {
+                                          _recipientType = value;
+                                          _recipientID = null;
+                                          _selectedRegionId = null;
+                                          _selectedGovernorateId = null;
+                                          _selectedDelegationId = null;
+                                          _selectedGovernorate = null;
+                                          _selectedDelegation = null;
+                                          _selectedBookIDs.clear();
+                                          _scannedQRCodes.clear();
+                                          _phoneController.clear();
+                                          _error = null;
+                                          _phoneError = null;
+                                          _isScannerActive = false;
+                                        });
+                                      },
+                                    ),
+                                  ],
+                                ),
+                                const CustomSpacer(height: 8),
+                                if (_recipientType == "Agent") ...[
+                                  _buildAgentSelector(scaffoldContext),
+                                ],
+                                if (_recipientType == "Regional Manager" ||
+                                    _recipientType == "Supervisor" ||
+                                    _recipientType == "Stock Manager") ...[
+                                  _buildSectionCard(
+                                    scaffoldContext,
+                                    title: _recipientType!,
+                                    children: [
+                                      UserSelector(
+                                        role: _recipientType!,
+                                        onUserSelected: (User user) {
+                                          setState(() {
+                                            _recipientID = user.userID;
+                                            _phoneController.text = user.phone ?? '';
+                                            _phoneError = null;
+                                            _error = null;
+                                          });
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                                if (_recipientType != null &&
+                                    (_recipientType == "Stub Collection" || _recipientID != null)) ...[
+                                  const CustomSpacer(height: 8),
+                                  _buildSectionCard(
+                                    scaffoldContext,
+                                    title: 'Receipt Books',
+                                    children: [
+                                      BookScanner(
+                                        selectedBookIDs: _selectedBookIDs,
+                                        error: _error,
+                                        recipientType: _recipientType,
+                                        onScanQR: _scanQRCode,
+                                        onRemoveBook: (bookID) => setState(() {
+                                          _selectedBookIDs.remove(bookID);
+                                          _scannedQRCodes.removeWhere((qr) => qr.contains(bookID));
+                                        }),
+                                      ),
+                                    ],
+                                  ),
+                                  const CustomSpacer(height: 8),
+                                  if (!_transferInitiated) ...[
+                                    _buildSectionCard(
+                                      scaffoldContext,
+                                      title: 'Actions',
+                                      children: [
+                                        CustomButton(
+                                          label: _recipientType == "Stub Collection"
+                                              ? 'Initiate Stub Collection'
+                                              : 'Initiate Transfer',
+                                          icon: Icons.send,
+                                          onPressed: _initiateTransfer,
+                                          backgroundColor: theme.colorScheme.primary.withOpacity(0.8),
+                                          textColor: theme.colorScheme.primary,
+                                          isOutlined: true,
+                                          isLoading: _isLoading,
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ],
+                                if (_transferInitiated) ...[
+                                  const CustomSpacer(height: 8),
+                                  _buildSectionCard(
+                                    scaffoldContext,
+                                    title: 'OTP Validation',
+                                    children: [
+                                      OtpValidator(
+                                        recipientType: _recipientType,
+                                        recipientID: _recipientID,
+                                        otpSecondsRemaining: _otpSecondsRemaining,
+                                        error: _error,
+                                        otpController: _otpController,
+                                        onValidateTransfer: _validateTransfer,
+                                        formatTime: _formatTime,
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ],
                             ),
-                            const CustomSpacer(height: 16),
-                            CustomButton(
-                              label: _recipientType == "Stub Collection" ? 'Initiate Stub Collection' : 'Initiate Transfer',
-                              icon: Icons.send,
-                              onPressed: _initiateTransfer,
-                            ),
-                          ],
-                        ] else ...[
-                          OtpValidator(
-                            recipientType: _recipientType,
-                            recipientID: _recipientID,
-                            otpSecondsRemaining: _otpSecondsRemaining,
-                            error: _error,
-                            otpController: _otpController,
-                            onValidateTransfer: _validateTransfer,
-                            formatTime: _formatTime,
                           ),
-                        ],
+                        ),
                       ],
                     ),
-                  ),
-                ),
+                  );
+                },
               );
             },
           ),

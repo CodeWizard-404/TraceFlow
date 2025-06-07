@@ -91,14 +91,17 @@ class UserProvider with ChangeNotifier {
   }
 
   Future<void> getUsersByRole(String role) async {
+    print('Fetching users for role: $role');
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
     try {
       _users = await UserService.getUsersByRole(role);
+      print('Fetched ${_users.length} users for role $role');
     } catch (e) {
       _users = [];
       _errorMessage = _parseError(e);
+      print('Error in getUsersByRole ($role): $_errorMessage');
       if (e.toString().contains('401')) {
         await AuthService.logout();
       }

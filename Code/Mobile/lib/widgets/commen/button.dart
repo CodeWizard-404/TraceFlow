@@ -7,7 +7,7 @@ class CustomButton extends StatelessWidget {
   final Color? backgroundColor;
   final Color? textColor;
   final bool isLoading;
-  final bool isOutlined; // New property to toggle outlined style
+  final bool isOutlined;
 
   const CustomButton({
     required this.label,
@@ -16,7 +16,7 @@ class CustomButton extends StatelessWidget {
     this.backgroundColor,
     this.textColor,
     this.isLoading = false,
-    this.isOutlined = false, // Default to filled style
+    this.isOutlined = false,
     super.key,
   });
 
@@ -68,7 +68,7 @@ class CustomButton extends StatelessWidget {
                       Icon(
                         icon,
                         size: 18,
-                        color: theme.elevatedButtonTheme.style!.foregroundColor
+                        color: theme.elevatedButtonTheme.style!.backgroundColor
                             ?.resolve({}),
                       ),
                       const SizedBox(width: 8),
