@@ -165,25 +165,25 @@ class AgentProvider with ChangeNotifier {
     }
   }
 
-  Future<void> fetchAgentByPhone(String phone) async {
+  Future<Agent?> fetchAgentByPhone(String phone) async {
     if (kDebugMode) print('AgentProvider: Fetching agent by phone: $phone');
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
     try {
-      _currentAgent = await _agentService.fetchAgentByPhone(phone);
-      if (_currentAgent != null) {
-        _agents = [_currentAgent!];
-        if (kDebugMode) print('Agent fetched: ${_currentAgent!.agentID}');
+      final agent = await _agentService.fetchAgentByPhone(phone);
+      _currentAgent = agent;
+      if (agent != null) {
+        if (kDebugMode) print('Agent fetched: ${agent.agentID}');
       } else {
-        _agents = [];
         if (kDebugMode) print('No agent found for phone: $phone');
       }
+      return agent;
     } catch (e) {
       _currentAgent = null;
-      _agents = [];
       _errorMessage = 'Failed to fetch agent by phone: $e';
       if (kDebugMode) print(_errorMessage);
+      return null; // Return null instead of rethrowing
     } finally {
       _isLoading = false;
       notifyListeners();

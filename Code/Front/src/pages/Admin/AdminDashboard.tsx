@@ -572,7 +572,7 @@ const AdminDashboard: React.FC = React.memo(() => {
             // Handle permission events
             else if (entity === 'permission') {
                 if (!userPermissions.canViewPermissions) return;
-                if (action === 'updated' || action === 'override_added' || action === 'override_removed') {
+                if (action === 'updated') {
                     await handleRefreshPermissions();
                 }
             }

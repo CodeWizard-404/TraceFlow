@@ -32,9 +32,11 @@ class ReceiptBookProvider with ChangeNotifier {
     String filterStatus = 'all',
   }) async {
     if (kDebugMode) print('ReceiptBookProvider: Fetching all receipt books with page: $page, limit: $limit');
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
+    Future.microtask(() {
+      _isLoading = true;
+      _errorMessage = null;
+      notifyListeners();
+    });
     try {
       if (!CookieManager.cookies.containsKey('accessToken')) {
         if (kDebugMode) print('No accessToken, attempting to load cookies');
@@ -66,9 +68,11 @@ class ReceiptBookProvider with ChangeNotifier {
 
   Future<void> fetchReceiptBooksByHolder(String holderID, {String holderType = 'user'}) async {
     if (kDebugMode) print('ReceiptBookProvider: Fetching receipt books for holder: $holderID ($holderType)');
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
+    Future.microtask(() {
+      _isLoading = true;
+      _errorMessage = null;
+      notifyListeners();
+    });
     try {
       if (!CookieManager.cookies.containsKey('accessToken')) {
         if (kDebugMode) print('No accessToken, attempting to load cookies');
@@ -92,9 +96,11 @@ class ReceiptBookProvider with ChangeNotifier {
 
   Future<void> fetchReceiptBookById(String bookID) async {
     if (kDebugMode) print('ReceiptBookProvider: Fetching receipt book by ID: $bookID');
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
+    Future.microtask(() {
+      _isLoading = true;
+      _errorMessage = null;
+      notifyListeners();
+    });
     try {
       if (!CookieManager.cookies.containsKey('accessToken')) {
         if (kDebugMode) print('No accessToken, attempting to load cookies');
@@ -122,9 +128,11 @@ class ReceiptBookProvider with ChangeNotifier {
 
   Future<void> fetchReceiptBookByNumber(String number) async {
     if (kDebugMode) print('ReceiptBookProvider: Fetching receipt book by number: $number');
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
+    Future.microtask(() {
+      _isLoading = true;
+      _errorMessage = null;
+      notifyListeners();
+    });
     try {
       if (!CookieManager.cookies.containsKey('accessToken')) {
         if (kDebugMode) print('No accessToken, attempting to load cookies');
@@ -156,9 +164,11 @@ class ReceiptBookProvider with ChangeNotifier {
     required String recipientType,
   }) async {
     if (kDebugMode) print('ReceiptBookProvider: Transferring receipt books: $bookIDs to $recipientID ($recipientType)');
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
+    Future.microtask(() {
+      _isLoading = true;
+      _errorMessage = null;
+      notifyListeners();
+    });
     try {
       if (!CookieManager.cookies.containsKey('accessToken')) {
         if (kDebugMode) print('No accessToken, attempting to load cookies');
@@ -196,9 +206,11 @@ class ReceiptBookProvider with ChangeNotifier {
     required String recipientType,
   }) async {
     if (kDebugMode) print('ReceiptBookProvider: Validating transfer for books: $bookIDs to $recipientID ($recipientType)');
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
+    Future.microtask(() {
+      _isLoading = true;
+      _errorMessage = null;
+      notifyListeners();
+    });
     try {
       if (!CookieManager.cookies.containsKey('accessToken')) {
         if (kDebugMode) print('No accessToken, attempting to load cookies');
@@ -232,9 +244,11 @@ class ReceiptBookProvider with ChangeNotifier {
       return;
     }
     if (kDebugMode) print('ReceiptBookProvider: Fetching all receipt book types');
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
+    Future.microtask(() {
+      _isLoading = true;
+      _errorMessage = null;
+      notifyListeners();
+    });
     try {
       if (!CookieManager.cookies.containsKey('accessToken')) {
         if (kDebugMode) print('No accessToken, attempting to load cookies');

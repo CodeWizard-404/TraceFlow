@@ -12,8 +12,7 @@ class VisitItem extends StatelessWidget {
   const VisitItem({super.key, required this.visit, this.isDraggable = true});
 
   bool get _canDrag {
-    final isPastDate = visit.date.isBefore(DateTime.now().subtract(const Duration(days: 1)));
-    return isDraggable && !isPastDate && visit.status?.toLowerCase() != 'visited';
+    return isDraggable  && visit.status?.toLowerCase() != 'visited';
   }
 
   @override
@@ -61,7 +60,7 @@ class VisitItem extends StatelessWidget {
                         children: [
                           if (_canDrag)
                             const Icon(
-                              Icons.drag_handle,
+                              Icons.drag_handle_rounded,
                               color: Colors.grey,
                               size: 14,
                             )
@@ -127,7 +126,7 @@ class VisitItem extends StatelessWidget {
                                 DateFormat('MMM dd, yyyy').format(visit.date),
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color: theme.colorScheme.onSurface.withOpacity(0.9),
-                                  fontSize: 11,
+                                  fontSize: 12,
                                 ),
                               ),
                             ],
@@ -144,7 +143,7 @@ class VisitItem extends StatelessWidget {
                                 formattedTime,
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color: theme.colorScheme.onSurface.withOpacity(0.9),
-                                  fontSize: 11,
+                                  fontSize: 12,
                                 ),
                               ),
                             ],
@@ -165,7 +164,7 @@ class VisitItem extends StatelessWidget {
                               visit.location ?? 'N/A',
                               style: theme.textTheme.bodySmall?.copyWith(
                                 color: theme.colorScheme.onSurface.withOpacity(0.9),
-                                fontSize: 11,
+                                fontSize: 12,
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),

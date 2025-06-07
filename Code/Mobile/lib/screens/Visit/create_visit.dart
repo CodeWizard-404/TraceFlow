@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer' as developer; // Added for logging
+import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
@@ -19,6 +19,7 @@ import '../../services/location_service.dart';
 import '../../widgets/appbar/app_bar.dart';
 import '../../widgets/appbar/sidebar.dart';
 import '../../widgets/commen/button.dart';
+import '../../widgets/commen/snack_bar.dar.dart';
 import '../../widgets/commen/spacer.dart';
 
 class CreateVisitScreen extends StatefulWidget {
@@ -51,6 +52,9 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
   final TextEditingController _phoneController = TextEditingController();
   bool _isLoading = false;
   List<dynamic> _regions = [];
+  bool _isRecruitmentVisit = false;
+  Map<String, dynamic>? _selectedGovernorate;
+  Map<String, dynamic>? _selectedDelegation;
 
   @override
   void initState() {
@@ -87,9 +91,6 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
       final supervisorID = authProvider.user!.userID;
       developer.log('[CreateVisitScreen] Fetching data for supervisor ID: $supervisorID', name: 'CreateVisitScreen.loadInitialData');
 
-      // Fetch regional manager
-      developer.log('[CreateVisitScreen] Fetching regional manager for supervisor ID: $supervisorID', name: 'CreateVisitScreen.loadInitialData');
-
       final regionalManager = await userProvider.getRegionalManagerBySupervisor(supervisorID);
       final regionalManagerID = regionalManager.userID;
 
@@ -98,7 +99,6 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
         name: 'CreateVisitScreen.loadInitialData',
       );
 
-      // Fetch regions
       if (regionalManagerID != null) {
         developer.log(
           '[CreateVisitScreen] Fetching regions for regional manager ID: $regionalManagerID',
@@ -120,7 +120,6 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
         );
       }
 
-      // Fetch checklists and reasons
       developer.log('[CreateVisitScreen] Fetching checklists and reasons', name: 'CreateVisitScreen.loadInitialData');
       await Future.wait([
         checklistProvider.getAllChecklists(),
@@ -220,9 +219,6 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
     }
   }
 
-  Map<String, dynamic>? _selectedGovernorate;
-  Map<String, dynamic>? _selectedDelegation;
-
   Future<void> _showLocationDialog(BuildContext context, String type) async {
     final locationProvider = Provider.of<LocationProvider>(context, listen: false);
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
@@ -311,9 +307,13 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           backgroundColor: Theme.of(context).cardTheme.color,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           title: Text(
             'Select $type',
-            style: Theme.of(context).textTheme.headlineSmall,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: Theme.of(context).colorScheme.primary,
+            ),
           ),
           content: SizedBox(
             width: double.maxFinite,
@@ -327,9 +327,28 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                     prefixIcon: Icon(
                       Icons.search,
                       color: Theme.of(context).colorScheme.primary,
+                      size: 18,
                     ),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(
+                        color: Theme.of(context).colorScheme.primary,
+                        width: 1.5,
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(
+                        color: Theme.of(context).colorScheme.primary.withOpacity(0.7),
+                        width: 1.5,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(
+                        color: Theme.of(context).colorScheme.primary,
+                        width: 2,
+                      ),
                     ),
                   ),
                   onChanged: (value) {
@@ -342,58 +361,74 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                     });
                   },
                 ),
-                const CustomSpacer(height: 12),
+                const CustomSpacer(height: 8),
                 SizedBox(
                   height: 300,
                   child: ListView.builder(
                     itemCount: filteredItems.length,
                     itemBuilder: (context, index) {
                       final item = filteredItems[index];
-                      return RadioListTile<String>(
-                        title: Text(item['name']),
-                        value: item['${type}ID'],
-                        groupValue: selectedValue,
-                        onChanged: (value) {
+                      return ListTile(
+                        leading: Icon(
+                          Icons.location_on_outlined,
+                          color: Theme.of(context).colorScheme.primary,
+                          size: 18,
+                        ),
+                        title: Text(
+                          item['name'],
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
+                        trailing: selectedValue == item['${type}ID']
+                            ? Icon(
+                          Icons.check_circle,
+                          color: Theme.of(context).colorScheme.primary,
+                          size: 18,
+                        )
+                            : null,
+                        onTap: () {
                           setState(() {
                             if (type == 'region') {
-                              _selectedRegionId = value;
+                              _selectedRegionId = item['${type}ID'];
                               _selectedGovernorateId = null;
                               _selectedGovernorate = null;
                               _selectedDelegationId = null;
                               _selectedDelegation = null;
                               developer.log(
-                                '[CreateVisitScreen] Selected region: ${item['name']} (ID: $value), resetting governorate and delegation',
+                                '[CreateVisitScreen] Selected region: ${item['name']} (ID: ${item['${type}ID']}), resetting governorate and delegation',
                                 name: 'CreateVisitScreen.showLocationDialog',
                               );
                             } else if (type == 'governorate') {
                               _selectedGovernorate = item;
-                              _selectedGovernorateId = value;
+                              _selectedGovernorateId = item['${type}ID'];
                               _selectedDelegationId = null;
                               _selectedDelegation = null;
                               developer.log(
-                                '[CreateVisitScreen] Selected governorate: ${item['name']} (ID: $value), resetting delegation',
+                                '[CreateVisitScreen] Selected governorate: ${item['name']} (ID: ${item['${type}ID']}), resetting delegation',
                                 name: 'CreateVisitScreen.showLocationDialog',
                               );
                             } else {
                               _selectedDelegation = item;
-                              _selectedDelegationId = value;
+                              _selectedDelegationId = item['${type}ID'];
                               developer.log(
-                                '[CreateVisitScreen] Selected delegation: ${item['name']} (ID: $value)',
+                                '[CreateVisitScreen] Selected delegation: ${item['name']} (ID: ${item['${type}ID']})',
                                 name: 'CreateVisitScreen.showLocationDialog',
                               );
                             }
-                            _selectedAgentId = null;
-                            _phoneController.clear();
-                            _agentPhone = '';
-                            _phoneError = null;
-                            developer.log(
-                              '[CreateVisitScreen] Reset agent selection and phone input due to $type change',
-                              name: 'CreateVisitScreen.showLocationDialog',
-                            );
+                            if (!_isRecruitmentVisit) {
+                              _selectedAgentId = null;
+                              _phoneController.clear();
+                              _agentPhone = '';
+                              _phoneError = null;
+                              developer.log(
+                                '[CreateVisitScreen] Reset agent selection and phone input due to $type change',
+                                name: 'CreateVisitScreen.showLocationDialog',
+                              );
+                            }
                           });
                           Navigator.pop(context);
                         },
-                        activeColor: Theme.of(context).colorScheme.primary,
                       );
                     },
                   ),
@@ -418,13 +453,11 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
   }
 
   Future<void> _showAgentDialog(BuildContext context, AgentProvider agentProvider) async {
-    // Early exit if widget is not mounted
     if (!mounted) {
       developer.log('[CreateVisitScreen] Widget not mounted, aborting agent dialog', name: 'CreateVisitScreen.showAgentDialog');
       return;
     }
 
-    // Store the context in a local variable to ensure stability
     final dialogContext = context;
     final authProvider = Provider.of<AuthProvider>(dialogContext, listen: false);
 
@@ -444,7 +477,6 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
       final filteredAgents = supervisorAgents.where((a) => delegationAgents.any((da) => da.agentID == a.agentID)).toList();
       developer.log('[CreateVisitScreen] Filtered agents (intersection): ${filteredAgents.map((a) => '${a.name} ${a.lastname} (${a.phone})').toList()}', name: 'CreateVisitScreen.showAgentDialog');
 
-      // Check if widget is still mounted before updating UI
       if (!mounted) {
         developer.log('[CreateVisitScreen] Widget not mounted after fetching agents, aborting dialog', name: 'CreateVisitScreen.showAgentDialog');
         return;
@@ -452,11 +484,9 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
 
       setState(() => _isLoading = false);
 
-      // Initialize dialog content
       final TextEditingController searchController = TextEditingController();
       List<Agent> filteredItems = List.from(filteredAgents);
 
-      // Verify context validity before showing dialog
       if (!mounted || !dialogContext.mounted) {
         developer.log('[CreateVisitScreen] Context not valid for dialog, aborting', name: 'CreateVisitScreen.showAgentDialog');
         if (mounted) {
@@ -465,15 +495,18 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
         return;
       }
 
-      // Show dialog with stable context
       await showDialog<void>(
         context: dialogContext,
         builder: (BuildContext dialogBuilderContext) => StatefulBuilder(
           builder: (BuildContext dialogBuilderContext, StateSetter setDialogState) => AlertDialog(
             backgroundColor: Theme.of(dialogBuilderContext).cardTheme.color,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             title: Text(
               'Select Agent',
-              style: Theme.of(dialogBuilderContext).textTheme.headlineSmall,
+              style: Theme.of(dialogBuilderContext).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: Theme.of(dialogBuilderContext).colorScheme.primary,
+              ),
             ),
             content: SizedBox(
               width: double.maxFinite,
@@ -487,9 +520,28 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                       prefixIcon: Icon(
                         Icons.search,
                         color: Theme.of(dialogBuilderContext).colorScheme.primary,
+                        size: 18,
                       ),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(
+                          color: Theme.of(dialogBuilderContext).colorScheme.primary,
+                          width: 1.5,
+                        ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(
+                          color: Theme.of(dialogBuilderContext).colorScheme.primary.withOpacity(0.7),
+                          width: 1.5,
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(
+                          color: Theme.of(dialogBuilderContext).colorScheme.primary,
+                          width: 2,
+                        ),
                       ),
                     ),
                     onChanged: (value) {
@@ -503,31 +555,52 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                       });
                     },
                   ),
-                  const CustomSpacer(height: 12),
+                  const CustomSpacer(height: 8),
                   SizedBox(
                     height: 300,
                     child: filteredItems.isEmpty
-                        ? const Center(child: Text('No agents available'))
+                        ? Center(
+                      child: Text(
+                        'No agents available',
+                        style: Theme.of(dialogBuilderContext).textTheme.bodyMedium?.copyWith(
+                          color: Colors.grey,
+                        ),
+                      ),
+                    )
                         : ListView.builder(
                       itemCount: filteredItems.length,
                       itemBuilder: (context, index) {
                         final agent = filteredItems[index];
-                        return RadioListTile<String>(
-                          title: Text('${agent.name} ${agent.lastname}'),
-                          value: agent.agentID,
-                          groupValue: _selectedAgentId,
-                          onChanged: (value) {
+                        return ListTile(
+                          leading: Icon(
+                            Icons.person_outline,
+                            color: Theme.of(context).colorScheme.primary,
+                            size: 18,
+                          ),
+                          title: Text(
+                            '${agent.name} ${agent.lastname}',
+                            style: Theme.of(dialogBuilderContext).textTheme.bodyMedium?.copyWith(
+                              color: Theme.of(dialogBuilderContext).colorScheme.onSurface,
+                            ),
+                          ),
+                          trailing: _selectedAgentId == agent.agentID
+                              ? Icon(
+                            Icons.check_circle,
+                            color: Theme.of(context).colorScheme.primary,
+                            size: 18,
+                          )
+                              : null,
+                          onTap: () {
                             if (mounted) {
                               setState(() {
-                                _selectedAgentId = value;
+                                _selectedAgentId = agent.agentID;
                                 _phoneController.text = agent.phone ?? '';
                                 _agentPhone = agent.phone ?? '';
-                                developer.log('[CreateVisitScreen] Selected agent: ${agent.name} ${agent.lastname} (ID: $value, Phone: ${agent.phone})', name: 'CreateVisitScreen.showAgentDialog');
+                                developer.log('[CreateVisitScreen] Selected agent: ${agent.name} ${agent.lastname} (ID: ${agent.agentID}, Phone: ${agent.phone})', name: 'CreateVisitScreen.showAgentDialog');
                               });
                               Navigator.pop(dialogBuilderContext);
                             }
                           },
-                          activeColor: Theme.of(dialogBuilderContext).colorScheme.primary,
                         );
                       },
                     ),
@@ -557,6 +630,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
       developer.log('[CreateVisitScreen] Error in showAgentDialog: $e', name: 'CreateVisitScreen.showAgentDialog', error: e, stackTrace: stackTrace);
     }
   }
+
   Future<void> _showChecklistDialog(BuildContext context, ChecklistProvider checklistProvider) async {
     final allChecklists = checklistProvider.allChecklists;
     final selectedChecklists = List<Checklist>.from(_selectedChecklists);
@@ -572,9 +646,13 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           backgroundColor: Theme.of(context).cardTheme.color,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           title: Text(
             'Select Checklists',
-            style: Theme.of(context).textTheme.headlineSmall,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: Theme.of(context).colorScheme.primary,
+            ),
           ),
           content: SizedBox(
             width: double.maxFinite,
@@ -588,9 +666,28 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                     prefixIcon: Icon(
                       Icons.search,
                       color: Theme.of(context).colorScheme.primary,
+                      size: 18,
                     ),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(
+                        color: Theme.of(context).colorScheme.primary,
+                        width: 1.5,
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(
+                        color: Theme.of(context).colorScheme.primary.withOpacity(0.7),
+                        width: 1.5,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(
+                        color: Theme.of(context).colorScheme.primary,
+                        width: 2,
+                      ),
                     ),
                   ),
                   onChanged: (value) {
@@ -603,7 +700,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                     });
                   },
                 ),
-                const CustomSpacer(height: 12),
+                const CustomSpacer(height: 8),
                 SizedBox(
                   height: 300,
                   child: ListView.builder(
@@ -611,23 +708,35 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                     itemBuilder: (context, index) {
                       final checklist = filteredChecklists[index];
                       final isSelected = selectedChecklists.any((c) => c.checklistID == checklist.checklistID);
-                      return CheckboxListTile(
-                        title: Text(checklist.item),
-                        value: isSelected,
-                        onChanged: (value) {
-                          setDialogState(() {
-                            if (value == true) {
-                              selectedChecklists.add(checklist);
-                            } else {
-                              selectedChecklists.removeWhere((c) => c.checklistID == checklist.checklistID);
-                            }
-                            developer.log(
-                              '[CreateVisitScreen] Checklist ${checklist.item} ${value == true ? 'added' : 'removed'}, current selection: ${selectedChecklists.map((c) => c.item).toList()}',
-                              name: 'CreateVisitScreen.showChecklistDialog',
-                            );
-                          });
-                        },
-                        activeColor: Theme.of(context).colorScheme.primary,
+                      return ListTile(
+                        leading: Icon(
+                          Icons.checklist,
+                          color: Theme.of(context).colorScheme.primary,
+                          size: 18,
+                        ),
+                        title: Text(
+                          checklist.item,
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
+                        trailing: Checkbox(
+                          value: isSelected,
+                          onChanged: (value) {
+                            setDialogState(() {
+                              if (value == true) {
+                                selectedChecklists.add(checklist);
+                              } else {
+                                selectedChecklists.removeWhere((c) => c.checklistID == checklist.checklistID);
+                              }
+                              developer.log(
+                                '[CreateVisitScreen] Checklist ${checklist.item} ${value == true ? 'added' : 'removed'}, current selection: ${selectedChecklists.map((c) => c.item).toList()}',
+                                name: 'CreateVisitScreen.showChecklistDialog',
+                              );
+                            });
+                          },
+                          activeColor: Theme.of(context).colorScheme.primary,
+                        ),
                       );
                     },
                   ),
@@ -679,9 +788,13 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           backgroundColor: Theme.of(context).cardTheme.color,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           title: Text(
             'Select Reasons',
-            style: Theme.of(context).textTheme.headlineSmall,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: Theme.of(context).colorScheme.primary,
+            ),
           ),
           content: SizedBox(
             width: double.maxFinite,
@@ -695,9 +808,28 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                     prefixIcon: Icon(
                       Icons.search,
                       color: Theme.of(context).colorScheme.primary,
+                      size: 18,
                     ),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(
+                        color: Theme.of(context).colorScheme.primary,
+                        width: 1.5,
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(
+                        color: Theme.of(context).colorScheme.primary.withOpacity(0.7),
+                        width: 1.5,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(
+                        color: Theme.of(context).colorScheme.primary,
+                        width: 2,
+                      ),
                     ),
                   ),
                   onChanged: (value) {
@@ -710,7 +842,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                     });
                   },
                 ),
-                const CustomSpacer(height: 12),
+                const CustomSpacer(height: 8),
                 SizedBox(
                   height: 300,
                   child: ListView.builder(
@@ -718,23 +850,35 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                     itemBuilder: (context, index) {
                       final reason = filteredReasons[index];
                       final isSelected = selectedReasons.any((r) => r.reasonID == reason.reasonID);
-                      return CheckboxListTile(
-                        title: Text(reason.item),
-                        value: isSelected,
-                        onChanged: (value) {
-                          setDialogState(() {
-                            if (value == true) {
-                              selectedReasons.add(reason);
-                            } else {
-                              selectedReasons.removeWhere((r) => r.reasonID == reason.reasonID);
-                            }
-                            developer.log(
-                              '[CreateVisitScreen] Reason ${reason.item} ${value == true ? 'added' : 'removed'}, current selection: ${selectedReasons.map((r) => r.item).toList()}',
-                              name: 'CreateVisitScreen.showReasonDialog',
-                            );
-                          });
-                        },
-                        activeColor: Theme.of(context).colorScheme.primary,
+                      return ListTile(
+                        leading: Icon(
+                          Icons.list_alt_outlined,
+                          color: Theme.of(context).colorScheme.primary,
+                          size: 18,
+                        ),
+                        title: Text(
+                          reason.item,
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
+                        trailing: Checkbox(
+                          value: isSelected,
+                          onChanged: (value) {
+                            setDialogState(() {
+                              if (value == true) {
+                                selectedReasons.add(reason);
+                              } else {
+                                selectedReasons.removeWhere((r) => r.reasonID == reason.reasonID);
+                              }
+                              developer.log(
+                                '[CreateVisitScreen] Reason ${reason.item} ${value == true ? 'added' : 'removed'}, current selection: ${selectedReasons.map((r) => r.item).toList()}',
+                                name: 'CreateVisitScreen.showReasonDialog',
+                              );
+                            });
+                          },
+                          activeColor: Theme.of(context).colorScheme.primary,
+                        ),
                       );
                     },
                   ),
@@ -772,10 +916,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
   }
 
   Future<void> _onPhoneChanged(String value, AgentProvider agentProvider) async {
-    developer.log(
-      '[CreateVisitScreen] Phone input changed: $value',
-      name: 'CreateVisitScreen.onPhoneChanged',
-    );
+    developer.log('[CreateVisitScreen] Phone input changed: $value', name: 'CreateVisitScreen.onPhoneChanged');
     setState(() {
       _agentPhone = value;
       _phoneError = null;
@@ -791,73 +932,27 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
           _selectedDelegationId = null;
           _phoneError = null;
         });
-        developer.log(
-          '[CreateVisitScreen] Phone input cleared, resetting agent and location selections',
-          name: 'CreateVisitScreen.onPhoneChanged',
-        );
       } else if (value.length >= 8) {
-        developer.log(
-          '[CreateVisitScreen] Fetching agent by phone: $value',
-          name: 'CreateVisitScreen.onPhoneChanged',
-        );
         setState(() => _isLoading = true);
         try {
-          await agentProvider.fetchAgentByPhone(value);
-          final agent = agentProvider.currentAgent;
-          developer.log(
-            '[CreateVisitScreen] Agent search result: ${agent != null ? '${agent.name} ${agent.lastname} (ID: ${agent.agentID}, Phone: ${agent.phone})' : 'Not found'}',
-            name: 'CreateVisitScreen.onPhoneChanged',
-          );
+          final agent = await agentProvider.fetchAgentByPhone(value);
           if (agent != null) {
-            developer.log(
-              '[CreateVisitScreen] Verifying agent against supervisor agents for user ID: ${authProvider.user!.userID}',
-              name: 'CreateVisitScreen.onPhoneChanged',
-            );
             await agentProvider.getAgentsByUser(authProvider.user!.userID);
             final supervisorAgents = agentProvider.agents;
-            developer.log(
-              '[CreateVisitScreen] Supervisor agents: ${supervisorAgents.map((a) => '${a.name} ${a.lastname} (ID: ${a.agentID})').toList()}',
-              name: 'CreateVisitScreen.onPhoneChanged',
-            );
             if (supervisorAgents.any((a) => a.agentID == agent.agentID)) {
               setState(() {
                 _selectedAgentId = agent.agentID;
                 _selectedDelegationId = agent.delegationID;
                 _phoneError = null;
               });
-              developer.log(
-                '[CreateVisitScreen] Agent verified, selected agent ID: ${agent.agentID}, delegation ID: ${agent.delegationID}',
-                name: 'CreateVisitScreen.onPhoneChanged',
-              );
-
-              developer.log(
-                '[CreateVisitScreen] Fetching location details for delegation ID: ${agent.delegationID}',
-                name: 'CreateVisitScreen.onPhoneChanged',
-              );
               final locationDetails = await LocationService.getLocationDetailsById(agent.delegationID);
-              developer.log(
-                '[CreateVisitScreen] Location details fetched: $locationDetails',
-                name: 'CreateVisitScreen.onPhoneChanged',
-              );
-              if (locationDetails.containsKey('success') &&
-                  locationDetails['success'] == true &&
-                  locationDetails.containsKey('address')) {
+              if (locationDetails['success'] == true && locationDetails.containsKey('address')) {
                 setState(() {
                   _selectedRegionId = locationDetails['regionID'] as String?;
                   _selectedGovernorateId = locationDetails['governorateID'] as String?;
-                  developer.log(
-                    '[CreateVisitScreen] Auto-selected region ID: $_selectedRegionId, governorate ID: $_selectedGovernorateId, delegation ID: $_selectedDelegationId',
-                    name: 'CreateVisitScreen.onPhoneChanged',
-                  );
                 });
               } else {
-                setState(() {
-                  _phoneError = 'Invalid location data for agent';
-                });
-                developer.log(
-                  '[CreateVisitScreen] Invalid location data for agent: $locationDetails',
-                  name: 'CreateVisitScreen.onPhoneChanged',
-                );
+                setState(() => _phoneError = 'Invalid location data for agent');
               }
             } else {
               setState(() {
@@ -865,10 +960,6 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                 _selectedAgentId = null;
                 _selectedDelegationId = null;
               });
-              developer.log(
-                '[CreateVisitScreen] Agent not assigned to supervisor',
-                name: 'CreateVisitScreen.onPhoneChanged',
-              );
             }
           } else {
             setState(() {
@@ -876,29 +967,20 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
               _selectedAgentId = null;
               _selectedDelegationId = null;
             });
-            developer.log(
-              '[CreateVisitScreen] Agent not found for phone: $value',
-              name: 'CreateVisitScreen.onPhoneChanged',
-            );
           }
-        } catch (e, stackTrace) {
+        } catch (e) {
           setState(() {
             _phoneError = 'Error fetching agent: $e';
             _selectedAgentId = null;
             _selectedDelegationId = null;
           });
-          developer.log(
-            '[CreateVisitScreen] Error fetching agent: $e',
-            name: 'CreateVisitScreen.onPhoneChanged',
-            error: e,
-            stackTrace: stackTrace,
-          );
         } finally {
           setState(() => _isLoading = false);
         }
       }
     });
   }
+
 
   bool _validateInputs() {
     final now = DateTime.now();
@@ -920,11 +1002,11 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
       _showSnackBar('Time cannot be before now for today');
       return false;
     }
-    if (_selectedAgentId == null) {
+    if (!_isRecruitmentVisit && _selectedAgentId == null) {
       _showSnackBar('An agent must be selected');
       return false;
     }
-    if (_selectedDelegationId == null) {
+    if (!_isRecruitmentVisit && _selectedDelegationId == null) {
       _showSnackBar('A delegation must be selected');
       return false;
     }
@@ -948,43 +1030,46 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
     final locationProvider = Provider.of<LocationProvider>(context, listen: false);
 
     try {
-      developer.log(
-        '[CreateVisitScreen] Fetching region details for region ID: $_selectedRegionId',
-        name: 'CreateVisitScreen.submitVisit',
-      );
-      final region = _regions.firstWhere((r) => r['regionID'] == _selectedRegionId, orElse: () => null);
-      developer.log(
-        '[CreateVisitScreen] Region found: ${region != null ? region['name'] : 'Not found'}',
-        name: 'CreateVisitScreen.submitVisit',
-      );
+      String? location;
+      if (_selectedDelegationId != null) {
+        developer.log(
+          '[CreateVisitScreen] Fetching region details for region ID: $_selectedRegionId',
+          name: 'CreateVisitScreen.submitVisit',
+        );
+        final region = _regions.firstWhere((r) => r['regionID'] == _selectedRegionId, orElse: () => null);
+        developer.log(
+          '[CreateVisitScreen] Region found: ${region != null ? region['name'] : 'Not found'}',
+          name: 'CreateVisitScreen.submitVisit',
+        );
 
-      developer.log(
-        '[CreateVisitScreen] Fetching governorates for region ID: $_selectedRegionId',
-        name: 'CreateVisitScreen.submitVisit',
-      );
-      await locationProvider.getGovernoratesByRegion(_selectedRegionId!);
-      final governorate = locationProvider.governorates.firstWhere((g) => g['governorateID'] == _selectedGovernorateId, orElse: () => null);
-      developer.log(
-        '[CreateVisitScreen] Governorate found: ${governorate != null ? governorate['name'] : 'Not found'}',
-        name: 'CreateVisitScreen.submitVisit',
-      );
+        developer.log(
+          '[CreateVisitScreen] Fetching governorates for region ID: $_selectedRegionId',
+          name: 'CreateVisitScreen.submitVisit',
+        );
+        await locationProvider.getGovernoratesByRegion(_selectedRegionId!);
+        final governorate = locationProvider.governorates.firstWhere((g) => g['governorateID'] == _selectedGovernorateId, orElse: () => null);
+        developer.log(
+          '[CreateVisitScreen] Governorate found: ${governorate != null ? governorate['name'] : 'Not found'}',
+          name: 'CreateVisitScreen.submitVisit',
+        );
 
-      developer.log(
-        '[CreateVisitScreen] Fetching delegations for governorate ID: $_selectedGovernorateId',
-        name: 'CreateVisitScreen.submitVisit',
-      );
-      await locationProvider.getDelegationsByGovernorate(_selectedGovernorateId!);
-      final delegation = locationProvider.delegations.firstWhere((d) => d['delegationID'] == _selectedDelegationId, orElse: () => null);
-      developer.log(
-        '[CreateVisitScreen] Delegation found: ${delegation != null ? delegation['name'] : 'Not found'}',
-        name: 'CreateVisitScreen.submitVisit',
-      );
+        developer.log(
+          '[CreateVisitScreen] Fetching delegations for governorate ID: $_selectedGovernorateId',
+          name: 'CreateVisitScreen.submitVisit',
+        );
+        await locationProvider.getDelegationsByGovernorate(_selectedGovernorateId!);
+        final delegation = locationProvider.delegations.firstWhere((d) => d['delegationID'] == _selectedDelegationId, orElse: () => null);
+        developer.log(
+          '[CreateVisitScreen] Delegation found: ${delegation != null ? delegation['name'] : 'Not found'}',
+          name: 'CreateVisitScreen.submitVisit',
+        );
 
-      final location = [region?['name'], governorate?['name'], delegation?['name']].where((e) => e != null).join(', ');
-      developer.log(
-        '[CreateVisitScreen] Constructed location string: $location',
-        name: 'CreateVisitScreen.submitVisit',
-      );
+        location = [region?['name'], governorate?['name'], delegation?['name']].where((e) => e != null).join(', ');
+        developer.log(
+          '[CreateVisitScreen] Constructed location string: $location',
+          name: 'CreateVisitScreen.submitVisit',
+        );
+      }
 
       final checklistUpdates = _selectedChecklists.map((c) => {'id': c.checklistID}).toList();
       final reasonUpdates = _selectedReasons.map((r) => {'id': r.reasonID}).toList();
@@ -992,7 +1077,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
       final visit = {
         'date': _selectedDate!.toIso8601String().split('T')[0],
         'time': _selectedTime!.format(context).toLowerCase().replaceAll(' ', ''),
-        'agentID': _selectedAgentId!,
+        'agentID': _isRecruitmentVisit ? null : _selectedAgentId,
         'location': location,
         'reasons': reasonUpdates,
         'checklists': checklistUpdates,
@@ -1032,586 +1117,486 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
 
   void _showSnackBar(String message) {
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor:
-              message.contains('successfully')
-                  ? Theme.of(context).colorScheme.primary
-                  : Theme.of(context).colorScheme.error,
-        ),
+      CustomSnackBar.show(
+        context: context,
+        message: message,
+        backgroundColor: message.contains('successfully')
+            ? Theme.of(context).colorScheme.primary.withOpacity(0.9)
+            : Theme.of(context).colorScheme.error.withOpacity(0.9),
       );
     }
   }
 
-  @override
+  void _handleRecruitmentVisitToggle(bool value) {
+    setState(() {
+      _isRecruitmentVisit = value;
+      if (value) {
+        _selectedAgentId = null;
+        _phoneController.clear();
+        _agentPhone = '';
+        _phoneError = null;
+        final reasonProvider = Provider.of<ReasonProvider>(context, listen: false);
+        final recruitmentReason = reasonProvider.allReasons.firstWhere(
+              (r) => r.item.toLowerCase() == 'recruitment',
+          orElse: () => Reason(reasonID: '', item: ''),
+        );
+        if (recruitmentReason.reasonID.isNotEmpty && !_selectedReasons.any((r) => r.reasonID == recruitmentReason.reasonID)) {
+          _selectedReasons = [recruitmentReason];
+        }
+      }
+      developer.log(
+        '[CreateVisitScreen] Recruitment visit toggled: $value',
+        name: 'CreateVisitScreen.handleRecruitmentVisitToggle',
+      );
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      appBar: CustomAppBar(title: 'Create Visit', showBackButton: true),
+      appBar: AppBar(
+        title: const Text('Create Visit'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
       drawer: const AppSidebar(),
       body: Builder(
-        builder: (scaffoldContext) { // Capture stable Scaffold context
-          return Container(
-              color: Theme.of(scaffoldContext).scaffoldBackgroundColor,
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : Form(
-                  key: _formKey,
-                  child: ListView(
-                    children: [
-                      _buildSectionCard(
-                        title: 'Date & Time',
-                        child: Column(
+        builder: (scaffoldContext) {
+          return Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+              children: [
+                Expanded(
+                  child: _isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : Form(
+                    key: _formKey,
+                    child: ListView(
+                      children: [
+                        _buildSectionCard(
+                          scaffoldContext,
+                          title: 'Date & Time',
                           children: [
-                            _buildTile(
-                              icon: Icons.calendar_today,
-                              title: _selectedDate == null
+                            _buildSelector(
+                              context: scaffoldContext,
+                              label: 'Date',
+                              value: _selectedDate == null
                                   ? 'Select Date'
                                   : '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
+                              icon: Icons.calendar_today_outlined,
                               onTap: () => _selectDate(scaffoldContext),
                             ),
-                            const CustomSpacer(height: 12),
-                            _buildTile(
-                              icon: Icons.access_time,
-                              title: _selectedTime == null
+                            _buildSelector(
+                              context: scaffoldContext,
+                              label: 'Time',
+                              value: _selectedTime == null
                                   ? 'Select Time'
                                   : _selectedTime!.format(scaffoldContext),
+                              icon: Icons.access_time_outlined,
                               onTap: () => _selectTime(scaffoldContext),
                             ),
                           ],
                         ),
-                      ),
-                      const CustomSpacer(height: 16),
-                      _buildSectionCard(
-                        title: 'Location & Agent',
-                        child: Consumer2<AgentProvider, LocationProvider>(
-                          builder: (context, agentProvider, locationProvider, child) {
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(scaffoldContext).colorScheme.surface,
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                        color: Theme.of(scaffoldContext)
-                                            .colorScheme
-                                            .onSurface
-                                            .withOpacity(0.2)),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.phone,
-                                          color: Theme.of(scaffoldContext).colorScheme.primary,
-                                          size: 24),
-                                      const CustomSpacer(width: 12),
-                                      Expanded(
+                        const CustomSpacer(height: 8),
+                        _buildSectionCard(
+                          scaffoldContext,
+                          title: 'Visit Type',
+                          children: [
+                            CheckboxListTile(
+                              title: Text(
+                                'Recruitment Visit',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: theme.colorScheme.onSurface,
+                                ),
+                              ),
+                              value: _isRecruitmentVisit,
+                              onChanged: (value) => _handleRecruitmentVisitToggle(value ?? false),
+                              activeColor: theme.colorScheme.primary,
+                            ),
+                          ],
+                        ),
+                        const CustomSpacer(height: 8),
+                        _buildSectionCard(
+                          scaffoldContext,
+                          title: 'Location & Agent',
+                          children: [
+                            Consumer2<AgentProvider, LocationProvider>(
+                              builder: (context, agentProvider, locationProvider, child) {
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _buildSelector(
+                                      context: scaffoldContext,
+                                      label: 'Region',
+                                      value: _selectedRegionId == null
+                                          ? 'Select Region'
+                                          : _regions.firstWhere(
+                                              (r) => r['regionID'] == _selectedRegionId)['name'],
+                                      icon: Icons.location_on_outlined,
+                                      onTap: () => _showLocationDialog(scaffoldContext, 'region'),
+                                    ),
+                                    _buildSelector(
+                                      context: scaffoldContext,
+                                      label: 'Governorate',
+                                      value: _selectedGovernorate == null
+                                          ? 'Select Governorate'
+                                          : _selectedGovernorate!['name'],
+                                      icon: Icons.location_city_outlined,
+                                      onTap: _selectedRegionId == null
+                                          ? null
+                                          : () => _showLocationDialog(scaffoldContext, 'governorate'),
+                                      disabled: _selectedRegionId == null,
+                                    ),
+                                    _buildSelector(
+                                      context: scaffoldContext,
+                                      label: 'Delegation',
+                                      value: _selectedDelegation == null
+                                          ? 'Select Delegation'
+                                          : _selectedDelegation!['name'],
+                                      icon: Icons.place_outlined,
+                                      onTap: _selectedGovernorateId == null
+                                          ? null
+                                          : () => _showLocationDialog(scaffoldContext, 'delegation'),
+                                      disabled: _selectedGovernorateId == null,
+                                    ),
+                                    if (!_isRecruitmentVisit) ...[
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(vertical: 4),
                                         child: TextField(
                                           controller: _phoneController,
                                           keyboardType: TextInputType.number,
-                                          inputFormatters: [
-                                            FilteringTextInputFormatter.digitsOnly
-                                          ],
+                                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                                           maxLength: 8,
                                           decoration: InputDecoration(
-                                            hintText: 'Enter agent\'s phone number',
-                                            border: InputBorder.none,
-                                            hintStyle: TextStyle(
-                                                color: Theme.of(scaffoldContext)
-                                                    .colorScheme
-                                                    .onSurface
-                                                    .withOpacity(0.6)),
+                                            filled: true,
+                                            fillColor: theme.colorScheme.background,
+                                            hintText: "Enter agent's phone number",
+                                            prefixIcon: Icon(
+                                              Icons.phone_outlined,
+                                              color: theme.colorScheme.primary,
+                                              size: 18,
+                                            ),
+                                            border: OutlineInputBorder(
+                                              borderRadius: BorderRadius.circular(8),
+                                              borderSide: BorderSide(
+                                                color: theme.colorScheme.primary,
+                                                width: 1.5,
+                                              ),
+                                            ),
+                                            enabledBorder: OutlineInputBorder(
+                                              borderRadius: BorderRadius.circular(8),
+                                              borderSide: BorderSide(
+                                                color: theme.colorScheme.primary.withOpacity(0.7),
+                                                width: 1.5,
+                                              ),
+                                            ),
+                                            focusedBorder: OutlineInputBorder(
+                                              borderRadius: BorderRadius.circular(8),
+                                              borderSide: BorderSide(
+                                                color: theme.colorScheme.primary,
+                                                width: 2,
+                                              ),
+                                            ),
                                             counterText: '',
+                                            hintStyle: TextStyle(
+                                              color: theme.colorScheme.onSurface.withOpacity(0.6),
+                                            ),
                                           ),
                                           style: TextStyle(
-                                              fontSize: 16,
-                                              color: Theme.of(scaffoldContext)
-                                                  .colorScheme
-                                                  .onSurface),
-                                          onChanged: (value) =>
-                                              _onPhoneChanged(value, agentProvider),
+                                            fontSize: 16,
+                                            color: theme.colorScheme.onSurface,
+                                          ),
+                                          onChanged: (value) => _onPhoneChanged(value, agentProvider),
                                         ),
+                                      ),
+                                      if (_phoneError != null) ...[
+                                        Padding(
+                                          padding: const EdgeInsets.only(left: 8),
+                                          child: Text(
+                                            _phoneError!,
+                                            style: TextStyle(
+                                              color: theme.colorScheme.error,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                      _buildSelector(
+                                        context: scaffoldContext,
+                                        label: 'Agent',
+                                        value: _selectedAgentId == null
+                                            ? (_agentPhone.isNotEmpty
+                                            ? 'Selected via phone'
+                                            : _selectedDelegationId == null
+                                            ? 'Select a delegation first'
+                                            : 'Select Agent')
+                                            : '${agentProvider.agents.firstWhere((agent) => agent.agentID == _selectedAgentId, orElse: () => Agent(agentID: '', name: 'Unknown', lastname: '', delegationID: '')).name} ${agentProvider.agents.firstWhere((agent) => agent.agentID == _selectedAgentId, orElse: () => Agent(agentID: '', name: '', lastname: 'Unknown', delegationID: '')).lastname}',
+                                        icon: Icons.person_outline,
+                                        onTap: _agentPhone.isNotEmpty || _selectedDelegationId == null
+                                            ? null
+                                            : () => _showAgentDialog(scaffoldContext, agentProvider),
+                                        disabled: _agentPhone.isNotEmpty || _selectedDelegationId == null,
                                       ),
                                     ],
-                                  ),
-                                ),
-                                if (_phoneError != null) ...[
-                                  const CustomSpacer(height: 8),
-                                  Text(
-                                    _phoneError!,
-                                    style: TextStyle(
-                                        color: Theme.of(scaffoldContext).colorScheme.error,
-                                        fontSize: 12),
-                                  ),
-                                ],
-                                const CustomSpacer(height: 12),
-                                GestureDetector(
-                                  onTap: _agentPhone.isNotEmpty
-                                      ? null
-                                      : () => _showLocationDialog(scaffoldContext, 'region'),
-                                  child: Container(
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(scaffoldContext).colorScheme.surface,
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                          color: Theme.of(scaffoldContext)
-                                              .colorScheme
-                                              .onSurface
-                                              .withOpacity(0.2)),
-                                      backgroundBlendMode:
-                                      _agentPhone.isNotEmpty ? BlendMode.saturation : null,
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Icon(
-                                          Icons.location_on,
-                                          color: _agentPhone.isNotEmpty
-                                              ? Theme.of(scaffoldContext)
-                                              .colorScheme
-                                              .onSurface
-                                              .withOpacity(0.6)
-                                              : Theme.of(scaffoldContext).colorScheme.primary,
-                                        ),
-                                        const CustomSpacer(width: 12),
-                                        Expanded(
-                                          child: Text(
-                                            _selectedRegionId == null
-                                                ? 'Select Region'
-                                                : _regions.firstWhere(
-                                                    (r) => r['regionID'] == _selectedRegionId)['name'],
-                                            style: TextStyle(
-                                              color: _agentPhone.isNotEmpty
-                                                  ? Theme.of(scaffoldContext)
-                                                  .colorScheme
-                                                  .onSurface
-                                                  .withOpacity(0.6)
-                                                  : Theme.of(scaffoldContext)
-                                                  .colorScheme
-                                                  .onSurface,
-                                            ),
-                                          ),
-                                        ),
-                                        Icon(
-                                          Icons.arrow_drop_down,
-                                          color: Theme.of(scaffoldContext)
-                                              .colorScheme
-                                              .onSurface
-                                              .withOpacity(0.6),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                const CustomSpacer(height: 12),
-                                GestureDetector(
-                                  onTap: _agentPhone.isNotEmpty || _selectedRegionId == null
-                                      ? null
-                                      : () => _showLocationDialog(scaffoldContext, 'governorate'),
-                                  child: Container(
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(scaffoldContext).colorScheme.surface,
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                          color: Theme.of(scaffoldContext)
-                                              .colorScheme
-                                              .onSurface
-                                              .withOpacity(0.2)),
-                                      backgroundBlendMode: _agentPhone.isNotEmpty ||
-                                          _selectedRegionId == null
-                                          ? BlendMode.saturation
-                                          : null,
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Icon(
-                                          Icons.location_city,
-                                          color: _agentPhone.isNotEmpty || _selectedRegionId == null
-                                              ? Theme.of(scaffoldContext)
-                                              .colorScheme
-                                              .onSurface
-                                              .withOpacity(0.6)
-                                              : Theme.of(scaffoldContext).colorScheme.primary,
-                                        ),
-                                        const CustomSpacer(width: 12),
-                                        Expanded(
-                                          child: Text(
-                                            _selectedGovernorate == null
-                                                ? 'Select Governorate'
-                                                : _selectedGovernorate!['name'],
-                                            style: TextStyle(
-                                              color: _agentPhone.isNotEmpty ||
-                                                  _selectedRegionId == null
-                                                  ? Theme.of(scaffoldContext)
-                                                  .colorScheme
-                                                  .onSurface
-                                                  .withOpacity(0.6)
-                                                  : Theme.of(scaffoldContext)
-                                                  .colorScheme
-                                                  .onSurface,
-                                            ),
-                                          ),
-                                        ),
-                                        Icon(
-                                          Icons.arrow_drop_down,
-                                          color: Theme.of(scaffoldContext)
-                                              .colorScheme
-                                              .onSurface
-                                              .withOpacity(0.6),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                const CustomSpacer(height: 12),
-                                GestureDetector(
-                                  onTap: _agentPhone.isNotEmpty || _selectedGovernorateId == null
-                                      ? null
-                                      : () => _showLocationDialog(scaffoldContext, 'delegation'),
-                                  child: Container(
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(scaffoldContext).colorScheme.surface,
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                          color: Theme.of(scaffoldContext)
-                                              .colorScheme
-                                              .onSurface
-                                              .withOpacity(0.2)),
-                                      backgroundBlendMode: _agentPhone.isNotEmpty ||
-                                          _selectedGovernorateId == null
-                                          ? BlendMode.saturation
-                                          : null,
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Icon(
-                                          Icons.place,
-                                          color: _agentPhone.isNotEmpty ||
-                                              _selectedGovernorateId == null
-                                              ? Theme.of(scaffoldContext)
-                                              .colorScheme
-                                              .onSurface
-                                              .withOpacity(0.6)
-                                              : Theme.of(scaffoldContext).colorScheme.primary,
-                                        ),
-                                        const CustomSpacer(width: 12),
-                                        Expanded(
-                                          child: Text(
-                                            _selectedDelegation == null
-                                                ? 'Select Delegation'
-                                                : _selectedDelegation!['name'],
-                                            style: TextStyle(
-                                              color: _agentPhone.isNotEmpty ||
-                                                  _selectedGovernorateId == null
-                                                  ? Theme.of(scaffoldContext)
-                                                  .colorScheme
-                                                  .onSurface
-                                                  .withOpacity(0.6)
-                                                  : Theme.of(scaffoldContext)
-                                                  .colorScheme
-                                                  .onSurface,
-                                            ),
-                                          ),
-                                        ),
-                                        Icon(
-                                          Icons.arrow_drop_down,
-                                          color: Theme.of(scaffoldContext)
-                                              .colorScheme
-                                              .onSurface
-                                              .withOpacity(0.6),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                const CustomSpacer(height: 12),
-                                GestureDetector(
-                                  onTap: _agentPhone.isNotEmpty || _selectedDelegationId == null
-                                      ? null
-                                      : () => _showAgentDialog(scaffoldContext, agentProvider),
-                                  child: Container(
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(scaffoldContext).colorScheme.surface,
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                          color: Theme.of(scaffoldContext)
-                                              .colorScheme
-                                              .onSurface
-                                              .withOpacity(0.2)),
-                                      backgroundBlendMode: _agentPhone.isNotEmpty ||
-                                          _selectedDelegationId == null
-                                          ? BlendMode.saturation
-                                          : null,
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Icon(
-                                          Icons.person,
-                                          color: _agentPhone.isNotEmpty ||
-                                              _selectedDelegationId == null
-                                              ? Theme.of(scaffoldContext)
-                                              .colorScheme
-                                              .onSurface
-                                              .withOpacity(0.6)
-                                              : Theme.of(scaffoldContext).colorScheme.primary,
-                                        ),
-                                        const CustomSpacer(width: 12),
-                                        Expanded(
-                                          child: Text(
-                                            _selectedAgentId == null
-                                                ? (_agentPhone.isNotEmpty
-                                                ? 'Selected via phone'
-                                                : _selectedDelegationId == null
-                                                ? 'Select a delegation first'
-                                                : 'Select Agent')
-                                                : '${agentProvider.agents.firstWhere((agent) => agent.agentID == _selectedAgentId, orElse: () => Agent(agentID: '', name: 'Unknown', lastname: '', delegationID: '')).name} ${agentProvider.agents.firstWhere((agent) => agent.agentID == _selectedAgentId, orElse: () => Agent(agentID: '', name: '', lastname: 'Unknown', delegationID: '')).lastname}',
-                                            style: TextStyle(
-                                              color: _agentPhone.isNotEmpty ||
-                                                  _selectedDelegationId == null
-                                                  ? Theme.of(scaffoldContext)
-                                                  .colorScheme
-                                                  .onSurface
-                                                  .withOpacity(0.6)
-                                                  : Theme.of(scaffoldContext)
-                                                  .colorScheme
-                                                  .onSurface,
-                                            ),
-                                          ),
-                                        ),
-                                        Icon(
-                                          Icons.arrow_drop_down,
-                                          color: Theme.of(scaffoldContext)
-                                              .colorScheme
-                                              .onSurface
-                                              .withOpacity(0.6),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
+                                  ],
+                                );
+                              },
+                            ),
+                          ],
                         ),
-                      ),
-                      const CustomSpacer(height: 16),
-                      _buildSectionCard(
-                        title: 'Checklists',
-                        child: Consumer<ChecklistProvider>(
-                          builder: (context, checklistProvider, child) {
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                GestureDetector(
-                                  onTap: () => _showChecklistDialog(scaffoldContext, checklistProvider),
-                                  child: Container(
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(scaffoldContext).colorScheme.surface,
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                          color: Theme.of(scaffoldContext)
-                                              .colorScheme
-                                              .onSurface
-                                              .withOpacity(0.2)),
+                        const CustomSpacer(height: 8),
+                        _buildSectionCard(
+                          scaffoldContext,
+                          title: 'Checklists',
+                          children: [
+                            Consumer<ChecklistProvider>(
+                              builder: (context, checklistProvider, child) {
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _buildSelector(
+                                      context: scaffoldContext,
+                                      label: 'Checklists',
+                                      value: _selectedChecklists.isEmpty
+                                          ? 'Select Checklists'
+                                          : '${_selectedChecklists.length} selected',
+                                      icon: Icons.checklist,
+                                      onTap: () => _showChecklistDialog(scaffoldContext, checklistProvider),
                                     ),
-                                    child: Row(
-                                      children: [
-                                        Icon(Icons.checklist,
-                                            color: Theme.of(scaffoldContext).colorScheme.primary),
-                                        const CustomSpacer(width: 12),
-                                        Expanded(
-                                          child: Text(
-                                            _selectedChecklists.isEmpty
-                                                ? 'Select Checklists'
-                                                : '${_selectedChecklists.length} selected',
-                                            style: Theme.of(scaffoldContext).textTheme.bodyMedium,
+                                    if (_selectedChecklists.isNotEmpty) ...[
+                                      const CustomSpacer(height: 4),
+                                      Wrap(
+                                        spacing: 8,
+                                        runSpacing: 4,
+                                        children: _selectedChecklists
+                                            .map(
+                                              (checklist) => Chip(
+                                            label: Text(
+                                              checklist.item,
+                                              style: theme.textTheme.bodyMedium?.copyWith(
+                                                color: theme.colorScheme.onSurface.withOpacity(0.9),
+                                              ),
+                                            ),
+                                            deleteIcon: Icon(
+                                              Icons.close,
+                                              size: 16,
+                                              color: theme.colorScheme.onSurface.withOpacity(0.6),
+                                            ),
+                                            onDeleted: () => setState(() => _selectedChecklists.remove(checklist)),
+                                            backgroundColor: theme.colorScheme.primary.withOpacity(0.15),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(4),
+                                              side: BorderSide(
+                                                color: theme.colorScheme.primary.withOpacity(0.6),
+                                                width: 1,
+                                              ),
+                                            ),
                                           ),
-                                        ),
-                                        Icon(
-                                          Icons.arrow_drop_down,
-                                          color: Theme.of(scaffoldContext)
-                                              .colorScheme
-                                              .onSurface
-                                              .withOpacity(0.6),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                if (_selectedChecklists.isNotEmpty) ...[
-                                  const CustomSpacer(height: 8),
-                                  Wrap(
-                                    spacing: 8,
-                                    runSpacing: 8,
-                                    children: _selectedChecklists
-                                        .map(
-                                          (checklist) => Chip(
-                                        label: Text(checklist.item),
-                                        deleteIcon: const Icon(Icons.close, size: 18),
-                                        onDeleted: () => setState(
-                                                () => _selectedChecklists.remove(checklist)),
-                                        backgroundColor: Theme.of(scaffoldContext)
-                                            .colorScheme
-                                            .primary
-                                            .withOpacity(0.1),
-                                        labelStyle: TextStyle(
-                                            color:
-                                            Theme.of(scaffoldContext).colorScheme.primary),
+                                        )
+                                            .toList(),
                                       ),
-                                    )
-                                        .toList(),
-                                  ),
-                                ],
-                              ],
-                            );
-                          },
+                                    ],
+                                  ],
+                                );
+                              },
+                            ),
+                          ],
                         ),
-                      ),
-                      const CustomSpacer(height: 16),
-                      _buildSectionCard(
-                        title: 'Reasons',
-                        child: Consumer<ReasonProvider>(
-                          builder: (context, reasonProvider, child) {
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                GestureDetector(
-                                  onTap: () => _showReasonDialog(scaffoldContext, reasonProvider),
-                                  child: Container(
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(scaffoldContext).colorScheme.surface,
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                          color: Theme.of(scaffoldContext)
-                                              .colorScheme
-                                              .onSurface
-                                              .withOpacity(0.2)),
+                        const CustomSpacer(height: 8),
+                        _buildSectionCard(
+                          scaffoldContext,
+                          title: 'Reasons',
+                          children: [
+                            Consumer<ReasonProvider>(
+                              builder: (context, reasonProvider, child) {
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _buildSelector(
+                                      context: scaffoldContext,
+                                      label: 'Reasons',
+                                      value: _selectedReasons.isEmpty
+                                          ? 'Select Reasons'
+                                          : '${_selectedReasons.length} selected',
+                                      icon: Icons.list_alt_outlined,
+                                      onTap: () => _showReasonDialog(scaffoldContext, reasonProvider),
                                     ),
-                                    child: Row(
-                                      children: [
-                                        Icon(Icons.list_alt,
-                                            color: Theme.of(scaffoldContext).colorScheme.primary),
-                                        const CustomSpacer(width: 12),
-                                        Expanded(
-                                          child: Text(
-                                            _selectedReasons.isEmpty
-                                                ? 'Select Reasons'
-                                                : '${_selectedReasons.length} selected',
-                                            style: Theme.of(scaffoldContext).textTheme.bodyMedium,
+                                    if (_selectedReasons.isNotEmpty) ...[
+                                      const CustomSpacer(height: 4),
+                                      Wrap(
+                                        spacing: 8,
+                                        runSpacing: 4,
+                                        children: _selectedReasons
+                                            .map(
+                                              (reason) => Chip(
+                                            label: Text(
+                                              reason.item,
+                                              style: theme.textTheme.bodyMedium?.copyWith(
+                                                color: theme.colorScheme.onSurface.withOpacity(0.9),
+                                              ),
+                                            ),
+                                            deleteIcon: Icon(
+                                              Icons.close,
+                                              size: 16,
+                                              color: theme.colorScheme.onSurface.withOpacity(0.6),
+                                            ),
+                                            onDeleted: () => setState(() => _selectedReasons.remove(reason)),
+                                            backgroundColor: theme.colorScheme.primary.withOpacity(0.15),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(4),
+                                              side: BorderSide(
+                                                color: theme.colorScheme.primary.withOpacity(0.6),
+                                                width: 1,
+                                              ),
+                                            ),
                                           ),
-                                        ),
-                                        Icon(
-                                          Icons.arrow_drop_down,
-                                          color: Theme.of(scaffoldContext)
-                                              .colorScheme
-                                              .onSurface
-                                              .withOpacity(0.6),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                if (_selectedReasons.isNotEmpty) ...[
-                                  const CustomSpacer(height: 8),
-                                  Wrap(
-                                    spacing: 8,
-                                    runSpacing: 8,
-                                    children: _selectedReasons
-                                        .map(
-                                          (reason) => Chip(
-                                        label: Text(reason.item),
-                                        deleteIcon: const Icon(Icons.close, size: 18),
-                                        onDeleted: () =>
-                                            setState(() => _selectedReasons.remove(reason)),
-                                        backgroundColor: Theme.of(scaffoldContext)
-                                            .colorScheme
-                                            .primary
-                                            .withOpacity(0.1),
-                                        labelStyle: TextStyle(
-                                            color:
-                                            Theme.of(scaffoldContext).colorScheme.primary),
+                                        )
+                                            .toList(),
                                       ),
-                                    )
-                                        .toList(),
-                                  ),
-                                ],
-                              ],
-                            );
-                          },
+                                    ],
+                                  ],
+                                );
+                              },
+                            ),
+                          ],
                         ),
-                      ),
-                      const CustomSpacer(height: 24),
-                      CustomButton(
-                        label: 'Create Visit',
-                        onPressed: _submitVisit,
-                        isLoading: _isLoading,
-                      ),
-                    ],
+                        const CustomSpacer(height: 16),
+                        CustomButton(
+                          label: 'Create Visit',
+                          onPressed: _submitVisit,
+                          backgroundColor: theme.colorScheme.primary.withOpacity(0.8),
+                          textColor: Colors.white,
+                          isOutlined: true,
+                          isLoading: _isLoading,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
+
+                  ],
+                ),
+
           );
         },
       ),
     );
   }
 
-
-  Widget _buildSectionCard({required String title, required Widget child}) {
+  Widget _buildSectionCard(BuildContext context, {required String title, required List<Widget> children}) {
+    final theme = Theme.of(context);
     return Container(
+      margin: const EdgeInsets.symmetric(vertical: 4),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
+        border: Border.all(
+          color: theme.colorScheme.primary.withOpacity(0.7),
+          width: 1.5,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
             child: Text(
               title,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.primary,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: theme.colorScheme.primary,
               ),
             ),
           ),
+          const Divider(height: 1, thickness: 1, color: Colors.grey),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: child,
+            padding: const EdgeInsets.all(12),
+            child: Column(children: children),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildTile({required IconData icon, required String title, required VoidCallback onTap}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: Theme.of(context).colorScheme.primary),
-            const CustomSpacer(width: 12),
-            Expanded(child: Text(title, style: Theme.of(context).textTheme.bodyMedium)),
-            Icon(Icons.arrow_drop_down, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
-          ],
+  Widget _buildSelector({
+    required BuildContext context,
+    required String label,
+    required String value,
+    required IconData icon,
+    VoidCallback? onTap,
+    bool disabled = false,
+  }) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: InkWell(
+        onTap: disabled ? null : onTap,
+        borderRadius: BorderRadius.circular(8),
+        splashColor: theme.colorScheme.primary.withOpacity(0.2),
+        highlightColor: theme.colorScheme.primary.withOpacity(0.1),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: disabled
+                  ? theme.colorScheme.onSurface.withOpacity(0.3)
+                  : theme.colorScheme.primary.withOpacity(0.7),
+              width: 1.5,
+            ),
+            borderRadius: BorderRadius.circular(8),
+            color: disabled
+                ? theme.colorScheme.background.withOpacity(0.5)
+                : theme.colorScheme.background,
+          ),
+          child: Row(
+            children: [
+              Icon(
+                icon,
+                color: disabled
+                    ? theme.colorScheme.onSurface.withOpacity(0.5)
+                    : theme.colorScheme.primary,
+                size: 18,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: disabled
+                            ? theme.colorScheme.onSurface.withOpacity(0.5)
+                            : theme.colorScheme.onSurface.withOpacity(0.7),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      value,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: disabled
+                            ? theme.colorScheme.onSurface.withOpacity(0.5)
+                            : theme.colorScheme.onSurface,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.arrow_drop_down,
+                color: disabled
+                    ? theme.colorScheme.onSurface.withOpacity(0.5)
+                    : theme.colorScheme.primary,
+                size: 24,
+              ),
+            ],
+          ),
         ),
       ),
     );

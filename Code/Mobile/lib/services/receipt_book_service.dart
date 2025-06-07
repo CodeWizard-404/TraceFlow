@@ -116,7 +116,10 @@ class ReceiptBookService {
   Future<List<ReceiptBook>> getReceiptBooksByHolder(String holderID, String holderType) async {
     if (kDebugMode) print('ReceiptBookService: Fetching receipt books for holder: $holderID ($holderType)');
     try {
-      final headers = CookieManager.getHeaders();
+      final headers = {
+        ...CookieManager.getHeaders(),
+        'Content-Type': 'application/json',
+      };
       final response = await http.post(
         Uri.parse('$baseUrl/receipt-books/holder/$holderID'),
         headers: headers,
@@ -126,6 +129,7 @@ class ReceiptBookService {
       );
 
       if (kDebugMode) print('Response status: ${response.statusCode}');
+      if (kDebugMode) print('Response body: ${response.body}');
       CookieManager.extractCookies(response);
 
       if (response.statusCode == 200) {
@@ -151,7 +155,10 @@ class ReceiptBookService {
   }) async {
     if (kDebugMode) print('ReceiptBookService: Transferring receipt books: $bookIDs to $recipientID ($recipientType)');
     try {
-      final headers = CookieManager.getHeaders();
+      final headers = {
+        ...CookieManager.getHeaders(),
+        'Content-Type': 'application/json',
+      };
       final response = await http.post(
         Uri.parse('$baseUrl/receipt-books/transfer'),
         headers: headers,
@@ -186,7 +193,10 @@ class ReceiptBookService {
   }) async {
     if (kDebugMode) print('ReceiptBookService: Validating transfer for books: $bookIDs to $recipientID ($recipientType)');
     try {
-      final headers = CookieManager.getHeaders();
+      final headers = {
+        ...CookieManager.getHeaders(),
+        'Content-Type': 'application/json',
+      };
       final response = await http.post(
         Uri.parse('$baseUrl/receipt-books/validate-transfer'),
         headers: headers,

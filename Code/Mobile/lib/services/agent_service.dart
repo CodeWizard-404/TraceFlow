@@ -153,22 +153,39 @@ class AgentService {
 
   Future<Agent?> fetchAgentByPhone(String phone) async {
     try {
-      final response = await AuthService.makeAuthenticatedRequest(
-        request: () async {
-          final url = Uri.parse('$baseUrl/agents/phone/$phone');
-          final response = await http.get(
-            url,
-            headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
-          );
-          CookieManager.extractCookies(response);
-          if (kDebugMode) print('AgentService: Fetching agent by phone: $phone');
-          return response;
-        },
-      );
+      Future<http.Response> makeRequest() async {
+        final url = Uri.parse('$baseUrl/agents/phone/$phone');
+        final response = await http.get(
+          url,
+          headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
+        );
+        CookieManager.extractCookies(response);
+        if (kDebugMode) print('AgentService: Fetching agent by phone: $phone');
+        return response;
+      }
+
+      var response = await makeRequest();
+      if (response.statusCode == 401) {
+        final refreshToken = CookieManager.cookies['refreshToken'];
+        if (refreshToken == null || refreshToken.isEmpty) {
+          await CookieManager.clearCookies();
+          throw Exception('Session expired. Please log in again.');
+        }
+        try {
+          final refreshResult = await AuthService.refreshToken(refreshToken);
+          if (kDebugMode) print('Refresh result: $refreshResult');
+          response = await makeRequest(); // Retry the request
+        } catch (e) {
+          await CookieManager.clearCookies();
+          throw Exception('Session expired. Please log in again.');
+        }
+      }
       if (response.statusCode == 200) {
-        final decodedResponse = jsonDecode(response.body);
-        if (kDebugMode) print('Agent fetched: ${decodedResponse['agentID']}');
-        return Agent.fromJson(decodedResponse['agent'] ?? decodedResponse);
+        final decoded = json.decode(response.body);
+        if (kDebugMode) print('Agent fetched: ${decoded['agentID']}');
+        return Agent.fromJson(decoded['agent'] ?? decoded);
+      } else if (response.statusCode == 404) {
+        return null; // Agent not found
       } else {
         throw Exception('Failed to fetch agent by phone: ${response.statusCode}');
       }

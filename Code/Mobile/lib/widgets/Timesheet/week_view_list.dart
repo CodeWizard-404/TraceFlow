@@ -22,14 +22,12 @@ class WeekViewList extends StatelessWidget {
     final theme = Theme.of(context);
     final weekDays = _getWeekDays(date);
     final authProvider = Provider.of<AuthProvider>(context);
-    final isSupervisor = authProvider.user?.roles?.contains('Supervisor') ?? false;
 
     return Consumer<TimesheetProvider>(
       builder: (context, provider, child) {
         if (provider.timesheets.isEmpty) return const EmptyState(text: 'No timesheets available');
         return Column(
           children: [
-            if (isSupervisor)
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
