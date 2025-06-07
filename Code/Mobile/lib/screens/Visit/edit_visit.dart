@@ -65,10 +65,12 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
   List<File> _newPhotos = [];
 
   @override
+  @override
   void initState() {
     super.initState();
     _visit = widget.visit;
-    _selectedDate = _visit.date;
+    final now = DateTime.now();
+    _selectedDate = _visit.date.isBefore(now) ? now : _visit.date;
     _selectedTime = TimeOfDay.fromDateTime(DateFormat('HH:mm').parse(_visit.time));
     _selectedAgentId = _visit.agentID;
     _selectedChecklists = List.from(_visit.checklists ?? []);
@@ -113,7 +115,7 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
               _isRecruitmentVisit != (_visit.agentID == null) ||
               _photosToRemove.isNotEmpty ||
               _newPhotos.isNotEmpty ||
-              _visitChecklists.any(
+              _selectedChecklists.any( // Replaced _visitChecklists with _selectedChecklists
                     (c) =>
                 c.visitChecklist?.checked !=
                     (_visit.checklists
@@ -1604,7 +1606,7 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
                         const CustomSpacer(width: 8),
                         CustomButton(
                           label: 'Save Changes',
-                          onPressed: _hasChanges ? _submitVisit : null,
+                          onPressed: _hasChanges ? _submitVisit : () {},
                           backgroundColor: _hasChanges ? theme.colorScheme.primary.withOpacity(0.8) : theme.colorScheme.onSurface.withOpacity(0.3),
                           textColor: Colors.white,
                           isOutlined: true,
