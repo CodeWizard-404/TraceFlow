@@ -4,6 +4,9 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
+import 'package:mime/mime.dart';
+import 'package:http_parser/http_parser.dart';
+import '../../models/user.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/user_provider.dart';
 import '../../widgets/appbar/app_bar.dart';
@@ -19,8 +22,6 @@ import '../../widgets/commen/divider.dart';
 import '../../widgets/commen/list_tile.dart';
 import 'login_screen.dart';
 import 'package:flutter/foundation.dart';
-import 'package:mime/mime.dart'; // Add this package for MIME type detection
-import 'package:http_parser/http_parser.dart'; // For MediaType
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -38,12 +39,8 @@ class ProfileScreenState extends State<ProfileScreen>
   late TextEditingController _phoneController;
   late TextEditingController _newPasswordController;
   late TextEditingController _confirmPasswordController;
-  String? _profilePicBase64;
   String? _editingField;
   bool _hasChanges = false;
-  bool _isLoading = true;
-  String? _errorMessage;
-  String? _updateMessage;
   Map<String, String> _formErrors = {};
 
   @override
@@ -58,7 +55,7 @@ class ProfileScreenState extends State<ProfileScreen>
     _confirmPasswordController = TextEditingController();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _fetchProfile();
+      if (mounted) _initializeProfile();
     });
   }
 
@@ -74,76 +71,83 @@ class ProfileScreenState extends State<ProfileScreen>
     super.dispose();
   }
 
+  Future<void> _initializeProfile() async {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    if (userProvider.currentUser == null && !userProvider.isLoading) {
+      await _fetchProfile();
+    } else {
+      _updateControllers(userProvider.currentUser);
+    }
+  }
+
   Future<void> _fetchProfile() async {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    if (kDebugMode) print('Fetching profile');
-    setState(() => _isLoading = true);
     try {
       await userProvider.fetchUserProfile();
-      final user = userProvider.currentUser;
-      if (user != null) {
-        setState(() {
-          _firstnameController.text = user.firstName ?? '';
-          _lastnameController.text = user.lastName ?? '';
-          _emailController.text = user.email ?? '';
-          _phoneController.text = user.phone ?? '';
-          _profilePicBase64 = user.pfp;
-          _isLoading = false;
-        });
-        if (kDebugMode) print('Profile fetched: ${user.userID}');
+      if (mounted) {
+        _updateControllers(userProvider.currentUser);
       }
     } catch (e) {
-      setState(() {
-        _errorMessage = 'Failed to load profile: $e';
-        _isLoading = false;
-      });
-      if (kDebugMode) print(_errorMessage);
-      if (_errorMessage!.contains('Invalid or expired token') ||
-          _errorMessage!.contains('401')) {
-        await authProvider.logout();
-        _redirectToLogin();
+      if (mounted) {
+        setState(() {
+          if (userProvider.errorMessage != null) {
+            _showSnackBar(userProvider.errorMessage!, isError: true);
+          }
+        });
+        if (userProvider.errorMessage?.contains('401') ?? false) {
+          await authProvider.logout();
+          _redirectToLogin();
+        }
       }
+    }
+  }
+
+  void _updateControllers(User? user) {
+    if (user != null && mounted) {
+      setState(() {
+        _firstnameController.text = user.firstName ?? '';
+        _lastnameController.text = user.lastName ?? '';
+        _emailController.text = user.email;
+        _phoneController.text = user.phone ?? '';
+      });
     }
   }
 
   Future<void> _updateProfile(String field) async {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    if (kDebugMode) print('Updating profile field: $field');
     final updates = {
       field:
-          field == 'phone'
-              ? _phoneController.text.replaceAll(RegExp(r'[^\d]'), '')
-              : (field == 'firstname'
-                  ? _firstnameController.text
-                  : field == 'lastname'
-                  ? _lastnameController.text
-                  : _emailController.text),
+      field == 'phone'
+          ? _phoneController.text.replaceAll(RegExp(r'[^\d]'), '')
+          : (field == 'firstname'
+          ? _firstnameController.text
+          : field == 'lastname'
+          ? _lastnameController.text
+          : _emailController.text),
     };
 
-    setState(() => _isLoading = true);
     try {
       await userProvider.updateProfile(updates);
-      setState(() {
-        _isLoading = false;
-        _updateMessage = 'Profile updated successfully';
-        _editingField = null;
-        _hasChanges = false;
-        _formErrors.clear();
-      });
-      if (kDebugMode) print('Profile updated successfully');
-      await _fetchProfile();
+      if (mounted) {
+        setState(() {
+          _editingField = null;
+          _hasChanges = false;
+          _formErrors.clear();
+          _showSnackBar('Profile updated successfully');
+        });
+        await _fetchProfile();
+      }
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _updateMessage = 'Failed to update profile: $e';
-      });
-      if (kDebugMode) print(_updateMessage);
-      if (_updateMessage!.contains('Invalid or expired token') ||
-          _updateMessage!.contains('401')) {
-        await authProvider.logout();
-        _redirectToLogin();
+      if (mounted) {
+        setState(() {
+          _showSnackBar('Failed to update profile: $e', isError: true);
+        });
+        if (e.toString().contains('401')) {
+          await authProvider.logout();
+          _redirectToLogin();
+        }
       }
     }
   }
@@ -164,31 +168,26 @@ class ProfileScreenState extends State<ProfileScreen>
         filename: 'profile.jpg',
         contentType: MediaType.parse(mimeType),
       );
-      final updates = {'PFP': multipartFile};
       final userProvider = Provider.of<UserProvider>(context, listen: false);
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      if (kDebugMode) print('Updating profile picture');
 
-      setState(() => _isLoading = true);
       try {
-        await userProvider.updateProfile(updates);
-        setState(() {
-          _profilePicBase64 = userProvider.currentUser?.pfp;
-          _isLoading = false;
-          _updateMessage = 'Profile picture updated successfully';
-        });
-        if (kDebugMode) print('Profile picture updated');
-        await _fetchProfile();
+        await userProvider.updateProfile({}, pfpFile: multipartFile);
+        if (mounted) {
+          setState(() {
+            _showSnackBar('Profile picture updated successfully');
+          });
+          await _fetchProfile();
+        }
       } catch (e) {
-        setState(() {
-          _isLoading = false;
-          _updateMessage = 'Failed to update profile picture: $e';
-        });
-        if (kDebugMode) print(_updateMessage);
-        if (_updateMessage!.contains('Invalid or expired token') ||
-            _updateMessage!.contains('401')) {
-          await authProvider.logout();
-          _redirectToLogin();
+        if (mounted) {
+          setState(() {
+            _showSnackBar('Failed to update profile picture: $e', isError: true);
+          });
+          if (e.toString().contains('401')) {
+            await authProvider.logout();
+            _redirectToLogin();
+          }
         }
       }
     }
@@ -198,36 +197,32 @@ class ProfileScreenState extends State<ProfileScreen>
     final newPassword = _newPasswordController.text;
     final confirmPassword = _confirmPasswordController.text;
     if (newPassword != confirmPassword) {
-      setState(() => _updateMessage = 'Passwords do not match');
-      if (kDebugMode) print(_updateMessage);
+      setState(() => _showSnackBar('Passwords do not match', isError: true));
       return;
     }
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final updates = {'password': newPassword};
-    if (kDebugMode) print('Updating password');
 
-    setState(() => _isLoading = true);
     try {
       await userProvider.updateProfile(updates);
-      setState(() {
-        _newPasswordController.clear();
-        _confirmPasswordController.clear();
-        _isLoading = false;
-        _updateMessage = 'Password updated successfully';
-      });
-      if (kDebugMode) print('Password updated');
-      await _fetchProfile();
+      if (mounted) {
+        setState(() {
+          _newPasswordController.clear();
+          _confirmPasswordController.clear();
+          _showSnackBar('Password updated successfully');
+        });
+        await _fetchProfile();
+      }
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _updateMessage = 'Failed to update password: $e';
-      });
-      if (kDebugMode) print(_updateMessage);
-      if (_updateMessage!.contains('Invalid or expired token') ||
-          _updateMessage!.contains('401')) {
-        await authProvider.logout();
-        _redirectToLogin();
+      if (mounted) {
+        setState(() {
+          _showSnackBar('Failed to update password: $e', isError: true);
+        });
+        if (e.toString().contains('401')) {
+          await authProvider.logout();
+          _redirectToLogin();
+        }
       }
     }
   }
@@ -238,13 +233,26 @@ class ProfileScreenState extends State<ProfileScreen>
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (_) => const LoginScreen()),
-          (route) => false,
+              (route) => false,
         );
       }
     });
   }
 
-  // Validation Functions (unchanged)
+  void _showSnackBar(String message, {bool isError = false}) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        CustomSnackBar.show(
+          context: context,
+          message: message,
+          backgroundColor: isError
+              ? Theme.of(context).colorScheme.error
+              : Theme.of(context).colorScheme.primary,
+        );
+      }
+    });
+  }
+
   String _validateName(String value, String field) {
     final trimmed = value.trim();
     if (trimmed.isEmpty) return '$field is required';
@@ -292,7 +300,6 @@ class ProfileScreenState extends State<ProfileScreen>
     return '';
   }
 
-  // Formatting Functions (unchanged)
   String _formatPhoneDisplay(String rawValue) {
     final digits = rawValue.replaceAll(RegExp(r'[^\d]'), '');
     String formatted = '';
@@ -311,35 +318,34 @@ class ProfileScreenState extends State<ProfileScreen>
     setState(() {
       _editingField = field;
       _formErrors.clear();
-      _updateMessage = null;
     });
   }
 
   void _checkForChanges(String field, String value) {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     final originalValue =
-        field == 'firstname'
-            ? userProvider.currentUser?.firstName
-            : field == 'lastname'
-            ? userProvider.currentUser?.lastName
-            : field == 'email'
-            ? userProvider.currentUser?.email
-            : field == 'phone'
-            ? userProvider.currentUser?.phone
-            : null;
+    field == 'firstname'
+        ? userProvider.currentUser?.firstName
+        : field == 'lastname'
+        ? userProvider.currentUser?.lastName
+        : field == 'email'
+        ? userProvider.currentUser?.email
+        : field == 'phone'
+        ? userProvider.currentUser?.phone
+        : null;
     if (value != originalValue) {
       setState(() => _hasChanges = true);
       _formErrors[field] =
-          field == 'firstname' || field == 'lastname'
-              ? _validateName(
-                value,
-                field == 'firstname' ? 'First Name' : 'Last Name',
-              )
-              : field == 'email'
-              ? _validateEmail(value)
-              : field == 'phone'
-              ? _validatePhone(value)
-              : '';
+      field == 'firstname' || field == 'lastname'
+          ? _validateName(
+        value,
+        field == 'firstname' ? 'First Name' : 'Last Name',
+      )
+          : field == 'email'
+          ? _validateEmail(value)
+          : field == 'phone'
+          ? _validatePhone(value)
+          : '';
     } else {
       setState(() => _hasChanges = false);
     }
@@ -363,47 +369,34 @@ class ProfileScreenState extends State<ProfileScreen>
   }
 
   Future<void> _handleOutsideTap() async {
-    if (_editingField == null) return; // No edit mode active
+    if (_editingField == null) return;
 
     if (!_hasChanges) {
-      // No changes, simply close edit mode
       setState(() {
         _editingField = null;
       });
     } else {
-      // Changes detected, show confirmation dialog
       final shouldSave = await showDialog<bool>(
         context: context,
-        builder:
-            (context) => AlertDialog(
-              title: const Text('Save Changes?'),
-              content: const Text(
-                'You have unsaved changes. Would you like to save them?',
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context, false), // Cancel
-                  child: const Text('Cancel'),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.pop(context, true), // Save
-                  child: const Text('Save'),
-                ),
-              ],
+        builder: (context) => AlertDialog(
+          title: const Text('Save Changes?'),
+          content: const Text('You have unsaved changes. Would you like to save them?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
             ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Save'),
+            ),
+          ],
+        ),
       );
 
-      if (shouldSave == true) {
-        // Save changes and refresh
-        if (_formErrors[_editingField]?.isEmpty ?? true) {
-          await _updateProfile(_editingField!);
-        } else {
-          setState(() {
-            _updateMessage = 'Cannot save due to validation errors';
-          });
-        }
+      if (shouldSave == true && (_formErrors[_editingField]?.isEmpty ?? true)) {
+        await _updateProfile(_editingField!);
       } else {
-        // Cancel changes and refresh
         _resetField(_editingField!);
         await _fetchProfile();
       }
@@ -415,36 +408,7 @@ class ProfileScreenState extends State<ProfileScreen>
     final theme = Theme.of(context);
     final userProvider = Provider.of<UserProvider>(context);
 
-    if (_updateMessage != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          CustomSnackBar.show(
-            context: context,
-            message: _updateMessage!,
-            backgroundColor:
-                _updateMessage!.contains('successfully')
-                    ? theme.colorScheme.primary
-                    : theme.colorScheme.error,
-          );
-          setState(() => _updateMessage = null);
-        }
-      });
-    }
-
-    if (_errorMessage != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          CustomSnackBar.show(
-            context: context,
-            message: _errorMessage!,
-            backgroundColor: theme.colorScheme.error,
-          );
-          setState(() => _errorMessage = null);
-        }
-      });
-    }
-
-    if (_isLoading) {
+    if (userProvider.isLoading) {
       return Scaffold(
         body: Center(
           child: CircularProgressIndicator(color: theme.colorScheme.primary),
@@ -456,7 +420,7 @@ class ProfileScreenState extends State<ProfileScreen>
       return Scaffold(
         body: Center(
           child: Text(
-            'Failed to load profile.',
+            userProvider.errorMessage ?? 'Failed to load profile.',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.error,
             ),
@@ -468,10 +432,10 @@ class ProfileScreenState extends State<ProfileScreen>
     return Scaffold(
       drawer: const AppSidebar(),
       body: RefreshIndicator(
-        onRefresh: _fetchProfile, // Pull-to-refresh triggers profile fetch
+        onRefresh: _fetchProfile,
         color: theme.colorScheme.primary,
         child: GestureDetector(
-          onTap: _handleOutsideTap, // Handle tap outside edit field
+          onTap: _handleOutsideTap,
           child: CustomScrollView(
             slivers: [
               SliverToBoxAdapter(
@@ -507,55 +471,47 @@ class ProfileScreenState extends State<ProfileScreen>
             alignment: Alignment.center,
             children: [
               GestureDetector(
-                onTap:
-                    _profilePicBase64 != null
-                        ? () {
-                          // Show full-screen image preview
-                          showDialog(
-                            context: context,
-                            builder:
-                                (context) => Dialog(
-                                  backgroundColor: Colors.transparent,
-                                  insetPadding: const EdgeInsets.all(0),
-                                  child: GestureDetector(
-                                    onTap:
-                                        () => Navigator.pop(
-                                          context,
-                                        ), // Close on tap
-                                    child: SizedBox(
-                                      width: double.infinity,
-                                      height: double.infinity,
-                                      child: InteractiveViewer(
-                                        panEnabled: true,
-                                        scaleEnabled: true,
-                                        minScale: 0.5,
-                                        maxScale: 4.0,
-                                        child: Image.memory(
-                                          base64Decode(_profilePicBase64!),
-                                          fit: BoxFit.contain,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                          );
-                        }
-                        : null, // Do nothing if no profile picture
+                onTap: userProvider.currentUser?.pfp != null
+                    ? () {
+                  showDialog(
+                    context: context,
+                    builder: (context) => Dialog(
+                      backgroundColor: Colors.transparent,
+                      insetPadding: const EdgeInsets.all(0),
+                      child: GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: SizedBox(
+                          width: double.infinity,
+                          height: double.infinity,
+                          child: InteractiveViewer(
+                            panEnabled: true,
+                            scaleEnabled: true,
+                            minScale: 0.5,
+                            maxScale: 4.0,
+                            child: Image.memory(
+                              base64Decode(userProvider.currentUser!.pfp!),
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }
+                    : null,
                 child: CircleAvatar(
                   radius: 50,
-                  backgroundImage:
-                      _profilePicBase64 != null
-                          ? MemoryImage(base64Decode(_profilePicBase64!))
-                          : null,
+                  backgroundImage: userProvider.currentUser?.pfp != null
+                      ? MemoryImage(base64Decode(userProvider.currentUser!.pfp!))
+                      : null,
                   backgroundColor: theme.colorScheme.surface,
-                  child:
-                      _profilePicBase64 == null
-                          ? Icon(
-                            Icons.person,
-                            size: 50,
-                            color: theme.colorScheme.onSurface.withOpacity(0.6),
-                          )
-                          : null,
+                  child: userProvider.currentUser?.pfp == null
+                      ? Icon(
+                    Icons.person,
+                    size: 50,
+                    color: theme.colorScheme.onSurface.withOpacity(0.6),
+                  )
+                      : null,
                 ),
               ),
               Positioned(
@@ -581,7 +537,7 @@ class ProfileScreenState extends State<ProfileScreen>
           ),
           const CustomSpacer(height: 12),
           Text(
-            '${userProvider.currentUser!.firstName} ${userProvider.currentUser!.lastName}',
+            '${userProvider.currentUser!.firstName ?? ''} ${userProvider.currentUser!.lastName ?? ''}',
             style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.bold,
             ),
@@ -623,8 +579,7 @@ class ProfileScreenState extends State<ProfileScreen>
 
   Widget _buildInfoTab(ThemeData theme, UserProvider userProvider) {
     return SingleChildScrollView(
-      physics:
-          const AlwaysScrollableScrollPhysics(), // Ensure scrollable for RefreshIndicator
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
       child: CustomCard(
         title: 'Profile Information',
@@ -637,9 +592,7 @@ class ProfileScreenState extends State<ProfileScreen>
               field: 'firstname',
               controller: _firstnameController,
               displayValue:
-                  _firstnameController.text.isEmpty
-                      ? 'Not set'
-                      : _firstnameController.text,
+              _firstnameController.text.isEmpty ? 'Not set' : _firstnameController.text,
               icon: Icons.person_outline,
             ),
             const CustomDivider(thickness: 0.5),
@@ -648,9 +601,7 @@ class ProfileScreenState extends State<ProfileScreen>
               field: 'lastname',
               controller: _lastnameController,
               displayValue:
-                  _lastnameController.text.isEmpty
-                      ? 'Not set'
-                      : _lastnameController.text,
+              _lastnameController.text.isEmpty ? 'Not set' : _lastnameController.text,
               icon: Icons.person_outline,
             ),
             const CustomDivider(thickness: 0.5),
@@ -658,10 +609,7 @@ class ProfileScreenState extends State<ProfileScreen>
               label: 'Email',
               field: 'email',
               controller: _emailController,
-              displayValue:
-                  _emailController.text.isEmpty
-                      ? 'Not set'
-                      : _emailController.text,
+              displayValue: _emailController.text.isEmpty ? 'Not set' : _emailController.text,
               icon: Icons.email_outlined,
               keyboardType: TextInputType.emailAddress,
             ),
@@ -670,18 +618,13 @@ class ProfileScreenState extends State<ProfileScreen>
               label: 'Phone',
               field: 'phone',
               controller: _phoneController,
-              displayValue:
-                  _phoneController.text.isEmpty
-                      ? 'Not set'
-                      : '+216 ${_formatPhoneDisplay(_phoneController.text)}',
+              displayValue: _phoneController.text.isEmpty
+                  ? 'Not set'
+                  : '+216 ${_formatPhoneDisplay(_phoneController.text)}',
               icon: Icons.phone_outlined,
               keyboardType: TextInputType.phone,
               maxLength: 8,
-              onChanged:
-                  (value) => _checkForChanges(
-                    'phone',
-                    value.replaceAll(RegExp(r'[^\d]'), ''),
-                  ),
+              onChanged: (value) => _checkForChanges('phone', value.replaceAll(RegExp(r'[^\d]'), '')),
               inputFormat: (value) => _formatPhoneDisplay(value),
             ),
             if (_hasChanges) ...[
@@ -698,11 +641,10 @@ class ProfileScreenState extends State<ProfileScreen>
                   CustomButton(
                     label: 'Save',
                     icon: Icons.save,
-                    onPressed:
-                        _formErrors[_editingField]?.isEmpty ?? true
-                            ? () => _updateProfile(_editingField!)
-                            : () {},
-                    isLoading: _isLoading,
+                    onPressed: _formErrors[_editingField]?.isEmpty ?? true
+                        ? () => _updateProfile(_editingField!)
+                        : () {},
+                    isLoading: userProvider.isLoading,
                   ),
                 ],
               ),
@@ -729,7 +671,7 @@ class ProfileScreenState extends State<ProfileScreen>
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: GestureDetector(
         onTap: () => _startEditing(field),
-        behavior: HitTestBehavior.opaque, // Ensure tap is detected
+        behavior: HitTestBehavior.opaque,
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -757,36 +699,32 @@ class ProfileScreenState extends State<ProfileScreen>
                   const CustomSpacer(height: 4),
                   _editingField == field
                       ? CustomTextField(
-                        controller: controller,
-                        label: label,
-                        keyboardType: keyboardType,
-                        maxLength: inputFormat == null ? maxLength : null,
-                        onChanged: (value) {
-                          if (onChanged != null) {
-                            onChanged(value);
-                          } else {
-                            _checkForChanges(field, value);
-                          }
-                        },
-                        inputFormatters:
-                            inputFormat != null
-                                ? [
-                                  FilteringTextInputFormatter.digitsOnly,
-                                  CustomFormatter(
-                                    inputFormat,
-                                    maxLength: maxLength,
-                                  ),
-                                ]
-                                : null,
-                        autofocus: true,
-                      )
+                    controller: controller,
+                    label: label,
+                    keyboardType: keyboardType,
+                    maxLength: inputFormat == null ? maxLength : null,
+                    onChanged: (value) {
+                      if (onChanged != null) {
+                        onChanged(value);
+                      } else {
+                        _checkForChanges(field, value);
+                      }
+                    },
+                    inputFormatters: inputFormat != null
+                        ? [
+                      FilteringTextInputFormatter.digitsOnly,
+                      CustomFormatter(inputFormat, maxLength: maxLength),
+                    ]
+                        : null,
+                    autofocus: true,
+                  )
                       : Text(
-                        displayValue,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurface,
-                          fontSize: 16,
-                        ),
-                      ),
+                    displayValue,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurface,
+                      fontSize: 16,
+                    ),
+                  ),
                   if (_formErrors[field]?.isNotEmpty ?? false)
                     Padding(
                       padding: const EdgeInsets.only(top: 8),
@@ -867,10 +805,7 @@ class ProfileScreenState extends State<ProfileScreen>
             const CustomSpacer(height: 24),
             CustomButton(
               label: 'Update Password',
-              onPressed:
-                  _formErrors.values.every((e) => e.isEmpty)
-                      ? _updatePassword
-                      : () {},
+              onPressed: _formErrors.values.every((e) => e.isEmpty) ? _updatePassword : () {},
             ),
           ],
         ),
@@ -888,8 +823,7 @@ class ProfileScreenState extends State<ProfileScreen>
           children: [
             CustomListTile(
               title: 'Visit Logged',
-              subtitle:
-                  'April 07, 2025 - 10:45\nAgent: John Doe | Location: Tunis',
+              subtitle: 'April 07, 2025 - 10:45\nAgent: John Doe | Location: Tunis',
               leadingIcon: Icons.history,
               onTap: () {},
             ),
@@ -903,16 +837,14 @@ class ProfileScreenState extends State<ProfileScreen>
             const CustomDivider(),
             CustomListTile(
               title: 'Carnet Distributed',
-              subtitle:
-                  'April 05, 2025 - 09:15\nCarnet ID: #CRN12345 | Agent: Amina K.',
+              subtitle: 'April 05, 2025 - 09:15\nCarnet ID: #CRN12345 | Agent: Amina K.',
               leadingIcon: Icons.credit_card,
               onTap: () {},
             ),
             const CustomDivider(),
             CustomListTile(
               title: 'Souche Collected',
-              subtitle:
-                  'April 04, 2025 - 14:00\nCarnet ID: #CRN12345 | Status: Validated',
+              subtitle: 'April 04, 2025 - 14:00\nCarnet ID: #CRN12345 | Status: Validated',
               leadingIcon: Icons.check_circle,
               onTap: () {},
             ),
