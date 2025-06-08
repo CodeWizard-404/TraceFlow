@@ -199,7 +199,7 @@ class LocationService {
     static async getAllDelegations() {
         try {
             const delegations = await Delegation.findAll({
-                attributes: ['delegationID', 'name', 'nameAr', 'nameFr'],
+                attributes: ['delegationID', 'name', 'nameAr', 'nameFr', 'governorateID'],
                 include: [{ model: Governorate, attributes: ['governorateID', 'name'] }],
             });
             return delegations || [];
