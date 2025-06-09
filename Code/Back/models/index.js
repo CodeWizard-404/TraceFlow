@@ -95,8 +95,8 @@ const setupAssociations = () => {
     Permission.belongsToMany(Role, { through: "RolePermissions", foreignKey: "permissionID", otherKey: "roleID" });
 
     // User - ReceiptBook
-    User.belongsToMany(ReceiptBook, { through: "UserReceiptBooks", foreignKey: "userID", otherKey: "bookID" });
-    ReceiptBook.belongsToMany(User, { through: "UserReceiptBooks", foreignKey: "bookID", otherKey: "userID" });
+    // User.belongsToMany(ReceiptBook, { through: "UserReceiptBooks", foreignKey: "userID", otherKey: "bookID" });
+    // ReceiptBook.belongsToMany(User, { through: "UserReceiptBooks", foreignKey: "bookID", otherKey: "userID" });
 
     // ReceiptBook - ReceiptBookTransfer
     ReceiptBook.hasMany(ReceiptBookTransfer, { foreignKey: "bookID" });

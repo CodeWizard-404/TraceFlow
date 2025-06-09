@@ -1,13 +1,11 @@
 import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
-import { Tabs, Card, Table, Select, Row, Col, Spin, Modal, Input, Tooltip, DatePicker, Space, Button, Badge, Tag, Statistic, Progress, Descriptions, Popover, Divider, Tree, message, Collapse, Timeline, List, Avatar } from 'antd';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, PieChart, Pie, Cell, LineChart, Line, AreaChart, Area, ScatterChart, Scatter, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Treemap } from 'recharts';
-import { useNavigate } from 'react-router-dom';
+import { Tabs, Card, Table, Select, Row, Col, Spin, Modal, Input, DatePicker, Space, Tag, Statistic, Descriptions, Popover, Divider, Tree, message, Collapse, Timeline, List, Avatar } from 'antd';
+import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, PieChart, Pie, Cell, LineChart, Line, AreaChart, Area, ScatterChart, Scatter, RadarChart, Radar, PolarGrid, PolarAngleAxis, Treemap, LabelList } from 'recharts';
 import MapComponent from '../../components/Google/MapComponent';
-import { useAuth } from '../../context/AuthContext';
 import { getAllTimesheets } from '../../apis/timesheetAPI';
-import { getAllReceiptBooks, getReceiptBookHolders, getAllReceiptBookTypes } from '../../apis/receiptBookAPI';
+import { getAllReceiptBooks, getAllReceiptBookTypes } from '../../apis/receiptBookAPI';
 import { getAllAgents } from '../../apis/agentAPI';
-import { getAllUsers, getUsersByRole } from '../../apis/userAPI';
+import { getAllUsers, } from '../../apis/userAPI';
 import { getAllRegions, getAllGovernorates, getAllDelegations } from '../../apis/locationApi';
 import { getNotifications } from '../../apis/notificationAPI';
 import './HRDashboard.css';
@@ -18,8 +16,10 @@ import User from '../../models/User';
 import Agent from '../../models/Agent';
 import Region from '../../models/Region';
 import ReceiptBookStatus from '../../models/Enum/ReceiptBookStatus';
-import { FaUsers, FaBook, FaClock, FaMapMarkerAlt, FaChartBar, FaSitemap, FaBell, FaSync, FaGlobe, FaFileAlt, FaHourglassHalf, FaMapSigns, FaUserCheck, FaCalendarAlt } from 'react-icons/fa';
+import { FaUsers, FaBook, FaClock, FaMapMarkerAlt, FaChartBar, FaSitemap, FaBell, FaSync, } from 'react-icons/fa';
 import { debounce } from 'lodash';
+import Governorate from '../../models/Governorate';
+import Delegation from '../../models/Delegation';
 
 const { TabPane } = Tabs;
 const { RangePicker } = DatePicker;
@@ -40,6 +40,7 @@ interface HierarchyNode {
         anomalies: number;
         receiptBooks: number;
     };
+    key?: string;
 }
 
 interface DisplayUser {
@@ -74,8 +75,7 @@ interface Metrics {
 }
 
 const HRDashboard: React.FC = () => {
-    const { effectivePermissions } = useAuth();
-    const navigate = useNavigate();
+
     const [loading, setLoading] = useState(true);
     const [timesheets, setTimesheets] = useState<Timesheet[]>([]);
     const [receiptBooks, setReceiptBooks] = useState<ReceiptBook[]>([]);
@@ -83,10 +83,11 @@ const HRDashboard: React.FC = () => {
     const [users, setUsers] = useState<User[]>([]);
     const [agents, setAgents] = useState<Agent[]>([]);
     const [hierarchyData, setHierarchyData] = useState<HierarchyNode | null>(null);
+    const [filteredHierarchyData, setFilteredHierarchyData] = useState<HierarchyNode | null>(null);
     const [anomalies, setAnomalies] = useState<any[]>([]);
     const [regions, setRegions] = useState<Region[]>([]);
-    const [governorates, setGovernorates] = useState<any[]>([]);
-    const [delegations, setDelegations] = useState<any[]>([]);
+    const [governorates, setGovernorates] = useState<Governorate[]>([]);
+    const [delegations, setDelegations] = useState<Delegation[]>([]);
     const [selectedUser, setSelectedUser] = useState<DisplayUser | null>(null);
     const [isUserModalVisible, setIsUserModalVisible] = useState(false);
     const [globalFilters, setGlobalFilters] = useState({
@@ -116,6 +117,19 @@ const HRDashboard: React.FC = () => {
 
     const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'];
 
+    const generateTreeKeys = (nodes: HierarchyNode[], level: number = 0, parentKey: string = '', keys: string[] = [], maxLevel: number = 3): string[] => {
+        nodes.forEach((node, index) => {
+            const nodeKey = node.userID || node.regionID || node.governorateID || node.delegationID || `${parentKey}-${index}`;
+            node.key = nodeKey;
+            if (level < maxLevel && node.children) {
+                keys.push(nodeKey);
+                generateTreeKeys(node.children, level + 1, nodeKey, keys, maxLevel);
+            }
+        });
+        return keys;
+    };
+
+
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);
@@ -142,6 +156,14 @@ const HRDashboard: React.FC = () => {
                     getAllReceiptBookTypes()
                 ]);
 
+                console.log('Regions:', regionData);
+                console.log('Governorates:', govData);
+                console.log('Delegations Sample:', delData.slice(0, 10).map(d => ({
+                    delegationID: d.delegationID,
+                    name: d.name,
+                    governorateID: d.governorateID
+                })));
+
                 setTimesheets(Array.isArray(timesheetData) ? timesheetData : []);
                 setVisits(Array.isArray(timesheetData) ? timesheetData.flatMap((ts: any) => ts.Visits || []) : []);
                 const receiptBooksArray = Array.isArray(receiptBookData) ? receiptBookData : (receiptBookData?.books || []);
@@ -151,6 +173,20 @@ const HRDashboard: React.FC = () => {
                 setRegions(Array.isArray(regionData) ? regionData : []);
                 setGovernorates(Array.isArray(govData) ? govData : []);
                 setDelegations(Array.isArray(delData) ? delData : []);
+
+                if (!Array.isArray(delData) || delData.length === 0) {
+                    console.warn('No delegations returned from API');
+                    message.warning('No delegations found. Please check the database or API.');
+                } else {
+                    const invalidDelegations = delData.filter(d => !d.governorateID);
+                    if (invalidDelegations.length > 0) {
+                        console.warn('Delegations with missing governorateID:', invalidDelegations.map(d => ({
+                            delegationID: d.delegationID,
+                            name: d.name
+                        })));
+                    }
+                }
+
                 setAnomalies(notificationData?.filter((n: any) => n.type === 'anomaly') || []);
                 setReceiptBookTypes(Array.isArray(receiptBookTypesData) ? receiptBookTypesData : []);
 
@@ -170,7 +206,14 @@ const HRDashboard: React.FC = () => {
                     notificationData || [],
                     receiptBooksArray
                 );
+
+                // Assign keys to hierarchy nodes
+                if (hierarchy.children) {
+                    generateTreeKeys(hierarchy.children);
+                }
+
                 setHierarchyData(hierarchy);
+                setFilteredHierarchyData(hierarchy);
 
                 setMetrics({
                     totalUsers: userData?.length || 0,
@@ -196,17 +239,46 @@ const HRDashboard: React.FC = () => {
     }, []);
 
     const buildHierarchy = (
-        directors: any[],
-        regionalManagers: any[],
-        supervisors: any[],
-        regions: any[],
-        govs: any[],
-        dels: any[],
-        agents: any[],
-        timesheets: any[],
+        directors: User[],
+        regionalManagers: User[],
+        supervisors: User[],
+        regions: Region[],
+        govs: Governorate[],
+        dels: Delegation[],
+        agents: Agent[],
+        timesheets: Timesheet[],
         notifications: any[],
-        receiptBooks: any[]
+        receiptBooks: ReceiptBook[]
     ) => {
+        // Debug: Log input data
+        console.log('buildHierarchy Input - Regions:', regions);
+        console.log('buildHierarchy Input - Governorates:', govs);
+        console.log('buildHierarchy Input - Delegations Sample:', dels.slice(0, 10).map(d => ({
+            delegationID: d.delegationID,
+            name: d.name,
+            governorateID: d.governorateID
+        })));
+
+        // Find unassigned delegations
+        const validGovIDs = new Set(govs.map(g => g.governorateID));
+        const unassignedDels = dels.filter(d => !validGovIDs.has(d.governorateID));
+
+        // Debug: Check governorate-delegation relationships
+        console.log('Governorate-Delegation Mapping:', govs.map(gov => ({
+            governorate: gov.name,
+            governorateID: gov.governorateID,
+            delegations: dels.filter(d => d.governorateID === gov.governorateID).map(d => ({
+                name: d.name,
+                delegationID: d.delegationID,
+                governorateID: d.governorateID
+            }))
+        })));
+        console.log('Unassigned Delegations:', unassignedDels.map(d => ({
+            delegationID: d.delegationID,
+            name: d.name,
+            governorateID: d.governorateID
+        })));
+
         const directorNodes = directors.map(director => {
             const directorTimesheets = timesheets.filter(ts => ts.supervisorID === director.userID) || [];
             const directorVisits = directorTimesheets.flatMap(ts => ts.Visits || []) || [];
@@ -257,10 +329,24 @@ const HRDashboard: React.FC = () => {
                                                         children: [
                                                             {
                                                                 name: 'Delegations',
-                                                                children: dels.filter(d => d.governorateID === gov.governorateID).map(del => ({
-                                                                    name: del.name,
-                                                                    delegationID: del.delegationID,
-                                                                })),
+                                                                children: dels
+                                                                    .filter(d => d.governorateID === gov.governorateID)
+                                                                    .map(del => ({
+                                                                        name: del.name,
+                                                                        delegationID: del.delegationID,
+                                                                        children: [
+                                                                            {
+                                                                                name: 'Agents',
+                                                                                children: agents
+                                                                                    .filter(agent => agent.delegationID === del.delegationID)
+                                                                                    .map(agent => ({
+                                                                                        name: `${agent.name} ${agent.lastname || ''}`,
+                                                                                        userID: agent.agentID,
+                                                                                        role: 'Agent',
+                                                                                    })),
+                                                                            },
+                                                                        ],
+                                                                    })),
                                                             },
                                                         ],
                                                     })),
@@ -288,11 +374,42 @@ const HRDashboard: React.FC = () => {
                                                 },
                                                 children: [
                                                     {
+                                                        name: 'Governorates',
+                                                        children: (sup.Governorates || []).map((gov: Governorate) => ({
+                                                            name: gov.name,
+                                                            governorateID: gov.governorateID,
+                                                            children: [
+                                                                {
+                                                                    name: 'Delegations',
+                                                                    children: (sup.Delegations || [])
+                                                                        .filter((del: Delegation) => del.governorateID === gov.governorateID)
+                                                                        .map((del: Delegation) => ({
+                                                                            name: del.name,
+                                                                            delegationID: del.delegationID,
+                                                                            children: [
+                                                                                {
+                                                                                    name: 'Agents',
+                                                                                    children: agents
+                                                                                        .filter(agent => agent.delegationID === del.delegationID && agent.supervisorID === sup.userID)
+                                                                                        .map(agent => ({
+                                                                                            name: `${agent.name} ${agent.lastname || ''}`,
+                                                                                            userID: agent.agentID,
+                                                                                            role: 'Agent',
+                                                                                        })),
+                                                                                },
+                                                                            ],
+                                                                        })),
+                                                                },
+                                                            ],
+                                                        })),
+                                                    },
+                                                    {
                                                         name: 'Agents',
                                                         children: agents.filter(agent => agent.supervisorID === sup.userID).map(agent => ({
-                                                            name: `${agent.name} ${agent.lastname}`,
+                                                            name: `${agent.name} ${agent.lastname || ''}`,
                                                             userID: agent.agentID,
                                                             role: 'Agent',
+                                                            delegationID: agent.delegationID,
                                                         })),
                                                     },
                                                 ],
@@ -331,6 +448,57 @@ const HRDashboard: React.FC = () => {
     };
 
     const applyGlobalFilters = (data: any[], key: string) => {
+        if (key === 'hierarchy') {
+            const filterNode = (node: HierarchyNode): HierarchyNode | null => {
+                const matchesSearch = globalFilters.searchText
+                    ? node.name.toLowerCase().includes(globalFilters.searchText.toLowerCase())
+                    : true;
+                const matchesRole = globalFilters.role
+                    ? node.role === globalFilters.role
+                    : true;
+                const matchesRegion = globalFilters.region
+                    ? node.regionID === globalFilters.region ||
+                    (node.children?.some(child => child.regionID === globalFilters.region || child.children?.some(grandchild => grandchild.regionID === globalFilters.region)))
+                    : true;
+                const matchesGovernorate = globalFilters.governorate
+                    ? node.governorateID === globalFilters.governorate ||
+                    (node.children?.some(child => child.governorateID === globalFilters.governorate || child.children?.some(grandchild => grandchild.governorateID === globalFilters.governorate)))
+                    : true;
+                const matchesDelegation = globalFilters.delegation
+                    ? node.delegationID === globalFilters.delegation ||
+                    (node.children?.some(child => child.delegationID === globalFilters.delegation || child.children?.some(grandchild => grandchild.delegationID === globalFilters.delegation)))
+                    : true;
+                const matchesSupervisor = globalFilters.supervisor
+                    ? node.userID === globalFilters.supervisor ||
+                    (node.children?.some(child => child.userID === globalFilters.supervisor || child.children?.some(grandchild => grandchild.userID === globalFilters.supervisor)))
+                    : true;
+
+                if (!matchesSearch && !matchesRole && !matchesRegion && !matchesGovernorate && !matchesDelegation && !matchesSupervisor && (!node.children || node.children.length === 0)) {
+                    return null;
+                }
+
+                const filteredChildren = node.children
+                    ? node.children.map(child => filterNode(child)).filter((child): child is HierarchyNode => child !== null)
+                    : [];
+
+                if (!matchesSearch && !matchesRole && !matchesRegion && !matchesGovernorate && !matchesDelegation && !matchesSupervisor && filteredChildren.length === 0) {
+                    return null;
+                }
+
+                return {
+                    ...node,
+                    children: filteredChildren.length > 0 ? filteredChildren : node.children
+                };
+            };
+
+            const filteredHierarchy = {
+                ...data[0],
+                children: data[0].children?.map(filterNode).filter((node: HierarchyNode): node is HierarchyNode => node !== null) || []
+            };
+
+            return [filteredHierarchy];
+        }
+
         return data.filter(item => {
             const matchesDate = globalFilters.dateRange
                 ? new Date(item.createdAt || item.date).getTime() >= globalFilters.dateRange[0].toDate().getTime() &&
@@ -365,30 +533,50 @@ const HRDashboard: React.FC = () => {
         });
     };
 
-    const debouncedSearch = useCallback(debounce((value: string) => setGlobalFilters(prev => ({ ...prev, searchText: value })), 300), []);
-
+    const debouncedSearch = useCallback(
+        debounce((value: string) => {
+            setGlobalFilters(prev => ({ ...prev, searchText: value }));
+            if (hierarchyData) {
+                const filtered = applyGlobalFilters([hierarchyData], 'hierarchy');
+                setFilteredHierarchyData(filtered[0]);
+            }
+        }, 300),
+        [hierarchyData]
+    );
     // Hierarchy Tab
     const renderHierarchyTab = () => {
-        // Define all useMemo hooks upfront to avoid conditional hook calls
+        // Utility to flatten hierarchy
+        const flattenHierarchy = (nodes: HierarchyNode[]): any[] => {
+            const result: any[] = [];
+            const traverse = (node: HierarchyNode) => {
+                if (node.metrics) {
+                    result.push({
+                        name: node.name,
+                        role: node.role || 'Unknown',
+                        visits: node.metrics.totalVisits || 0,
+                        timesheets: node.metrics.totalTimesheets || 0,
+                        anomalies: node.metrics.anomalies || 0,
+                        receiptBooks: node.metrics.receiptBooks || 0,
+                    });
+                }
+                node.children?.forEach(traverse);
+            };
+            nodes.forEach(traverse);
+            return result;
+        };
+
         const hierarchyTrendData = useMemo(() => {
-            return hierarchyData?.children?.map(node => ({
-                name: node.name,
-                visits: node.metrics?.totalVisits || 0,
-                timesheets: node.metrics?.totalTimesheets || 0,
-                anomalies: node.metrics?.anomalies || 0,
-                receiptBooks: node.metrics?.receiptBooks || 0,
-            })) || [];
-        }, [hierarchyData]);
+            const data = flattenHierarchy(filteredHierarchyData?.children || []);
+            return globalFilters.role ? data.filter(node => node.role === globalFilters.role) : data;
+        }, [filteredHierarchyData, globalFilters.role]);
 
         const roleDistribution = useMemo(() => {
             const roles = { Director: 0, 'Regional Manager': 0, Supervisor: 0, Agent: 0 };
-            const countRoles = (node: HierarchyNode) => {
+            flattenHierarchy(filteredHierarchyData?.children || []).forEach(node => {
                 if (node.role) roles[node.role as keyof typeof roles]++;
-                node.children?.forEach(countRoles);
-            };
-            hierarchyData?.children?.forEach(countRoles);
+            });
             return Object.entries(roles).map(([name, value]) => ({ name, value }));
-        }, [hierarchyData]);
+        }, [filteredHierarchyData]);
 
         const visitTrendData = useMemo(() => {
             const trend = visits.reduce((acc: any, v: any) => {
@@ -400,12 +588,12 @@ const HRDashboard: React.FC = () => {
         }, [visits]);
 
         const directorMetrics = useMemo(() => {
-            return hierarchyData?.children?.map(d => ({
+            return flattenHierarchy(filteredHierarchyData?.children || []).filter(node => node.role === 'Director').map(d => ({
                 name: d.name,
-                visits: d.metrics?.totalVisits || 0,
-                timesheets: d.metrics?.totalTimesheets || 0,
-            })) || [];
-        }, [hierarchyData]);
+                visits: d.visits,
+                timesheets: d.timesheets,
+            }));
+        }, [filteredHierarchyData]);
 
         const anomalyHeatmap = useMemo(() => {
             return anomalies.map(a => ({
@@ -431,34 +619,116 @@ const HRDashboard: React.FC = () => {
             });
         }, [timesheets, supervisors]);
 
-        const totalDirectors = hierarchyData?.children?.length || 0;
-        const totalRegionalManagers = hierarchyData?.children?.flatMap(d => d.children?.find(c => c.name === 'Regional Managers')?.children || []).length || 0;
-        const totalSupervisors = hierarchyData?.children?.flatMap(d => d.children?.find(c => c.name === 'Regional Managers')?.children?.flatMap(rm => rm.children?.find(sc => sc.name === 'Supervisors')?.children || []) || []).length || 0;
-        const totalAgents = hierarchyData?.children?.flatMap(d => d.children?.find(c => c.name === 'Regional Managers')?.children?.flatMap(rm => rm.children?.find(sc => sc.name === 'Supervisors')?.children?.flatMap(sup => sup.children?.find(ac => ac.name === 'Agents')?.children || []) || []) || []).length || 0;
+        const structureData = useMemo(() => {
+            return flattenHierarchy(filteredHierarchyData?.children || []).map(node => ({
+                name: node.name,
+                value: node.visits,
+            }));
+        }, [filteredHierarchyData]);
+
+        const defaultExpandedKeys = useMemo(() => {
+            return hierarchyData?.children ? generateTreeKeys(hierarchyData.children, 0, '', [], 5) : [];
+        }, [hierarchyData]);
+
+        const totalDirectors = filteredHierarchyData?.children?.length || 0;
+        const totalRegionalManagers = filteredHierarchyData?.children?.flatMap(d => d.children?.find(c => c.name === 'Regional Managers')?.children || []).length || 0;
+        const totalSupervisors = filteredHierarchyData?.children?.flatMap(d => d.children?.find(c => c.name === 'Regional Managers')?.children?.flatMap(rm => rm.children?.find(sc => sc.name === 'Supervisors')?.children || []) || []).length || 0;
+        const totalAgents = filteredHierarchyData?.children?.flatMap(d => d.children?.find(c => c.name === 'Regional Managers')?.children?.flatMap(rm => rm.children?.find(sc => sc.name === 'Supervisors')?.children?.flatMap(sup => sup.children?.find(ac => ac.name === 'Agents')?.children || []) || []) || []).length || 0;
         const averageVisitsPerSupervisor = totalSupervisors > 0 ? (visits.length / totalSupervisors).toFixed(2) : '0';
         const anomalyRate = totalSupervisors > 0 ? (anomalies.length / totalSupervisors * 100).toFixed(2) + '%' : '0%';
 
         return (
-            <Card title="System Hierarchy" extra={<Button onClick={() => navigate('/admin')}>Manage Hierarchy</Button>}>
+            <Card title="System Hierarchy">
                 <Space style={{ marginBottom: 16 }}>
-                    <Input.Search placeholder="Search hierarchy" onChange={(e) => debouncedSearch(e.target.value)} />
-                    <Select placeholder="Filter by Role" onChange={(value) => setGlobalFilters(prev => ({ ...prev, role: value }))}>
+                    <Input.Search
+                        placeholder="Search hierarchy"
+                        onChange={(e) => debouncedSearch(e.target.value)}
+                        allowClear
+                    />
+                    <Select
+                        placeholder="Filter by Role"
+                        onChange={(value) => {
+                            setGlobalFilters(prev => ({ ...prev, role: value }));
+                            if (hierarchyData) {
+                                const filtered = applyGlobalFilters([hierarchyData], 'hierarchy');
+                                setFilteredHierarchyData(filtered[0]);
+                            }
+                        }}
+                        allowClear
+                    >
                         <Option value="">All</Option>
                         <Option value="Director">Director</Option>
                         <Option value="Regional Manager">Regional Manager</Option>
                         <Option value="Supervisor">Supervisor</Option>
                         <Option value="Agent">Agent</Option>
                     </Select>
+                    <Select
+                        placeholder="Filter by Region"
+                        onChange={(value) => {
+                            setGlobalFilters(prev => ({ ...prev, region: value }));
+                            if (hierarchyData) {
+                                const filtered = applyGlobalFilters([hierarchyData], 'hierarchy');
+                                setFilteredHierarchyData(filtered[0]);
+                            }
+                        }}
+                        allowClear
+                    >
+                        <Option value="">All</Option>
+                        {regions.map(r => <Option key={r.regionID} value={r.regionID}>{r.name}</Option>)}
+                    </Select>
+                    <Select
+                        placeholder="Filter by Governorate"
+                        onChange={(value) => {
+                            setGlobalFilters(prev => ({ ...prev, governorate: value }));
+                            if (hierarchyData) {
+                                const filtered = applyGlobalFilters([hierarchyData], 'hierarchy');
+                                setFilteredHierarchyData(filtered[0]);
+                            }
+                        }}
+                        allowClear
+                    >
+                        <Option value="">All</Option>
+                        {governorates.map(g => <Option key={g.governorateID} value={g.governorateID}>{g.name}</Option>)}
+                    </Select>
+                    <Select
+                        placeholder="Filter by Delegation"
+                        onChange={(value) => {
+                            setGlobalFilters(prev => ({ ...prev, delegation: value }));
+                            if (hierarchyData) {
+                                const filtered = applyGlobalFilters([hierarchyData], 'hierarchy');
+                                setFilteredHierarchyData(filtered[0]);
+                            }
+                        }}
+                        allowClear
+                    >
+                        <Option value="">All</Option>
+                        {delegations.map(d => <Option key={d.delegationID} value={d.delegationID}>{d.name}</Option>)}
+                    </Select>
+                    <Select
+                        placeholder="Filter by Supervisor"
+                        onChange={(value) => {
+                            setGlobalFilters(prev => ({ ...prev, supervisor: value }));
+                            if (hierarchyData) {
+                                const filtered = applyGlobalFilters([hierarchyData], 'hierarchy');
+                                setFilteredHierarchyData(filtered[0]);
+                            }
+                        }}
+                        allowClear
+                    >
+                        <Option value="">All</Option>
+                        {supervisors.map(s => <Option key={s.userID} value={s.userID}>{`${s.firstname} ${s.lastname}`}</Option>)}
+                    </Select>
                 </Space>
                 <Row gutter={16}>
                     <Col span={12}>
-                        <div ref={treeContainerRef} style={{ width: '100%', height: '600px', overflow: 'auto' }}>
-                            {hierarchyData && (
+                        <div ref={treeContainerRef} style={{ width: '100%', height: '100%', overflow: 'auto' }}>
+                            {filteredHierarchyData && (
                                 <Tree
-                                    treeData={hierarchyData.children}
+                                    treeData={filteredHierarchyData.children}
                                     onSelect={(_, { node }) => handleNodeClick(node)}
                                     showLine
                                     switcherIcon={<FaSitemap />}
+                                    defaultExpandedKeys={defaultExpandedKeys}
                                     titleRender={(nodeData: any) => (
                                         <Popover
                                             content={
@@ -482,98 +752,102 @@ const HRDashboard: React.FC = () => {
                         <Collapse>
                             <Panel header="Charts" key="1">
                                 <Row gutter={16}>
-                                    <Col span={12}>
+                                    <Col span={24}>
                                         <Card title="Hierarchy Metrics">
-                                            <BarChart width={300} height={200} data={hierarchyTrendData}>
+                                            <BarChart width={550} height={200} data={hierarchyTrendData}>
                                                 <XAxis dataKey="name" />
                                                 <YAxis />
                                                 <RechartsTooltip />
-                                                <Bar dataKey="visits" fill="#0088FE" />
+                                                <Bar dataKey="visits" fill="#0088FE">
+                                                    <LabelList dataKey="visits" position="top" fill="#000" />
+                                                </Bar>
+                                                <Bar dataKey="receiptBooks" fill="#FFCE56">
+                                                    <LabelList dataKey="receiptBooks" position="top" fill="#000" />
+                                                </Bar>
                                             </BarChart>
                                         </Card>
                                     </Col>
                                     <Col span={12}>
                                         <Card title="Role Distribution">
                                             <PieChart width={300} height={200}>
-                                                <Pie data={roleDistribution} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}>
-                                                    {roleDistribution.map((entry, index) => (
+                                                <Pie data={roleDistribution} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
+                                                    {roleDistribution.map((_entry, index) => (
                                                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                                     ))}
                                                 </Pie>
+                                                <RechartsTooltip />
                                             </PieChart>
                                         </Card>
                                     </Col>
                                     <Col span={12}>
-                                        <Card title="Visit Trends">
-                                            <LineChart width={300} height={200} data={visitTrendData}>
-                                                <XAxis dataKey="date" />
-                                                <YAxis />
-                                                <RechartsTooltip />
-                                                <Line dataKey="count" stroke="#FFBB28" />
-                                            </LineChart>
-                                        </Card>
-                                    </Col>
-                                    <Col span={12}>
-                                        <Card title="Director Comparison">
+                                        <Card title="Director Metrics">
                                             <RadarChart width={300} height={200} data={directorMetrics}>
                                                 <PolarGrid />
                                                 <PolarAngleAxis dataKey="name" />
-                                                <Radar dataKey="visits" stroke="#FF8042" fill="#FF8042" fillOpacity={0.6} />
+                                                <Radar dataKey="visits" stroke="#FF8042" fill="#FF8042" fillOpacity={0.6}>
+                                                    <LabelList dataKey="visits" fill="#FFFFFF" />
+                                                </Radar>
+                                                <RechartsTooltip />
                                             </RadarChart>
                                         </Card>
                                     </Col>
-                                    <Col span={12}>
-                                        <Card title="Anomaly Heatmap">
-                                            <ScatterChart width={300} height={200} data={anomalyHeatmap}>
+                                    <Col span={24}>
+                                        <Card title="Visit Trends">
+                                            <LineChart width={550} height={200} data={visitTrendData}>
                                                 <XAxis dataKey="date" />
-                                                <YAxis dataKey="count" />
-                                                <Scatter fill="#FF6384" />
-                                            </ScatterChart>
+                                                <YAxis />
+                                                <RechartsTooltip />
+                                                <Line dataKey="count" stroke="#FFBB28">
+                                                    <LabelList dataKey="count" position="top" fill="#000" />
+                                                </Line>
+                                            </LineChart>
                                         </Card>
                                     </Col>
-                                    <Col span={12}>
-                                        <Card title="Timesheet Trend">
-                                            <AreaChart width={300} height={200} data={timesheetChartData}>
+
+                                    <Col span={24}>
+                                        <Card title="Timesheet Trends">
+                                            <AreaChart width={550} height={200} data={timesheetChartData}>
                                                 <XAxis dataKey="week" />
                                                 <YAxis />
-                                                <Area dataKey="count" fill="#36A2EB" />
+                                                <Area dataKey="count" fill="#36A2EB">
+                                                    <LabelList dataKey="count" position="top" fill="#000" />
+                                                </Area>
+                                                <RechartsTooltip />
                                             </AreaChart>
                                         </Card>
                                     </Col>
-                                    <Col span={12}>
+                                    <Col span={24}>
                                         <Card title="Receipt Books">
-                                            <BarChart width={300} height={200} data={hierarchyTrendData}>
+                                            <BarChart width={550} height={200} data={hierarchyTrendData}>
                                                 <XAxis dataKey="name" />
                                                 <YAxis />
-                                                <Bar dataKey="receiptBooks" fill="#FFCE56" />
+                                                <RechartsTooltip />
+                                                <Bar dataKey="receiptBooks" fill="#FFCE56">
+                                                    <LabelList dataKey="receiptBooks" position="top" fill="#000" />
+                                                </Bar>
                                             </BarChart>
                                         </Card>
                                     </Col>
-                                    <Col span={12}>
+                                    {/* <Col span={24}>
                                         <Card title="Supervisors">
-                                            <Treemap width={300} height={200} data={hoursPerSupervisor}>
+                                            <BarChart width={550} height={200} data={hoursPerSupervisor}>
+                                                <XAxis dataKey="name" />
+                                                <YAxis />
                                                 <RechartsTooltip />
-                                            </Treemap>
+                                                <Bar dataKey="hours" fill="#4BC0C0">
+                                                    <LabelList dataKey="hours" position="top" fill="#000" />
+                                                </Bar>
+                                            </BarChart>
                                         </Card>
-                                    </Col>
-                                    <Col span={12}>
-                                        <Card title="Structure">
-                                            <Treemap
-                                                width={300}
-                                                height={200}
-                                                data={hierarchyData?.children}
-                                                dataKey="metrics.totalVisits"
-                                                aspectRatio={4 / 3}
-                                            />
-                                        </Card>
-                                    </Col>
+                                    </Col> */}
+
                                 </Row>
                             </Panel>
                         </Collapse>
                     </Col>
                 </Row>
                 <Divider />
-                <Row gutter={16}>
+                <Row gutter={40}>
                     <Col span={4}><Statistic title="Total Directors" value={totalDirectors} /></Col>
                     <Col span={4}><Statistic title="Total Regional Managers" value={totalRegionalManagers} /></Col>
                     <Col span={4}><Statistic title="Total Supervisors" value={totalSupervisors} /></Col>
@@ -584,7 +858,6 @@ const HRDashboard: React.FC = () => {
             </Card>
         );
     };
-
     // Users Tab
     const userColumns = [
         { title: 'Name', dataIndex: 'firstname', key: 'name', sorter: (a: User, b: User) => `${a.firstname} ${a.lastname}`.localeCompare(`${b.firstname} ${b.lastname}`), render: (_: any, record: User) => `${record.firstname} ${record.lastname}` },
@@ -673,7 +946,7 @@ const HRDashboard: React.FC = () => {
                     {delegations.map(d => <Option key={d.delegationID} value={d.delegationID}>{d.name}</Option>)}
                 </Select>
             </Space>
-            <Row gutter={16}>
+            <Row gutter={0}>
                 <Col span={12}>
                     <Card title="User List">
                         <Table columns={userColumns} dataSource={applyGlobalFilters(users, 'userID')} rowKey="userID" pagination={{ pageSize: 10 }} />
@@ -682,15 +955,16 @@ const HRDashboard: React.FC = () => {
                 <Col span={12}>
                     <Collapse>
                         <Panel header="Charts" key="1">
-                            <Row gutter={16}>
+                            <Row gutter={0}>
                                 <Col span={12}>
                                     <Card title="Role Distribution">
                                         <PieChart width={300} height={200}>
-                                            <Pie data={roleDistributionData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}>
-                                                {roleDistributionData.map((entry: any, index: number) => (
+                                            <Pie data={roleDistributionData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
+                                                {roleDistributionData.map((_entry: any, index: number) => (
                                                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                                 ))}
                                             </Pie>
+                                            <RechartsTooltip />
                                         </PieChart>
                                     </Card>
                                 </Col>
@@ -699,19 +973,14 @@ const HRDashboard: React.FC = () => {
                                         <LineChart width={300} height={200} data={registrationTrendData}>
                                             <XAxis dataKey="month" />
                                             <YAxis />
-                                            <Line dataKey="count" stroke="#00C49F" />
+                                            <RechartsTooltip />
+                                            <Line dataKey="count" stroke="#00C49F">
+                                                <LabelList dataKey="count" position="top" fill="#000" />
+                                            </Line>
                                         </LineChart>
                                     </Card>
                                 </Col>
-                                <Col span={12}>
-                                    <Card title="Supervisors per Gov">
-                                        <BarChart width={300} height={200} data={supervisorPerGovData}>
-                                            <XAxis dataKey="name" />
-                                            <YAxis />
-                                            <Bar dataKey="count" fill="#FFBB28" />
-                                        </BarChart>
-                                    </Card>
-                                </Col>
+
                                 <Col span={12}>
                                     <Card title="User Activity">
                                         <Timeline items={userActivityTimeline.slice(0, 5)} />
@@ -719,19 +988,26 @@ const HRDashboard: React.FC = () => {
                                 </Col>
                                 <Col span={12}>
                                     <Card title="User Growth">
-                                        <AreaChart width={300} height={200} data={userGrowthData}>
+                                        <AreaChart width={270} height={200} data={userGrowthData}>
                                             <XAxis dataKey="date" />
                                             <YAxis />
-                                            <Area dataKey="count" fill="#FF8042" />
+                                            <RechartsTooltip />
+                                            <Area dataKey="count" fill="#FF8042">
+                                                <LabelList dataKey="count" position="top" fill="#000" />
+                                            </Area>
                                         </AreaChart>
                                     </Card>
                                 </Col>
-                                <Col span={12}>
+
+                                <Col span={24}>
                                     <Card title="Visits by User">
-                                        <ScatterChart width={300} height={200} data={users.map(u => ({ name: `${u.firstname} ${u.lastname}`, visits: timesheets.filter(ts => ts.supervisorID === u.userID).reduce((sum, ts) => sum + (ts.Visits?.length || 0), 0) }))}>
+                                        <ScatterChart width={550} height={200} data={users.map(u => ({ name: `${u.firstname} ${u.lastname}`, visits: timesheets.filter(ts => ts.supervisorID === u.userID).reduce((sum, ts) => sum + (ts.Visits?.length || 0), 0) }))}>
                                             <XAxis dataKey="name" />
                                             <YAxis dataKey="visits" />
-                                            <Scatter fill="#FF6384" />
+                                            <RechartsTooltip />
+                                            <Scatter fill="#FF6384">
+                                                <LabelList dataKey="visits" position="top" fill="#000" />
+                                            </Scatter>
                                         </ScatterChart>
                                     </Card>
                                 </Col>
@@ -740,7 +1016,10 @@ const HRDashboard: React.FC = () => {
                                         <RadarChart width={300} height={200} data={users.map(u => ({ name: `${u.firstname} ${u.lastname}`, timesheets: timesheets.filter(ts => ts.supervisorID === u.userID).length }))}>
                                             <PolarGrid />
                                             <PolarAngleAxis dataKey="name" />
-                                            <Radar dataKey="timesheets" stroke="#36A2EB" fill="#36A2EB" fillOpacity={0.6} />
+                                            <RechartsTooltip />
+                                            <Radar dataKey="timesheets" stroke="#36A2EB" fill="#36A2EB" fillOpacity={0.6}>
+                                                <LabelList dataKey="timesheets" fill="#000" />
+                                            </Radar>
                                         </RadarChart>
                                     </Card>
                                 </Col>
@@ -748,15 +1027,31 @@ const HRDashboard: React.FC = () => {
                                     <Card title="Receipt Books">
                                         <Treemap width={300} height={200} data={users.map(u => ({ name: `${u.firstname} ${u.lastname}`, value: receiptBooks.filter(rb => rb.holder?.userID === u.userID).length }))}>
                                             <RechartsTooltip />
+                                            <LabelList dataKey="value" position="center" fill="#000" />
                                         </Treemap>
                                     </Card>
                                 </Col>
-                                <Col span={12}>
+                                <Col span={24}>
                                     <Card title="Anomalies">
-                                        <BarChart width={300} height={200} data={users.map(u => ({ name: `${u.firstname} ${u.lastname}`, anomalies: anomalies.filter(a => a.userID === u.userID).length }))}>
+                                        <BarChart width={550} height={200} data={users.map(u => ({ name: `${u.firstname} ${u.lastname}`, anomalies: anomalies.filter(a => a.userID === u.userID).length }))}>
                                             <XAxis dataKey="name" />
                                             <YAxis />
-                                            <Bar dataKey="anomalies" fill="#FFCE56" />
+                                            <RechartsTooltip />
+                                            <Bar dataKey="anomalies" fill="#FFCE56">
+                                                <LabelList dataKey="anomalies" position="top" fill="#000" />
+                                            </Bar>
+                                        </BarChart>
+                                    </Card>
+                                </Col>
+                                <Col span={24}>
+                                    <Card title="Supervisors per Gov">
+                                        <BarChart width={550} height={200} data={supervisorPerGovData}>
+                                            <XAxis dataKey="name" />
+                                            <YAxis />
+                                            <RechartsTooltip />
+                                            <Bar dataKey="count" fill="#FFBB28">
+                                                <LabelList dataKey="count" position="top" fill="#000" />
+                                            </Bar>
                                         </BarChart>
                                     </Card>
                                 </Col>
@@ -851,7 +1146,7 @@ const HRDashboard: React.FC = () => {
                                     <Card title="Status">
                                         <PieChart width={300} height={200}>
                                             <Pie data={timesheetStatusData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}>
-                                                {timesheetStatusData.map((entry, index) => (
+                                                {timesheetStatusData.map((_entry, index) => (
                                                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                                 ))}
                                             </Pie>
@@ -1007,7 +1302,7 @@ const HRDashboard: React.FC = () => {
                                     <Card title="Status">
                                         <PieChart width={300} height={200}>
                                             <Pie data={receiptBookStatusData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}>
-                                                {receiptBookStatusData.map((entry, index) => (
+                                                {receiptBookStatusData.map((_entry, index) => (
                                                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                                 ))}
                                             </Pie>
@@ -1161,7 +1456,11 @@ const HRDashboard: React.FC = () => {
                     <Card title="Visit List">
                         <Table columns={visitColumns} dataSource={applyGlobalFilters(visits, 'visitID')} rowKey="visitID" pagination={{ pageSize: 10 }} />
                     </Card>
+                    <Card title="Locations">
+                        <MapComponent />
+                    </Card>
                 </Col>
+
                 <Col span={12}>
                     <Collapse>
                         <Panel header="Charts" key="1">
@@ -1193,16 +1492,12 @@ const HRDashboard: React.FC = () => {
                                         </ScatterChart>
                                     </Card>
                                 </Col>
-                                <Col span={12}>
-                                    <Card title="Locations">
-                                        <MapComponent />
-                                    </Card>
-                                </Col>
+
                                 <Col span={12}>
                                     <Card title="Status Dist">
                                         <PieChart width={300} height={200}>
                                             <Pie data={visitStatusData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}>
-                                                {visitStatusData.map((entry, index) => (
+                                                {visitStatusData.map((_entry, index) => (
                                                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                                 ))}
                                             </Pie>
@@ -1334,7 +1629,7 @@ const HRDashboard: React.FC = () => {
                                     <Card title="Severity">
                                         <PieChart width={300} height={200}>
                                             <Pie data={anomalySeverityChartData} dataKey="count" nameKey="severity" cx="50%" cy="50%" outerRadius={80}>
-                                                {anomalySeverityChartData.map((entry, index) => (
+                                                {anomalySeverityChartData.map((_entry, index) => (
                                                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                                 ))}
                                             </Pie>
@@ -1489,7 +1784,7 @@ const HRDashboard: React.FC = () => {
                                     <Card title="Region Visits">
                                         <PieChart width={300} height={200}>
                                             <Pie data={performanceByRegion} dataKey="visits" nameKey="name" cx="50%" cy="50%" outerRadius={80}>
-                                                {performanceByRegion.map((entry, index) => (
+                                                {performanceByRegion.map((_entry, index) => (
                                                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                                 ))}
                                             </Pie>

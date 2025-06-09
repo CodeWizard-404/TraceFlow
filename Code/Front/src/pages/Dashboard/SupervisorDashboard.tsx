@@ -1229,4 +1229,3 @@ const SupervisorDashboard: React.FC = () => {
 };
 
 export default SupervisorDashboard;
-

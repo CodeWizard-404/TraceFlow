@@ -364,7 +364,12 @@
       "cancelSuggestions": "Cancel Suggestions",
       "saveSuggestions": "Save Suggestions",
       "saving": "Saving...",
-      "viewDayOnMap": "View Visits on Map"
+      "viewDayOnMap": "View Visits on Map",
+      "receiptBooks": "View Receipt Books",
+      "current": "Current {{view}}",
+      "viewReceiptBooks": "View Receipt Books",
+      "filterSupervisors": "Filter Supervisors",
+      "validateTimesheet": "Validate Timesheet"
     },
     "filter": {
       "toggle": "Filter",
