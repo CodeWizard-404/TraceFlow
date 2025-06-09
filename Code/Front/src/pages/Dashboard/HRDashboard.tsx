@@ -1456,7 +1456,11 @@ const HRDashboard: React.FC = () => {
                     <Card title="Visit List">
                         <Table columns={visitColumns} dataSource={applyGlobalFilters(visits, 'visitID')} rowKey="visitID" pagination={{ pageSize: 10 }} />
                     </Card>
+                    <Card title="Locations">
+                        <MapComponent />
+                    </Card>
                 </Col>
+
                 <Col span={12}>
                     <Collapse>
                         <Panel header="Charts" key="1">
@@ -1488,11 +1492,7 @@ const HRDashboard: React.FC = () => {
                                         </ScatterChart>
                                     </Card>
                                 </Col>
-                                <Col span={12}>
-                                    <Card title="Locations">
-                                        <MapComponent />
-                                    </Card>
-                                </Col>
+
                                 <Col span={12}>
                                     <Card title="Status Dist">
                                         <PieChart width={300} height={200}>
