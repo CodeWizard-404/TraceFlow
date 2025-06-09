@@ -39,6 +39,7 @@ class DayView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Consumer2<TimesheetProvider, VisitProvider>(
       builder: (context, timesheetProvider, visitProvider, child) {
         final visits = getVisitsForDay(day, timesheetProvider.timesheets);
@@ -53,7 +54,6 @@ class DayView extends StatelessWidget {
 
         return DragTarget<Visit>(
           onWillAccept: (data) {
-            // Prevent dropping on days before today
             final today = DateTime.now();
             final targetDate = DateTime(day.year, day.month, day.day);
             final todayDate = DateTime(today.year, today.month, today.day);
@@ -62,7 +62,6 @@ class DayView extends StatelessWidget {
           onAcceptWithDetails: (details) {
             final droppedVisit = details.data;
             if (droppedVisit.date != day) {
-              // Dropped on a different day; update date
               final newDate = DateFormat('yyyy-MM-dd').format(day);
               visitProvider
                   .updateVisit(
@@ -82,44 +81,49 @@ class DayView extends StatelessWidget {
             }
           },
           builder: (context, candidateData, rejectedData) {
-            return ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: visits.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 0),
-              itemBuilder: (context, index) {
-                final visit = visits[index];
-                return DragTarget<Visit>(
-                  onAcceptWithDetails: (details) {
-                    final droppedVisit = details.data;
-                    final newTime = visit.time;
-                    if (droppedVisit.visitID != visit.visitID) {
-                      // Reorder within the same day
-                      visitProvider
-                          .updateVisit(
-                        visitId: droppedVisit.visitID,
-                        time: newTime,
-                        status: 'pending',
-                      )
-                          .then((_) {
-                        timesheetProvider.fetchTimesheetsBySupervisor(authProvider.user!.userID!);
-                      })
-                          .catchError((error) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Failed to reorder visit: $error')),
-                        );
-                      });
-                    }
-                  },
-                  builder: (context, candidateData, rejectedData) {
-                    return AnimatedOpacity(
-                      opacity: candidateData.isNotEmpty ? 0.5 : 1.0,
-                      duration: const Duration(milliseconds: 300),
-                      child: VisitItem(visit: visit),
-                    );
-                  },
-                );
-              },
+            return Container(
+              decoration: BoxDecoration(
+                color: candidateData.isNotEmpty ? theme.colorScheme.primary.withOpacity(0.1) : null,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: visits.length,
+                separatorBuilder: (context, index) => const SizedBox(height: 8),
+                itemBuilder: (context, index) {
+                  final visit = visits[index];
+                  return DragTarget<Visit>(
+                    onAcceptWithDetails: (details) {
+                      final droppedVisit = details.data;
+                      final newTime = visit.time;
+                      if (droppedVisit.visitID != visit.visitID) {
+                        visitProvider
+                            .updateVisit(
+                          visitId: droppedVisit.visitID,
+                          time: newTime,
+                          status: 'pending',
+                        )
+                            .then((_) {
+                          timesheetProvider.fetchTimesheetsBySupervisor(authProvider.user!.userID!);
+                        })
+                            .catchError((error) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Failed to reorder visit: $error')),
+                          );
+                        });
+                      }
+                    },
+                    builder: (context, candidateData, rejectedData) {
+                      return AnimatedOpacity(
+                        opacity: candidateData.isNotEmpty ? 0.5 : 1.0,
+                        duration: const Duration(milliseconds: 300),
+                        child: VisitItem(visit: visit),
+                      );
+                    },
+                  );
+                },
+              ),
             );
           },
         );

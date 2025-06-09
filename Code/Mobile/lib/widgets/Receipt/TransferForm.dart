@@ -304,8 +304,8 @@ class TransferForm extends StatelessWidget {
                       style: const TextStyle(fontSize: 16),
                     ),
                     style: ElevatedButton.styleFrom(
-                      foregroundColor: Colors.white,
-                      backgroundColor: Colors.blue,
+                      foregroundColor: theme.colorScheme.primary,
+                      backgroundColor: theme.colorScheme.primary,
                       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       elevation: 2,

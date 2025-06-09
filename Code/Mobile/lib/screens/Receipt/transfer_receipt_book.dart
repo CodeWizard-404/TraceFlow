@@ -1,4 +1,4 @@
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -57,7 +57,7 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
   Map<String, dynamic>? _selectedDelegation;
   bool _isLoading = false;
   String? _phoneError;
-  Timer? _debounce;
+  String? _transferOtpID;
 
   @override
   void initState() {
@@ -84,12 +84,9 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
       }
       _regions = locationProvider.regions;
       await Future.wait([
-        receiptBookProvider.fetchReceiptBooksByHolder(authProvider.user!.userID!), // Ensure this fetches all relevant books
+        receiptBookProvider.fetchReceiptBooksByHolder(authProvider.user!.userID!),
         receiptBookProvider.fetchAllReceiptBookTypes(),
-        agentProvider.fetchUniqueLocations(),
       ]);
-      // Log the fetched books for debugging
-      print('Fetched receipt books: ${receiptBookProvider.receiptBooks.map((b) => "${b.number} (${b.typeID})").toList()}');
     } catch (e) {
       setState(() => _error = 'Error loading initial data: $e');
     } finally {
@@ -98,20 +95,31 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
   }
 
   bool _isTransferable(ReceiptBook book, String userID, String? recipientType) {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final supervisorID = authProvider.user!.userID;
+
+    // Validate currentHolderID matches supervisorID for transmission
+    if (recipientType != "Stub Collection" && book.currentHolderID != supervisorID) {
+      return false;
+    }
+
+    // Status validation
     final validStatuses = [
       "With Supervisor",
       "Stub Collected",
       "Assigned to Agent",
     ];
     final isValidStatus = validStatuses.contains(book.status);
-    final isHolderMatch = book.currentHolderID == userID || book.agentID == userID;
 
+    // Specific validations per recipient type
     if (recipientType == "Agent") {
-      return book.currentHolderID == userID && book.status == "With Supervisor";
+      return book.status == "With Supervisor";
     } else if (recipientType == "Stub Collection") {
-      return book.status == "Assigned to Agent" && book.currentHolderID == userID;
-    } else if (recipientType == "Regional Manager" || recipientType == "Supervisor" || recipientType == "Stock Manager") {
-      return isValidStatus && isHolderMatch;
+      return book.status == "Assigned to Agent" && book.agentID != null;
+    } else if (recipientType == "Stock Manager") {
+      return book.status == "Stub Collected";
+    } else if (recipientType == "Regional Manager" || recipientType == "Supervisor") {
+      return isValidStatus;
     }
     return false;
   }
@@ -135,7 +143,6 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
       final typeLength = int.parse(decodedText.substring(typeStart, typeStart + 2));
       final typeIDFromQR = decodedText.substring(typeStart + 2, typeStart + 2 + typeLength);
 
-      // Map QR code typeID to database typeID
       String? mappedTypeID;
       final matchingType = receiptBookProvider.receiptBookTypes.firstWhere(
             (t) => t.name.toLowerCase() == typeIDFromQR.toLowerCase() || t.typeID == typeIDFromQR,
@@ -145,21 +152,25 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
         mappedTypeID = matchingType.typeID;
       } else {
         setState(() => _error = 'Invalid typeID in QR code: $typeIDFromQR');
+        _showSnackBar('Invalid typeID in QR code: $typeIDFromQR');
         return;
       }
 
       if (_recipientType == "Stub Collection") {
         if (_scannedQRCodes.contains(decodedText)) {
           setState(() => _error = 'QR code "$number" already scanned.');
+          _showSnackBar('QR code "$number" already scanned.');
           return;
         }
         await receiptBookProvider.fetchReceiptBookByNumber(number);
         if (receiptBookProvider.currentReceiptBook == null) {
           setState(() => _error = 'Book "$number" not found.');
+          _showSnackBar('Book "$number" not found.');
           return;
         }
         if (!_isTransferable(receiptBookProvider.currentReceiptBook!, authProvider.user!.userID!, _recipientType)) {
           setState(() => _error = 'Book "$number" (status: ${receiptBookProvider.currentReceiptBook!.status}) cannot be collected.');
+          _showSnackBar('Book "$number" cannot be collected.');
           return;
         }
         setState(() {
@@ -167,6 +178,7 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
           _scannedQRCodes.add(decodedText);
           _error = null;
         });
+        _showSnackBar('Book "$number" added successfully.');
       } else {
         final matchingBook = receiptBookProvider.receiptBooks.firstWhere(
               (r) => r.number == number && r.typeID == mappedTypeID,
@@ -174,14 +186,17 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
         );
         if (matchingBook.bookID.isEmpty) {
           setState(() => _error = 'QR code "$number" not found.');
+          _showSnackBar('QR code "$number" not found.');
           return;
         }
         if (_scannedQRCodes.contains(decodedText) || _selectedBookIDs.contains(matchingBook.bookID)) {
           setState(() => _error = 'QR code "$number" already scanned.');
+          _showSnackBar('QR code "$number" already scanned.');
           return;
         }
         if (!_isTransferable(matchingBook, authProvider.user!.userID!, _recipientType)) {
           setState(() => _error = 'Book "$number" cannot be transferred to $_recipientType.');
+          _showSnackBar('Book "$number" cannot be transferred to $_recipientType.');
           return;
         }
         setState(() {
@@ -189,21 +204,35 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
           _scannedQRCodes.add(decodedText);
           _error = null;
         });
+        _showSnackBar('Book "$number" added successfully.');
       }
     } catch (err) {
       setState(() => _error = "Invalid QR code: $err");
+      _showSnackBar("Invalid QR code: $err");
     } finally {
       _scanLock = false;
+      if (_isScannerActive) {
+        _continueScanning();
+      }
     }
   }
 
-
-  Future<void> _scanQRCode() async {
+  Future<void> _continueScanning() async {
+    if (!_isScannerActive) return;
     final result = await Navigator.push<String>(
       context,
       MaterialPageRoute(builder: (context) => const QRScannerWidget()),
     );
-    if (result != null) await _handleScanSuccess(result);
+    if (result != null) {
+      await _handleScanSuccess(result);
+    } else {
+      setState(() => _isScannerActive = false);
+    }
+  }
+
+  Future<void> _scanQRCode() async {
+    setState(() => _isScannerActive = true);
+    await _continueScanning();
   }
 
   void _startOtpTimer() {
@@ -224,32 +253,54 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
   Future<void> _initiateTransfer() async {
     if (_selectedBookIDs.isEmpty) {
       setState(() => _error = 'Select at least one book.');
+      _showSnackBar('Select at least one book.');
       return;
     }
     if (_recipientType == null) {
       setState(() => _error = 'Select a recipient type.');
-      return;
-    }
-    if (_recipientType == "Agent" && _selectedBookIDs.length > 1) {
-      setState(() => _error = "Only one book can be assigned to an agent.");
+      _showSnackBar('Select a recipient type.');
       return;
     }
     if (_recipientType == "Agent" && _recipientID == null) {
       setState(() => _error = "Select an agent.");
+      _showSnackBar('Select an agent.');
       return;
     }
 
     final receiptBookProvider = Provider.of<ReceiptBookProvider>(context, listen: false);
     final receiptStubProvider = Provider.of<ReceiptStubProvider>(context, listen: false);
+
+    // Map frontend recipientType to backend-compatible values
+    String backendRecipientType;
+    switch (_recipientType) {
+      case "Agent":
+        backendRecipientType = "agent";
+        break;
+      case "Stub Collection":
+        backendRecipientType = "stub_collection";
+        break;
+      case "Regional Manager":
+      case "Supervisor":
+      case "Stock Manager":
+        backendRecipientType = "user";
+        break;
+      default:
+        setState(() => _error = 'Invalid recipient type.');
+        _showSnackBar('Invalid recipient type.');
+        return;
+    }
+
     try {
+      setState(() => _isLoading = true);
       if (_recipientType == "Stub Collection") {
         await receiptStubProvider.collectStub(_selectedBookIDs);
       } else {
-        await receiptBookProvider.transferReceiptBooks(
+        final response = await receiptBookProvider.transferReceiptBooks(
           bookIDs: _selectedBookIDs,
           recipientID: _recipientID!,
-          recipientType: "agent",
+          recipientType: backendRecipientType,
         );
+        _transferOtpID = response['otpID']; // Store OTP ID
       }
       setState(() {
         _transferInitiated = true;
@@ -257,19 +308,55 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
         _isScannerActive = false;
       });
       _startOtpTimer();
+      _showSnackBar('Transfer initiated successfully.');
     } catch (e) {
-      setState(() => _error = 'Failed to initiate: $e');
+      final errorMessage = 'Failed to initiate transfer: $e';
+      if (kDebugMode) print(errorMessage);
+      setState(() => _error = errorMessage);
+      _showSnackBar(errorMessage);
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
+
 
   Future<void> _validateTransfer() async {
     if (_otpController.text.isEmpty) {
       setState(() => _error = 'Enter OTP.');
+      _showSnackBar('Enter OTP.');
       return;
     }
+    if (_transferOtpID == null) {
+      setState(() => _error = 'Transfer not initiated.');
+      _showSnackBar('Transfer not initiated. Please initiate transfer first.');
+      return;
+    }
+
     final receiptBookProvider = Provider.of<ReceiptBookProvider>(context, listen: false);
     final receiptStubProvider = Provider.of<ReceiptStubProvider>(context, listen: false);
+
+    // Map frontend recipientType to backend-compatible values
+    String backendRecipientType;
+    switch (_recipientType) {
+      case "Agent":
+        backendRecipientType = "agent";
+        break;
+      case "Stub Collection":
+        backendRecipientType = "stub_collection";
+        break;
+      case "Regional Manager":
+      case "Supervisor":
+      case "Stock Manager":
+        backendRecipientType = "user";
+        break;
+      default:
+        setState(() => _error = 'Invalid recipient type.');
+        _showSnackBar('Invalid recipient type.');
+        return;
+    }
+
     try {
+      setState(() => _isLoading = true);
       if (_recipientType == "Stub Collection") {
         await receiptStubProvider.validateStubCollection(_selectedBookIDs, _otpController.text);
       } else {
@@ -277,13 +364,22 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
           bookIDs: _selectedBookIDs,
           recipientID: _recipientID!,
           otpCode: _otpController.text,
-          recipientType: "agent",
+          recipientType: backendRecipientType,
+          otpID: _transferOtpID!, // Pass otpID
         );
       }
       _otpTimer?.cancel();
+      setState(() {
+        _transferOtpID = null; // Clear OTP ID after validation
+        _transferInitiated = false;
+      });
       Navigator.pushNamed(context, '/receipt-books');
+      _showSnackBar('Transfer validated successfully.');
     } catch (e) {
-      setState(() => _error = 'Validation failed: $e');
+      setState(() => _error = 'Error validating transfer: $e');
+      _showSnackBar('Error processing transfer: $e');
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 
@@ -312,69 +408,67 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
   }
 
   Future<void> _onPhoneChanged(String value, AgentProvider agentProvider) async {
-    developer.log('[TransferReceiptBookScreen] Phone input changed: $value', name: 'TransferReceiptBookScreen.onPhoneChanged');
     setState(() {
       _phoneController.text = value;
       _phoneError = null;
     });
-    if (_debounce?.isActive ?? false) _debounce!.cancel();
-    _debounce = Timer(const Duration(milliseconds: 500), () async {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      if (value.isEmpty) {
-        setState(() {
-          _recipientID = null;
-          _selectedRegionId = null;
-          _selectedGovernorateId = null;
-          _selectedDelegationId = null;
-          _phoneError = null;
-        });
-      } else if (value.length >= 8) {
-        setState(() => _isLoading = true);
-        try {
-          final agent = await agentProvider.fetchAgentByPhone(value);
-          if (agent != null) {
-            await agentProvider.getAgentsByUser(authProvider.user!.userID);
-            final supervisorAgents = agentProvider.agents;
-            if (supervisorAgents.any((a) => a.agentID == agent.agentID)) {
+    if (value.isEmpty) {
+      setState(() {
+        _recipientID = null;
+        _selectedRegionId = null;
+        _selectedGovernorateId = null;
+        _selectedDelegationId = null;
+        _phoneError = null;
+      });
+      return;
+    }
+    if (value.length >= 8) {
+      setState(() => _isLoading = true);
+      try {
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        final agent = await agentProvider.fetchAgentByPhone(value);
+        if (agent != null) {
+          await agentProvider.getAgentsByUser(authProvider.user!.userID);
+          final supervisorAgents = agentProvider.agents;
+          if (supervisorAgents.any((a) => a.agentID == agent.agentID)) {
+            setState(() {
+              _recipientID = agent.agentID;
+              _selectedDelegationId = agent.delegationID;
+              _phoneError = null;
+            });
+            final locationDetails = await LocationService.getLocationDetailsById(agent.delegationID);
+            if (locationDetails['success'] == true && locationDetails.containsKey('address')) {
               setState(() {
-                _recipientID = agent.agentID;
-                _selectedDelegationId = agent.delegationID;
-                _phoneError = null;
+                _selectedRegionId = locationDetails['regionID'] as String?;
+                _selectedGovernorateId = locationDetails['governorateID'] as String?;
               });
-              final locationDetails = await LocationService.getLocationDetailsById(agent.delegationID);
-              if (locationDetails['success'] == true && locationDetails.containsKey('address')) {
-                setState(() {
-                  _selectedRegionId = locationDetails['regionID'] as String?;
-                  _selectedGovernorateId = locationDetails['governorateID'] as String?;
-                });
-              } else {
-                setState(() => _phoneError = 'Invalid location data for agent');
-              }
             } else {
-              setState(() {
-                _phoneError = 'Agent not assigned to supervisor';
-                _recipientID = null;
-                _selectedDelegationId = null;
-              });
+              setState(() => _phoneError = 'Invalid location data for agent');
             }
           } else {
             setState(() {
-              _phoneError = 'Agent not found';
+              _phoneError = 'Agent not assigned to supervisor';
               _recipientID = null;
               _selectedDelegationId = null;
             });
           }
-        } catch (e) {
+        } else {
           setState(() {
-            _phoneError = 'Error fetching agent: $e';
+            _phoneError = 'Agent not found';
             _recipientID = null;
             _selectedDelegationId = null;
           });
-        } finally {
-          setState(() => _isLoading = false);
         }
+      } catch (e) {
+        setState(() {
+          _phoneError = 'Error fetching agent: $e';
+          _recipientID = null;
+          _selectedDelegationId = null;
+        });
+      } finally {
+        setState(() => _isLoading = false);
       }
-    });
+    }
   }
 
   Future<void> _showLocationDialog(BuildContext context, String type) async {
@@ -383,78 +477,50 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
     List<dynamic> items;
     String? selectedValue;
 
-    developer.log(
-      '[TransferReceiptBookScreen] Opening location dialog for type: $type',
-      name: 'TransferReceiptBookScreen.showLocationDialog',
-    );
-
     switch (type) {
       case 'region':
         items = _regions;
         selectedValue = _selectedRegionId;
-        developer.log(
-          '[TransferReceiptBookScreen] Displaying regions: ${items.map((r) => r['name']).toList()}',
-          name: 'TransferReceiptBookScreen.showLocationDialog',
-        );
         break;
       case 'governorate':
-        developer.log(
-          '[TransferReceiptBookScreen] Fetching governorates for region ID: $_selectedRegionId',
-          name: 'TransferReceiptBookScreen.showLocationDialog',
-        );
         final regionGovs = await LocationService.getGovernoratesByRegion(_selectedRegionId!);
-        developer.log(
-          '[TransferReceiptBookScreen] Governorates fetched for region: ${regionGovs.map((g) => g['name']).toList()}',
-          name: 'TransferReceiptBookScreen.showLocationDialog',
-        );
-        developer.log(
-          '[TransferReceiptBookScreen] Fetching supervisor governorates for user ID: ${authProvider.user!.userID}',
-          name: 'TransferReceiptBookScreen.showLocationDialog',
-        );
         final supervisorGovs = await LocationService.getGovernoratesByUser(authProvider.user!.userID);
-        developer.log(
-          '[TransferReceiptBookScreen] Supervisor governorates fetched: ${supervisorGovs.map((g) => g['name']).toList()}',
-          name: 'TransferReceiptBookScreen.showLocationDialog',
-        );
         items = regionGovs.where((g) => supervisorGovs.any((sg) => sg['governorateID'] == g['governorateID'])).toList();
-        developer.log(
-          '[TransferReceiptBookScreen] Filtered governorates: ${items.map((g) => g['name']).toList()}',
-          name: 'TransferReceiptBookScreen.showLocationDialog',
-        );
         selectedValue = _selectedGovernorateId;
         break;
       case 'delegation':
-        developer.log(
-          '[TransferReceiptBookScreen] Fetching delegations for governorate ID: $_selectedGovernorateId',
-          name: 'TransferReceiptBookScreen.showLocationDialog',
-        );
         final govDels = await LocationService.getDelegationsByGovernorate(_selectedGovernorateId!);
-        developer.log(
-          '[TransferReceiptBookScreen] Delegations fetched for governorate: ${govDels.map((d) => d['name']).toList()}',
-          name: 'TransferReceiptBookScreen.showLocationDialog',
-        );
-        developer.log(
-          '[TransferReceiptBookScreen] Fetching supervisor delegations for user ID: ${authProvider.user!.userID}',
-          name: 'TransferReceiptBookScreen.showLocationDialog',
-        );
         final supervisorDels = await LocationService.getDelegationsByUser(authProvider.user!.userID);
-        developer.log(
-          '[TransferReceiptBookScreen] Supervisor delegations fetched: ${supervisorDels.map((d) => d['name']).toList()}',
-          name: 'TransferReceiptBookScreen.showLocationDialog',
-        );
         items = govDels.where((d) => supervisorDels.any((sd) => sd['delegationID'] == d['delegationID'])).toList();
-        developer.log(
-          '[TransferReceiptBookScreen] Filtered delegations: ${items.map((d) => d['name']).toList()}',
-          name: 'TransferReceiptBookScreen.showLocationDialog',
-        );
         selectedValue = _selectedDelegationId;
         break;
       default:
-        developer.log(
-          '[TransferReceiptBookScreen] Invalid location type: $type',
-          name: 'TransferReceiptBookScreen.showLocationDialog',
-        );
         return;
+    }
+
+    // Auto-select if only one option is available
+    if (items.length == 1) {
+      setState(() {
+        if (type == 'region') {
+          _selectedRegionId = items[0]['regionID'];
+          _selectedGovernorateId = null;
+          _selectedGovernorate = null;
+          _selectedDelegationId = null;
+          _selectedDelegation = null;
+        } else if (type == 'governorate') {
+          _selectedGovernorate = items[0];
+          _selectedGovernorateId = items[0]['governorateID'];
+          _selectedDelegationId = null;
+          _selectedDelegation = null;
+        } else {
+          _selectedDelegation = items[0];
+          _selectedDelegationId = items[0]['delegationID'];
+        }
+        _recipientID = null;
+        _phoneController.clear();
+        _phoneError = null;
+      });
+      return;
     }
 
     final TextEditingController searchController = TextEditingController();
@@ -512,10 +578,6 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
                   onChanged: (value) {
                     setDialogState(() {
                       filteredItems = items.where((item) => item['name'].toLowerCase().contains(value.toLowerCase())).toList();
-                      developer.log(
-                        '[TransferReceiptBookScreen] Filtered $type items: ${filteredItems.map((item) => item['name']).toList()}',
-                        name: 'TransferReceiptBookScreen.showLocationDialog',
-                      );
                     });
                   },
                 ),
@@ -553,34 +615,18 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
                               _selectedGovernorate = null;
                               _selectedDelegationId = null;
                               _selectedDelegation = null;
-                              developer.log(
-                                '[TransferReceiptBookScreen] Selected region: ${item['name']} (ID: ${item['${type}ID']}), resetting governorate and delegation',
-                                name: 'TransferReceiptBookScreen.showLocationDialog',
-                              );
                             } else if (type == 'governorate') {
                               _selectedGovernorate = item;
                               _selectedGovernorateId = item['${type}ID'];
                               _selectedDelegationId = null;
                               _selectedDelegation = null;
-                              developer.log(
-                                '[TransferReceiptBookScreen] Selected governorate: ${item['name']} (ID: ${item['${type}ID']}), resetting delegation',
-                                name: 'TransferReceiptBookScreen.showLocationDialog',
-                              );
                             } else {
                               _selectedDelegation = item;
                               _selectedDelegationId = item['${type}ID'];
-                              developer.log(
-                                '[TransferReceiptBookScreen] Selected delegation: ${item['name']} (ID: ${item['${type}ID']})',
-                                name: 'TransferReceiptBookScreen.showLocationDialog',
-                              );
                             }
                             _recipientID = null;
                             _phoneController.clear();
                             _phoneError = null;
-                            developer.log(
-                              '[TransferReceiptBookScreen] Reset agent selection and phone input due to $type change',
-                              name: 'TransferReceiptBookScreen.showLocationDialog',
-                            );
                           });
                           Navigator.pop(context);
                         },
@@ -608,43 +654,34 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
   }
 
   Future<void> _showAgentDialog(BuildContext context, AgentProvider agentProvider) async {
-    if (!mounted) {
-      developer.log('[TransferReceiptBookScreen] Widget not mounted, aborting agent dialog', name: 'TransferReceiptBookScreen.showAgentDialog');
-      return;
-    }
+    if (!mounted) return;
 
-    // Use navigatorKey's context as a fallback
     final BuildContext dialogContext = _navigatorKey.currentContext ?? context;
-    final authProvider = Provider.of<AuthProvider>(dialogContext, listen: false);
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
-    developer.log('[TransferReceiptBookScreen] Opening agent dialog for delegation ID: $_selectedDelegationId', name: 'TransferReceiptBookScreen.showAgentDialog');
     setState(() => _isLoading = true);
 
     try {
-      developer.log('[TransferReceiptBookScreen] Fetching agents for supervisor ID: ${authProvider.user!.userID}', name: 'TransferReceiptBookScreen.showAgentDialog');
       await agentProvider.getAgentsByUser(authProvider.user!.userID);
       final supervisorAgents = List<Agent>.from(agentProvider.agents);
-      developer.log('[TransferReceiptBookScreen] Supervisor agents fetched: ${supervisorAgents.map((a) => '${a.name} ${a.lastname} (${a.phone})').toList()}', name: 'TransferReceiptBookScreen.showAgentDialog');
-
-      developer.log('[TransferReceiptBookScreen] Fetching agents for delegation ID: $_selectedDelegationId', name: 'TransferReceiptBookScreen.showAgentDialog');
       final delegationAgents = await agentProvider.fetchAgentsByDelegation(_selectedDelegationId!);
-      developer.log('[TransferReceiptBookScreen] Delegation agents fetched: ${delegationAgents.map((a) => '${a.name} ${a.lastname} (${a.phone})').toList()}', name: 'TransferReceiptBookScreen.showAgentDialog');
-
       final filteredAgents = supervisorAgents.where((a) => delegationAgents.any((da) => da.agentID == a.agentID)).toList();
-      developer.log('[TransferReceiptBookScreen] Filtered agents (intersection): ${filteredAgents.map((a) => '${a.name} ${a.lastname} (${a.phone})').toList()}', name: 'TransferReceiptBookScreen.showAgentDialog');
-
-      if (!mounted) {
-        developer.log('[TransferReceiptBookScreen] Widget not mounted after fetching agents, aborting dialog', name: 'TransferReceiptBookScreen.showAgentDialog');
-        setState(() => _isLoading = false);
-        return;
-      }
 
       setState(() => _isLoading = false);
+
+      // Auto-select if only one agent is available
+      if (filteredAgents.length == 1) {
+        setState(() {
+          _recipientID = filteredAgents.first.agentID;
+          _phoneController.text = filteredAgents.first.phone ?? '';
+          _phoneError = null;
+        });
+        return;
+      }
 
       final TextEditingController searchController = TextEditingController();
       List<Agent> filteredItems = List.from(filteredAgents);
 
-      // Check if dialogContext is valid for showing dialog
       if (dialogContext.mounted) {
         await showDialog<void>(
           context: dialogContext,
@@ -702,7 +739,6 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
                           '${agent.name} ${agent.lastname}'.toLowerCase().contains(value.toLowerCase()) ||
                               agent.agentID.toLowerCase().contains(value.toLowerCase()))
                               .toList();
-                          developer.log('[TransferReceiptBookScreen] Filtered agents: ${filteredItems.map((a) => '${a.name} ${a.lastname} (ID: ${a.agentID})').toList()}', name: 'TransferReceiptBookScreen.showAgentDialog');
                         });
                       },
                     ),
@@ -747,7 +783,6 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
                                   _recipientID = agent.agentID;
                                   _phoneController.text = agent.phone ?? '';
                                   _phoneError = null;
-                                  developer.log('[TransferReceiptBookScreen] Selected agent: ${agent.name} ${agent.lastname} (ID: ${agent.agentID}, Phone: ${agent.phone})', name: 'TransferReceiptBookScreen.showAgentDialog');
                                 });
                                 Navigator.pop(dialogBuilderContext);
                               }
@@ -774,7 +809,6 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
           ),
         );
       } else {
-        developer.log('[TransferReceiptBookScreen] Dialog context not valid, showing snackbar', name: 'TransferReceiptBookScreen.showAgentDialog');
         _showSnackBar('Unable to show agents: Screen is no longer active');
       }
     } catch (e, stackTrace) {
@@ -818,7 +852,7 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
                   label: 'Region',
                   value: _selectedRegionId == null
                       ? 'Select Region'
-                      : _regions.firstWhere((r) => r['regionID'] == _selectedRegionId)['name'],
+                      : _regions.firstWhere((r) => r['regionID'] == _selectedRegionId, orElse: () => {'name': 'Select Region'})['name'],
                   icon: Icons.location_on_outlined,
                   onTap: () => _showLocationDialog(context, 'region'),
                 ),
@@ -1041,7 +1075,6 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
   @override
   void dispose() {
     _otpTimer?.cancel();
-    _debounce?.cancel();
     _otpController.dispose();
     _phoneController.dispose();
     super.dispose();
@@ -1104,6 +1137,10 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
                                           _error = null;
                                           _phoneError = null;
                                           _isScannerActive = false;
+                                          // Trigger user list refresh
+                                          if (value != null && value != "Agent" && value != "Stub Collection") {
+                                            Provider.of<UserProvider>(context, listen: false).getUsersByRole(value);
+                                          }
                                         });
                                       },
                                     ),

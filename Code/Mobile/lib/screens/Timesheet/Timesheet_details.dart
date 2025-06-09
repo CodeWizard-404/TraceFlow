@@ -171,6 +171,7 @@ class TimesheetDetailsScreenState extends State<TimesheetDetailsScreen> with Sin
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final appBarHeight = 60.0;
     final navBarHeight = 40.0;
     final totalHeaderHeight = appBarHeight + navBarHeight + MediaQuery.of(context).padding.top;
@@ -210,10 +211,15 @@ class TimesheetDetailsScreenState extends State<TimesheetDetailsScreen> with Sin
             SliverToBoxAdapter(
               child: Consumer<TimesheetProvider>(
                 builder: (context, provider, child) {
-                  if (provider.isLoading) return const CustomProgressIndicator();
-                  if (provider.timesheets.isEmpty) return const EmptyState(text: 'No timesheets available');
-                  return SizedBox(
-                    height: MediaQuery.of(context).size.height - totalHeaderHeight - 20,
+                  if (provider.isLoading) {
+                    return const Center(child: CustomProgressIndicator());
+                  }
+                  if (provider.timesheets.isEmpty) {
+                    return const EmptyState(text: 'No timesheets available');
+                  }
+                  return Container(
+                    height: MediaQuery.of(context).size.height - totalHeaderHeight,
+                    padding: const EdgeInsets.all(8.0),
                     child: PageView.builder(
                       controller: _pageController,
                       onPageChanged: _navigateToDate,
@@ -221,9 +227,10 @@ class TimesheetDetailsScreenState extends State<TimesheetDetailsScreen> with Sin
                         final date = _getDateForIndex(index);
                         return SingleChildScrollView(
                           physics: const AlwaysScrollableScrollPhysics(),
-                          child: Padding(
-                            padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-                            child: _buildView(date),
+                          child: _buildSectionCard(
+                            context,
+                            title: _getViewTitle(),
+                            children: [_buildView(date)],
                           ),
                         );
                       },
@@ -248,6 +255,57 @@ class TimesheetDetailsScreenState extends State<TimesheetDetailsScreen> with Sin
           ).then((_) => _fetchTimesheets());
         },
         icon: Icons.add,
+      ),
+    );
+  }
+
+  String _getViewTitle() {
+    switch (_currentView) {
+      case 'day':
+        return 'Day View';
+      case 'week1':
+      case 'week2':
+        return 'Week View';
+      case 'month':
+        return 'Month View';
+      case 'year':
+        return 'Year View';
+      default:
+        return 'Timesheet';
+    }
+  }
+
+  Widget _buildSectionCard(BuildContext context, {required String title, required List<Widget> children}) {
+    final theme = Theme.of(context);
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: theme.colorScheme.primary.withOpacity(0.7),
+          width: 1.5,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+            child: Text(
+              title,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ),
+          const Divider(height: 1, thickness: 1, color: Colors.grey),
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(children: children),
+          ),
+        ],
       ),
     );
   }
@@ -281,3 +339,7 @@ class TimesheetDetailsScreenState extends State<TimesheetDetailsScreen> with Sin
     return (date.difference(firstMonday).inDays / 7).ceil();
   }
 }
+
+
+
+

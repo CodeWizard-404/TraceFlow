@@ -1,15 +1,18 @@
 import 'package:flutter/foundation.dart';
 import '../models/timesheet.dart';
+import '../models/visit.dart';
 import '../services/timesheet_service.dart';
 
 class TimesheetProvider with ChangeNotifier {
   List<Timesheet> _timesheets = [];
   Timesheet? _currentTimesheet;
+  List<Visit> _suggestedVisits = [];
   bool _isLoading = false;
   String? _errorMessage;
 
   List<Timesheet> get timesheets => _timesheets;
   Timesheet? get currentTimesheet => _currentTimesheet;
+  List<Visit> get suggestedVisits => _suggestedVisits;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 

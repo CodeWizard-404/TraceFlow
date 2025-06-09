@@ -28,46 +28,46 @@ class WeekViewList extends StatelessWidget {
         if (provider.timesheets.isEmpty) return const EmptyState(text: 'No timesheets available');
         return Column(
           children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.calendar_today),
-                    onPressed: () async {
-                      final timesheet = provider.timesheets.firstWhere(
-                            (ts) => ts.weekNumber == _getWeekNumber(date),
-                        orElse: () => provider.timesheets.first,
-                      );
-                      await provider.syncTimesheetToCalendar(timesheet.timesheetID);
-                    },
-                    tooltip: 'Sync to Calendar',
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.lightbulb),
-                    onPressed: () async {
-                      await provider.suggestTimesheet(
-                        supervisorID: authProvider.user!.userID,
-                        weekNumber: _getWeekNumber(date),
-                        year: date.year,
-                        coordinates: {'lat': 36.8065, 'lng': 10.1815},
-                      );
-                    },
-                    tooltip: 'Generate Timesheet Suggestions',
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.map),
-                    onPressed: () {
-                      Navigator.pushNamed(context, '/visits_map', arguments: {
-                        'visits': provider.timesheets
-                            .expand((t) => t.visits ?? [])
-                            .where((v) => _getWeekNumber(v.date) == _getWeekNumber(date))
-                            .toList(),
-                      });
-                    },
-                    tooltip: 'View Visits on Map',
-                  ),
-                ],
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                IconButton(
+                  icon: Icon(Icons.calendar_today, color: theme.colorScheme.primary),
+                  onPressed: () async {
+                    final timesheet = provider.timesheets.firstWhere(
+                          (ts) => ts.weekNumber == _getWeekNumber(date),
+                      orElse: () => provider.timesheets.first,
+                    );
+                    await provider.syncTimesheetToCalendar(timesheet.timesheetID);
+                  },
+                  tooltip: 'Sync to Calendar',
+                ),
+                IconButton(
+                  icon: Icon(Icons.lightbulb, color: theme.colorScheme.primary),
+                  onPressed: () async {
+                    await provider.suggestTimesheet(
+                      supervisorID: authProvider.user!.userID,
+                      weekNumber: _getWeekNumber(date),
+                      year: date.year,
+                      coordinates: {'lat': 36.8065, 'lng': 10.1815},
+                    );
+                  },
+                  tooltip: 'Generate Timesheet Suggestions',
+                ),
+                IconButton(
+                  icon: Icon(Icons.map, color: theme.colorScheme.primary),
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/visits_map', arguments: {
+                      'visits': provider.timesheets
+                          .expand((t) => t.visits ?? [])
+                          .where((v) => _getWeekNumber(v.date) == _getWeekNumber(date))
+                          .toList(),
+                    });
+                  },
+                  tooltip: 'View Visits on Map',
+                ),
+              ],
+            ),
             ListView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),

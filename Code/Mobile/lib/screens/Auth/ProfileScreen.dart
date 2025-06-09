@@ -9,6 +9,7 @@ import 'package:http_parser/http_parser.dart';
 import '../../models/user.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/user_provider.dart';
+import '../../providers/notification_provider.dart';
 import '../../widgets/appbar/app_bar.dart';
 import '../../widgets/appbar/sidebar.dart';
 import '../../widgets/commen/button.dart';
@@ -19,9 +20,9 @@ import '../../widgets/commen/text_field.dart';
 import '../../widgets/commen/card.dart';
 import '../../widgets/commen/section_title.dart';
 import '../../widgets/commen/divider.dart';
-import '../../widgets/commen/list_tile.dart';
+import '../../widgets/notifcations/notification_list.dart';
+import '../../widgets/notifcations/notification_preferences.dart';
 import 'login_screen.dart';
-import 'package:flutter/foundation.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -30,8 +31,7 @@ class ProfileScreen extends StatefulWidget {
   ProfileScreenState createState() => ProfileScreenState();
 }
 
-class ProfileScreenState extends State<ProfileScreen>
-    with SingleTickerProviderStateMixin {
+class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   late TextEditingController _firstnameController;
   late TextEditingController _lastnameController;
@@ -42,6 +42,7 @@ class ProfileScreenState extends State<ProfileScreen>
   String? _editingField;
   bool _hasChanges = false;
   Map<String, String> _formErrors = {};
+  String _notificationView = 'list'; // 'list' or 'preferences'
 
   @override
   void initState() {
@@ -55,7 +56,17 @@ class ProfileScreenState extends State<ProfileScreen>
     _confirmPasswordController = TextEditingController();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _initializeProfile();
+      if (mounted) {
+        _initializeProfile();
+        final notificationProvider = Provider.of<NotificationProvider>(context, listen: false);
+        final userProvider = Provider.of<UserProvider>(context, listen: false);
+        if (userProvider.currentUser != null) {
+          notificationProvider.initialize(
+            userProvider.currentUser!.userID,
+            userProvider.currentUser!.roles.map((r) => r.name ?? '').toList(), // Convert roles to List<String>
+          );
+        }
+      }
     });
   }
 
@@ -92,7 +103,7 @@ class ProfileScreenState extends State<ProfileScreen>
       if (mounted) {
         setState(() {
           if (userProvider.errorMessage != null) {
-            _showSnackBar(userProvider.errorMessage!, isError: true);
+            _showSnackBar(userProvider.errorMessage!, backgroundColor: Theme.of(context).colorScheme.error);
           }
         });
         if (userProvider.errorMessage?.contains('401') ?? false) {
@@ -118,8 +129,7 @@ class ProfileScreenState extends State<ProfileScreen>
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final updates = {
-      field:
-      field == 'phone'
+      field: field == 'phone'
           ? _phoneController.text.replaceAll(RegExp(r'[^\d]'), '')
           : (field == 'firstname'
           ? _firstnameController.text
@@ -142,7 +152,7 @@ class ProfileScreenState extends State<ProfileScreen>
     } catch (e) {
       if (mounted) {
         setState(() {
-          _showSnackBar('Failed to update profile: $e', isError: true);
+          _showSnackBar('Failed to update profile: $e', backgroundColor: Theme.of(context).colorScheme.error);
         });
         if (e.toString().contains('401')) {
           await authProvider.logout();
@@ -158,8 +168,7 @@ class ProfileScreenState extends State<ProfileScreen>
     if (pickedFile != null) {
       final bytes = await pickedFile.readAsBytes();
       String? mimeType = lookupMimeType(pickedFile.path, headerBytes: bytes);
-      if (mimeType == null ||
-          !['image/jpeg', 'image/jpg', 'image/png'].contains(mimeType)) {
+      if (mimeType == null || !['image/jpeg', 'image/jpg', 'image/png'].contains(mimeType)) {
         mimeType = 'image/jpeg';
       }
       final multipartFile = http.MultipartFile.fromBytes(
@@ -182,7 +191,7 @@ class ProfileScreenState extends State<ProfileScreen>
       } catch (e) {
         if (mounted) {
           setState(() {
-            _showSnackBar('Failed to update profile picture: $e', isError: true);
+            _showSnackBar('Failed to update profile picture: $e', backgroundColor: Theme.of(context).colorScheme.error);
           });
           if (e.toString().contains('401')) {
             await authProvider.logout();
@@ -197,7 +206,7 @@ class ProfileScreenState extends State<ProfileScreen>
     final newPassword = _newPasswordController.text;
     final confirmPassword = _confirmPasswordController.text;
     if (newPassword != confirmPassword) {
-      setState(() => _showSnackBar('Passwords do not match', isError: true));
+      setState(() => _showSnackBar('Passwords do not match', backgroundColor: Theme.of(context).colorScheme.error));
       return;
     }
     final userProvider = Provider.of<UserProvider>(context, listen: false);
@@ -217,7 +226,7 @@ class ProfileScreenState extends State<ProfileScreen>
     } catch (e) {
       if (mounted) {
         setState(() {
-          _showSnackBar('Failed to update password: $e', isError: true);
+          _showSnackBar('Failed to update password: $e', backgroundColor: Theme.of(context).colorScheme.error);
         });
         if (e.toString().contains('401')) {
           await authProvider.logout();
@@ -239,15 +248,13 @@ class ProfileScreenState extends State<ProfileScreen>
     });
   }
 
-  void _showSnackBar(String message, {bool isError = false}) {
+  void _showSnackBar(String message, {Color? backgroundColor}) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         CustomSnackBar.show(
           context: context,
           message: message,
-          backgroundColor: isError
-              ? Theme.of(context).colorScheme.error
-              : Theme.of(context).colorScheme.primary,
+          backgroundColor: backgroundColor ?? Theme.of(context).colorScheme.primary,
         );
       }
     });
@@ -267,8 +274,7 @@ class ProfileScreenState extends State<ProfileScreen>
     final trimmed = value.trim();
     if (trimmed.isEmpty) return 'Email is required';
     if (trimmed.length > 70) return 'Email must be 70 characters or less';
-    if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(trimmed))
-      return 'Invalid email format';
+    if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(trimmed)) return 'Invalid email format';
     return '';
   }
 
@@ -280,37 +286,29 @@ class ProfileScreenState extends State<ProfileScreen>
   }
 
   String _validatePassword(String value) {
-    if (value.isNotEmpty && value.length < 8)
-      return 'Password must be at least 8 characters';
+    if (value.isNotEmpty && value.length < 8) return 'Password must be at least 8 characters';
     if (value.length > 128) return 'Password must be 128 characters or less';
     if (value.isNotEmpty &&
-        !RegExp(
-          r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[^\s]+$',
-        ).hasMatch(value)) {
+        !RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[^\s]+$').hasMatch(value)) {
       return 'Password must include uppercase, lowercase, digit, and special character, no spaces';
     }
     return '';
   }
 
   String _validatePasswordConfirm(String password, String confirm) {
-    if (password.isNotEmpty && confirm.isEmpty)
-      return 'Password confirmation is required';
-    if (password.isNotEmpty && confirm.isNotEmpty && password != confirm)
-      return 'Passwords do not match';
+    if (password.isNotEmpty && confirm.isEmpty) return 'Password confirmation is required';
+    if (password.isNotEmpty && confirm.isNotEmpty && password != confirm) return 'Passwords do not match';
     return '';
   }
 
   String _formatPhoneDisplay(String rawValue) {
     final digits = rawValue.replaceAll(RegExp(r'[^\d]'), '');
     String formatted = '';
-    if (digits.isNotEmpty)
-      formatted += digits.substring(0, digits.length > 2 ? 2 : digits.length);
+    if (digits.isNotEmpty) formatted += digits.substring(0, digits.length > 2 ? 2 : digits.length);
     if (digits.length > 2)
-      formatted +=
-          ' ' + digits.substring(2, digits.length > 5 ? 5 : digits.length);
+      formatted += ' ' + digits.substring(2, digits.length > 5 ? 5 : digits.length);
     if (digits.length > 5)
-      formatted +=
-          ' ' + digits.substring(5, digits.length > 8 ? 8 : digits.length);
+      formatted += ' ' + digits.substring(5, digits.length > 8 ? 8 : digits.length);
     return formatted;
   }
 
@@ -323,8 +321,7 @@ class ProfileScreenState extends State<ProfileScreen>
 
   void _checkForChanges(String field, String value) {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
-    final originalValue =
-    field == 'firstname'
+    final originalValue = field == 'firstname'
         ? userProvider.currentUser?.firstName
         : field == 'lastname'
         ? userProvider.currentUser?.lastName
@@ -335,12 +332,8 @@ class ProfileScreenState extends State<ProfileScreen>
         : null;
     if (value != originalValue) {
       setState(() => _hasChanges = true);
-      _formErrors[field] =
-      field == 'firstname' || field == 'lastname'
-          ? _validateName(
-        value,
-        field == 'firstname' ? 'First Name' : 'Last Name',
-      )
+      _formErrors[field] = field == 'firstname' || field == 'lastname'
+          ? _validateName(value, field == 'firstname' ? 'First Name' : 'Last Name')
           : field == 'email'
           ? _validateEmail(value)
           : field == 'phone'
@@ -354,14 +347,10 @@ class ProfileScreenState extends State<ProfileScreen>
   void _resetField(String field) {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     setState(() {
-      if (field == 'firstname')
-        _firstnameController.text = userProvider.currentUser?.firstName ?? '';
-      if (field == 'lastname')
-        _lastnameController.text = userProvider.currentUser?.lastName ?? '';
-      if (field == 'email')
-        _emailController.text = userProvider.currentUser?.email ?? '';
-      if (field == 'phone')
-        _phoneController.text = userProvider.currentUser?.phone ?? '';
+      if (field == 'firstname') _firstnameController.text = userProvider.currentUser?.firstName ?? '';
+      if (field == 'lastname') _lastnameController.text = userProvider.currentUser?.lastName ?? '';
+      if (field == 'email') _emailController.text = userProvider.currentUser?.email ?? '';
+      if (field == 'phone') _phoneController.text = userProvider.currentUser?.phone ?? '';
       _editingField = null;
       _hasChanges = false;
       _formErrors.clear();
@@ -401,6 +390,12 @@ class ProfileScreenState extends State<ProfileScreen>
         await _fetchProfile();
       }
     }
+  }
+
+  void _setNotificationView(String view) {
+    setState(() {
+      _notificationView = view;
+    });
   }
 
   @override
@@ -451,7 +446,7 @@ class ProfileScreenState extends State<ProfileScreen>
                   children: [
                     _buildInfoTab(theme, userProvider),
                     _buildSettingsTab(theme),
-                    _buildActivityTab(theme),
+                    _buildNotificationsTab(theme),
                   ],
                 ),
               ),
@@ -571,7 +566,7 @@ class ProfileScreenState extends State<ProfileScreen>
         tabs: const [
           Tab(icon: Icon(Icons.person), text: 'Info'),
           Tab(icon: Icon(Icons.settings), text: 'Settings'),
-          Tab(icon: Icon(Icons.history), text: 'Activity'),
+          Tab(icon: Icon(Icons.notifications), text: 'Notifications'),
         ],
       ),
     );
@@ -591,8 +586,7 @@ class ProfileScreenState extends State<ProfileScreen>
               label: 'First Name',
               field: 'firstname',
               controller: _firstnameController,
-              displayValue:
-              _firstnameController.text.isEmpty ? 'Not set' : _firstnameController.text,
+              displayValue: _firstnameController.text.isEmpty ? 'Not set' : _firstnameController.text,
               icon: Icons.person_outline,
             ),
             const CustomDivider(thickness: 0.5),
@@ -600,8 +594,7 @@ class ProfileScreenState extends State<ProfileScreen>
               label: 'Last Name',
               field: 'lastname',
               controller: _lastnameController,
-              displayValue:
-              _lastnameController.text.isEmpty ? 'Not set' : _lastnameController.text,
+              displayValue: _lastnameController.text.isEmpty ? 'Not set' : _lastnameController.text,
               icon: Icons.person_outline,
             ),
             const CustomDivider(thickness: 0.5),
@@ -618,9 +611,8 @@ class ProfileScreenState extends State<ProfileScreen>
               label: 'Phone',
               field: 'phone',
               controller: _phoneController,
-              displayValue: _phoneController.text.isEmpty
-                  ? 'Not set'
-                  : '+216 ${_formatPhoneDisplay(_phoneController.text)}',
+              displayValue:
+              _phoneController.text.isEmpty ? 'Not set' : '+216 ${_formatPhoneDisplay(_phoneController.text)}',
               icon: Icons.phone_outlined,
               keyboardType: TextInputType.phone,
               maxLength: 8,
@@ -762,10 +754,8 @@ class ProfileScreenState extends State<ProfileScreen>
               obscureText: true,
               onChanged: (value) {
                 _formErrors['newPassword'] = _validatePassword(value);
-                _formErrors['confirmPassword'] = _validatePasswordConfirm(
-                  value,
-                  _confirmPasswordController.text,
-                );
+                _formErrors['confirmPassword'] =
+                    _validatePasswordConfirm(value, _confirmPasswordController.text);
                 setState(() {});
               },
             ),
@@ -785,10 +775,8 @@ class ProfileScreenState extends State<ProfileScreen>
               label: 'Confirm Password',
               obscureText: true,
               onChanged: (value) {
-                _formErrors['confirmPassword'] = _validatePasswordConfirm(
-                  _newPasswordController.text,
-                  value,
-                );
+                _formErrors['confirmPassword'] =
+                    _validatePasswordConfirm(_newPasswordController.text, value);
                 setState(() {});
               },
             ),
@@ -813,43 +801,31 @@ class ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  Widget _buildActivityTab(ThemeData theme) {
+  Widget _buildNotificationsTab(ThemeData theme) {
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
-      child: CustomCard(
-        title: 'Recent Activity',
-        child: Column(
-          children: [
-            CustomListTile(
-              title: 'Visit Logged',
-              subtitle: 'April 07, 2025 - 10:45\nAgent: John Doe | Location: Tunis',
-              leadingIcon: Icons.history,
-              onTap: () {},
-            ),
-            const CustomDivider(),
-            CustomListTile(
-              title: 'Timesheet Submitted',
-              subtitle: 'April 06, 2025 - 16:20\nDuration: 8h 30m',
-              leadingIcon: Icons.access_time,
-              onTap: () {},
-            ),
-            const CustomDivider(),
-            CustomListTile(
-              title: 'Carnet Distributed',
-              subtitle: 'April 05, 2025 - 09:15\nCarnet ID: #CRN12345 | Agent: Amina K.',
-              leadingIcon: Icons.credit_card,
-              onTap: () {},
-            ),
-            const CustomDivider(),
-            CustomListTile(
-              title: 'Souche Collected',
-              subtitle: 'April 04, 2025 - 14:00\nCarnet ID: #CRN12345 | Status: Validated',
-              leadingIcon: Icons.check_circle,
-              onTap: () {},
-            ),
-          ],
-        ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              CustomButton(
+                label: 'Notification List',
+                onPressed: () => _setNotificationView('list'),
+                isOutlined: _notificationView != 'list',
+              ),
+              const CustomSpacer(width: 12),
+              CustomButton(
+                label: 'Preferences',
+                onPressed: () => _setNotificationView('preferences'),
+                isOutlined: _notificationView != 'preferences',
+              ),
+            ],
+          ),
+          const CustomSpacer(height: 16),
+          _notificationView == 'list' ? NotificationList() : NotificationPreferences(),
+        ],
       ),
     );
   }

@@ -148,7 +148,7 @@ class ReceiptBookService {
     }
   }
 
-  Future<void> transferReceiptBooks({
+  Future<Map<String, dynamic>> transferReceiptBooks({
     required List<String> bookIDs,
     required String recipientID,
     required String recipientType,
@@ -159,24 +159,31 @@ class ReceiptBookService {
         ...CookieManager.getHeaders(),
         'Content-Type': 'application/json',
       };
+      final body = json.encode({
+        'bookIDs': bookIDs,
+        'recipientID': recipientID,
+        'recipientType': recipientType,
+      });
+      if (kDebugMode) print('Request body: $body');
       final response = await http.post(
         Uri.parse('$baseUrl/receipt-books/transfer'),
         headers: headers,
-        body: json.encode({
-          'bookIDs': bookIDs,
-          'recipientID': recipientID,
-          'recipientType': recipientType,
-        }),
+        body: body,
       );
 
-      if (kDebugMode) print('Response status: ${response.statusCode}');
+      if (kDebugMode) {
+        print('Response status: ${response.statusCode}');
+        print('Response body: ${response.body}');
+      }
       CookieManager.extractCookies(response);
 
       if (response.statusCode == 200) {
+        final responseBody = json.decode(response.body);
         if (kDebugMode) print('Receipt books transferred successfully');
+        return responseBody; // Return the response body
       } else {
         final error = json.decode(response.body)['error'] ?? 'Failed to transfer receipt books: ${response.statusCode}';
-        if (kDebugMode) print(error);
+        if (kDebugMode) print('Transfer error: $error');
         throw Exception(error);
       }
     } catch (e) {
@@ -185,11 +192,14 @@ class ReceiptBookService {
     }
   }
 
+
+
   Future<void> validateTransfer({
     required List<String> bookIDs,
     required String recipientID,
     required String otpCode,
     required String recipientType,
+    required String otpID,
   }) async {
     if (kDebugMode) print('ReceiptBookService: Validating transfer for books: $bookIDs to $recipientID ($recipientType)');
     try {
@@ -197,25 +207,31 @@ class ReceiptBookService {
         ...CookieManager.getHeaders(),
         'Content-Type': 'application/json',
       };
+      final body = json.encode({
+        'bookIDs': bookIDs,
+        'recipientID': recipientID,
+        'otpCode': otpCode,
+        'recipientType': recipientType,
+        'otpID': otpID, // Include otpID in the request body
+      });
+      if (kDebugMode) print('Validate transfer request body: $body');
       final response = await http.post(
         Uri.parse('$baseUrl/receipt-books/validate-transfer'),
         headers: headers,
-        body: json.encode({
-          'bookIDs': bookIDs,
-          'recipientID': recipientID,
-          'otpCode': otpCode,
-          'recipientType': recipientType,
-        }),
+        body: body,
       );
 
-      if (kDebugMode) print('Response status: ${response.statusCode}');
+      if (kDebugMode) {
+        print('Validate transfer response status: ${response.statusCode}');
+        print('Validate transfer response body: ${response.body}');
+      }
       CookieManager.extractCookies(response);
 
       if (response.statusCode == 200) {
         if (kDebugMode) print('Transfer validated successfully');
       } else {
         final error = json.decode(response.body)['error'] ?? 'Failed to validate transfer: ${response.statusCode}';
-        if (kDebugMode) print(error);
+        if (kDebugMode) print('Validation error: $error');
         throw Exception(error);
       }
     } catch (e) {
@@ -223,6 +239,8 @@ class ReceiptBookService {
       throw Exception('Error validating transfer: $e');
     }
   }
+
+
 
   Future<List<ReceiptBookType>> getAllReceiptBookTypes() async {
     if (kDebugMode) print('ReceiptBookService: Fetching all receipt book types');

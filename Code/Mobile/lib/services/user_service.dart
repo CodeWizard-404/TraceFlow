@@ -18,10 +18,11 @@ class UserService {
           );
           CookieManager.extractCookies(response);
           if (response.statusCode == 200) return response;
-          throw Exception('Failed to fetch profile: ${response.statusCode}');
+          throw Exception('Failed to fetch profile: ${response.statusCode} - ${response.body}');
         },
       );
-      return User.fromJson(jsonDecode(response.body));
+      // Response is already decoded JSON from makeAuthenticatedRequest
+      return User.fromJson(response);
     } catch (e) {
       if (kDebugMode) print('Error fetching profile: $e');
       rethrow;
@@ -67,10 +68,10 @@ class UserService {
           );
           CookieManager.extractCookies(response);
           if (response.statusCode == 200) return response;
-          throw Exception('Failed to fetch users: ${response.statusCode}');
+          throw Exception('Failed to fetch users: ${response.statusCode} - ${response.body}');
         },
       );
-      return (jsonDecode(response.body) as List).map((json) => User.fromJson(json)).toList();
+      return (response as List<dynamic>).map((json) => User.fromJson(json)).toList();
     } catch (e) {
       if (kDebugMode) print('Error fetching all users: $e');
       rethrow;
@@ -88,10 +89,10 @@ class UserService {
           );
           CookieManager.extractCookies(response);
           if (response.statusCode == 200) return response;
-          throw Exception('Failed to fetch user by phone: ${response.statusCode}');
+          throw Exception('Failed to fetch user by phone: ${response.statusCode} - ${response.body}');
         },
       );
-      return User.fromJson(jsonDecode(response.body));
+      return User.fromJson(response);
     } catch (e) {
       if (kDebugMode) print('Error fetching user by phone: $e');
       rethrow;
@@ -109,10 +110,10 @@ class UserService {
           );
           CookieManager.extractCookies(response);
           if (response.statusCode == 200) return response;
-          throw Exception('Failed to fetch user by ID: ${response.statusCode}');
+          throw Exception('Failed to fetch user by ID: ${response.statusCode} - ${response.body}');
         },
       );
-      return User.fromJson(jsonDecode(response.body));
+      return User.fromJson(response);
     } catch (e) {
       if (kDebugMode) print('Error fetching user by ID: $e');
       rethrow;
@@ -129,22 +130,16 @@ class UserService {
             headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
           );
           CookieManager.extractCookies(response);
-          print('Raw response for getUsersByRole ($role): ${response.body}');
+          if (kDebugMode) print('Raw response for getUsersByRole ($role): ${response.body}');
           if (response.statusCode != 200) {
             throw Exception('Failed to fetch users by role: ${response.statusCode} - ${response.body}');
           }
-          return response; // Return http.Response
+          return response;
         },
       );
-      // Assume response is the decoded JSON (List<dynamic>) from makeAuthenticatedRequest
-      if (response is List<dynamic>) {
-        return response.map((json) => User.fromJson(json)).toList();
-      } else {
-        print('Unexpected response format for getUsersByRole ($role): $response');
-        throw Exception('Expected a list of users, got: $response');
-      }
+      return (response as List<dynamic>).map((json) => User.fromJson(json)).toList();
     } catch (e) {
-      print('Error fetching users by role ($role): $e');
+      if (kDebugMode) print('Error fetching users by role ($role): $e');
       rethrow;
     }
   }
@@ -160,10 +155,10 @@ class UserService {
           );
           CookieManager.extractCookies(response);
           if (response.statusCode == 200) return response;
-          throw Exception('Failed to fetch users by region: ${response.statusCode}');
+          throw Exception('Failed to fetch users by region: ${response.statusCode} - ${response.body}');
         },
       );
-      return (jsonDecode(response.body) as List).map((json) => User.fromJson(json)).toList();
+      return (response as List<dynamic>).map((json) => User.fromJson(json)).toList();
     } catch (e) {
       if (kDebugMode) print('Error fetching users by region: $e');
       rethrow;
@@ -181,10 +176,10 @@ class UserService {
           );
           CookieManager.extractCookies(response);
           if (response.statusCode == 200) return response;
-          throw Exception('Failed to fetch users by governorate: ${response.statusCode}');
+          throw Exception('Failed to fetch users by governorate: ${response.statusCode} - ${response.body}');
         },
       );
-      return (jsonDecode(response.body) as List).map((json) => User.fromJson(json)).toList();
+      return (response as List<dynamic>).map((json) => User.fromJson(json)).toList();
     } catch (e) {
       if (kDebugMode) print('Error fetching users by governorate: $e');
       rethrow;
@@ -202,10 +197,10 @@ class UserService {
           );
           CookieManager.extractCookies(response);
           if (response.statusCode == 200) return response;
-          throw Exception('Failed to fetch users by delegation: ${response.statusCode}');
+          throw Exception('Failed to fetch users by delegation: ${response.statusCode} - ${response.body}');
         },
       );
-      return (jsonDecode(response.body) as List).map((json) => User.fromJson(json)).toList();
+      return (response as List<dynamic>).map((json) => User.fromJson(json)).toList();
     } catch (e) {
       if (kDebugMode) print('Error fetching users by delegation: $e');
       rethrow;
@@ -223,10 +218,10 @@ class UserService {
           );
           CookieManager.extractCookies(response);
           if (response.statusCode == 200) return response;
-          throw Exception('Failed to fetch supervisors by regional manager: ${response.statusCode}');
+          throw Exception('Failed to fetch supervisors by regional manager: ${response.statusCode} - ${response.body}');
         },
       );
-      return (jsonDecode(response.body) as List).map((json) => User.fromJson(json)).toList();
+      return (response as List<dynamic>).map((json) => User.fromJson(json)).toList();
     } catch (e) {
       if (kDebugMode) print('Error fetching supervisors by regional manager: $e');
       rethrow;
@@ -244,10 +239,10 @@ class UserService {
           );
           CookieManager.extractCookies(response);
           if (response.statusCode == 200) return response;
-          throw Exception('Failed to fetch regional managers by director: ${response.statusCode}');
+          throw Exception('Failed to fetch regional managers by director: ${response.statusCode} - ${response.body}');
         },
       );
-      return (jsonDecode(response.body) as List).map((json) => User.fromJson(json)).toList();
+      return (response as List<dynamic>).map((json) => User.fromJson(json)).toList();
     } catch (e) {
       if (kDebugMode) print('Error fetching regional managers by director: $e');
       rethrow;
@@ -265,10 +260,10 @@ class UserService {
           );
           CookieManager.extractCookies(response);
           if (response.statusCode == 200) return response;
-          throw Exception('Failed to fetch director by regional manager: ${response.statusCode}');
+          throw Exception('Failed to fetch director by regional manager: ${response.statusCode} - ${response.body}');
         },
       );
-      return User.fromJson(jsonDecode(response.body));
+      return User.fromJson(response);
     } catch (e) {
       if (kDebugMode) print('Error fetching director by regional manager: $e');
       rethrow;
@@ -286,20 +281,10 @@ class UserService {
           );
           CookieManager.extractCookies(response);
           if (response.statusCode == 200) return response;
-          throw Exception('Failed to fetch regional manager by supervisor: ${response.statusCode}');
+          throw Exception('Failed to fetch regional manager by supervisor: ${response.statusCode} - ${response.body}');
         },
       );
-      // The response is already decoded JSON from makeAuthenticatedRequest
-      if (response is List<dynamic>) {
-        if (response.isEmpty) {
-          throw Exception('No regional manager found for supervisor ID: $supervisorID');
-        }
-        return User.fromJson(response.first as Map<String, dynamic>);
-      } else if (response is Map<String, dynamic>) {
-        return User.fromJson(response);
-      } else {
-        throw Exception('Unexpected response format: $response');
-      }
+      return User.fromJson(response);
     } catch (e) {
       if (kDebugMode) print('Error fetching regional manager by supervisor: $e');
       rethrow;
@@ -317,10 +302,10 @@ class UserService {
           );
           CookieManager.extractCookies(response);
           if (response.statusCode == 200) return response;
-          throw Exception('Failed to fetch supervisors by user: ${response.statusCode}');
+          throw Exception('Failed to fetch supervisors by user: ${response.statusCode} - ${response.body}');
         },
       );
-      return (jsonDecode(response.body) as List).map((json) => User.fromJson(json)).toList();
+      return (response as List<dynamic>).map((json) => User.fromJson(json)).toList();
     } catch (e) {
       if (kDebugMode) print('Error fetching supervisors by user: $e');
       rethrow;
@@ -338,10 +323,10 @@ class UserService {
           );
           CookieManager.extractCookies(response);
           if (response.statusCode == 200) return response;
-          throw Exception('Failed to fetch regional managers by user: ${response.statusCode}');
+          throw Exception('Failed to fetch regional managers by user: ${response.statusCode} - ${response.body}');
         },
       );
-      return (jsonDecode(response.body) as List).map((json) => User.fromJson(json)).toList();
+      return (response as List<dynamic>).map((json) => User.fromJson(json)).toList();
     } catch (e) {
       if (kDebugMode) print('Error fetching regional managers by user: $e');
       rethrow;
@@ -359,10 +344,10 @@ class UserService {
           );
           CookieManager.extractCookies(response);
           if (response.statusCode == 200) return response;
-          throw Exception('Failed to fetch director by user: ${response.statusCode}');
+          throw Exception('Failed to fetch director by user: ${response.statusCode} - ${response.body}');
         },
       );
-      return User.fromJson(jsonDecode(response.body));
+      return User.fromJson(response);
     } catch (e) {
       if (kDebugMode) print('Error fetching director by user: $e');
       rethrow;

@@ -845,6 +845,7 @@ class ReceiptBookService {
     }
 
     static async validateTransfer(bookIDs, recipientID, otpCode, recipientType = 'user') {
+        console.log('validateTransfer called with bookIDs:', bookIDs, 'recipientID:', recipientID, 'otpCode:', otpCode, 'recipientType:', recipientType);
         try {
             const transfers = await ReceiptBookTransfer.findAll({
                 where: {
@@ -852,8 +853,20 @@ class ReceiptBookService {
                     [recipientType === 'user' ? 'toUserID' : 'toAgentID']: recipientID,
                     status: 'Pending',
                 },
+                order: [['createdAt', 'DESC']], // Get most recent transfers first
             });
-            if (transfers.length !== bookIDs.length) {
+
+            // Group transfers by bookID and take the most recent one per book
+            const latestTransfers = bookIDs.map(bookID => {
+                const transfer = transfers.find(t => t.bookID === bookID);
+                if (!transfer) {
+                    throw new Error(`No pending transfer found for book ${bookID}`);
+                }
+                return transfer;
+            });
+
+            if (latestTransfers.length !== bookIDs.length) {
+                console.log('Invalid transfer set', latestTransfers.length, bookIDs.length, latestTransfers, bookIDs);
                 const error = new Error('Invalid or incomplete transfer set');
                 error.status = 400;
                 throw error;

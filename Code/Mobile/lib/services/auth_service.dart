@@ -118,6 +118,7 @@ class AuthService {
       if (response.statusCode == 200) {
         final result = json.decode(response.body);
         if (kDebugMode) print('Check auth response: $result');
+        // Extract user data from the nested 'user' object
         final userDataRaw = result['user'] as Map<String, dynamic>? ?? {};
         final userData = {
           'userID': userDataRaw['userID']?.toString() ??
@@ -412,4 +413,6 @@ class AuthService {
         return 'An unexpected error occurred.';
     }
   }
+
+
 }

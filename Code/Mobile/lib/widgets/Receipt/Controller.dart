@@ -54,10 +54,17 @@ class _ReceiptBookControllerState extends State<ReceiptBookController> {
     filtered.sort((a, b) {
       int comparison;
       switch (_sortBy) {
-        case 'number': comparison = (a.number ?? '').compareTo(b.number ?? ''); break;
-        case 'type': comparison = (a.type ?? '').compareTo(b.type ?? ''); break;
-        case 'status': comparison = _getDisplayStatus(a).compareTo(_getDisplayStatus(b)); break;
-        default: comparison = 0;
+        case 'number':
+          comparison = (a.number ?? '').compareTo(b.number ?? '');
+          break;
+        case 'type':
+          comparison = (a.type ?? '').compareTo(b.type ?? '');
+          break;
+        case 'status':
+          comparison = _getDisplayStatus(a).compareTo(_getDisplayStatus(b));
+          break;
+        default:
+          comparison = 0;
       }
       return _sortAscending ? comparison : -comparison;
     });
@@ -65,6 +72,7 @@ class _ReceiptBookControllerState extends State<ReceiptBookController> {
   }
 
   void showSortMenu(GlobalKey sortKey) {
+    final theme = Theme.of(context);
     final RenderBox? button = sortKey.currentContext?.findRenderObject() as RenderBox?;
     if (button == null) return;
 
@@ -79,6 +87,8 @@ class _ReceiptBookControllerState extends State<ReceiptBookController> {
         position.dx + size.width,
         0,
       ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      color: theme.cardTheme.color,
       items: [
         _buildSortItem('Number', 'number'),
         _buildSortItem('Type', 'type'),
@@ -87,23 +97,36 @@ class _ReceiptBookControllerState extends State<ReceiptBookController> {
     ).then((value) {
       if (value != null) {
         setState(() {
-        if (_sortBy == value) {
-          _sortAscending = !_sortAscending;
-        } else { _sortBy = value; _sortAscending = true; }
-      });
+          if (_sortBy == value) {
+            _sortAscending = !_sortAscending;
+          } else {
+            _sortBy = value;
+            _sortAscending = true;
+          }
+        });
       }
     });
   }
 
   PopupMenuItem<String> _buildSortItem(String label, String value) {
+    final theme = Theme.of(context);
     return PopupMenuItem(
       value: value,
       child: Row(
         children: [
-          Text(label),
+          Text(
+            label,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurface,
+            ),
+          ),
           if (_sortBy == value) ...[
             const SizedBox(width: 8),
-            Icon(_sortAscending ? Icons.arrow_upward : Icons.arrow_downward, size: 16),
+            Icon(
+              _sortAscending ? Icons.arrow_upward : Icons.arrow_downward,
+              size: 16,
+              color: theme.colorScheme.primary,
+            ),
           ],
         ],
       ),
