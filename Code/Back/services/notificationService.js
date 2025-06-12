@@ -125,42 +125,6 @@ class NotificationService {
         return types;
     }
 
-    async updatePreferences(userID, preferences, logInfo) {
-        const rules = await NotificationRule.findAll({ where: { priority: 'high' } });
-        const highPriorityEvents = rules.map(rule => rule.event);
-
-        for (const event of Object.keys(preferences)) {
-            if (highPriorityEvents.includes(event)) {
-                throw Object.assign(new Error(`Cannot customize preferences for high-priority event: ${event}`), { status: 400 });
-            }
-            const channels = preferences[event];
-            if (typeof channels !== 'object' ||
-                !['email', 'sms', 'inApp'].every(c => typeof channels[c] === 'boolean') ||
-                channels.websocket !== undefined) {
-                throw Object.assign(new Error(ERROR_MESSAGES.INVALID_PREFERENCES), { status: 400 });
-            }
-        }
-
-        let preference = await NotificationPreference.findOne({ where: { userID } });
-        if (!preference) {
-            preference = await NotificationPreference.create({
-                userID,
-                preferences: {},
-            });
-        }
-        const currentPreferences = preference.preferences || {};
-        const updatedPreferences = { ...currentPreferences };
-        for (const [event, channels] of Object.entries(preferences)) {
-            updatedPreferences[event] = {
-                email: channels.email,
-                sms: channels.sms,
-                inApp: channels.inApp,
-            };
-        }
-        await preference.update({ preferences: updatedPreferences });
-        await RedisUtils.storeUserPreferences(userID, updatedPreferences);
-        return preference;
-    }
 
     async getPreferences(userID, logInfo) {
         const preference = await NotificationPreference.findOne({ where: { userID } });
@@ -173,7 +137,6 @@ class NotificationService {
             isCustomizable: rule.priority !== 'high',
         }));
 
-        // Use stored preferences directly, only apply defaults for undefined events
         const storedPrefs = preference?.preferences || {};
         const preferences = {};
         for (const { event } of availableEvents) {
@@ -330,124 +293,6 @@ class NotificationService {
             return result;
         } catch (error) {
             return { success: false, method: 'SMS', reason: error.message };
-        }
-    }
-
-    async sendNotification({ event, data, roles, userIDs, type, message, email, sms, metadata = {}, rule }) {
-        const results = [];
-        let notification;
-        const resolvedMessage = await Promise.resolve(message);
-
-        if (!rule.enabled) {
-            return [{ success: false, method: 'All', reason: 'Rule is disabled' }];
-        }
-
-        const isHighPriority = rule.priority === 'high';
-        const preferences = isHighPriority
-            ? { inApp: rule.channels.inApp, email: rule.channels.email, sms: rule.channels.sms }
-            : (userIDs.length ? (await this.getUserPreferences(userIDs[0], event, rule)).preferences : { inApp: true });
-
-        if (preferences.inApp && userIDs.length) {
-            notification = await this.storeNotification({
-                userID: userIDs[0],
-                type,
-                message: resolvedMessage,
-                channel: 'in-app',
-                event,
-                rule,
-            });
-            if (notification) {
-                results.push({ success: true, method: 'In-App' });
-            }
-        }
-
-        if (email && preferences.email && resolvedMessage) {
-            const subject = `TraceFlow Notification: ${type.charAt(0).toUpperCase() + type.slice(1)}`;
-            const emailResult = await this.sendEmailNotification(email, subject, resolvedMessage, data, metadata);
-            if (emailResult.success && userIDs.length) {
-                await this.storeNotification({
-                    userID: userIDs[0],
-                    type,
-                    message: resolvedMessage,
-                    channel: 'email',
-                    status: 'sent',
-                    event,
-                    rule,
-                });
-            } else if (!emailResult.success && userIDs.length) {
-                await this.storeNotification({
-                    userID: userIDs[0],
-                    type,
-                    message: resolvedMessage,
-                    channel: 'email',
-                    status: 'failed',
-                    event,
-                    rule,
-                });
-            }
-            results.push(emailResult);
-        }
-
-        if (sms && preferences.sms && resolvedMessage) {
-            const smsResult = await this.sendSMSNotification(sms, resolvedMessage, data, metadata);
-            if (smsResult.success && userIDs.length) {
-                await this.storeNotification({
-                    userID: userIDs[0],
-                    type,
-                    message: resolvedMessage,
-                    channel: 'sms',
-                    status: 'sent',
-                    event,
-                    rule,
-                });
-            } else if (!smsResult.success && userIDs.length) {
-                await this.storeNotification({
-                    userID: userIDs[0],
-                    type,
-                    message: resolvedMessage,
-                    channel: 'sms',
-                    status: 'failed',
-                    event,
-                    rule,
-                });
-            }
-            results.push(smsResult);
-        }
-
-        return results;
-    }
-
-    async getUserPreferences(userID, event = null, rule = null) {
-        try {
-            const cachedPrefs = await RedisUtils.getUserPreferences(userID);
-            if (cachedPrefs) {
-                const prefs = event ? cachedPrefs[event] || { email: rule?.channels.email || false, sms: rule?.channels.sms || false, inApp: rule?.channels.inApp || true } : cachedPrefs;
-                return {
-                    preferences: prefs,
-                    isCustomizable: !rule || rule.priority !== 'high',
-                };
-            }
-            const preferences = await NotificationPreference.findOne({ where: { userID } });
-            let prefs = preferences?.preferences || {};
-            if (rule && rule.priority === 'high' && prefs[event]) {
-                delete prefs[event];
-                await NotificationPreference.update(
-                    { preferences: prefs },
-                    { where: { userID } }
-                );
-                await RedisUtils.invalidateUserPreferences(userID);
-            }
-            await RedisUtils.storeUserPreferences(userID, prefs);
-            const eventPrefs = event ? prefs[event] || { email: rule?.channels.email || false, sms: rule?.channels.sms || false, inApp: rule?.channels.inApp || true } : prefs;
-            return {
-                preferences: eventPrefs,
-                isCustomizable: !rule || rule.priority !== 'high',
-            };
-        } catch (error) {
-            return {
-                preferences: event ? { email: rule?.channels.email || false, sms: rule?.channels.sms || false, inApp: rule?.channels.inApp || true } : {},
-                isCustomizable: !rule || rule.priority !== 'high',
-            };
         }
     }
 
@@ -609,8 +454,8 @@ class NotificationService {
                         userIDs: [user.userID],
                         type: rule.type,
                         message,
-                        email: rule.channels.email ? user.email : null,
-                        sms: rule.channels.sms ? user.phone : null,
+                        email: user.email,
+                        sms: user.phone,
                         metadata,
                         rule,
                     });

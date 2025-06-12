@@ -1,6 +1,8 @@
 import 'package:TraceFlow/providers/location_provider.dart';
 import 'package:TraceFlow/screens/Auth/ProfileScreen.dart';
 import 'package:TraceFlow/screens/Auth/Verify2FAScreen.dart';
+import 'package:TraceFlow/screens/Auth/forgot_password_screen.dart';
+import 'package:TraceFlow/screens/Auth/verify_reset_screen.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -78,6 +80,8 @@ class MyApp extends StatelessWidget {
           routes: {
             '/login': (_) => const LoginScreen(),
             '/verify-2fa': (_) => const Verify2FAScreen(),
+            '/forgot-password': (_) => const ForgotPasswordScreen(),
+'/reset-password': (_) => const VerifyResetScreen(),
             '/timesheet-details': (_) => const TimesheetDetailsScreen(),
             '/receipt-books': (_) => const ReceiptBooksScreen(),
             '/profile': (_) => const ProfileScreen(),
@@ -108,6 +112,8 @@ class AuthWrapper extends StatefulWidget {
 }
 
 class AuthWrapperState extends State<AuthWrapper> {
+  String? _lastPushedRoute; // Track last pushed route to prevent duplicates
+
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
@@ -118,7 +124,8 @@ class AuthWrapperState extends State<AuthWrapper> {
           'isLoading=${authProvider.isLoading}, '
           'isSupervisor=${authProvider.isSupervisor}, '
           'requires2FA=${authProvider.requires2FA}, '
-          'permissionsLoaded=${authProvider.permissionsLoaded}');
+          'permissionsLoaded=${authProvider.permissionsLoaded}, '
+          'userID=${authProvider.userID}');
     }
 
     if (authProvider.isLoading) {
@@ -128,7 +135,8 @@ class AuthWrapperState extends State<AuthWrapper> {
     if (authProvider.errorMessage?.contains('Session expired') ?? false) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        if (ModalRoute.of(context)?.settings.name != '/login') {
+        if (ModalRoute.of(context)?.settings.name != '/login' && _lastPushedRoute != '/login') {
+          _lastPushedRoute = '/login';
           NavigationService.navigatorKey.currentState?.pushReplacementNamed('/login');
         }
       });
@@ -139,7 +147,28 @@ class AuthWrapperState extends State<AuthWrapper> {
       return const Verify2FAScreen();
     }
 
+    // Handle password reset flow
+    if (authProvider.user == null && authProvider.userID != null) {
+      final currentRoute = ModalRoute.of(context)?.settings.name;
+      if (currentRoute != '/reset-password' && _lastPushedRoute != '/reset-password') {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          _lastPushedRoute = '/reset-password';
+          NavigationService.navigatorKey.currentState?.pushNamed('/reset-password');
+        });
+      }
+      return const VerifyResetScreen();
+    }
+
     if (authProvider.user == null) {
+      final currentRoute = ModalRoute.of(context)?.settings.name;
+      if (currentRoute != '/login' && _lastPushedRoute != '/login') {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          _lastPushedRoute = '/login';
+          NavigationService.navigatorKey.currentState?.pushReplacementNamed('/login');
+        });
+      }
       return const LoginScreen();
     }
 
@@ -159,6 +188,8 @@ class AuthWrapperState extends State<AuthWrapper> {
     return const NavigationShell();
   }
 }
+
+
 
 class NavigationShell extends StatefulWidget {
   const NavigationShell({super.key});

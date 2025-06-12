@@ -341,16 +341,22 @@ class _NotificationPreferencesState extends State<NotificationPreferences> {
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                CustomButton(
-                  label: 'Refresh',
-                  onPressed: _refreshPreferences,
-                  isOutlined: true,
+                Visibility(
+                  visible: !_hasChanges,
+                  child: CustomButton(
+                    label: 'Refresh',
+                    onPressed: _refreshPreferences,
+                    isOutlined: true,
+                  ),
                 ),
-                const CustomSpacer(width: 12),
-                CustomButton(
-                  label: 'Reset',
-                  onPressed: _resetPreferences,
-                  isOutlined: true,
+                if (!_hasChanges) const CustomSpacer(width: 12),
+                Visibility(
+                  visible: !_hasChanges,
+                  child: CustomButton(
+                    label: 'Reset',
+                    onPressed: _resetPreferences,
+                    isOutlined: true,
+                  ),
                 ),
                 if (_hasChanges) ...[
                   const CustomSpacer(width: 12),

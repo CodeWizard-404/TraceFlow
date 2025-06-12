@@ -277,16 +277,36 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
   const userPermissions = useMemo(
     () => ({
-      accessAgentMapLocations: effectivePermissions?.includes(PERMISSIONS.ACCESS_AGENT_MAP_LOCATIONS),
-      createAgents: effectivePermissions?.includes(PERMISSIONS.CREATE_AGENTS),
-      updateAgents: effectivePermissions?.includes(PERMISSIONS.UPDATE_AGENTS),
-      accessRegions: effectivePermissions?.includes(PERMISSIONS.ACCESS_REGIONS),
-      accessGovernorates: effectivePermissions?.includes(PERMISSIONS.ACCESS_GOVERNORATES),
-      accessDelegations: effectivePermissions?.includes(PERMISSIONS.ACCESS_DELEGATIONS),
-      accessRegionsByUser: effectivePermissions?.includes(PERMISSIONS.ACCESS_REGIONS_BY_USER),
-      accessGovernoratesByUser: effectivePermissions?.includes(PERMISSIONS.ACCESS_GOVERNORATES_BY_USER),
-      accessDelegationsByUser: effectivePermissions?.includes(PERMISSIONS.ACCESS_DELEGATIONS_BY_USER),
-      accessSupervisors: effectivePermissions?.includes(PERMISSIONS.ACCESS_SUPERVISORS),
+      accessAgentMapLocations: effectivePermissions?.some(
+        (p) => p.name === import.meta.env.VITE_PERMISSIONS_READ_AGENT_MAP_LOCATIONS
+      ),
+      createAgents: effectivePermissions?.some(
+        (p) => p.name === import.meta.env.VITE_PERMISSIONS_CREATE_AGENTS
+      ),
+      updateAgents: effectivePermissions?.some(
+        (p) => p.name === import.meta.env.VITE_PERMISSIONS_UPDATE_AGENTS
+      ),
+      accessRegions: effectivePermissions?.some(
+        (p) => p.name === import.meta.env.VITE_PERMISSIONS_ACCESS_REGIONS
+      ),
+      accessGovernorates: effectivePermissions?.some(
+        (p) => p.name === import.meta.env.VITE_PERMISSIONS_ACCESS_GOVERNORATES
+      ),
+      accessDelegations: effectivePermissions?.some(
+        (p) => p.name === import.meta.env.VITE_PERMISSIONS_ACCESS_DELEGATIONS
+      ),
+      accessRegionsByUser: effectivePermissions?.some(
+        (p) => p.name === import.meta.env.VITE_PERMISSIONS_ACCESS_REGIONS_BY_USER
+      ),
+      accessGovernoratesByUser: effectivePermissions?.some(
+        (p) => p.name === import.meta.env.VITE_PERMISSIONS_ACCESS_GOVERNORATES_BY_USER
+      ),
+      accessDelegationsByUser: effectivePermissions?.some(
+        (p) => p.name === import.meta.env.VITE_PERMISSIONS_ACCESS_DELEGATIONS_BY_USER
+      ),
+      accessSupervisors: effectivePermissions?.some(
+        (p) => p.name === import.meta.env.VITE_PERMISSIONS_READ_SUPERVISORS
+      ),
     }),
     [effectivePermissions]
   );
