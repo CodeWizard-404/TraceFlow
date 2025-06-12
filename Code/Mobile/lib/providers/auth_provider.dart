@@ -22,8 +22,8 @@ class AuthProvider with ChangeNotifier {
   String? _userID;
   bool _requires2FA = false;
   String? _errorMessage;
-  int _otpTimer = 600;
-  int _resendCooldown = 0;
+  ValueNotifier<int> _otpTimer = ValueNotifier<int>(600);
+  ValueNotifier<int> _resendCooldown = ValueNotifier<int>(0);
   String _otpMethod = 'phone';
   Timer? _otpTimerInstance;
   String? _tempToken;
@@ -45,8 +45,8 @@ class AuthProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get permissionsLoaded => _permissionsLoaded;
   String? get errorMessage => _errorMessage;
-  int get otpTimer => _otpTimer;
-  int get resendCooldown => _resendCooldown;
+  ValueNotifier<int> get otpTimer => _otpTimer;
+  ValueNotifier<int> get resendCooldown => _resendCooldown;
   String get otpMethod => _otpMethod;
   String? get userID => _userID;
   bool get requires2FA => _requires2FA;
@@ -358,7 +358,7 @@ class AuthProvider with ChangeNotifier {
         _requires2FA = true;
         _userID = result['userID'];
         _authTempToken = result['tempToken'];
-        _otpTimer = 600;
+        _otpTimer.value = 600;
         _otpMethod = result['otpMethod'] ?? 'phone';
         _startotpTimer();
       } else {
@@ -392,7 +392,7 @@ class AuthProvider with ChangeNotifier {
         _requires2FA = true;
         _userID = result['userID'];
         _authTempToken = result['tempToken'];
-        _otpTimer = 600;
+        _otpTimer.value = 600;
         _otpMethod = result['otpMethod'] ?? 'phone';
         _startotpTimer();
       } else {
@@ -423,7 +423,7 @@ class AuthProvider with ChangeNotifier {
         _requires2FA = true;
         _userID = result['userID'];
         _authTempToken = result['tempToken'];
-        _otpTimer = 600;
+        _otpTimer.value = 600;
         _otpMethod = result['otpMethod'] ?? 'phone';
         _startotpTimer();
       } else {
@@ -479,15 +479,15 @@ class AuthProvider with ChangeNotifier {
   }
 
   Future<void> resend2FA(String method) async {
-    if (_userID == null || _resendCooldown > 0) return;
+    if (_userID == null || _resendCooldown.value > 0) return;
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
     try {
       final result = await AuthService.resend2FA(_userID!, method);
       _otpMethod = method;
-      _otpTimer = 600;
-      _resendCooldown = 60;
+      _otpTimer.value = 600;
+      _resendCooldown.value = 60;
       _errorMessage = result['message'] ?? 'OTP resent successfully';
       _startotpTimer();
     } catch (e) {
@@ -505,9 +505,8 @@ class AuthProvider with ChangeNotifier {
     try {
       final result = await AuthService.initiatePasswordReset(identifier);
       _userID = result['userID'];
-      _otpTimer = 600;
-      _otpMethod =
-      result['message']?.contains('email') ?? false ? 'email' : 'phone';
+      _otpTimer.value = 600;
+      _otpMethod = result['message']?.contains('email') ?? false ? 'email' : 'phone';
       _startotpTimer();
       _errorMessage = result['message'] ?? 'Password reset initiated';
     } catch (e) {
@@ -528,10 +527,7 @@ class AuthProvider with ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
     try {
-      final result = await AuthService.verifyPasswordResetOTP(
-        _userID!,
-        otpCode,
-      );
+      final result = await AuthService.verifyPasswordResetOTP(_userID!, otpCode);
       _tempToken = result['tempToken'];
       _errorMessage = 'OTP verified successfully';
     } catch (e) {
@@ -604,10 +600,9 @@ class AuthProvider with ChangeNotifier {
   void _startotpTimer() {
     _otpTimerInstance?.cancel();
     _otpTimerInstance = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (_otpTimer > 0) _otpTimer--;
-      if (_resendCooldown > 0) _resendCooldown--;
-      if (_otpTimer == 0 && _resendCooldown == 0) timer.cancel();
-      notifyListeners();
+      if (_otpTimer.value > 0) _otpTimer.value--;
+      if (_resendCooldown.value > 0) _resendCooldown.value--;
+      if (_otpTimer.value == 0 && _resendCooldown.value == 0) timer.cancel();
     });
   }
 
@@ -764,6 +759,8 @@ class AuthProvider with ChangeNotifier {
   void dispose() {
     _otpTimerInstance?.cancel();
     _refreshTimer?.cancel();
+    _otpTimer.dispose();
+    _resendCooldown.dispose();
     super.dispose();
   }
 }

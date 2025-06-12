@@ -16,6 +16,7 @@ class ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final _identifierController = TextEditingController();
   Map<String, String> _errors = {};
   String? _successMessage;
+  bool _hasNavigated = false;
 
   @override
   void dispose() {
@@ -49,7 +50,7 @@ class ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -62,8 +63,12 @@ class ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           ),
         );
         authProvider.clearError();
-      } else if (authProvider.userID != null) {
-        Navigator.pushNamed(context, '/reset-password');
+      } else if (authProvider.userID != null && !_hasNavigated) {
+        final currentRoute = ModalRoute.of(context)?.settings.name;
+        if (currentRoute != '/reset-password') {
+          _hasNavigated = true;
+          Navigator.pushNamed(context, '/reset-password');
+        }
       } else if (_successMessage != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -98,7 +103,6 @@ class ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         ),
                       ),
                       const SizedBox(height: 48),
-                      // Identifier field
                       TextFormField(
                         controller: _identifierController,
                         decoration: InputDecoration(
@@ -117,7 +121,6 @@ class ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         autocorrect: false,
                       ),
                       const SizedBox(height: 24),
-                      // Send Reset OTP button
                       AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
                         width: double.infinity,
@@ -141,7 +144,6 @@ class ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      // Back to login
                       TextButton(
                         onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
                         child: const Text('Back to Sign In'),
