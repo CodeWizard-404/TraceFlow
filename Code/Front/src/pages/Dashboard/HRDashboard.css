@@ -385,7 +385,6 @@ body.dark .hr-dashboard .ant-list-item-meta-description {
         align-items: stretch;
     }
 
-    .hr-dashboard .ant-tabs-tab {}
 }
 
 @media (max-width: 768px) {
@@ -464,4 +463,42 @@ body.dark .hr-dashboard .ant-list-item-meta-description {
     .hr-dashboard .ant-list-item-meta-description {
         font-size: 0.625rem;
     }
+}
+
+.body.dark p, body.dark span, body.dark div {
+    color: #fff !important;
+}
+
+.hr-dashboard .ant-input, .hr-dashboard .ant-select-selector, .hr-dashboard .ant-picker {
+    background: transparent !important;
+}
+
+body.dark .ant-picker-date-panel {
+    background-color: #333 !important;
+}
+
+body.dark :where(.css-dev-only-do-not-override-mc1tut).ant-select-dropdown {
+    background: #333 !important;
+
+}
+
+.ant-collapse-content-box .ant-card-body {
+    transition: background-color 0.3s ease-in-out;
+}
+
+.ant-collapse-content-box .ant-card-body:hover {
+    background-color: #fff;
+}
+
+:where(.css-dev-only-do-not-override-mc1tut).ant-tag {
+    background-color: transparent !important;
+}
+
+body.dark .hr-dashboard .ant-table-thead>tr>th {
+    background-color: #333;
+    color: #fff;
+}
+
+.hr-dashboard .ant-input, .hr-dashboard .ant-select-selector, .hr-dashboard .ant-picker {
+    padding: 0.28rem 1rem !important;
 }

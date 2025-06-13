@@ -2008,7 +2008,8 @@
     "permissionCheckError": "Failed to check location permission",
     "agentDetailsError": "Failed to retrieve agent details",
     "confirm": "Confirm",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "confirmUpdateLocation": "Confirm Updating The ddragged Agent's Location ?"
   },
   "reports": {
     "scheduled": {

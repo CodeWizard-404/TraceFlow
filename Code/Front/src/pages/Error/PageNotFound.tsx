@@ -43,7 +43,7 @@ const PageNotFound: React.FC = () => {
           <p className="form-subtitle">{t("pageNotFound.subtitle")}</p>
         </div>
         <div className="content-section">
-          <div className="error-message">
+          <div className="error-message-1">
             <FaExclamationCircle className="error-icon" aria-hidden="true" />
             <p>{t("pageNotFound.error.message")}</p>
             <span>{t("pageNotFound.error.description")}</span>

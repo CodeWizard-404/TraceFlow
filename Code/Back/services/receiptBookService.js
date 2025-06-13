@@ -845,7 +845,6 @@ class ReceiptBookService {
     }
 
     static async validateTransfer(bookIDs, recipientID, otpCode, recipientType = 'user') {
-        console.log('validateTransfer called with bookIDs:', bookIDs, 'recipientID:', recipientID, 'otpCode:', otpCode, 'recipientType:', recipientType);
         try {
             const transfers = await ReceiptBookTransfer.findAll({
                 where: {
@@ -866,7 +865,6 @@ class ReceiptBookService {
             });
 
             if (latestTransfers.length !== bookIDs.length) {
-                console.log('Invalid transfer set', latestTransfers.length, bookIDs.length, latestTransfers, bookIDs);
                 const error = new Error('Invalid or incomplete transfer set');
                 error.status = 400;
                 throw error;
