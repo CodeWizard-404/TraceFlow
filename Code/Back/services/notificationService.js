@@ -332,22 +332,19 @@ class NotificationService {
     }
 
     async updateNotificationStatus(notificationID, status) {
-        try {
-            const notification = await Notification.findByPk(notificationID);
-            if (notification) {
-                notification.status = status;
-                await notification.save();
-                const event = 'notification:updated';
-                const data = {
-                    notificationID,
-                    status,
-                    updatedAt: new Date(),
-                };
-                await this.sendWebSocketNotification(event, data, [], [notification.userID]);
-            }
-        } catch (error) {
-            console.error('Failed to update notification status:', error.message);
+        const notification = await Notification.findByPk(notificationID);
+        if (notification) {
+            notification.status = status;
+            await notification.save();
+            const event = 'notification:updated';
+            const data = {
+                notificationID,
+                status,
+                updatedAt: new Date(),
+            };
+            await this.sendWebSocketNotification(event, data, [], [notification.userID]);
         }
+
     }
 
     async createDefaultDisabledRule({ event, data, metadata = {} }) {
@@ -385,31 +382,28 @@ class NotificationService {
     }
 
     async handlePriorityChange(rule) {
-        try {
-            if (rule.priority !== 'high') return;
+        if (rule.priority !== 'high') return;
 
-            const preferences = await NotificationPreference.findAll({
-                where: {
-                    preferences: {
-                        [Op.contains]: { [rule.event]: {} }
-                    }
-                }
-            });
-
-            for (const pref of preferences) {
-                const userPrefs = pref.preferences || {};
-                if (userPrefs[rule.event]) {
-                    delete userPrefs[rule.event];
-                    await NotificationPreference.update(
-                        { preferences: userPrefs },
-                        { where: { userID: pref.userID } }
-                    );
-                    await RedisUtils.invalidateUserPreferences(pref.userID);
+        const preferences = await NotificationPreference.findAll({
+            where: {
+                preferences: {
+                    [Op.contains]: { [rule.event]: {} }
                 }
             }
-        } catch (error) {
-            console.error('Failed to handle priority change:', error.message);
+        });
+
+        for (const pref of preferences) {
+            const userPrefs = pref.preferences || {};
+            if (userPrefs[rule.event]) {
+                delete userPrefs[rule.event];
+                await NotificationPreference.update(
+                    { preferences: userPrefs },
+                    { where: { userID: pref.userID } }
+                );
+                await RedisUtils.invalidateUserPreferences(pref.userID);
+            }
         }
+
     }
 
     async triggerNotification({ event, data, metadata = {} }) {

@@ -37,7 +37,6 @@ class AIController {
      * @returns {Promise<void>} JSON response with created configuration or error.
      */
     static async createAIConfig(req, res) {
-        console.log('Creating AI configuration', req.body);
         const actorID = req.user?.userID || 'unknown';
         try {
             const errors = validationResult(req);

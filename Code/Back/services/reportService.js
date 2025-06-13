@@ -384,7 +384,6 @@ class ReportService {
                 );
                 reportData.aiSummary = aiSummary.summary || 'No AI summary available';
             } catch (error) {
-                console.warn('AI summary generation failed for Timesheet report:', error.message);
                 reportData.aiSummary = 'AI summary unavailable';
             }
             return reportData;
@@ -520,7 +519,6 @@ class ReportService {
                 );
                 reportData.aiSummary = aiSummary.summary || 'No AI summary available';
             } catch (error) {
-                console.warn('AI summary generation failed for ReceiptBookInventory report:', error.message);
                 reportData.aiSummary = 'AI summary unavailable';
             }
 
@@ -616,7 +614,6 @@ class ReportService {
                 );
                 reportData.aiSummary = aiSummary.summary || 'No AI summary available';
             } catch (error) {
-                console.warn('AI summary generation failed for StubCollection report:', error.message);
                 reportData.aiSummary = 'AI summary unavailable';
             }
 
@@ -709,7 +706,6 @@ class ReportService {
                 );
                 reportData.aiSummary = aiSummary.summary || 'No AI summary available';
             } catch (error) {
-                console.warn('AI summary generation failed for UserActivity report:', error.message);
                 reportData.aiSummary = 'AI summary unavailable';
             }
 
@@ -924,7 +920,6 @@ class ReportService {
                 );
                 reportData.aiSummary = aiSummary.summary || 'No AI summary available';
             } catch (error) {
-                console.warn('AI summary generation failed for AgentPerformance report:', error.message);
                 reportData.aiSummary = 'AI summary unavailable';
             }
 
@@ -1084,7 +1079,6 @@ class ReportService {
                 );
                 reportData.aiSummary = aiSummary.summary || 'No AI summary available';
             } catch (error) {
-                console.warn('AI summary generation failed for RegionPerformance report:', error.message);
                 reportData.aiSummary = 'AI summary unavailable';
             }
 
@@ -1149,7 +1143,6 @@ class ReportService {
                 );
                 reportData.aiSummary = aiSummary.summary || 'No AI summary available';
             } catch (error) {
-                console.warn('AI summary generation failed for Full report:', error.message);
                 reportData.aiSummary = 'AI summary unavailable';
             }
 

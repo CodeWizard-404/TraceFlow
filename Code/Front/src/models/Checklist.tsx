@@ -1,6 +1,8 @@
 interface Checklist {
     checklistID: string;
     item: string;
+    createdAt: string;
+    updatedAt: string;
 }
 
 interface VisitChecklist extends Checklist {
@@ -8,6 +10,8 @@ interface VisitChecklist extends Checklist {
         checked: boolean;
         visitID: string;
         checklistID: string;
+        createdAt: string;
+        updatedAt: string;
     };
 }
 

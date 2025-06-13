@@ -28,12 +28,19 @@ html {
     border-radius: 1rem;
     box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.05);
     transition: transform 0.3s ease;
+
+
 }
 
 body.dark .hr-dashboard .ant-card {
     background: #262626;
     box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.2);
     color: #e5e7eb;
+
+    background: #222222;
+    box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.3);
+    border: 1px solid #4b5563;
+    border-radius: 0.8rem !important;
 }
 
 
@@ -385,7 +392,6 @@ body.dark .hr-dashboard .ant-list-item-meta-description {
         align-items: stretch;
     }
 
-    .hr-dashboard .ant-tabs-tab {}
 }
 
 @media (max-width: 768px) {
@@ -464,4 +470,62 @@ body.dark .hr-dashboard .ant-list-item-meta-description {
     .hr-dashboard .ant-list-item-meta-description {
         font-size: 0.625rem;
     }
+}
+
+.body.dark p, body.dark span, body.dark div {
+    color: #fff !important;
+}
+
+.hr-dashboard .ant-input, .hr-dashboard .ant-select-selector, .hr-dashboard .ant-picker {
+    background: transparent !important;
+}
+
+body.dark .ant-picker-date-panel {
+    background-color: #333 !important;
+}
+
+body.dark :where(.css-dev-only-do-not-override-mc1tut).ant-select-dropdown {
+    background: #333 !important;
+
+}
+
+.ant-collapse-content-box .ant-card-body {
+    transition: background-color 0.3s ease-in-out;
+}
+
+.ant-collapse-content-box .ant-card-body:hover {
+    background-color: #fff;
+}
+
+:where(.css-dev-only-do-not-override-mc1tut).ant-tag {
+    background-color: transparent !important;
+}
+
+body.dark .hr-dashboard .ant-table-thead>tr>th {
+    background-color: #333;
+    color: #fff;
+}
+
+.hr-dashboard .ant-input, .hr-dashboard .ant-select-selector, .hr-dashboard .ant-picker {
+    padding: 0.28rem 1rem !important;
+}
+
+body.dark .ant-modal-content, body.dark .ant-modal-content .ant-modal-header, body.dark .ant-popover-inner {
+    background-color: #333 !important;
+}
+
+body.dark .ant-tree-node-selected {
+    background-color: #333 !important;
+}
+
+/* Center all table data and headers in Ant Design tables */
+.ant-table td,
+.ant-table th {
+    text-align: center !important;
+}
+
+.ant-table-cell div {
+    margin-bottom: 0 !important;
+    display: flex !important;
+    justify-content: center !important;
 }

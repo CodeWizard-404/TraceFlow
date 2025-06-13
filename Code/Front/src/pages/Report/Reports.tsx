@@ -2413,7 +2413,7 @@ const ReportingPage: React.FC = () => {
       : filteredGeneratedReports.slice(indexOfFirstItem, indexOfLastItem);
 
     return (
-      <>
+      <div className="table-card">
         <motion.div
           className="report-grid"
           initial={{ opacity: 0 }}
@@ -2441,7 +2441,7 @@ const ReportingPage: React.FC = () => {
           currentPage={currentPage}
           onPageChange={(page: number) => setCurrentPage(page)}
         />
-      </>
+      </div>
     );
   };
 
