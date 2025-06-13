@@ -284,7 +284,14 @@ class UserService {
           throw Exception('Failed to fetch regional manager by supervisor: ${response.statusCode} - ${response.body}');
         },
       );
-      return User.fromJson(response);
+      // Handle both Map and List responses
+      if (response is List<dynamic> && response.isNotEmpty) {
+        return User.fromJson(response[0] as Map<String, dynamic>);
+      } else if (response is Map<String, dynamic>) {
+        return User.fromJson(response);
+      } else {
+        throw Exception('Unexpected response format: $response');
+      }
     } catch (e) {
       if (kDebugMode) print('Error fetching regional manager by supervisor: $e');
       rethrow;

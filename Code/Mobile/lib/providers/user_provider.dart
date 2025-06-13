@@ -245,27 +245,27 @@ class UserProvider with ChangeNotifier {
       }
     }
 
-    Future<User> getRegionalManagerBySupervisor(String supervisorID) async {
-      _isLoading = true;
-      _errorMessage = null;
-      notifyListeners();
-      try {
-        final manager = await UserService.getRegionalManagerBySupervisor(supervisorID);
-        _currentUser = manager;
-        return manager;
-      } catch (e) {
-        _currentUser = null;
-        _errorMessage = _parseError(e);
-        if (kDebugMode) print('Error in getRegionalManagerBySupervisor: $_errorMessage');
-        if (_errorMessage?.contains('401') ?? false) {
-          await AuthService.logout();
-        }
-        rethrow;
-      } finally {
-        _isLoading = false;
-        notifyListeners();
+  Future<User> getRegionalManagerBySupervisor(String supervisorID) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      final manager = await UserService.getRegionalManagerBySupervisor(supervisorID);
+      _currentUser = manager;
+      return manager;
+    } catch (e) {
+      _currentUser = null;
+      _errorMessage = _parseError(e);
+      if (kDebugMode) print('Error in getRegionalManagerBySupervisor: $_errorMessage');
+      if (_errorMessage?.contains('401') ?? false) {
+        await AuthService.logout();
       }
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
+  }
 
     Future<void> getSupervisorsByUser(String userID) async {
       _isLoading = true;

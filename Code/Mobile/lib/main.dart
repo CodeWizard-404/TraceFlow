@@ -3,6 +3,7 @@ import 'package:TraceFlow/screens/Auth/ProfileScreen.dart';
 import 'package:TraceFlow/screens/Auth/Verify2FAScreen.dart';
 import 'package:TraceFlow/screens/Auth/forgot_password_screen.dart';
 import 'package:TraceFlow/screens/Auth/verify_reset_screen.dart';
+import 'package:TraceFlow/screens/MapScreen.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -25,6 +26,7 @@ import 'package:TraceFlow/providers/role_provider.dart';
 import 'package:TraceFlow/providers/permission_provider.dart';
 import 'package:TraceFlow/providers/theme_provider.dart';
 import 'package:TraceFlow/themes/app_themes.dart';
+import 'package:logging/logging.dart';
 
 // Navigation service for global navigator access
 class NavigationService {
@@ -32,11 +34,19 @@ class NavigationService {
   static final RouteObserver<ModalRoute> routeObserver = RouteObserver<ModalRoute>();
 }
 
+void configureLogging() {
+  Logger.root.level = Level.WARNING; // Suppress logs below WARNING
+  Logger.root.onRecord.listen((record) {
+    print('${record.level.name}: ${record.time}: ${record.message}');
+  });
+}
+
 void main() {
   // Suppress specific debug logs
   debugPrint = (String? message, {int? wrapWidth}) {
     if (message != null && (message.contains("EGL_emulation") || message.contains("libEGL"))) return;
   };
+  configureLogging();
 
   runApp(
       MultiProvider(
@@ -81,11 +91,12 @@ class MyApp extends StatelessWidget {
             '/login': (_) => const LoginScreen(),
             '/verify-2fa': (_) => const Verify2FAScreen(),
             '/forgot-password': (_) => const ForgotPasswordScreen(),
-'/reset-password': (_) => const VerifyResetScreen(),
+            '/reset-password': (_) => const VerifyResetScreen(),
             '/timesheet-details': (_) => const TimesheetDetailsScreen(),
             '/receipt-books': (_) => const ReceiptBooksScreen(),
             '/profile': (_) => const ProfileScreen(),
             '/transfer-receipt-books': (_) => const TransferReceiptBookScreen(),
+            '/map': (_) => const MapScreen(),
           },
           onGenerateRoute: (settings) {
             return MaterialPageRoute(
@@ -205,6 +216,7 @@ class NavigationShellState extends State<NavigationShell> with RouteAware {
     '/timesheet-details',
     '/receipt-books',
     '/profile',
+    '/map',
   ];
 
   @override

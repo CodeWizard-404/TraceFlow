@@ -7,16 +7,79 @@ class TimesheetProvider with ChangeNotifier {
   List<Timesheet> _timesheets = [];
   Timesheet? _currentTimesheet;
   List<Visit> _suggestedVisits = [];
+  List<String> _selectedSuggestedVisitIds = [];
   bool _isLoading = false;
   String? _errorMessage;
 
   List<Timesheet> get timesheets => _timesheets;
   Timesheet? get currentTimesheet => _currentTimesheet;
   List<Visit> get suggestedVisits => _suggestedVisits;
+  List<String> get selectedSuggestedVisitIds => _selectedSuggestedVisitIds;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
+  void setSuggestedVisits(List<Visit> visits) {
+    _suggestedVisits = visits;
+    _selectedSuggestedVisitIds = visits.map((v) => v.visitID).toList();
+    notifyListeners();
+  }
 
+  void toggleSuggestedVisitSelection(String visitID) {
+    if (_selectedSuggestedVisitIds.contains(visitID)) {
+      _selectedSuggestedVisitIds.remove(visitID);
+    } else {
+      _selectedSuggestedVisitIds.add(visitID);
+    }
+    notifyListeners();
+  }
+
+  void selectAllSuggestedVisits() {
+    _selectedSuggestedVisitIds = _suggestedVisits.map((v) => v.visitID).toList();
+    notifyListeners();
+  }
+
+  void clearSuggestedVisits() {
+    _suggestedVisits = [];
+    _selectedSuggestedVisitIds = [];
+    notifyListeners();
+  }
+
+  Future<void> saveSuggestedVisits(String supervisorID) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      final selectedVisits = _suggestedVisits
+          .where((v) => _selectedSuggestedVisitIds.contains(v.visitID))
+          .toList();
+      for (var visit in selectedVisits) {
+        final date = visit.date;
+        final weekNumber = _getWeekNumber(date);
+        await createTimesheetForSupervisor(
+          weekNumber: weekNumber,
+          year: date.year,
+          supervisorID: supervisorID,
+          visits: [visit.toJson()],
+          status: 'pending',
+        );
+      }
+      clearSuggestedVisits();
+    } catch (e) {
+      _errorMessage = 'Failed to save suggestions: $e';
+      if (kDebugMode) print(_errorMessage);
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  int _getWeekNumber(DateTime date) {
+    final startOfYear = DateTime(date.year, 1, 1);
+    final firstMonday = startOfYear.weekday <= 4
+        ? startOfYear.subtract(Duration(days: startOfYear.weekday - 1))
+        : startOfYear.add(Duration(days: 8 - startOfYear.weekday));
+    return (date.difference(firstMonday).inDays ~/ 7) + 1;
+  }
 
   Future<void> createTimesheetForSupervisor({
     required int weekNumber,
@@ -127,12 +190,19 @@ class TimesheetProvider with ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
     try {
+      // Default criteria with time interval
+      final defaultCriteria = {
+        'time_interval': {
+          'start_time': '08:00',
+          'end_time': '17:00',
+        },
+      };
       final result = await TimesheetService.suggestTimesheet(
         supervisorID: supervisorID,
         weekNumber: weekNumber,
         year: year,
         coordinates: coordinates,
-        criteria: criteria,
+        criteria: criteria ?? defaultCriteria,
       );
       if (kDebugMode) print('Suggested timesheet for week $weekNumber, year $year');
       return result;
