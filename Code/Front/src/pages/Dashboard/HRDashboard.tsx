@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
-import { Tabs, Card, Table, Select, Row, Col, Spin, Modal, Input, DatePicker, Space, Tag, Statistic, Descriptions, Popover, Divider, Tree, message, Collapse, Timeline, List, Avatar } from 'antd';
-import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, PieChart, Pie, Cell, LineChart, Line, AreaChart, Area, ScatterChart, Scatter, RadarChart, Radar, PolarGrid, PolarAngleAxis, Treemap, LabelList, Legend } from 'recharts';
+import { Tabs, Card, Table, Select, Row, Col, Spin, Modal, Input, DatePicker, Space, Tag, Statistic, Descriptions, Popover, Divider, Tree, message, Collapse, Timeline, List, Avatar, Button } from 'antd';
+import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, PieChart, Pie, Cell, LineChart, Line, AreaChart, Area, LabelList, Legend } from 'recharts';
 import MapComponent from '../../components/Google/MapComponent';
 import { getAllTimesheets } from '../../apis/timesheetAPI';
 import { getAllReceiptBooks, getAllReceiptBookTypes } from '../../apis/receiptBookAPI';
@@ -17,9 +17,12 @@ import Agent from '../../models/Agent';
 import Region from '../../models/Region';
 import ReceiptBookStatus from '../../models/Enum/ReceiptBookStatus';
 import { FaUsers, FaBook, FaClock, FaMapMarkerAlt, FaChartBar, FaSitemap, FaBell, FaSync, } from 'react-icons/fa';
-import { debounce, orderBy } from 'lodash';
+import { debounce } from 'lodash';
 import Governorate from '../../models/Governorate';
 import Delegation from '../../models/Delegation';
+import { GeneratedReport, ReportSchedule } from '../../models/Report';
+import { listSchedules, listGeneratedReports, generateReport, scheduleReport, downloadReport, deleteSchedule, deleteGeneratedReport, validReportTypes } from '../../apis/reportAPI';
+import TimesheetStatus from '../../models/Enum/TimesheetStatus';
 
 const { TabPane } = Tabs;
 const { RangePicker } = DatePicker;
@@ -74,6 +77,9 @@ interface Metrics {
     totalDelegations: number;
 }
 
+
+
+
 const HRDashboard: React.FC = () => {
 
     const [loading, setLoading] = useState(true);
@@ -114,8 +120,21 @@ const HRDashboard: React.FC = () => {
         totalDelegations: 0,
     });
     const [receiptBookTypes, setReceiptBookTypes] = useState<any[]>([]);
+    const filterOption = (input: string, option: any) =>
+        option.children?.toLowerCase().includes(input.toLowerCase());
 
     const COLORS = ['#FF8042', '#36A2EB', '#00C49F', '#FF6384', '#FFBB28', '#0088FE', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'];
+
+
+
+
+
+
+
+
+
+
+    // Hierarchy Tab
 
     const generateTreeKeys = (nodes: HierarchyNode[], level: number = 0, parentKey: string = '', keys: string[] = [], maxLevel: number = 3): string[] => {
         nodes.forEach((node, index) => {
@@ -123,7 +142,7 @@ const HRDashboard: React.FC = () => {
             node.key = nodeKey;
             if (level < maxLevel && node.children) {
                 keys.push(nodeKey);
-                generateTreeKeys(node.children, level + 1.5, nodeKey, keys, maxLevel);
+                generateTreeKeys(node.children, level + 2, nodeKey, keys, maxLevel);
             }
         });
         return keys;
@@ -543,7 +562,6 @@ const HRDashboard: React.FC = () => {
         }, 300),
         [hierarchyData]
     );
-    // Hierarchy Tab
     const renderHierarchyTab = () => {
         interface FlattenedNode {
             name: string;
@@ -754,45 +772,73 @@ const HRDashboard: React.FC = () => {
                         placeholder="Chart Role Filter"
                         onChange={(value: string | undefined) => setChartFilter(prev => ({ ...prev, role: value || '' }))}
                         allowClear
+                        showSearch
+                        filterOption={filterOption}
                     >
                         <Option value="">All Roles</Option>
+                        <Option value="Agent">Agent</Option>
                         <Option value="Director">Director</Option>
                         <Option value="Regional Manager">Regional Manager</Option>
                         <Option value="Supervisor">Supervisor</Option>
-                        <Option value="Agent">Agent</Option>
                     </Select>
                     <Select
                         placeholder="Chart Region Filter"
                         onChange={(value: string | undefined) => setChartFilter(prev => ({ ...prev, region: value || '' }))}
                         allowClear
+                        showSearch
+                        filterOption={filterOption}
                     >
                         <Option value="">All Regions</Option>
-                        {regions.map(r => <Option key={r.regionID} value={r.regionID}>{r.name}</Option>)}
+                        {[...regions]
+                            .sort((a, b) => a.name.localeCompare(b.name))
+                            .map(r => (
+                                <Option key={r.regionID} value={r.regionID}>
+                                    {r.name}
+                                </Option>
+                            ))}
                     </Select>
                     <Select
                         placeholder="Chart Governorate Filter"
                         onChange={(value: string | undefined) => setChartFilter(prev => ({ ...prev, governorate: value || '' }))}
                         allowClear
+                        showSearch
+                        filterOption={filterOption}
                     >
                         <Option value="">All Governorates</Option>
-                        {governorates.map(g => <Option key={g.governorateID} value={g.governorateID}>{g.name}</Option>)}
+                        {[...governorates]
+                            .sort((a, b) => a.name.localeCompare(b.name))
+                            .map(g => (
+                                <Option key={g.governorateID} value={g.governorateID}>
+                                    {g.name}
+                                </Option>
+                            ))}
                     </Select>
                     <Select
                         placeholder="Chart Delegation Filter"
                         onChange={(value: string | undefined) => setChartFilter(prev => ({ ...prev, delegation: value || '' }))}
                         allowClear
+                        showSearch
+                        filterOption={filterOption}
                     >
                         <Option value="">All Delegations</Option>
-                        {delegations.map(d => <Option key={d.delegationID} value={d.delegationID}>{d.name}</Option>)}
+                        {[...delegations]
+                            .sort((a, b) => a.name.localeCompare(b.name))
+                            .map(d => (
+                                <Option key={d.delegationID} value={d.delegationID}>
+                                    {d.name}
+                                </Option>
+                            ))}
                     </Select>
                     <Select
                         placeholder="Time Range"
                         onChange={(value) => setChartFilter(prev => ({ ...prev, timeRange: value as 'week' | 'month' | 'year' | 'all' }))}
                         defaultValue="all"
+                        showSearch
+                        filterOption={filterOption}
                     >
                         <Option value="all">All Time</Option>
-                        <Option value="week">Last Week</Option>
                         <Option value="month">Last Month</Option>
+                        <Option value="week">Last Week</Option>
                         <Option value="year">Last Year</Option>
                     </Select>
                 </Space>
@@ -1057,6 +1103,17 @@ const HRDashboard: React.FC = () => {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
     // Users Tab
     const userColumns = [
         { title: "Status", dataIndex: 'isOnline', key: 'isOnline', render: (isOnline: boolean) => isOnline ? <Tag color="green">Online</Tag> : <Tag color="red">Offline</Tag>, orderBy: (a: User, b: User) => a.isOnline ? -1 : 1 },
@@ -1121,30 +1178,76 @@ const HRDashboard: React.FC = () => {
         <div>
             <Space style={{ marginBottom: 16 }}>
                 <Input.Search placeholder="Search by name, email, phone" onChange={(e) => debouncedSearch(e.target.value)} />
-                <Select placeholder="Filter by Role" onChange={(value) => setGlobalFilters(prev => ({ ...prev, role: value }))}>
+                <Select
+                    placeholder="Filter by Role"
+                    onChange={(value) => setGlobalFilters(prev => ({ ...prev, role: value }))}
+                    showSearch
+                    filterOption={filterOption}
+                >
                     <Option value="">All</Option>
+                    <Option value="Agent">Agent</Option>
                     <Option value="Director">Director</Option>
                     <Option value="Regional Manager">Regional Manager</Option>
                     <Option value="Supervisor">Supervisor</Option>
-                    <Option value="Agent">Agent</Option>
                 </Select>
-                <Select placeholder="Filter by Region" onChange={(value) => setGlobalFilters(prev => ({ ...prev, region: value }))}>
+                <Select
+                    placeholder="Filter by Region"
+                    onChange={(value) => setGlobalFilters(prev => ({ ...prev, region: value }))}
+                    showSearch
+                    filterOption={filterOption}
+                >
                     <Option value="">All</Option>
-                    {regions.map(r => <Option key={r.regionID} value={r.regionID}>{r.name}</Option>)}
+                    {[...regions]
+                        .sort((a, b) => a.name.localeCompare(b.name))
+                        .map(r => (
+                            <Option key={r.regionID} value={r.regionID}>
+                                {r.name}
+                            </Option>
+                        ))}
                 </Select>
-                <Select placeholder="Filter by Governorate" onChange={(value) => setGlobalFilters(prev => ({ ...prev, governorate: value }))}>
+                <Select
+                    placeholder="Filter by Governorate"
+                    onChange={(value) => setGlobalFilters(prev => ({ ...prev, governorate: value }))}
+                    showSearch
+                    filterOption={filterOption}
+                >
                     <Option value="">All</Option>
-                    {governorates.map(g => <Option key={g.governorateID} value={g.governorateID}>{g.name}</Option>)}
+                    {[...governorates]
+                        .sort((a, b) => a.name.localeCompare(b.name))
+                        .map(g => (
+                            <Option key={g.governorateID} value={g.governorateID}>
+                                {g.name}
+                            </Option>
+                        ))}
                 </Select>
-                <Select placeholder="Filter by Delegation" onChange={(value) => setGlobalFilters(prev => ({ ...prev, delegation: value }))}>
+                <Select
+                    placeholder="Filter by Delegation"
+                    onChange={(value) => setGlobalFilters(prev => ({ ...prev, delegation: value }))}
+                    showSearch
+                    filterOption={filterOption}
+                >
                     <Option value="">All</Option>
-                    {delegations.map(d => <Option key={d.delegationID} value={d.delegationID}>{d.name}</Option>)}
+                    {[...delegations]
+                        .sort((a, b) => a.name.localeCompare(b.name))
+                        .map(d => (
+                            <Option key={d.delegationID} value={d.delegationID}>
+                                {d.name}
+                            </Option>
+                        ))}
                 </Select>
             </Space>
             <Row gutter={10}>
                 <Col >
                     <Card title="User List">
-                        <Table columns={userColumns} dataSource={applyGlobalFilters(users, 'userID')} rowKey="userID" pagination={{ pageSize: 10 }} />
+                        <Table
+                            columns={userColumns}
+                            dataSource={applyGlobalFilters(
+                                users.filter(u => !u.Roles?.some((r: any) => r.name === 'Super Admin')),
+                                'userID'
+                            )}
+                            rowKey="userID"
+                            pagination={{ pageSize: 10 }}
+                        />
                     </Card>
 
                     <Collapse defaultActiveKey={['1']}>
@@ -1339,12 +1442,11 @@ const HRDashboard: React.FC = () => {
 
 
     // Timesheets Tab
-    // Timesheets Tab
     const timesheetColumns = [
         { title: 'Supervisor', dataIndex: 'User', key: 'supervisor', sorter: (a: Timesheet, b: Timesheet) => `${a.User?.firstname} ${a.User?.lastname}`.localeCompare(`${b.User?.firstname} ${b.User?.lastname}`), render: (user: any) => user ? `${user.firstname} ${user.lastname}` : 'N/A' },
         { title: 'Week', dataIndex: 'weekNumber', key: 'weekNumber', sorter: (a: Timesheet, b: Timesheet) => a.weekNumber - b.weekNumber },
         { title: 'Year', dataIndex: 'year', key: 'year', sorter: (a: Timesheet, b: Timesheet) => a.year - b.year },
-        { title: 'Status', dataIndex: 'status', key: 'status', sorter: (a: Timesheet, b: Timesheet) => a.status.localeCompare(b.status), render: (status: string) => <Tag color={status === 'validated' ? 'green' : 'orange'}>{status}</Tag> },
+        { title: 'Status', dataIndex: 'status', key: 'status', sorter: (a: Timesheet, b: Timesheet) => a.status.localeCompare(b.status), render: (status: string) => <Tag color={status === TimesheetStatus.VALIDATED ? 'green' : status === TimesheetStatus.PENDING ? 'orange' : TimesheetStatus.REJECTED ? 'red' : 'cyan'}>{status}</Tag> },
         { title: 'Visits', key: 'visits', render: (_: any, record: Timesheet) => record.Visits?.length || 0 },
         { title: 'Total Hours', key: 'hours', render: (_: any, record: Timesheet) => record.Visits?.reduce((sum: number, v: Visit) => sum + (v.duration || 0), 0) || 0 },
     ];
@@ -1394,14 +1496,30 @@ const HRDashboard: React.FC = () => {
         <div>
             <Space style={{ marginBottom: 16 }}>
                 <Input.Search placeholder="Search by supervisor, week, year" onChange={(e) => debouncedSearch(e.target.value)} />
-                <Select placeholder="Filter by Status" onChange={(value) => setGlobalFilters(prev => ({ ...prev, status: value }))}>
+                <Select
+                    placeholder="Filter by Status"
+                    onChange={(value) => setGlobalFilters(prev => ({ ...prev, status: value }))}
+                    showSearch
+                    filterOption={filterOption}
+                >
                     <Option value="">All</Option>
                     <Option value="pending">Pending</Option>
                     <Option value="validated">Validated</Option>
                 </Select>
-                <Select placeholder="Filter by Supervisor" onChange={(value) => setGlobalFilters(prev => ({ ...prev, supervisor: value }))}>
+                <Select
+                    placeholder="Filter by Supervisor"
+                    onChange={(value) => setGlobalFilters(prev => ({ ...prev, supervisor: value }))}
+                    showSearch
+                    filterOption={filterOption}
+                >
                     <Option value="">All</Option>
-                    {supervisors.map(s => <Option key={s.userID} value={s.userID}>{`${s.firstname} ${s.lastname}`}</Option>)}
+                    {[...supervisors]
+                        .sort((a, b) => `${a.firstname} ${a.lastname}`.localeCompare(`${b.firstname} ${b.lastname}`))
+                        .map(s => (
+                            <Option key={s.userID} value={s.userID}>
+                                {`${s.firstname} ${s.lastname}`}
+                            </Option>
+                        ))}
                 </Select>
             </Space>
             <Row gutter={16}>
@@ -1577,12 +1695,17 @@ const HRDashboard: React.FC = () => {
         <div>
             <Space style={{ marginBottom: 16 }}>
                 <Input.Search placeholder="Search by number, holder" onChange={(e) => debouncedSearch(e.target.value)} />
-                <Select placeholder="Filter by Status" onChange={(value) => setGlobalFilters(prev => ({ ...prev, status: value }))}>
+                <Select
+                    placeholder="Filter by Status"
+                    onChange={(value) => setGlobalFilters(prev => ({ ...prev, status: value }))}
+                    showSearch
+                    filterOption={filterOption}
+                >
                     <Option value="">All</Option>
-                    <Option value={ReceiptBookStatus.InStock}>In Stock</Option>
-                    <Option value={ReceiptBookStatus.AssignedToAgent}>With Agents</Option>
-                    <Option value={ReceiptBookStatus.WithSupervisor}>With Supervisors</Option>
                     <Option value={ReceiptBookStatus.Archived}>Archived</Option>
+                    <Option value={ReceiptBookStatus.AssignedToAgent}>With Agents</Option>
+                    <Option value={ReceiptBookStatus.InStock}>In Stock</Option>
+                    <Option value={ReceiptBookStatus.WithSupervisor}>With Supervisors</Option>
                 </Select>
             </Space>
             <Row gutter={16}>
@@ -1772,16 +1895,32 @@ const HRDashboard: React.FC = () => {
         <div>
             <Space style={{ marginBottom: 16 }}>
                 <Input.Search placeholder="Search by date, agent" onChange={(e) => debouncedSearch(e.target.value)} />
-                <Select placeholder="Filter by Status" onChange={(value) => setGlobalFilters(prev => ({ ...prev, status: value }))}>
+                <Select
+                    placeholder="Filter by Status"
+                    onChange={(value) => setGlobalFilters(prev => ({ ...prev, status: value }))}
+                    showSearch
+                    filterOption={filterOption}
+                >
                     <Option value="">All</Option>
                     <Option value="pending">Pending</Option>
-                    <Option value="visited">Visited</Option>
-                    <Option value="validated">Validated</Option>
                     <Option value="rejected">Rejected</Option>
+                    <Option value="validated">Validated</Option>
+                    <Option value="visited">Visited</Option>
                 </Select>
-                <Select placeholder="Filter by Agent" onChange={(value) => setGlobalFilters(prev => ({ ...prev, agent: value }))}>
+                <Select
+                    placeholder="Filter by Agent"
+                    onChange={(value) => setGlobalFilters(prev => ({ ...prev, agent: value }))}
+                    showSearch
+                    filterOption={filterOption}
+                >
                     <Option value="">All</Option>
-                    {agents.map(a => <Option key={a.agentID} value={a.agentID}>{`${a.name} ${a.lastname || ''}`}</Option>)}
+                    {[...agents]
+                        .sort((a, b) => `${a.name} ${a.lastname || ''}`.localeCompare(`${b.name} ${b.lastname || ''}`))
+                        .map(a => (
+                            <Option key={a.agentID} value={a.agentID}>
+                                {`${a.name} ${a.lastname || ''}`}
+                            </Option>
+                        ))}
                 </Select>
             </Space>
             <Row gutter={16}>
@@ -1900,6 +2039,274 @@ const HRDashboard: React.FC = () => {
 
 
 
+
+
+
+
+
+    // Reports Tab
+    const renderReportsTab = () => {
+        const [generatedReports, setGeneratedReports] = useState<GeneratedReport[]>([]);
+        const [loadingGenerated, setLoadingGenerated] = useState<boolean>(false);
+        const [filters, setFilters] = useState({
+            reportType: '',
+            format: '',
+            searchText: '',
+        });
+
+        useEffect(() => {
+            const fetchReports = async () => {
+                setLoadingGenerated(true);
+                try {
+                    const generatedData = await listGeneratedReports();
+                    setGeneratedReports(generatedData);
+                } catch (error) {
+                    message.error('Failed to fetch generated reports');
+                } finally {
+                    setLoadingGenerated(false);
+                }
+            };
+            fetchReports();
+        }, []);
+
+        const handleDownloadReport = async (file: string) => {
+            try {
+                const response = await downloadReport(file);
+                const url = window.URL.createObjectURL(new Blob([response]));
+                const link = document.createElement('a');
+                link.href = url;
+                link.setAttribute('download', file);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } catch (error: any) {
+                message.error(error.message || 'Failed to download report');
+            }
+        };
+
+        const reportColumns = [
+            { title: 'Report Type', dataIndex: 'reportType', key: 'reportType', sorter: (a: GeneratedReport, b: GeneratedReport) => a.reportType.localeCompare(b.reportType) },
+            { title: 'Format', dataIndex: 'format', key: 'format', sorter: (a: GeneratedReport, b: GeneratedReport) => a.format.localeCompare(b.format) },
+            { title: 'Generated At', dataIndex: 'generatedAt', key: 'generatedAt', render: (date: string) => new Date(date).toLocaleString(), sorter: (a: GeneratedReport, b: GeneratedReport) => new Date(a.generatedAt).getTime() - new Date(b.generatedAt).getTime() },
+            { title: 'Generated By', dataIndex: 'Generator', key: 'generator', render: (generator: any) => generator ? `${generator.firstname} ${generator.lastname}` : 'N/A', sorter: (a: GeneratedReport, b: GeneratedReport) => a.generator ? a.generator.localeCompare(b.generator) : -1 },
+            {
+                title: 'Actions',
+                key: 'actions',
+                render: (_: any, record: GeneratedReport) => (
+                    <Space>
+                        <Button onClick={() => handleDownloadReport(record.filePath)}>Download</Button>
+                    </Space>
+                ),
+            },
+        ];
+
+        const filterOption = (input: string, option: any) =>
+            option.children?.toLowerCase().includes(input.toLowerCase());
+
+        const debouncedSearch = debounce((value: string) => {
+            setFilters(prev => ({ ...prev, searchText: value }));
+        }, 300);
+
+        // Apply filters to generated reports
+        const filteredReports = useMemo(() => {
+            return generatedReports.filter(report => {
+                const matchesType = filters.reportType ? report.reportType.toLowerCase() === filters.reportType.toLowerCase() : true;
+                const matchesFormat = filters.format ? report.format.toLowerCase() === filters.format.toLowerCase() : true;
+                const matchesSearch = filters.searchText
+                    ? report.reportType.toLowerCase().includes(filters.searchText.toLowerCase()) ||
+                    report.format.toLowerCase().includes(filters.searchText.toLowerCase()) ||
+                    (report.Generator && `${report.Generator.firstname} ${report.Generator.lastname}`.toLowerCase().includes(filters.searchText.toLowerCase()))
+                    : true;
+                return matchesType && matchesFormat && matchesSearch;
+            });
+        }, [generatedReports, filters]);
+
+        // Chart data: Report Type Distribution
+        const reportTypeDistribution = useMemo(() => {
+            const typeCounts = filteredReports.reduce((acc: Record<string, number>, report) => {
+                acc[report.reportType] = (acc[report.reportType] || 0) + 1;
+                return acc;
+            }, {});
+            return Object.entries(typeCounts).map(([name, value]) => ({ name, value }));
+        }, [filteredReports]);
+
+        // Chart data: Report Format Distribution
+        const reportFormatDistribution = useMemo(() => {
+            const formatCounts = filteredReports.reduce((acc: Record<string, number>, report) => {
+                acc[report.format] = (acc[report.format] || 0) + 1;
+                return acc;
+            }, {});
+            return Object.entries(formatCounts).map(([name, value]) => ({ name, value }));
+        }, [filteredReports]);
+
+        // Chart data: Reports Generated Over Time
+        const reportsOverTime = useMemo(() => {
+            const timeCounts = filteredReports.reduce((acc: Record<string, number>, report) => {
+                const date = new Date(report.generatedAt).toLocaleDateString();
+                acc[date] = (acc[date] || 0) + 1;
+                return acc;
+            }, {});
+            return Object.entries(timeCounts).map(([date, count]) => ({ date, count }));
+        }, [filteredReports]);
+
+        // Chart data: Top Report Generators
+        const topGenerators = useMemo(() => {
+            const generatorCounts = filteredReports.reduce((acc: Record<string, { name: string; count: number }>, report) => {
+                const generatorName = report.Generator ? `${report.Generator.firstname} ${report.Generator.lastname}` : 'Unknown';
+                const key = generatorName;
+                if (!acc[key]) {
+                    acc[key] = { name: generatorName, count: 0 };
+                }
+                acc[key].count += 1;
+                return acc;
+            }, {});
+            return Object.values(generatorCounts)
+                .sort((a, b) => b.count - a.count)
+                .slice(0, 5)
+                .map(item => ({ name: item.name, count: item.count }));
+        }, [filteredReports]);
+
+        return (
+            <div>
+                <Space direction="vertical" size="large" style={{ width: '100%' }}>
+                    <Space style={{ marginBottom: 16 }}>
+                        <Input.Search
+                            placeholder="Search by type, format, generator"
+                            onChange={(e) => debouncedSearch(e.target.value)}
+                            allowClear
+                        />
+                        <Select
+                            placeholder="Filter by Report Type"
+                            value={filters.reportType || undefined}
+                            onChange={(value: string | undefined) => setFilters(prev => ({ ...prev, reportType: value || '' }))}
+                            allowClear
+                            showSearch
+                            filterOption={filterOption}
+                            style={{ width: 200 }}
+                        >
+                            <Option value="">All Types</Option>
+                            {validReportTypes.map(type => (
+                                <Option key={type.toLowerCase()} value={type.toLowerCase()}>{type}</Option>
+                            ))}
+                        </Select>
+                        <Select
+                            placeholder="Filter by Format"
+                            value={filters.format || undefined}
+                            onChange={(value: string | undefined) => setFilters(prev => ({ ...prev, format: value || '' }))}
+                            allowClear
+                            showSearch
+                            filterOption={filterOption}
+                            style={{ width: 200 }}
+                        >
+                            <Option value="">All Formats</Option>
+                            <Option value="pdf">PDF</Option>
+                            <Option value="excel">Excel</Option>
+                        </Select>
+                    </Space>
+                    <Card title="Generated Reports">
+                        <Table
+                            columns={reportColumns}
+                            dataSource={filteredReports}
+                            rowKey="generatedReportID"
+                            loading={loadingGenerated}
+                            pagination={{ pageSize: 10 }}
+                        />
+                    </Card>
+                    <Collapse defaultActiveKey={['1']}>
+                        <Panel header="Charts" key="1">
+                            <div style={{ width: '100%', overflowX: 'auto' }}>
+                                <Row gutter={[16, 16]}>
+                                    <Col span={12}>
+                                        <Card title="Report Type Distribution">
+                                            <PieChart width={550} height={250}>
+                                                <Pie
+                                                    data={reportTypeDistribution}
+                                                    dataKey="value"
+                                                    nameKey="name"
+                                                    cx="50%"
+                                                    cy="50%"
+                                                    outerRadius={80}
+                                                    innerRadius={40}
+                                                    label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                                                >
+                                                    {reportTypeDistribution.map((_entry, index) => (
+                                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                                    ))}
+                                                </Pie>
+                                                <RechartsTooltip formatter={(value) => `${value} reports`} />
+                                                <Legend verticalAlign="bottom" height={36} />
+                                            </PieChart>
+                                        </Card>
+                                    </Col>
+                                    <Col span={12}>
+                                        <Card title="Report Format Distribution">
+                                            <PieChart width={550} height={250}>
+                                                <Pie
+                                                    data={reportFormatDistribution}
+                                                    dataKey="value"
+                                                    nameKey="name"
+                                                    cx="50%"
+                                                    cy="50%"
+                                                    outerRadius={80}
+                                                    innerRadius={40}
+                                                    label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                                                >
+                                                    {reportFormatDistribution.map((_entry, index) => (
+                                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                                    ))}
+                                                </Pie>
+                                                <RechartsTooltip formatter={(value) => `${value} reports`} />
+                                                <Legend verticalAlign="bottom" height={36} />
+                                            </PieChart>
+                                        </Card>
+                                    </Col>
+                                    <Col span={24}>
+                                        <Card title="Reports Generated Over Time">
+                                            <LineChart width={1100} height={250} data={reportsOverTime}>
+                                                <XAxis dataKey="date" angle={-45} textAnchor="end" height={60} />
+                                                <YAxis />
+                                                <RechartsTooltip formatter={(value) => `${value} reports`} />
+                                                <Line dataKey="count" stroke="#0088FE" dot={true} />
+                                            </LineChart>
+                                        </Card>
+                                    </Col>
+                                    <Col span={12}>
+                                        <Card title="Top Report Generators">
+                                            <BarChart width={550} height={250} data={topGenerators}>
+                                                <XAxis dataKey="name" angle={-45} textAnchor="end" height={60} />
+                                                <YAxis />
+                                                <RechartsTooltip formatter={(value) => `${value} reports`} />
+                                                <Bar dataKey="count" fill="#FFBB28">
+                                                    <LabelList dataKey="count" position="top" fill="#000" />
+                                                </Bar>
+                                            </BarChart>
+                                        </Card>
+                                    </Col>
+                                </Row>
+                            </div>
+                        </Panel>
+                    </Collapse>
+                </Space>
+            </div>
+        );
+    };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     // Anomalies Tab
     const anomalyColumns = [
         { title: 'Type', dataIndex: 'type', key: 'type', sorter: (a: any, b: any) => a.type.localeCompare(b.type) },
@@ -1943,12 +2350,17 @@ const HRDashboard: React.FC = () => {
         <div>
             <Space style={{ marginBottom: 16 }}>
                 <Input.Search placeholder="Search by type, message" onChange={(e) => debouncedSearch(e.target.value)} />
-                <Select placeholder="Filter by Severity" onChange={(value) => setGlobalFilters(prev => ({ ...prev, severity: value }))}>
+                <Select
+                    placeholder="Filter by Severity"
+                    onChange={(value) => setGlobalFilters(prev => ({ ...prev, severity: value }))}
+                    showSearch
+                    filterOption={filterOption}
+                >
                     <Option value="">All</Option>
                     <Option value="critical">Critical</Option>
                     <Option value="high">High</Option>
-                    <Option value="medium">Medium</Option>
                     <Option value="low">Low</Option>
+                    <Option value="medium">Medium</Option>
                 </Select>
             </Space>
             <Row gutter={16}>
@@ -2154,9 +2566,20 @@ const HRDashboard: React.FC = () => {
         <div>
             <Space style={{ marginBottom: 16 }}>
                 <Input.Search placeholder="Search by region, supervisor" onChange={(e) => debouncedSearch(e.target.value)} />
-                <Select placeholder="Filter by Region" onChange={(value) => setGlobalFilters(prev => ({ ...prev, region: value }))}>
+                <Select
+                    placeholder="Filter by Region"
+                    onChange={(value) => setGlobalFilters(prev => ({ ...prev, region: value }))}
+                    showSearch
+                    filterOption={filterOption}
+                >
                     <Option value="">All</Option>
-                    {regions.map(r => <Option key={r.regionID} value={r.regionID}>{r.name}</Option>)}
+                    {[...regions]
+                        .sort((a, b) => a.name.localeCompare(b.name))
+                        .map(r => (
+                            <Option key={r.regionID} value={r.regionID}>
+                                {r.name}
+                            </Option>
+                        ))}
                 </Select>
             </Space>
             <Row gutter={16}>
@@ -2323,6 +2746,7 @@ const HRDashboard: React.FC = () => {
                                 <TabPane tab={<span><FaClock /> Timesheets</span>} key="3">{renderTimesheetsTab()}</TabPane>
                                 <TabPane tab={<span><FaBook /> Receipt Books</span>} key="4">{renderReceiptBooksTab()}</TabPane>
                                 <TabPane tab={<span><FaMapMarkerAlt /> Visits</span>} key="5">{renderVisitsTab()}</TabPane>
+                                <TabPane tab={<span><FaChartBar /> Reports</span>} key="8">{renderReportsTab()}</TabPane>
                                 <TabPane tab={<span><FaBell /> Anomalies</span>} key="6">{renderAnomaliesTab()}</TabPane>
                                 <TabPane tab={<span><FaChartBar /> Performance</span>} key="7">{renderPerformanceTab()}</TabPane>
                             </Tabs>

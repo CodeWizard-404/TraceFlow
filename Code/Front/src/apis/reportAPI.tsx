@@ -37,7 +37,7 @@ const handleApiError = (error: unknown, defaultMessage: string): string => {
 };
 
 // Valid report types
-const validReportTypes = [
+export const validReportTypes = [
     "VisitSummary",
     "Timesheet",
     "ReceiptBookInventory",
@@ -301,4 +301,6 @@ export default {
     listGeneratedReports,
     deleteSchedule,
     deleteGeneratedReport,
+    validReportTypes,
+
 };
