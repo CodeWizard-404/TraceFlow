@@ -567,6 +567,20 @@ const AdminDashboard: React.FC = React.memo(() => {
                 if (!userPermissions.canViewRoles) return;
                 if (action === 'created' || action === 'updated' || action === 'deleted') {
                     await handleRefreshRoles();
+                } else if (action === 'assigned' || action === 'revoked') {
+                    console.warn(`Invalid data for ${event}:`, data);
+                    await handleRefreshUsers();
+                    const updatedUser = data as User;
+                    setUsers((prev) =>
+                        prev.map((user) =>
+                            user.userID === updatedUser.userID
+                                ? { ...user, Roles: updatedUser.Roles || [] }
+                                : user
+                        )
+                    );
+                    setRoles((prev) => {
+                        return prev;
+                    });
                 }
             }
             // Handle permission events

@@ -18,8 +18,8 @@ const DEFAULT_EVENTS: string[] = [
     'role:created',
     'role:updated',
     'role:deleted',
-    'role:users_assigned',
-    'role:users_revoked',
+    'role:assigned',
+    'role:revoked',
     'role:permissions_assigned',
     'role:permissions_revoked',
     // Permission events
@@ -29,13 +29,16 @@ const DEFAULT_EVENTS: string[] = [
     // Timesheet events
     'timesheet:created',
     'timesheet:validated',
-    'timesheet:updated',
+    'timesheet:suggested',
+    'timesheet:suggestion_canceled',
+    'timesheet:synced',
     // Visit events
-    'visit:created',
     'visit:updated',
     'visit:deleted',
     'visit:logged',
     'visit:qr_verified',
+    'visit:otp_validated',
+    'visit:synced',
     // Checklist events
     'checklist:created',
     'checklist:updated',

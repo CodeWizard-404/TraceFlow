@@ -3,18 +3,26 @@ const TimesheetService = require('../services/timesheetService');
 const GoogleCalendarService = require('../services/googleCalendarService');
 const NotificationService = require('../services/notificationService');
 const logger = require('../utils/logger');
-const { Timesheet, User } = require('../models');
-const { Visit, Agent, Reason, Checklist } = require('../models');
+const { Timesheet, User, Visit, Agent, Reason, Checklist } = require('../models');
+const { getRedisClient } = require('../config/redis');
+const RedisUtils = require('../utils/redisUtils');
+const cache = require('../utils/cache');
+const { v4: uuidv4 } = require('uuid');
+const { logRequest } = require('../utils/controllerUtils');
 
 const ERROR_MESSAGES = {
     MISSING_FIELDS: 'Please fill in all required fields.',
     SERVER_ERROR: 'Something broke. Try again later.',
     INVALID_SUPERVISOR: 'Invalid supervisor ID.',
     INVALID_WEEK_START: 'Invalid week start date.',
-    REQUEST_CANCELED: 'AI request was canceled.',
+    REQUEST_CANCELED: 'AI request canceled.',
     INVALID_COORDINATES: 'Valid coordinates (lat, lng) are required.',
     INVALID_TIME_INTERVAL: 'Valid time interval (startHour, endHour) is required.',
 };
+
+
+
+
 
 class TimesheetController {
     static formatError(error) {
@@ -24,215 +32,322 @@ class TimesheetController {
     }
 
     static async getAllTimesheets(req, res) {
-        const actorID = req.user?.userID || 'unknown';
         try {
-            const timesheets = await TimesheetService.listTimesheets();
-            logger.info('Successfully fetched all timesheets', {
-                route: 'timesheets',
-                method: req.method,
-                url: req.originalUrl,
+            const cacheInstance = await cache();
+            const cacheKey = 'timesheets:all';
+            const timesheets = await cacheInstance.getOrSet(cacheKey, async () => {
+                return await TimesheetService.listTimesheets();
+            }, 'api');
+
+            logRequest({
+                req,
+                res: timesheets,
                 status: 200,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
+                message: `Retrieved ${timesheets.length} timesheets`,
+                level: 'info',
                 metadata: { timesheetCount: timesheets.length },
+                service: 'timesheet',
+                defaultRoute: 'timesheets'
             });
+
             return res.status(200).json(timesheets);
         } catch (error) {
-            const response = TimesheetController.formatError(error);
-            logger.error('Failed to fetch all timesheets', {
-                route: 'timesheets',
-                method: req.method,
-                url: req.originalUrl,
+            logRequest({
+                req,
+                error,
                 status: 500,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { error: response.error },
+                message: `Failed to fetch all timesheets: ${error.message}`,
+                level: 'error',
+                service: 'timesheet',
+                defaultRoute: 'timesheets'
             });
-            return res.status(500).json(response);
+
+            return res.status(500).json(TimesheetController.formatError(error));
         }
     }
 
     static async getTimesheetById(req, res) {
-        const actorID = req.user?.userID || 'unknown';
         try {
             const errors = validationResult(req);
             if (!errors.isEmpty()) {
-                throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
+                logRequest({
+                    req,
+                    status: 400,
+                    message: ERROR_MESSAGES.MISSING_FIELDS,
+                    level: 'info',
+                    service: 'timesheet',
+                    defaultRoute: 'timesheets'
+                });
+                return res.status(400).json({ error: ERROR_MESSAGES.MISSING_FIELDS });
             }
+
             const { id } = req.params;
-            const timesheet = await TimesheetService.viewTimesheet(id);
-            logger.info('Successfully fetched timesheet', {
-                route: 'timesheets',
-                method: req.method,
-                url: req.originalUrl,
+            const cacheInstance = await cache();
+            const timesheet = await cacheInstance.getOrSet(`timesheet:${id}`, async () => {
+                return await TimesheetService.viewTimesheet(id);
+            }, 'api');
+
+            logRequest({
+                req,
+                res: timesheet,
                 status: 200,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
+                message: `Retrieved timesheet ${id}`,
+                level: 'info',
                 metadata: { timesheetID: id },
+                service: 'timesheet',
+                defaultRoute: 'timesheets'
             });
+
             return res.status(200).json(timesheet);
         } catch (error) {
-            const response = TimesheetController.formatError(error);
             const status = error.message === ERROR_MESSAGES.MISSING_FIELDS ? 400 : error.status || 500;
-            logger.error('Failed to fetch timesheet', {
-                route: 'timesheets',
-                method: req.method,
-                url: req.originalUrl,
+            logRequest({
+                req,
+                error,
                 status,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { error: response.error },
+                message: `Failed to fetch timesheet: ${error.message}`,
+                level: 'error',
+                service: 'timesheet',
+                defaultRoute: 'timesheets'
             });
-            return res.status(status).json(response);
+
+            return res.status(status).json(TimesheetController.formatError(error));
         }
     }
 
     static async getTimesheetsBySupervisor(req, res) {
-        const actorID = req.user?.userID || 'unknown';
         try {
             const errors = validationResult(req);
             if (!errors.isEmpty()) {
-                throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
+                logRequest({
+                    req,
+                    status: 400,
+                    message: ERROR_MESSAGES.MISSING_FIELDS,
+                    level: 'info',
+                    service: 'timesheet',
+                    defaultRoute: 'timesheets'
+                });
+                return res.status(400).json({ error: ERROR_MESSAGES.MISSING_FIELDS });
             }
+
             const { supervisorID } = req.params;
-            const timesheets = await TimesheetService.getTimesheetsBySupervisor(supervisorID);
-            logger.info('Successfully fetched timesheets by supervisor', {
-                route: 'timesheets/supervisor',
-                method: req.method,
-                url: req.originalUrl,
+            const cacheInstance = await cache();
+            const timesheets = await cacheInstance.getOrSet(`timesheets:supervisor:${supervisorID}`, async () => {
+                return await TimesheetService.getTimesheetsBySupervisor(supervisorID);
+            }, 'api');
+
+            logRequest({
+                req,
+                res: timesheets,
                 status: 200,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
+                message: `Retrieved timesheets for supervisor ${supervisorID}`,
+                level: 'info',
                 metadata: { supervisorID, timesheetCount: timesheets.length },
+                service: 'timesheet',
+                defaultRoute: 'timesheets'
             });
+
             return res.status(200).json(timesheets);
         } catch (error) {
-            const response = TimesheetController.formatError(error);
             const status = error.message === ERROR_MESSAGES.MISSING_FIELDS ? 400 : error.status || 500;
-            logger.error('Failed to fetch timesheets by supervisor', {
-                route: 'timesheets/supervisor',
-                method: req.method,
-                url: req.originalUrl,
+            logRequest({
+                req,
+                error,
                 status,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { error: response.error },
+                message: `Failed to fetch timesheets by supervisor: ${error.message}`,
+                level: 'error',
+                service: 'timesheet',
+                defaultRoute: 'timesheets'
             });
-            return res.status(status).json(response);
+
+            return res.status(status).json(TimesheetController.formatError(error));
         }
     }
 
     static async getTimesheetByWeekNumberAndYear(req, res) {
-        const actorID = req.user?.userID || 'unknown';
         try {
             const errors = validationResult(req);
             if (!errors.isEmpty()) {
-                throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
+                logRequest({
+                    req,
+                    status: 400,
+                    message: ERROR_MESSAGES.MISSING_FIELDS,
+                    level: 'info',
+                    service: 'timesheet',
+                    defaultRoute: 'timesheets'
+                });
+                return res.status(400).json({ error: ERROR_MESSAGES.MISSING_FIELDS });
             }
+
             const { weekNumber, year, supervisorID } = req.params;
-            const timesheet = await TimesheetService.getTimesheetByWeekAndYear(weekNumber, year, supervisorID);
-            logger.info('Successfully fetched timesheet by week number and year', {
-                route: 'timesheets/weekNumberAndYear',
-                method: req.method,
-                url: req.originalUrl,
+            const cacheInstance = await cache();
+            const cacheKey = `timesheet:week:${weekNumber}:year:${year}:supervisor:${supervisorID}`;
+            const timesheet = await cacheInstance.getOrSet(cacheKey, async () => {
+                return await TimesheetService.getTimesheetByWeekAndYear(weekNumber, year, supervisorID);
+            }, 'api');
+
+            logRequest({
+                req,
+                res: timesheet,
                 status: 200,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { weekNumber, year },
+                message: `Retrieved timesheet for week ${weekNumber}, year ${year}`,
+                level: 'info',
+                metadata: { weekNumber, year, supervisorID },
+                service: 'timesheet',
+                defaultRoute: 'timesheets'
             });
+
             return res.status(200).json(timesheet);
         } catch (error) {
-            const response = TimesheetController.formatError(error);
             const status = error.message === ERROR_MESSAGES.MISSING_FIELDS ? 400 : error.status || 500;
-            logger.error('Failed to fetch timesheet by week number and year', {
-                route: 'timesheets/weekNumberAndYear',
-                method: req.method,
-                url: req.originalUrl,
+            logRequest({
+                req,
+                error,
                 status,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { error: response.error },
+                message: `Failed to fetch timesheet by week number and year: ${error.message}`,
+                level: 'error',
+                service: 'timesheet',
+                defaultRoute: 'timesheets'
             });
-            return res.status(status).json(response);
+
+            return res.status(status).json(TimesheetController.formatError(error));
         }
     }
 
     static async createTimesheet(req, res) {
-        const actorID = req.user?.userID || 'unknown';
         try {
             const errors = validationResult(req);
             if (!errors.isEmpty()) {
-                throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
+                logRequest({
+                    req,
+                    status: 400,
+                    message: ERROR_MESSAGES.MISSING_FIELDS,
+                    level: 'info',
+                    service: 'timesheet',
+                    defaultRoute: 'timesheets'
+                });
+                return res.status(400).json({ error: ERROR_MESSAGES.MISSING_FIELDS });
             }
+
             const { weekNumber, year, supervisorID, visits, status = 'pending' } = req.body;
             if (!['pending', 'visited', 'rejected', 'validated'].includes(status)) {
-                throw new Error('Invalid status');
+                logRequest({
+                    req,
+                    status: 400,
+                    message: 'Invalid status',
+                    level: 'info',
+                    service: 'timesheet',
+                    defaultRoute: 'timesheets'
+                });
+                return res.status(400).json({ error: 'Invalid status' });
             }
-            const result = await TimesheetService.createTimesheet({ weekNumber, year, supervisorID, visits, status }, actorID);
 
-            const response = {
-                timesheet: result.timesheet,
-            };
+            const result = await TimesheetService.createTimesheet({ weekNumber, year, supervisorID, visits, status }, req.user.userID);
+
+            const cacheInstance = await cache();
+            const redis = getRedisClient();
+            await cacheInstance.invalidateByTag('timesheets');
+            await cacheInstance.invalidate('timesheets:all');
+            await cacheInstance.invalidate(`timesheets:supervisor:${supervisorID}`);
+            await cacheInstance.invalidate(`timesheet:${result.timesheet.timesheetID}`);
+            for (const visit of visits || []) {
+                await cacheInstance.invalidate(`visits:by_timesheet:${result.timesheet.timesheetID}`);
+            }
+            await redis.set('timesheets:last_updated', Date.now().toString());
+            await RedisUtils.publishEvent('cache:invalidate', 'timesheets:all');
+            await RedisUtils.publishEvent('cache:invalidate', `timesheets:supervisor:${supervisorID}`);
+            await RedisUtils.publishEvent('cache:invalidate', `timesheet:${result.timesheet.timesheetID}`);
+
+            const supervisor = await User.findByPk(supervisorID);
+            const recipientID = supervisor?.regionalManagerID || supervisor?.supervisorID || null;
+            const requestID = uuidv4();
+            await NotificationService.triggerNotification({
+                event: 'timesheet:created',
+                data: { timesheetID: result.timesheet.timesheetID, supervisorID, weekNumber, year, status },
+                metadata: { createdBy: req.user.email },
+                dynamicRecipients: recipientID ? [recipientID] : undefined,
+                triggeredByUserID: req.user.userID,
+                type: 'timesheet',
+                customMessage: `Timesheet created for week ${weekNumber}, year ${year}`,
+                requestID,
+            });
+
+            logRequest({
+                req,
+                res: result.timesheet,
+                status: 201,
+                message: `Created timesheet ${result.timesheet.timesheetID}`,
+                level: 'info',
+                metadata: { timesheetID: result.timesheet.timesheetID, supervisorID, visitCount: visits ? visits.length : 0, requestID },
+                service: 'timesheet',
+                defaultRoute: 'timesheets'
+            });
+
+            const response = { timesheet: result.timesheet };
             if (result.warning) {
                 response.warning = result.warning;
             }
 
-            await NotificationService.triggerNotification({
-                event: 'timesheet:created',
-                data: { timesheetId: result.timesheet.timesheetID, supervisorID, weekNumber, year, status },
-                metadata: { createdBy: req.user.email },
-            });
-
-            logger.info('Successfully created timesheet', {
-                route: 'timesheets',
-                method: req.method,
-                url: req.originalUrl,
-                status: 201,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { timesheetID: result.timesheet.timesheetID, supervisorID, visitCount: visits ? visits.length : 0 },
-            });
-
             return res.status(201).json(response);
         } catch (error) {
-            const response = TimesheetController.formatError(error);
             const status = error.message === ERROR_MESSAGES.MISSING_FIELDS || error.message === 'Invalid status' ? 400 : error.status || 500;
-            logger.error('Failed to create timesheet', {
-                route: 'timesheets',
-                method: req.method,
-                url: req.originalUrl,
+            logRequest({
+                req,
+                error,
                 status,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { error: response.error },
+                message: `Failed to create timesheet: ${error.message}`,
+                level: 'error',
+                service: 'timesheet',
+                defaultRoute: 'timesheets'
             });
-            return res.status(status).json(response);
+
+            return res.status(status).json(TimesheetController.formatError(error));
         }
     }
 
     static async validateTimesheet(req, res) {
-        const actorID = req.user?.userID || 'unknown';
         try {
             const errors = validationResult(req);
             if (!errors.isEmpty()) {
-                throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
+                logRequest({
+                    req,
+                    status: 400,
+                    message: ERROR_MESSAGES.MISSING_FIELDS,
+                    level: 'info',
+                    service: 'timesheet',
+                    defaultRoute: 'timesheets'
+                });
+                return res.status(400).json({ error: ERROR_MESSAGES.MISSING_FIELDS });
             }
+
             const { id } = req.params;
             const { visitIDs = [], status } = req.body;
             if (!['pending', 'visited', 'rejected', 'validated'].includes(status)) {
-                throw new Error('Invalid status');
+                logRequest({
+                    req,
+                    status: 400,
+                    message: 'Invalid status',
+                    level: 'info',
+                    service: 'timesheet',
+                    defaultRoute: 'timesheets'
+                });
+                return res.status(400).json({ error: 'Invalid status' });
             }
-            const timesheet = await TimesheetService.validateTimesheet(id, { visitIDs, status }, actorID);
+
+            const timesheet = await TimesheetService.validateTimesheet(id, { visitIDs, status }, req.user.userID);
+
+            const cacheInstance = await cache();
+            const redis = getRedisClient();
+            await cacheInstance.invalidateByTag('timesheets');
+            await cacheInstance.invalidate('timesheets:all');
+            await cacheInstance.invalidate(`timesheet:${id}`);
+            await cacheInstance.invalidate(`timesheets:supervisor:${timesheet.supervisorID}`);
+            await cacheInstance.invalidate(`visits:by_timesheet:${id}`);
+            await redis.set('timesheets:last_updated', Date.now().toString());
+            await RedisUtils.publishEvent('cache:invalidate', `timesheet:${id}`);
+            await RedisUtils.publishEvent('cache:invalidate', 'timesheets:all');
+            await RedisUtils.publishEvent('cache:invalidate', `timesheets:supervisor:${timesheet.supervisorID}`);
+            await RedisUtils.publishEvent('cache:invalidate', `visits:by_timesheet:${id}`);
 
             try {
                 const supervisor = await User.findByPk(timesheet.supervisorID);
@@ -249,152 +364,217 @@ class TimesheetController {
                     syncedVisits: syncResults,
                     action: 'synced',
                 });
-            } catch (error) {
-                logger.warn(`Failed to sync timesheet ${id} to calendar after validation: ${error.message}`, {
+            } catch (syncError) {
+                logger.warn(`Failed to sync timesheet ${id} to calendar after validation: ${syncError.message}`, {
                     userId: timesheet.supervisorID,
-                    timesheetId: id
+                    timesheetId: id,
                 });
             }
 
+            const supervisor = await User.findByPk(timesheet.supervisorID);
+            const recipientID = supervisor?.regionalManagerID || supervisor?.supervisorID || null;
+            const requestID = uuidv4();
             await NotificationService.triggerNotification({
                 event: 'timesheet:validated',
-                data: { timesheetId: id, status, supervisorID: timesheet.supervisorID },
+                data: { timesheetID: id, status, supervisorID: timesheet.supervisorID },
                 metadata: { validatedBy: req.user.email },
+                dynamicRecipients: recipientID ? [recipientID] : undefined,
+                triggeredByUserID: req.user.userID,
+                type: 'timesheet',
+                customMessage: `Timesheet ${id} validated with status ${status}`,
+                requestID,
             });
 
-            logger.info('Successfully validated timesheet', {
-                route: 'timesheets/validate',
-                method: req.method,
-                url: req.originalUrl,
+            logRequest({
+                req,
+                res: timesheet,
                 status: 200,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { timesheetID: id, status, visitCount: visitIDs.length },
+                message: `Validated timesheet ${id}`,
+                level: 'info',
+                metadata: { timesheetID: id, status, visitCount: visitIDs.length, requestID },
+                service: 'timesheet',
+                defaultRoute: 'timesheets'
             });
 
             return res.status(200).json(timesheet);
         } catch (error) {
-            const response = TimesheetController.formatError(error);
             const status = error.message === ERROR_MESSAGES.MISSING_FIELDS || error.message === 'Invalid status' ? 400 : error.status || 500;
-            logger.error('Failed to validate timesheet', {
-                route: 'timesheets/validate',
-                method: req.method,
-                url: req.originalUrl,
+            logRequest({
+                req,
+                error,
                 status,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { error: response.error },
+                message: `Failed to validate timesheet: ${error.message}`,
+                level: 'error',
+                service: 'timesheet',
+                defaultRoute: 'timesheets'
             });
-            return res.status(status).json(response);
+
+            return res.status(status).json(TimesheetController.formatError(error));
         }
     }
 
     static async suggestTimesheet(req, res) {
-        const actorID = req.user?.userID || 'unknown';
         try {
             const errors = validationResult(req);
             if (!errors.isEmpty()) {
-                throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
+                logRequest({
+                    req,
+                    status: 400,
+                    message: ERROR_MESSAGES.MISSING_FIELDS,
+                    level: 'info',
+                    service: 'timesheet',
+                    defaultRoute: 'timesheets'
+                });
+                return res.status(400).json({ error: ERROR_MESSAGES.MISSING_FIELDS });
             }
+
             const { supervisorID, weekNumber, year, coordinates } = req.body;
             const criteria = req.body.criteria || {};
 
             if (!coordinates || typeof coordinates.lat !== 'number' || typeof coordinates.lng !== 'number') {
-                throw new Error(ERROR_MESSAGES.INVALID_COORDINATES);
+                logRequest({
+                    req,
+                    status: 400,
+                    message: ERROR_MESSAGES.INVALID_COORDINATES,
+                    level: 'info',
+                    service: 'timesheet',
+                    defaultRoute: 'timesheets'
+                });
+                return res.status(400).json({ error: ERROR_MESSAGES.INVALID_COORDINATES });
             }
 
             const result = await TimesheetService.suggestTimesheet(supervisorID, weekNumber, year, criteria, coordinates);
 
+            const cacheInstance = await cache();
+            const redis = getRedisClient();
+            await cacheInstance.invalidateByTag('timesheets');
+            await cacheInstance.invalidate('timesheets:all');
+            await cacheInstance.invalidate(`timesheets:supervisor:${supervisorID}`);
+            await redis.set('timesheets:last_updated', Date.now().toString());
+            await RedisUtils.publishEvent('cache:invalidate', 'timesheets:all');
+            await RedisUtils.publishEvent('cache:invalidate', `timesheets:supervisor:${supervisorID}`);
+
+            const supervisor = await User.findByPk(supervisorID);
+            const recipientID = supervisor?.regionalManagerID || supervisor?.supervisorID || null;
+            const requestID = uuidv4();
             await NotificationService.triggerNotification({
                 event: 'timesheet:suggested',
                 data: { supervisorID, weekNumber, year, suggestionCount: result.suggestions.length },
                 metadata: { suggestedBy: req.user.email },
+                dynamicRecipients: recipientID ? [recipientID] : undefined,
+                triggeredByUserID: req.user.userID,
+                type: 'timesheet',
+                customMessage: `Suggested timesheet for week ${weekNumber}, year ${year}`,
+                requestID,
             });
 
-            logger.info('Successfully suggested timesheet', {
-                route: 'timesheets/suggest',
-                method: req.method,
-                url: req.originalUrl,
+            logRequest({
+                req,
+                res: result,
                 status: 200,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { supervisorID, weekNumber, year, suggestionCount: result.suggestions.length },
+                message: `Suggested timesheet for supervisor ${supervisorID}`,
+                level: 'info',
+                metadata: { supervisorID, weekNumber, year, suggestionCount: result.suggestions.length, requestID },
+                service: 'timesheet',
+                defaultRoute: 'timesheets'
             });
 
             return res.status(200).json(result);
         } catch (error) {
-            const response = TimesheetController.formatError(error);
             const status = error.message === ERROR_MESSAGES.MISSING_FIELDS ||
                 error.message === ERROR_MESSAGES.INVALID_COORDINATES ||
                 error.message === ERROR_MESSAGES.REQUEST_CANCELED ? 400 : error.status || 500;
-            logger.error('Failed to suggest timesheet', {
-                route: 'timesheets/suggest',
-                method: req.method,
-                url: req.originalUrl,
+            logRequest({
+                req,
+                error,
                 status,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { error: response.error },
+                message: `Failed to suggest timesheet: ${error.message}`,
+                level: 'error',
+                service: 'timesheet',
+                defaultRoute: 'timesheets'
             });
-            return res.status(status).json(response);
+
+            return res.status(status).json(TimesheetController.formatError(error));
         }
     }
 
     static async cancelTimesheetSuggestion(req, res) {
-        const actorID = req.user?.userID || 'unknown';
         try {
             const errors = validationResult(req);
             if (!errors.isEmpty()) {
-                throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
+                logRequest({
+                    req,
+                    status: 400,
+                    message: ERROR_MESSAGES.MISSING_FIELDS,
+                    level: 'info',
+                    service: 'timesheet',
+                    defaultRoute: 'timesheets'
+                });
+                return res.status(400).json({ error: ERROR_MESSAGES.MISSING_FIELDS });
             }
+
             const { requestId } = req.params;
             const success = await TimesheetService.cancelTimesheetSuggestion(requestId);
 
             if (!success) {
-                throw new Error('No active suggestion request found for the provided ID');
+                logRequest({
+                    req,
+                    status: 404,
+                    message: 'No active suggestion request found for the provided ID',
+                    level: 'info',
+                    service: 'timesheet',
+                    defaultRoute: 'timesheets'
+                });
+                return res.status(404).json({ error: 'No active suggestion request found for the provided ID' });
             }
 
+            const cacheInstance = await cache();
+            const redis = getRedisClient();
+            await cacheInstance.invalidateByTag('timesheets');
+            await cacheInstance.invalidate('timesheets:all');
+            await redis.set('timesheets:last_updated', Date.now().toString());
+            await RedisUtils.publishEvent('cache:invalidate', 'timesheets:all');
+
+            const requestID = uuidv4();
             await NotificationService.triggerNotification({
                 event: 'timesheet:suggestion_canceled',
                 data: { requestId },
                 metadata: { canceledBy: req.user.email },
+                triggeredByUserID: req.user.userID,
+                type: 'timesheet',
+                customMessage: `Canceled timesheet suggestion request ${requestId}`,
+                requestID,
             });
 
-            logger.info('Successfully canceled timesheet suggestion', {
-                route: 'timesheets/cancel-suggestion',
-                method: req.method,
-                url: req.originalUrl,
+            logRequest({
+                req,
+                res: { message: 'Timesheet suggestion request canceled successfully' },
                 status: 200,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { requestId },
+                message: `Canceled timesheet suggestion ${requestId}`,
+                level: 'info',
+                metadata: { requestId, requestID },
+                service: 'timesheet',
+                defaultRoute: 'timesheets'
             });
 
             return res.status(200).json({ message: 'Timesheet suggestion request canceled successfully' });
         } catch (error) {
-            const response = TimesheetController.formatError(error);
             const status = error.message === ERROR_MESSAGES.MISSING_FIELDS ? 400 : error.status || 500;
-            logger.error('Failed to cancel timesheet suggestion', {
-                route: 'timesheets/cancel-suggestion',
-                method: req.method,
-                url: req.originalUrl,
+            logRequest({
+                req,
+                error,
                 status,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { error: response.error },
+                message: `Failed to cancel timesheet suggestion: ${error.message}`,
+                level: 'error',
+                service: 'timesheet',
+                defaultRoute: 'timesheets'
             });
-            return res.status(status).json(response);
+
+            return res.status(status).json(TimesheetController.formatError(error));
         }
     }
 
     static async syncTimesheetToCalendar(req, res) {
-        const actorID = req.user?.userID || 'unknown';
         try {
             const { id } = req.params;
             const timesheet = await Timesheet.findByPk(id, {
@@ -412,17 +592,42 @@ class TimesheetController {
             });
 
             if (!timesheet) {
-                logger.error(`Timesheet not found`, { timesheetId: id, userID: actorID });
+                logRequest({
+                    req,
+                    status: 404,
+                    message: 'Timesheet not found',
+                    level: 'info',
+                    metadata: { timesheetID: id },
+                    service: 'timesheet',
+                    defaultRoute: 'timesheets'
+                });
                 return res.status(404).json({ error: 'Timesheet not found' });
             }
+
             if (!timesheet.User) {
-                logger.error(`User not found for timesheet`, { timesheetId: id, userID: actorID });
+                logRequest({
+                    req,
+                    status: 404,
+                    message: 'User not found for timesheet',
+                    level: 'info',
+                    metadata: { timesheetID: id },
+                    service: 'timesheet',
+                    defaultRoute: 'timesheets'
+                });
                 return res.status(404).json({ error: 'User not found for this timesheet' });
             }
 
             const userId = timesheet.User.userID;
             if (typeof userId !== 'string') {
-                logger.error(`Invalid userId type: expected string, got ${typeof userId}`, { userId, timesheetId: id });
+                logRequest({
+                    req,
+                    status: 500,
+                    message: `Invalid userId type: expected string, got ${typeof userId}`,
+                    level: 'error',
+                    metadata: { timesheetID: id, userId },
+                    service: 'timesheet',
+                    defaultRoute: 'timesheets'
+                });
                 return res.status(500).json({ error: 'Invalid user ID type' });
             }
 
@@ -433,32 +638,58 @@ class TimesheetController {
                 action: 'synced',
             });
 
+            const cacheInstance = await cache();
+            const redis = getRedisClient();
+            await cacheInstance.invalidateByTag('timesheets');
+            await cacheInstance.invalidate('timesheets:all');
+            await cacheInstance.invalidate(`timesheet:${id}`);
+            await cacheInstance.invalidate(`timesheets:supervisor:${timesheet.supervisorID}`);
+            await cacheInstance.invalidate(`visits:by_timesheet:${id}`);
+            await redis.set('timesheets:last_updated', Date.now().toString());
+            await RedisUtils.publishEvent('cache:invalidate', `timesheet:${id}`);
+            await RedisUtils.publishEvent('cache:invalidate', 'timesheets:all');
+            await RedisUtils.publishEvent('cache:invalidate', `timesheets:supervisor:${timesheet.supervisorID}`);
+            await RedisUtils.publishEvent('cache:invalidate', `visits:by_timesheet:${id}`);
+
+            const supervisor = await User.findByPk(timesheet.supervisorID);
+            const recipientID = supervisor?.regionalManagerID || supervisor?.supervisorID || null;
+            const requestID = uuidv4();
             await NotificationService.triggerNotification({
                 event: 'timesheet:synced',
-                data: { timesheetId: id, supervisorID: timesheet.supervisorID, syncedVisitCount: syncResults.length },
+                data: { timesheetID: id, supervisorID: timesheet.supervisorID, syncedVisitCount: syncResults.length },
                 metadata: { syncedBy: req.user.email },
+                dynamicRecipients: recipientID ? [recipientID] : undefined,
+                triggeredByUserID: req.user.userID,
+                type: 'timesheet',
+                customMessage: `Timesheet ${id} synced to calendar`,
+                requestID,
             });
 
-            logger.info('Successfully synced timesheet to calendar', {
-                route: 'timesheets/sync',
-                method: req.method,
-                url: req.originalUrl,
+            logRequest({
+                req,
+                res: { timesheetID: id, syncedVisits: syncResults },
                 status: 200,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { timesheetID: id, syncedVisitCount: syncResults.length },
+                message: `Synced timesheet ${id} to calendar`,
+                level: 'info',
+                metadata: { timesheetID: id, syncedVisitCount: syncResults.length, requestID },
+                service: 'timesheet',
+                defaultRoute: 'timesheets'
             });
 
-            return res.status(200).json({ timesheetId: id, syncedVisits: syncResults });
+            return res.status(200).json({ timesheetID: id, syncedVisits: syncResults });
         } catch (error) {
-            logger.error(`Sync timesheet to calendar error: ${error.message}`, {
-                method: req.method,
-                url: req.originalUrl,
-                userId: actorID,
-                timesheetId: req.params.id,
+            logRequest({
+                req,
+                error,
+                status: 500,
+                message: `Failed to sync timesheet to calendar: ${error.message}`,
+                level: 'error',
+                metadata: { timesheetID: req.params.id },
+                service: 'timesheet',
+                defaultRoute: 'timesheets'
             });
-            return res.status(500).json({ error: 'Failed to sync timesheet to calendar' });
+
+            return res.status(500).json(TimesheetController.formatError(error));
         }
     }
 }

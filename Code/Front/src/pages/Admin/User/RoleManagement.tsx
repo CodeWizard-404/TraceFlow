@@ -1,8 +1,8 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { FaAngleDown, FaInfoCircle } from "react-icons/fa";
 import { useAuth } from "../../../context/AuthContext";
 import { useError } from "../../../context/ErrorContext";
-import { revokeRolesFromUser, assignRolesToUser, getAllRoles, getRolesByUser } from "../../../apis/roleAPI";
+import { revokeRolesFromUser, assignRolesToUser, getRolesByUser } from "../../../apis/roleAPI";
 import User from "../../../models/User";
 import Role from "../../../models/Role";
 import { Tooltip } from "react-tooltip";
@@ -32,10 +32,7 @@ const RolesDropdownSkeleton: React.FC = () => (
         <div className="roles-grid">
             {[...Array(7)].map((_, i) => (
                 <div key={i} className="role-toggle-container">
-                    <div
-                        className="custom-skeleton"
-                        style={{ width: "100%", height: "32px" }}
-                    />
+                    <div className="custom-skeleton" style={{ width: "100%", height: "32px" }} />
                 </div>
             ))}
         </div>
@@ -68,27 +65,24 @@ const RoleManagement: React.FC<RoleManagementProps> = ({
         import.meta.env.VITE_ROLES_SUPERVISOR,
     ];
 
+    // Initialize tempRoles for existing user
     useEffect(() => {
-        if (expandedSection !== "roles" || !selectedUser) return;
-        const fetchRoles = async () => {
-            try {
-                setLoadingRoles(true);
-                const [rolesData, userRolesData] = await Promise.all([
-                    getAllRoles(),
-                    getRolesByUser(selectedUser.userID),
-                ]);
-                setRoles(rolesData);
-                setTempRoles(userRolesData || []);
-            } catch (error) {
-                setGlobalError(
-                    error instanceof Error ? error.message : "Failed to load roles."
-                );
-            } finally {
-                setLoadingRoles(false);
-            }
-        };
-        fetchRoles();
-    }, [expandedSection, selectedUser, setRoles, setTempRoles, setGlobalError]);
+        if (selectedUser && selectedUser.Roles) {
+            console.log("RoleManagement useEffect: selectedUser.Roles =", selectedUser.Roles);
+            const normalizedRoles = selectedUser.Roles.map((role) => {
+                if (!role.roleID) {
+                    const matchingRole = roles.find((r) => r.name === role.name);
+                    return {
+                        ...role,
+                        roleID: matchingRole?.roleID || `temp-${role.name}`,
+                    };
+                }
+                return role;
+            });
+            setTempRoles(normalizedRoles);
+        }
+        // No need to initialize tempRoles for new user; UserAdd manages it
+    }, [selectedUser, roles, setTempRoles]);
 
     const handleToggleRole = useCallback(
         async (role: Role) => {
@@ -99,7 +93,23 @@ const RoleManagement: React.FC<RoleManagementProps> = ({
                 return;
             }
 
+            let updatedRoles = [...tempRoles];
+            const hasRole = tempRoles.some((r) => r.roleID === role.roleID);
+
+            // Handle exclusive roles logic
+            if (exclusiveRoles.includes(role.name) && !hasRole) {
+                // Remove other exclusive roles
+                updatedRoles = updatedRoles.filter((r) => !exclusiveRoles.includes(r.name));
+                updatedRoles.push(role);
+            } else {
+                // Toggle non-exclusive or exclusive role
+                updatedRoles = hasRole
+                    ? updatedRoles.filter((r) => r.roleID !== role.roleID)
+                    : [...updatedRoles, role];
+            }
+
             if (selectedUser) {
+                // Existing user: update roles via API
                 const isCurrentUser = selectedUser.userID === currentUser?.userID;
                 const hasAdminRole = tempRoles.some(
                     (r) => r.name === import.meta.env.VITE_ROLES_ADMIN
@@ -115,64 +125,52 @@ const RoleManagement: React.FC<RoleManagementProps> = ({
                 }
 
                 try {
-                    const hasRole = tempRoles.some((r) => r.roleID === role.roleID);
-                    let updatedRoles = [...tempRoles];
+                    setLoadingRoles(true);
 
-                    // Handle exclusive roles logic
                     if (exclusiveRoles.includes(role.name)) {
                         if (!hasRole) {
-                            // If toggling on an exclusive role, remove other exclusive roles
                             const rolesToRevoke = tempRoles
                                 .filter((r) => exclusiveRoles.includes(r.name) && r.roleID !== role.roleID)
                                 .map((r) => r.roleID);
                             if (rolesToRevoke.length > 0) {
                                 await revokeRolesFromUser(selectedUser.userID, rolesToRevoke);
-                                updatedRoles = updatedRoles.filter(
-                                    (r) => !exclusiveRoles.includes(r.name) || r.roleID === role.roleID
-                                );
                             }
-                            // Assign the new role
                             await assignRolesToUser(selectedUser.userID, [role.roleID]);
-                            updatedRoles = [...updatedRoles, role];
                         } else {
-                            // If toggling off, just remove the role
                             await revokeRolesFromUser(selectedUser.userID, [role.roleID]);
-                            updatedRoles = updatedRoles.filter((r) => r.roleID !== role.roleID);
                         }
                     } else {
-                        // Handle non-exclusive roles
                         if (hasRole) {
                             await revokeRolesFromUser(selectedUser.userID, [role.roleID]);
-                            updatedRoles = updatedRoles.filter((r) => r.roleID !== role.roleID);
                         } else {
                             await assignRolesToUser(selectedUser.userID, [role.roleID]);
-                            updatedRoles = [...updatedRoles, role];
                         }
                     }
 
                     // Update state
                     setTempRoles(updatedRoles);
+                    const updatedUser = { ...selectedUser, Roles: updatedRoles };
+                    setUsers(users.map((u) => (u.userID === selectedUser.userID ? updatedUser : u)));
+                    setSelectedUser(updatedUser);
+
+                    // Fetch fresh user roles
+                    const userRolesData = await getRolesByUser(selectedUser.userID);
+                    setTempRoles(userRolesData || []);
                     setUsers(
                         users.map((u) =>
-                            u.userID === selectedUser.userID
-                                ? { ...u, Roles: updatedRoles }
-                                : u
+                            u.userID === selectedUser.userID ? { ...u, Roles: userRolesData || [] } : u
                         )
                     );
-                    setSelectedUser({ ...selectedUser, Roles: updatedRoles });
+                    setSelectedUser({ ...selectedUser, Roles: userRolesData || [] });
                 } catch (error) {
-                    setGlobalError(
-                        error instanceof Error ? error.message : "Failed to toggle role."
-                    );
+                    setGlobalError(error instanceof Error ? error.message : "Failed to toggle role.");
                     setTempRoles(selectedUser.Roles || []);
+                } finally {
+                    setLoadingRoles(false);
                 }
             } else {
-                const hasRole = tempRoles.some((r) => r.roleID === role.roleID);
-                if (hasRole) {
-                    setTempRoles(tempRoles.filter((r) => r.roleID !== role.roleID));
-                } else {
-                    setTempRoles([...tempRoles, role]);
-                }
+                // New user: update tempRoles locally
+                setTempRoles(updatedRoles);
             }
         },
         [
@@ -189,7 +187,6 @@ const RoleManagement: React.FC<RoleManagementProps> = ({
         ]
     );
 
-    // Determine if a role should be disabled due to exclusive role selection
     const isRoleDisabled = (role: Role) => {
         if (role.name === import.meta.env.VITE_ROLES_SUPER_ADMIN) return true;
         if (exclusiveRoles.includes(role.name)) {
@@ -203,13 +200,11 @@ const RoleManagement: React.FC<RoleManagementProps> = ({
 
     return (
         <div className="dropdown-unit">
-            <div
-                className="dropdown-bar"
-                onClick={() => toggleSection("roles")}
-            >
+            <div className="dropdown-bar" onClick={() => toggleSection("roles")}>
                 <h3>Role Management</h3>
                 <FaAngleDown
                     className={`dropdown-icon ${expandedSection === "roles" ? "expanded" : ""}`}
+                    aria-hidden="true"
                 />
             </div>
             {expandedSection === "roles" &&
@@ -230,7 +225,7 @@ const RoleManagement: React.FC<RoleManagementProps> = ({
                                             data-tooltip-id={`tooltip-${role.roleID}`}
                                             data-tooltip-content={
                                                 isRoleDisabled(role)
-                                                    ? "Only one of Regional Manager, Manager, or Supervisor can be selected at a time."
+                                                    ? "Only one of Regional Manager, Director, or Supervisor can be selected at a time."
                                                     : ""
                                             }
                                         >

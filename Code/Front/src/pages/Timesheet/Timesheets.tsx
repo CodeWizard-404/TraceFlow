@@ -25,7 +25,7 @@ import VisitStatus from "../../models/Enum/VisitStatus";
 import { useTranslation } from "react-i18next";
 import CalendarSyncButton from "../../components/Google/CalendarSyncButton";
 import TimesheetSuggestionsModal from "../Timesheet/TimesheetSuggestionsModal";
-import { io } from "socket.io-client";
+import { initSocket, onNotification, offNotification, joinRoom, disconnectSocket, isSocketConnected } from "../../lib/socket";
 import MapComponent from '../../components/Google/MapComponent';
 
 const PERMISSIONS = {
@@ -45,7 +45,6 @@ const ROLES = {
     DIRECTOR: import.meta.env.VITE_ROLES_DIRECTOR,
 };
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
 
 const ItemTypes = {
     VISIT: 'visit',
@@ -659,24 +658,50 @@ const Timesheets: React.FC = React.memo(() => {
         }
     }, [isSuperAdmin, userPermissions.canReadSupervisors, supervisorID, t]);
 
-    useEffect(() => {
-        if (!user?.userID) return;
-        const socket = io(SOCKET_URL, {
-            auth: { token: localStorage.getItem('accessToken') }
-        });
+    // WebSocket setup for real-time updates
+    const setupWebSocket = useCallback(() => {
+        if (!isSocketConnected()) initSocket();
 
-        socket.on('connect', () => {
-            socket.emit('join', user.userID);
-        });
+        const handleEntityEvent = async (event: string, data: unknown) => {
+            console.log(`Received entity event: ${event}`, { data });
+            const entity = event.split(':')[0];
+            const action = event.split(':')[1];
 
-        socket.on('calendar:update', () => {
-            fetchTimesheets();
-        });
+            // Handle user events
+            if (entity === 'timesheet') {
+                if (action === 'created' || action === 'validated') {
+                    await fetchTimesheets();
+                }
+            }
+            else if (entity === 'visit') {
+                if (action === 'logged' || action === 'updated' || action === 'deleted') {
+                    await fetchTimesheets();
+                }
+            }
+
+        };
+
+        onNotification(handleEntityEvent);
+
+        const joinEntityRooms = () => {
+            joinRoom('timesheet');
+            joinRoom('visit');
+        };
+
+        joinEntityRooms();
 
         return () => {
-            socket.disconnect();
+            offNotification();
+            disconnectSocket();
         };
-    }, [user, fetchTimesheets]);
+    }, [
+        fetchTimesheets,
+    ]);
+
+    useEffect(() => {
+        const cleanup = setupWebSocket();
+        return cleanup;
+    }, [setupWebSocket]);
 
     useEffect(() => {
         const handleBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -789,12 +814,6 @@ const Timesheets: React.FC = React.memo(() => {
         return `${formattedHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} ${period}`;
     };
 
-    const today = new Date();
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-    const todayVisits = useMemo(() => {
-        const allVisits = timesheets.flatMap(ts => ts.Visits || []);
-        return allVisits.filter(v => v.date.split("T")[0] === todayStr);
-    }, [timesheets]);
 
     useEffect(() => {
         const fetchLocations = async () => {
