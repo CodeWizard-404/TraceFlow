@@ -16,6 +16,8 @@ import AgentManagement from './pages/Dashboard/AgentManagement';
 import Reports from './pages/Report/Reports';
 import SupervisorDashboard from './pages/Dashboard/SupervisorDashboard';
 import ManagerDashboard from './pages/Dashboard/ManagerDashboard';
+import HRDashboard from './pages/Dashboard/HRDashboard';
+import AdminSummaryDashboard from './pages/Dashboard/AdminDashboard';
 
 // Lazy load route components
 const Timesheets = React.lazy(() => import('./pages/Timesheet/Timesheets'));
@@ -29,7 +31,6 @@ const AdminDashboard = React.lazy(() => import('./pages/Admin/AdminDashboard'));
 const ReceiptBooks = React.lazy(() => import('./pages/Receipt/ReceiptBooks'));
 const TransferReceiptBook = React.lazy(() => import('./pages/Receipt/TransferReceiptBook'));
 const ReceiptBookHistory = React.lazy(() => import('./pages/Receipt/ReceiptBookHistory'));
-const Dashboard = React.lazy(() => import('./pages/Dashboard/Dashboard'));
 
 // Static permissions and roles from .env
 const PERMISSIONS = {
@@ -50,9 +51,16 @@ const PERMISSIONS = {
   DOWNLOAD_REPORT: import.meta.env.VITE_PERMISSIONS_DOWNLOAD_REPORT,
 };
 
+
 const ROLES = {
   ADMIN: import.meta.env.VITE_ROLES_ADMIN,
   SUPER_ADMIN: import.meta.env.VITE_ROLES_SUPER_ADMIN,
+  SUPERVISOR: import.meta.env.VITE_ROLES_SUPERVISOR,
+  REGIONAL_MANAGER: import.meta.env.VITE_ROLES_REGIONAL_MANAGER,
+  PURCHASE_TEAM: import.meta.env.VITE_ROLES_PURCHASE_TEAM,
+  DIRECTOR: import.meta.env.VITE_ROLES_DIRECTOR,
+  HR: import.meta.env.VITE_ROLES_HR,
+  STOCK_MANAGER: import.meta.env.VITE_ROLES_STOCK_MANAGER,
 };
 
 // Permission-based ProtectedRoute component
@@ -193,31 +201,37 @@ const AppContent: React.FC = React.memo(() => {
               </ProtectedRoute>
             }
             />
-
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              }
-            />
             <Route
               path="/supervisor-dashboard"
               element={
-                <ProtectedRoute>
+                <RoleProtectedRoute requiredRoles={[ROLES.SUPERVISOR]}>
                   <SupervisorDashboard />
-                </ProtectedRoute>
+                </RoleProtectedRoute>
               }
             />
             <Route
               path="/regional-dashboard"
               element={
-                <ProtectedRoute>
+                <RoleProtectedRoute requiredRoles={[ROLES.REGIONAL_MANAGER]}>
                   <ManagerDashboard />
-                </ProtectedRoute>
+                </RoleProtectedRoute>
               }
             />
+            <Route
+              path="/HR-dashboard"
+              element={
+                <RoleProtectedRoute requiredRoles={[ROLES.HR, ROLES.SUPER_ADMIN]}>
+                  <HRDashboard />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route path="/admin-dashboard"
+              element={
+                <RoleProtectedRoute requiredRoles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
+                  <AdminSummaryDashboard />
+                </RoleProtectedRoute>
+              } />
+
             <Route
               path="/profile"
               element={
@@ -309,7 +323,7 @@ const AppContent: React.FC = React.memo(() => {
             <Route
               path="/reports"
               element={
-                <ProtectedRoute requiredPermissions={['generate_report']}>
+                <ProtectedRoute requiredPermissions={[PERMISSIONS.GENERATE_REPORT]}>
                   <Reports />
                 </ProtectedRoute>
               }

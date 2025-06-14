@@ -23,12 +23,12 @@ export const initSocket = (retryCount = 5, retryDelay = 2000) => {
         });
 
         socket.on('connect', () => {
-            console.log('Connected to WebSocket', { socketId: socket?.id });
+            console.log('WebSocket connected', { socketId: socket?.id, timestamp: new Date() });
             joinRoom('default-roles-traceflow');
         });
 
         socket.on('connect_error', (error) => {
-            console.error('WebSocket connection error:', { message: error.message, attempt });
+            console.error('WebSocket connect error', { message: error.message, timestamp: new Date() });
             if (error.message.includes('Authentication failed') || error.message.includes('Invalid token')) {
                 refreshToken()
                     .then(() => reconnectSocket())

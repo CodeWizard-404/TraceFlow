@@ -32,7 +32,6 @@ import {
     Space,
     Tooltip,
     Popconfirm,
-    Tabs,
     Card,
     Row,
     Col,
@@ -153,6 +152,29 @@ const ROLES = {
     SUPERVISOR: import.meta.env.VITE_ROLES_SUPERVISOR,
 };
 
+
+
+
+
+const PERMSSIONS = {
+    READ_AGENTS_LOCATIONS: import.meta.env.VITE_PERMISSIONS_READ_AGENTS_LOCATIONS,
+    READ_AGENTS_BY_LOCATION: import.meta.env.VITE_PERMISSIONS_READ_AGENTS_BY_LOCATION,
+    READ_AGENTS_BY_ID: import.meta.env.VITE_PERMISSIONS_READ_AGENTS_BY_ID,
+    READ_AGENTS_BY_PHONE: import.meta.env.VITE_PERMISSIONS_READ_AGENTS_BY_PHONE,
+    READ_AGENTS_BY_DELEGATION: import.meta.env.VITE_PERMISSIONS_READ_AGENTS_BY_DELEGATION,
+    READ_AGENT_SUPERVISOR: import.meta.env.VITE_PERMISSIONS_READ_AGENT_SUPERVISOR,
+    READ_AGENTS_BY_USER: import.meta.env.VITE_PERMISSIONS_READ_AGENTS_BY_USER,
+    CREATE_AGENTS: import.meta.env.VITE_PERMISSIONS_CREATE_AGENTS,
+    READ_ALL_AGENTS: import.meta.env.VITE_PERMISSIONS_READ_ALL_AGENTS,
+    UPDATE_AGENTS: import.meta.env.VITE_PERMISSIONS_UPDATE_AGENTS,
+    DELETE_AGENTS: import.meta.env.VITE_PERMISSIONS_DELETE_AGENTS,
+    READ_AGENT_MAP_LOCATIONS: import.meta.env.VITE_PERMISSIONS_READ_AGENT_MAP_LOCATIONS,
+    READ_NEARBY_AGENTS: import.meta.env.VITE_PERMISSIONS_READ_NEARBY_AGENTS,
+}
+
+
+
+
 const AgentManagement: React.FC = () => {
     const { effectivePermissions } = useAuth();
     const navigate = useNavigate();
@@ -200,6 +222,23 @@ const AgentManagement: React.FC = () => {
 
     // Check for dark mode
     const isDarkMode = document.body.classList.contains('dark');
+
+    const userPermissions = useMemo(
+        () => ({
+            readAgentsLocations: effectivePermissions?.includes(PERMSSIONS.READ_AGENTS_LOCATIONS),
+            readAgentsByLocation: effectivePermissions?.includes(PERMSSIONS.READ_AGENTS_BY_LOCATION),
+            readAgentsById: effectivePermissions?.includes(PERMSSIONS.READ_AGENTS_BY_ID),
+            readAgentsByPhone: effectivePermissions?.includes(PERMSSIONS.READ_AGENTS_BY_PHONE),
+            readAgentsByDelegation: effectivePermissions?.includes(PERMSSIONS.READ_AGENTS_BY_DELEGATION),
+            readAgentSupervisor: effectivePermissions?.includes(PERMSSIONS.READ_AGENT_SUPERVISOR),
+            readAgentsByUser: effectivePermissions?.includes(PERMSSIONS.READ_AGENTS_BY_USER),
+            createAgents: effectivePermissions?.includes(PERMSSIONS.CREATE_AGENTS),
+            readAllAgents: effectivePermissions?.includes(PERMSSIONS.READ_ALL_AGENTS),
+            updateAgents: effectivePermissions?.includes(PERMSSIONS.UPDATE_AGENTS),
+            deleteAgents: effectivePermissions?.includes(PERMSSIONS.DELETE_AGENTS),
+        }),
+        [effectivePermissions]
+    );
 
     // Chart Filter Options
     const timeRangeOptions = [
@@ -709,12 +748,6 @@ const AgentManagement: React.FC = () => {
 
     const columns: TableProps<Agent>['columns'] = [
         {
-            title: 'ID',
-            dataIndex: 'agentID',
-            key: 'agentID',
-            sorter: (a: Agent, b: Agent) => a.agentID.localeCompare(b.agentID),
-        },
-        {
             title: 'Name',
             dataIndex: 'name',
             key: 'name',
@@ -745,10 +778,15 @@ const AgentManagement: React.FC = () => {
             key: 'actions',
             render: (_: any, record: Agent) => (
                 <Space size="middle">
-                    <Tooltip title="Edit"><Button icon={<EditOutlined />} onClick={() => handleEdit(record)} /></Tooltip>
-                    <Popconfirm title="Sure to delete?" onConfirm={() => handleDelete(record.agentID)}>
-                        <Button icon={<DeleteOutlined />} danger />
-                    </Popconfirm>
+                    {userPermissions.updateAgents && (
+
+                        <Tooltip title="Edit"><Button icon={<EditOutlined />} onClick={() => handleEdit(record)} /></Tooltip>
+                    )}
+                    {userPermissions.deleteAgents && (
+                        <Popconfirm title="Sure to delete?" onConfirm={() => handleDelete(record.agentID)}>
+                            <Button icon={<DeleteOutlined />} danger />
+                        </Popconfirm>
+                    )}
                     <Tooltip title="Call"><Button icon={<PhoneOutlined />} onClick={() => window.location.href = `tel:${record.phone}`} /></Tooltip>
                     <Tooltip title="Add Visit"><Button icon={<PlusOutlined />} onClick={() => navigate(`/timesheet-form?agentId=${record.agentID}`)} /></Tooltip>
                 </Space>
@@ -1015,22 +1053,26 @@ const AgentManagement: React.FC = () => {
                                 ))}
                             </Select>
                         </Space>
-                        <Space>
-                            <Button
-                                type="primary"
-                                icon={<PlusOutlined />}
-                                onClick={() => setIsBulkAssignModalVisible(true)}
-                                disabled={!selectedRowKeys.length}
-                            >
-                                Bulk Assign Supervisor
-                            </Button>
-                            <Upload beforeUpload={handleCSVUpload} showUploadList={false}>
-                                <Button icon={<UploadOutlined />}>Import CSV</Button>
-                            </Upload>
-                            <Button icon={<DownloadOutlined />} onClick={handleExportCSV}>
-                                Export CSV
-                            </Button>
-                        </Space>
+                        {userPermissions.createAgents && (
+                            <Space>
+                                <Button
+                                    type="primary"
+                                    icon={<PlusOutlined />}
+                                    onClick={() => setIsBulkAssignModalVisible(true)}
+                                    disabled={!selectedRowKeys.length}
+                                >
+                                    Bulk Assign Supervisor
+                                </Button>
+                                <Upload beforeUpload={handleCSVUpload} showUploadList={false}>
+                                    <Button icon={<UploadOutlined />}>Import CSV</Button>
+                                </Upload>
+                                <Button icon={<DownloadOutlined />} onClick={handleExportCSV}>
+                                    Export CSV
+                                </Button>
+                            </Space>
+
+                        )}
+
                     </Space>
                     <Table
                         rowSelection={rowSelection}

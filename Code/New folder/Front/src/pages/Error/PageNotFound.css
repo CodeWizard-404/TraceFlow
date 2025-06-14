@@ -240,7 +240,7 @@ body.dark .form-subtitle {
     gap: 1rem;
 }
 
-.error-message {
+.error-message-1 {
     text-align: center;
     padding: 1rem;
     background: #f8fafc;
@@ -248,37 +248,37 @@ body.dark .form-subtitle {
     width: 100%;
 }
 
-body.dark .error-message {
+body.dark .error-message-1 {
     background: #333333;
 }
 
-.error-message .error-icon {
+.error-message-1 .error-icon {
     color: #e81f76;
     font-size: 1.5rem;
     margin-bottom: 0.5rem;
 }
 
-body.dark .error-message .error-icon {
+body.dark .error-message-1 .error-icon {
     color: #ff6b6b;
 }
 
-.error-message p {
+.error-message-1 p {
     font-size: 1.25rem;
     font-weight: 600;
     color: #e81f76;
     margin: 0 0 0.5rem;
 }
 
-body.dark .error-message p {
+body.dark .error-message-1 p {
     color: #ff6b6b;
 }
 
-.error-message span {
+.error-message-1 span {
     font-size: 0.875rem;
     color: #6b7280;
 }
 
-body.dark .error-message span {
+body.dark .error-message-1 span {
     color: #9ca3af;
 }
 
@@ -399,7 +399,7 @@ body.dark .action-button:hover {
         font-size: 2.5rem;
     }
 
-    .error-message p {
+    .error-message-1 p {
         font-size: 1rem;
     }
 
