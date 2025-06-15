@@ -57,6 +57,8 @@ function Header() {
     ACCESS_SUPERVISOR_TIMESHEETS: import.meta.env.VITE_PERMISSIONS_ACCESS_SUPERVISOR_TIMESHEETS,
     ACCESS_RECEIPT_BOOKS: import.meta.env.VITE_PERMISSIONS_ACCESS_RECEIPT_BOOKS,
     ACCESS_RECEIPT_BOOKS_BY_HOLDER: import.meta.env.VITE_PERMISSIONS_ACCESS_RECEIPT_BOOKS_BY_HOLDER,
+    GENERATE_REPORT: import.meta.env.VITE_PERMISSIONS_GENERATE_REPORT,
+
   };
 
   const ROLES = {
@@ -75,63 +77,74 @@ function Header() {
   const hasRole = (role: string) =>
     permissionsLoaded && userRoles?.some((r) => r.name === role);
 
-  // Determine dashboard path based on user's primary role
-  const getDashboardPath = () => {
-    if (!permissionsLoaded || !userRoles || userRoles.length === 0) {
-      return '/dashboard';
-    }
+  // Map roles to their respective dashboard paths and labels
+  const roleDashboards = [
+    { role: ROLES.REGIONAL_MANAGER, path: '/regional-dashboard', label: t('header.navbar.regionalDashboard') },
+    { role: ROLES.PURCHASE_TEAM, path: '/purchase-dashboard', label: t('header.navbar.purchaseDashboard') },
+    { role: ROLES.DIRECTOR, path: '/director-dashboard', label: t('header.navbar.directorDashboard') },
+    { role: ROLES.SUPERVISOR, path: '/supervisor-dashboard', label: t('header.navbar.supervisorDashboard') },
+    { role: ROLES.ADMIN, path: '/admin-dashboard', label: t('header.navbar.adminDashboard') },
+    { role: ROLES.STOCK_MANAGER, path: '/stock-dashboard', label: t('header.navbar.stockDashboard') },
+    { role: ROLES.HR, path: '/hr-dashboard', label: t('header.navbar.hrDashboard') },
+  ];
 
-    const primaryRole = userRoles[0].name; // Assuming first role is primary
-    switch (primaryRole) {
-      case ROLES.REGIONAL_MANAGER:
-        return '/regional-dashboard';
-      case ROLES.PURCHASE_TEAM:
-        return '/purchase-dashboard';
-      case ROLES.SUPER_ADMIN:
-        return '/super-admin-dashboard';
-      case ROLES.DIRECTOR:
-        return '/director-dashboard';
-      case ROLES.SUPERVISOR:
-        return '/supervisor-dashboard';
-      case ROLES.ADMIN:
-        return '/admin-dashboard';
-      case ROLES.STOCK_MANAGER:
-        return '/stock-dashboard';
-      case ROLES.HR:
-        return '/hr-dashboard';
-      default:
-        return '/dashboard';
-    }
-  };
+  // Generate dashboard navigation items based on user roles
+  // Generate dashboard navigation items based on user roles
+  const dashboardNavItems = permissionsLoaded && userRoles
+    ? [
+      ...userRoles
+        .map((role) => roleDashboards.find((d) => d.role === role.name))
+        .filter((item): item is NonNullable<typeof roleDashboards[0]> => !!item)
+        .map((item) => ({
+          path: item.path,
+          label: item.label,
+          visible: () => hasRole(item.role),
+        })),
+      ...(hasRole(ROLES.SUPER_ADMIN)
+        ? [
+          {
+            path: '/admin-dashboard',
+            label: t('header.navbar.adminDashboard'),
+            visible: () => hasRole(ROLES.SUPER_ADMIN),
+          },
+          {
+            path: '/hr-dashboard',
+            label: t('header.navbar.hrDashboard'),
+            visible: () => hasRole(ROLES.SUPER_ADMIN),
+          },
+        ]
+        : []),
+    ]
+    : [{ path: '/dashboard', label: t('header.navbar.dashboard'), visible: () => true }];
 
   const navItems = [
-    { path: getDashboardPath(), label: t("header.navbar.dashboard"), visible: () => true },
+    ...dashboardNavItems,
     {
-      path: "/admin",
-      label: t("header.navbar.admin"),
+      path: '/admin',
+      label: t('header.navbar.admin'),
       visible: () => hasRole(ROLES.ADMIN) || hasRole(ROLES.SUPER_ADMIN),
     },
     {
-      path: "/agents",
-      label: t("header.navbar.agents"),
+      path: '/agents',
+      label: t('header.navbar.agents'),
       visible: () => true,
     },
     {
-      path: "/timesheet",
-      label: t("header.navbar.timesheets"),
+      path: '/timesheet',
+      label: t('header.navbar.timesheets'),
       visible: () => hasPermission(PERMISSIONS.ACCESS_SUPERVISOR_TIMESHEETS),
     },
     {
-      path: "/receipt-books",
-      label: t("header.navbar.receiptBooks"),
+      path: '/receipt-books',
+      label: t('header.navbar.receiptBooks'),
       visible: () =>
         hasPermission(PERMISSIONS.ACCESS_RECEIPT_BOOKS) || hasPermission(PERMISSIONS.ACCESS_RECEIPT_BOOKS_BY_HOLDER),
     },
     {
       path: '/reports',
       label: t('header.navbar.reports'),
-      visible: () => hasPermission('generate_report'),
-    }
+      visible: () => hasPermission(PERMISSIONS.GENERATE_REPORT),
+    },
   ];
 
   const handleNavClick = (path: string) => {
@@ -166,32 +179,32 @@ function Header() {
   }, [location]);
 
   return (
-    <header className={`header ${theme === "dark" ? "dark" : ""}`}>
+    <header className={`header ${theme === 'dark' ? 'dark' : ''}`}>
       <div className="header-container">
         <img
           className="logo"
-          src={theme === "dark" ? "/Banner-wd.png" : "/Banner-bl.png"}
-          alt={t("header.logoAlt")}
+          src={theme === 'dark' ? '/Banner-wd.png' : '/Banner-bl.png'}
+          alt={t('header.logoAlt')}
         />
         <div className="mobile-buttons">
           <motion.button
             className="theme-toggle-btn"
             onClick={toggleTheme}
-            aria-label={t("header.aria.themeToggle", {
-              mode: t(`header.${theme === "light" ? "darkMode" : "lightMode"}`),
+            aria-label={t('header.aria.themeToggle', {
+              mode: t(`header.${theme === 'light' ? 'darkMode' : 'lightMode'}`),
             })}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
-            {theme === "light" ? <FaMoon /> : <FaSun />}
-            <span className="btn-text">{t("header.theme")}</span>
+            {theme === 'light' ? <FaMoon /> : <FaSun />}
+            <span className="btn-text">{t('header.theme')}</span>
           </motion.button>
           {user && (
             <>
               <motion.button
                 className="notification-btn"
                 onClick={() => setShowNotificationPanel((prev) => !prev)}
-                aria-label={t("header.aria.notifications", { count: unreadCount })}
+                aria-label={t('header.aria.notifications', { count: unreadCount })}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
@@ -199,19 +212,19 @@ function Header() {
                 {unreadCount > 0 && (
                   <span className="notification-badge">{unreadCount}</span>
                 )}
-                <span className="btn-text">{t("header.notifications")}</span>
+                <span className="btn-text">{t('header.notifications')}</span>
               </motion.button>
               <motion.button
                 className="profile-btn"
                 onClick={handleProfileClick}
                 onMouseEnter={() => setShowProfilePanel(true)}
                 onMouseLeave={() => setShowProfilePanel(false)}
-                aria-label={t("header.aria.profile")}
+                aria-label={t('header.aria.profile')}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
                 <FaUser />
-                <span className="btn-text">{t("header.profile")}</span>
+                <span className="btn-text">{t('header.profile')}</span>
               </motion.button>
             </>
           )}
@@ -219,12 +232,12 @@ function Header() {
         <button
           className="menu-toggle"
           onClick={toggleMenu}
-          aria-label={t("header.aria.menuToggle")}
+          aria-label={t('header.aria.menuToggle')}
           aria-expanded={isMenuOpen}
         >
           {isMenuOpen ? <FaTimes /> : <FaBars />}
         </button>
-        <nav className={`header-nav ${isMenuOpen ? "open" : ""}`} ref={menuRef}>
+        <nav className={`header-nav ${isMenuOpen ? 'open' : ''}`} ref={menuRef}>
           {permissionsLoaded &&
             user &&
             navItems.map((item) =>
@@ -233,7 +246,7 @@ function Header() {
                   key={item.path}
                   className="nav-link"
                   onClick={() => handleNavClick(item.path)}
-                  aria-label={t("header.aria.navLink", { label: item.label })}
+                  aria-label={t('header.aria.navLink', { label: item.label })}
                 >
                   {item.label}
                 </button>
@@ -244,42 +257,42 @@ function Header() {
               <motion.button
                 className="theme-toggle-btn"
                 onClick={toggleTheme}
-                aria-label={t("header.aria.themeToggle", {
-                  mode: t(`header.${theme === "light" ? "darkMode" : "lightMode"}`),
+                aria-label={t('header.aria.themeToggle', {
+                  mode: t(`header.${theme === 'light' ? 'darkMode' : 'lightMode'}`),
                 })}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                {theme === "light" ? <FaMoon /> : <FaSun />}
-                <span className="btn-text">{t("header.theme")}</span>
+                {theme === 'light' ? <FaMoon /> : <FaSun />}
+                <span className="btn-text">{t('header.theme')}</span>
               </motion.button>
             </div>
             <div className="icon-btn-wrapper">
               <motion.button
                 className="lang-toggle-btn"
-                aria-label={t("header.aria.selectLanguage")}
+                aria-label={t('header.aria.selectLanguage')}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
                 <FaGlobe />
                 <span className="lang-options">
                   <span
-                    className={`lang-option ${i18n.language === "en" ? "selected" : ""}`}
-                    onClick={() => handleLanguageChange("en")}
+                    className={`lang-option ${i18n.language === 'en' ? 'selected' : ''}`}
+                    onClick={() => handleLanguageChange('en')}
                   >
                     EN
                   </span>
                   <span className="lang-separator">|</span>
                   <span
-                    className={`lang-option ${i18n.language === "fr" ? "selected" : ""}`}
-                    onClick={() => handleLanguageChange("fr")}
+                    className={`lang-option ${i18n.language === 'fr' ? 'selected' : ''}`}
+                    onClick={() => handleLanguageChange('fr')}
                   >
                     FR
                   </span>
                   <span className="lang-separator">|</span>
                   <span
-                    className={`lang-option ${i18n.language === "ar" ? "selected" : ""}`}
-                    onClick={() => handleLanguageChange("ar")}
+                    className={`lang-option ${i18n.language === 'ar' ? 'selected' : ''}`}
+                    onClick={() => handleLanguageChange('ar')}
                   >
                     AR
                   </span>
@@ -292,7 +305,7 @@ function Header() {
                   <motion.button
                     className="notification-btn"
                     onClick={() => setShowNotificationPanel((prev) => !prev)}
-                    aria-label={t("header.aria.notifications", { count: unreadCount })}
+                    aria-label={t('header.aria.notifications', { count: unreadCount })}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
@@ -300,19 +313,19 @@ function Header() {
                     {unreadCount > 0 && (
                       <span className="notification-badge">{unreadCount}</span>
                     )}
-                    <span className="btn-text">{t("header.notifications")}</span>
+                    <span className="btn-text">{t('header.notifications')}</span>
                   </motion.button>
                 </div>
                 <div className="icon-btn-wrapper">
                   <motion.button
                     className="logout-btn"
                     onClick={handleLogout}
-                    aria-label={t("header.aria.logout")}
+                    aria-label={t('header.aria.logout')}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
                     <FaSignOutAlt />
-                    <span className="btn-text">{t("header.logout")}</span>
+                    <span className="btn-text">{t('header.logout')}</span>
                   </motion.button>
                 </div>
                 <div className="icon-btn-wrapper desktop-only">
@@ -321,12 +334,12 @@ function Header() {
                     onClick={handleProfileClick}
                     onMouseEnter={() => setShowProfilePanel(true)}
                     onMouseLeave={() => setShowProfilePanel(false)}
-                    aria-label={t("header.aria.profile")}
+                    aria-label={t('header.aria.profile')}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
                     <FaUser />
-                    <span className="btn-text">{t("header.profile")}</span>
+                    <span className="btn-text">{t('header.profile')}</span>
                   </motion.button>
                 </div>
               </>
@@ -371,8 +384,8 @@ function Header() {
                   </div>
                   <div className="profile-panel-info">
                     <h3>
-                      {profileData.firstname !== "Not set" ? profileData.firstname : "First Name Not Set"}{" "}
-                      {profileData.lastname !== "Not set" ? profileData.lastname : "Last Name Not Set"}
+                      {profileData.firstname !== 'Not set' ? profileData.firstname : 'First Name Not Set'}{' '}
+                      {profileData.lastname !== 'Not set' ? profileData.lastname : 'Last Name Not Set'}
                     </h3>
                     <div className="profile-panel-roles">
                       {userRoles && userRoles.length > 0 ? (

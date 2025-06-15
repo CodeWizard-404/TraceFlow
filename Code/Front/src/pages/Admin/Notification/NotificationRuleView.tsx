@@ -170,11 +170,6 @@ const NotificationRuleView: React.FC<NotificationRuleViewProps> = ({
     const validateEvent = async (entity: string | null, action: string | null): Promise<string> => {
         if (!entity) return 'Entity is required';
         if (!action) return 'Action is required';
-        const event = `${entity}:${action}`;
-        const isValid = await isValidNotificationEvent(event);
-        if (isValid && event !== selectedRule?.event) {
-            return 'Event already exists; it will reuse existing rules';
-        }
         return '';
     };
 
@@ -295,7 +290,7 @@ const NotificationRuleView: React.FC<NotificationRuleViewProps> = ({
 
         if (
             Object.values(errors).some(
-                (error) => error && error !== 'Event already exists; it will reuse existing rules'
+                (error) => error
             )
         ) {
             setError('Please correct the errors in the form');
@@ -485,7 +480,6 @@ const NotificationRuleView: React.FC<NotificationRuleViewProps> = ({
                     </div>
                     <div className="form-section">
                         <h3 className="form-header">Channels</h3>
-                        <p className="info-text">Real-time notifications are always enabled and cannot be disabled.</p>
                         <div className="channels-grid">
                             {(['email', 'sms', 'inApp'] as Array<keyof typeof formData.channels>).map((channel: string) => (
                                 <label key={channel} className="toggle-switch">

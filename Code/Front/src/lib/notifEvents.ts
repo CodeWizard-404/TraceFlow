@@ -18,10 +18,8 @@ const DEFAULT_EVENTS: string[] = [
     'role:created',
     'role:updated',
     'role:deleted',
-    'role:users_assigned',
-    'role:users_revoked',
-    'role:permissions_assigned',
-    'role:permissions_revoked',
+    'role:assigned',
+    'role:revoked',
     // Permission events
     'permission:updated',
     'permission:override_added',
@@ -29,13 +27,10 @@ const DEFAULT_EVENTS: string[] = [
     // Timesheet events
     'timesheet:created',
     'timesheet:validated',
-    'timesheet:updated',
     // Visit events
-    'visit:created',
     'visit:updated',
     'visit:deleted',
     'visit:logged',
-    'visit:qr_verified',
     // Checklist events
     'checklist:created',
     'checklist:updated',
@@ -45,16 +40,16 @@ const DEFAULT_EVENTS: string[] = [
     'reason:updated',
     'reason:deleted',
     // Receipt Book events
+    'receipt_book_type:created',
+    'receipt_book_type:updated',
+    'receipt_book_type:deleted',
     'receipt_book:created',
+    'receipt_book:sent',
+    'receipt_book:transferred',
+    'receipt_book:collected',
     'receipt_book:updated',
     'receipt_book:deleted',
-    'receipt_book:sent',
-    'receipt_book:collected',
-    'receipt_book:transferred',
-    'receipt_book:transfer_validated',
-    // Receipt Stub events
-    'receipt_stub:collected',
-    'receipt_stub:validated',
+    'receipt_book:csv_uploaded',
     'receipt_stub:archived',
     // Agent events
     'agent:created',

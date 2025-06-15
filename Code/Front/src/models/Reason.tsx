@@ -1,16 +1,14 @@
 interface Reason {
     reasonID: string;
     item: string;
-    createdAt: string;
-    updatedAt: string;
+    createdAt: Date;
+    updatedAt: Date;
 }
 
 interface VisitReason extends Reason {
     VisitReasons?: {
         visitID: string;
         reasonID: string;
-        createdAt: string;
-        updatedAt: string;
     };
 }
 

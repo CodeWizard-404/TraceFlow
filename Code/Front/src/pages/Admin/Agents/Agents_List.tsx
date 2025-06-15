@@ -218,7 +218,7 @@ const AgentsList: React.FC<AgentsListProps> = ({
                                             : "-"}
                                     </div>
                                     <div className="table-cell">
-                                        {agent.Delegation
+                                        {agent.Delegation && agent.Delegation.Governorate
                                             ? `${agent.Delegation.name}, ${agent.Delegation.Governorate.name}`
                                             : "-"}
                                     </div>

@@ -275,6 +275,42 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const [isStepsPanelCollapsed, setIsStepsPanelCollapsed] = useState(true);
   const [showMobileControls, setShowMobileControls] = useState(false);
 
+  const userPermissions = useMemo(
+    () => ({
+      accessAgentMapLocations: effectivePermissions?.some(
+        (p) => p.name === import.meta.env.VITE_PERMISSIONS_READ_AGENT_MAP_LOCATIONS
+      ),
+      createAgents: effectivePermissions?.some(
+        (p) => p.name === import.meta.env.VITE_PERMISSIONS_CREATE_AGENTS
+      ),
+      updateAgents: effectivePermissions?.some(
+        (p) => p.name === import.meta.env.VITE_PERMISSIONS_UPDATE_AGENTS
+      ),
+      accessRegions: effectivePermissions?.some(
+        (p) => p.name === import.meta.env.VITE_PERMISSIONS_ACCESS_REGIONS
+      ),
+      accessGovernorates: effectivePermissions?.some(
+        (p) => p.name === import.meta.env.VITE_PERMISSIONS_ACCESS_GOVERNORATES
+      ),
+      accessDelegations: effectivePermissions?.some(
+        (p) => p.name === import.meta.env.VITE_PERMISSIONS_ACCESS_DELEGATIONS
+      ),
+      accessRegionsByUser: effectivePermissions?.some(
+        (p) => p.name === import.meta.env.VITE_PERMISSIONS_ACCESS_REGIONS_BY_USER
+      ),
+      accessGovernoratesByUser: effectivePermissions?.some(
+        (p) => p.name === import.meta.env.VITE_PERMISSIONS_ACCESS_GOVERNORATES_BY_USER
+      ),
+      accessDelegationsByUser: effectivePermissions?.some(
+        (p) => p.name === import.meta.env.VITE_PERMISSIONS_ACCESS_DELEGATIONS_BY_USER
+      ),
+      accessSupervisors: effectivePermissions?.some(
+        (p) => p.name === import.meta.env.VITE_PERMISSIONS_READ_SUPERVISORS
+      ),
+    }),
+    [effectivePermissions]
+  );
+
   const toggleMobileControls = useCallback(() => {
     setShowMobileControls((prev) => !prev);
   }, []);
@@ -390,7 +426,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
   const handleRefreshAgents = useCallback(
     debounce(async () => {
-      if (!hasPermission(PERMISSIONS.ACCESS_AGENT_MAP_LOCATIONS)) {
+      if (!userPermissions.accessAgentMapLocations) {
         toast.error(t('map.noPermission'));
         return;
       }
@@ -467,23 +503,23 @@ const MapComponent: React.FC<MapComponentProps> = ({
           agentLocationsData,
           supervisorsData,
         ] = await Promise.all([
-          hasPermission(PERMISSIONS.ACCESS_REGIONS)
+          userPermissions.accessRegions
             ? getAllRegions()
-            : hasPermission(PERMISSIONS.ACCESS_REGIONS_BY_USER)
+            : userPermissions.accessRegionsByUser
               ? getRegionsByUser(user.userID)
               : [],
-          hasPermission(PERMISSIONS.ACCESS_GOVERNORATES)
+          userPermissions.accessGovernorates
             ? getAllGovernorates()
-            : hasPermission(PERMISSIONS.ACCESS_GOVERNORATES_BY_USER)
+            : userPermissions.accessGovernoratesByUser
               ? getGovernoratesByUser(user.userID)
               : [],
-          hasPermission(PERMISSIONS.ACCESS_DELEGATIONS)
+          userPermissions.accessDelegations
             ? getAllDelegations()
-            : hasPermission(PERMISSIONS.ACCESS_DELEGATIONS_BY_USER)
+            : userPermissions.accessDelegationsByUser
               ? getDelegationsByUser(user.userID)
               : [],
-          hasPermission(PERMISSIONS.ACCESS_AGENT_MAP_LOCATIONS) ? getAgentLocations() : { locations: [] },
-          hasPermission(PERMISSIONS.ACCESS_SUPERVISORS)
+          userPermissions.accessAgentMapLocations ? getAgentLocations() : { locations: [] },
+          userPermissions.accessSupervisors
             ? getUsersByRole(import.meta.env.VITE_ROLES_SUPERVISOR)
             : [],
         ]);
@@ -493,7 +529,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
         setDelegations(delegationData);
         setSupervisors(supervisorsData || []); // Ensure supervisors are set even if empty
 
-        const initialMarkers = hasPermission(PERMISSIONS.ACCESS_AGENT_MAP_LOCATIONS)
+        const initialMarkers = userPermissions.accessAgentMapLocations
           ? await Promise.all(
             agentLocationsData.locations.map(async (loc) => {
               let lat = loc.latitude;
@@ -895,7 +931,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
         if (filterRegion) {
           govs = await getGovernoratesByRegion(filterRegion);
         } else {
-          govs = await (hasPermission(PERMISSIONS.ACCESS_GOVERNORATES)
+          govs = await (userPermissions.accessGovernorates
             ? getAllGovernorates()
             : getGovernoratesByUser(user?.userID || ''));
         }
@@ -918,7 +954,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
         if (filterGovernorate) {
           dels = await getDelegationsByGovernorate(filterGovernorate);
         } else {
-          dels = await (hasPermission(PERMISSIONS.ACCESS_DELEGATIONS)
+          dels = await (userPermissions.accessDelegations
             ? getAllDelegations()
             : getDelegationsByUser(user?.userID || ''));
         }
@@ -2364,7 +2400,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
                     key={marker.id}
                     position={{ lat: marker.lat, lng: marker.lng }}
                     title={`${marker.name} ${marker.lastname}`}
-                    draggable={hasPermission(PERMISSIONS.UPDATE_AGENTS)}
+                    draggable={userPermissions.updateAgents}
                     onDragStart={() => handleMarkerDragStart(marker.id)}
                     onDragEnd={(e: google.maps.MapMouseEvent) => handleMarkerDragEnd(e, marker.id)}
                     onClick={() => handleMarkerClick(marker)}
@@ -2440,7 +2476,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
                     <p>{selectedMarker.address}</p>
                     <p>{t('map.infoWindow.phone')}: {selectedMarker.phone}</p>
                     <div className="info-buttons">
-                      {hasPermission(PERMISSIONS.UPDATE_AGENTS) && (
+                      {userPermissions.updateAgents && (
                         <button
                           onClick={() => {
                             closeAllPanels();
@@ -2548,7 +2584,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
           </svg>
         </button>
 
-        {!isTimesheetModal && hasPermission(PERMISSIONS.CREATE_AGENTS) && (
+        {!isTimesheetModal && userPermissions.createAgents && (
           <button
             className={`add-agent-btn ${showMobileControls ? 'visible-mobile' : ''}`}
             onClick={() => {
@@ -2571,7 +2607,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
           </button>
         )}
 
-        {!isTimesheetModal && hasPermission(PERMISSIONS.ACCESS_AGENT_MAP_LOCATIONS) && (
+        {!isTimesheetModal && userPermissions.accessAgentMapLocations && (
           <button
             className={`refresh-agents-btn ${showMobileControls ? 'visible-mobile' : ''}`}
             onClick={handleRefreshAgents}

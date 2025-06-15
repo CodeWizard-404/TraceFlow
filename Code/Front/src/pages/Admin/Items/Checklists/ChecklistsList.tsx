@@ -1,6 +1,6 @@
 /**
  * ChecklistsList.tsx
- * Component for displaying a paginated list of checklists with editing and deletion.
+ * Component for displaying a list of checklists with editing and deletion.
  * Optimized with list virtualization, memoization, debouncing, and skeleton loading.
  * Uses existing AdminDashboard.css for styling.
  */
@@ -29,12 +29,24 @@ interface ChecklistsListProps {
     currentPage: number;
     setCurrentPage: React.Dispatch<React.SetStateAction<number>>;
     itemsPerPage: number;
+    totalItems: number; // New prop for total items
 }
 
 // Fixed checklists
-const FIXED_CHECKLISTS = [
-    { checklistID: "fixed-1", item: import.meta.env.VITE_CHECKLIST_TRANSFER_A_RECEIPT_BOOK },
-    { checklistID: "fixed-2", item: import.meta.env.VITE_CHECKLIST_COLLECT_RECEIPT_STUB },
+// In ChecklistsList.tsx
+const FIXED_CHECKLISTS: Checklist[] = [
+    {
+        checklistID: "fixed-1",
+        item: import.meta.env.VITE_CHECKLIST_TRANSFER_A_RECEIPT_BOOK,
+        createdAt: new Date(0).toISOString(),
+        updatedAt: new Date(0).toISOString(),
+    },
+    {
+        checklistID: "fixed-2",
+        item: import.meta.env.VITE_CHECKLIST_COLLECT_RECEIPT_STUB,
+        createdAt: new Date(0).toISOString(),
+        updatedAt: new Date(0).toISOString(),
+    },
 ];
 
 // Constants
@@ -52,6 +64,7 @@ const ChecklistsList: React.FC<ChecklistsListProps> = React.memo(
         currentPage,
         setCurrentPage,
         itemsPerPage,
+        totalItems,
     }) => {
         const { effectivePermissions } = useAuth();
         const [editingID, setEditingID] = useState<string | null>(null);
@@ -90,7 +103,6 @@ const ChecklistsList: React.FC<ChecklistsListProps> = React.memo(
 
         // Dynamic loading state based on checklists prop
         useEffect(() => {
-            // Set loading to false when checklists is defined, even if empty
             if (checklists !== undefined) {
                 setLoading(false);
             }
@@ -116,14 +128,8 @@ const ChecklistsList: React.FC<ChecklistsListProps> = React.memo(
             [allChecklists, internalSearchQuery]
         );
 
-        // Pagination
-        const totalItems = filteredChecklists.length;
+        // Calculate total pages based on totalItems
         const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
-        const paginatedChecklists = useMemo(() => {
-            const start = (currentPage - 1) * itemsPerPage;
-            const end = start + itemsPerPage;
-            return filteredChecklists.slice(start, end);
-        }, [filteredChecklists, currentPage, itemsPerPage]);
 
         // Adjust currentPage
         useEffect(() => {
@@ -313,11 +319,11 @@ const ChecklistsList: React.FC<ChecklistsListProps> = React.memo(
                                 transition={{ duration: 0.3 }}
                             >
                                 <div className="hover-reveal-list">
-                                    {paginatedChecklists.length > 0 ? (
+                                    {filteredChecklists.length > 0 ? (
                                         <Virtuoso
                                             style={{ height: "500px" }}
-                                            totalCount={paginatedChecklists.length}
-                                            data={paginatedChecklists}
+                                            totalCount={filteredChecklists.length}
+                                            data={filteredChecklists}
                                             itemContent={renderChecklistItem}
                                         />
                                     ) : (

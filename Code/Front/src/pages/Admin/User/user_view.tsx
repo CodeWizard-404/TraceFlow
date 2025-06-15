@@ -91,6 +91,7 @@ const isValidUser = (data: unknown): data is User => {
   return !!data && typeof data === "object" && "userID" in data && typeof data.userID === "string";
 };
 
+
 const UserView: React.FC<UserViewProps> = ({
   selectedUser,
   setSelectedUser,
@@ -216,11 +217,13 @@ const UserView: React.FC<UserViewProps> = ({
       try {
         setLoading(true);
         const userData = await getUserById(selectedUser.userID);
+        console.log("UserView fetched userData.Roles =", userData.Roles); // Debug log
         if (JSON.stringify(userData) !== JSON.stringify(selectedUser)) {
           setSelectedUser(userData);
           setUsers((prev) =>
             prev.map((u) => (u.userID === userData.userID ? userData : u))
           );
+          setTempRoles(userData.Roles || []); // Reset tempRoles
         }
       } catch (error) {
         setGlobalError(
@@ -268,11 +271,14 @@ const UserView: React.FC<UserViewProps> = ({
           phone: data.phone || selectedUser.phone || "",
         };
 
-        if (event === "user:updated" || event === "user:profile RCT(25, 32)_updated" || event === "user:supervisors_assigned" || event === "user:supervisors_revoked") {
+        console.log("WebSocket updatedUser.Roles =", updatedUser.Roles); // Debug log
+
+        if (event === "user:updated" || event === "user:profile_updated" || event === "user:supervisors_assigned" || event === "user:supervisors_revoked") {
           setSelectedUser(updatedUser);
           setUsers((prev) =>
             prev.map((u) => (u.userID === updatedUser.userID ? updatedUser : u))
           );
+          setTempRoles(updatedUser.Roles || []); // Update tempRoles
         } else if (event === "user:deleted") {
           setSelectedUser(null);
           setUsers((prev) => prev.filter((u) => u.userID !== data.userID));
