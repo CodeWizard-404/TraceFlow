@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
-
 import '../../providers/auth_provider.dart';
+import '../../providers/theme_provider.dart';
+import '../../widgets/commen/title_text.dart';
 
 class VerifyResetScreen extends StatefulWidget {
   const VerifyResetScreen({super.key});
@@ -123,6 +124,8 @@ class VerifyResetScreenState extends State<VerifyResetScreen> {
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final theme = themeProvider.currentTheme;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -130,7 +133,7 @@ class VerifyResetScreenState extends State<VerifyResetScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(authProvider.errorMessage!),
-            backgroundColor: Theme.of(context).colorScheme.error,
+            backgroundColor: theme.colorScheme.error,
             duration: const Duration(seconds: 5),
           ),
         );
@@ -148,7 +151,7 @@ class VerifyResetScreenState extends State<VerifyResetScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(_successMessage!),
-            backgroundColor: Colors.green,
+            backgroundColor: theme.colorScheme.primary,
             duration: const Duration(seconds: 5),
           ),
         );
@@ -162,9 +165,10 @@ class VerifyResetScreenState extends State<VerifyResetScreen> {
     });
 
     return Scaffold(
+      backgroundColor: theme.colorScheme.background,
       body: Stack(
         children: [
-          _buildBackgroundOverlay(),
+          _buildBackgroundOverlay(context),
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
@@ -174,12 +178,12 @@ class VerifyResetScreenState extends State<VerifyResetScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text(
-                        'Reset Password',
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
+                      const CustomTitleText(text: 'Reset Password'),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Enter the code sent to your ${authProvider.otpMethod}.',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onBackground.withOpacity(0.6),
                         ),
                       ),
                       const SizedBox(height: 48),
@@ -189,24 +193,37 @@ class VerifyResetScreenState extends State<VerifyResetScreen> {
                           focusNode: _otpFocusNode,
                           decoration: InputDecoration(
                             labelText: 'Enter Reset OTP',
-                            prefixIcon: const Icon(Icons.security),
+                            labelStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+                            prefixIcon: Icon(Icons.security, color: theme.colorScheme.primary),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(color: theme.colorScheme.outline),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(color: theme.colorScheme.outline),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(color: theme.colorScheme.primary, width: 2),
                             ),
                             errorText: _errors['otpCode']?.isNotEmpty == true ? _errors['otpCode'] : null,
+                            errorStyle: TextStyle(color: theme.colorScheme.error),
                           ),
                           enabled: !authProvider.isLoading,
                           keyboardType: TextInputType.number,
                           maxLength: 6,
                           onChanged: (_) => _validateForm(),
+                          style: TextStyle(color: theme.colorScheme.onSurface),
                         ),
                         const SizedBox(height: 16),
                         ValueListenableBuilder<int>(
                           valueListenable: authProvider.otpTimer,
                           builder: (_, otpTimer, __) => Text(
-                            'We sent a code to your ${authProvider.otpMethod}. '
-                                'Time remaining: ${(otpTimer ~/ 60).toString().padLeft(2, '0')}:${(otpTimer % 60).toString().padLeft(2, '0')}',
-                            style: const TextStyle(fontSize: 14),
+                            'Time remaining: ${(otpTimer ~/ 60).toString().padLeft(2, '0')}:${(otpTimer % 60).toString().padLeft(2, '0')}',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
                             textAlign: TextAlign.center,
                           ),
                         ),
@@ -217,19 +234,24 @@ class VerifyResetScreenState extends State<VerifyResetScreen> {
                           child: ElevatedButton(
                             onPressed: authProvider.isLoading ? null : _verifyResetOTP,
                             style: ElevatedButton.styleFrom(
+                              backgroundColor: theme.colorScheme.primary,
+                              foregroundColor: theme.colorScheme.onPrimary,
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8),
                               ),
+                              elevation: 2,
                             ),
                             child: authProvider.isLoading
-                                ? const SpinKitCircle(
-                              color: Colors.white,
+                                ? SpinKitFadingCircle(
+                              color: theme.colorScheme.onPrimary,
                               size: 24,
                             )
-                                : const Text(
+                                : Text(
                               'Verify OTP',
-                              style: TextStyle(fontSize: 16),
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                color: theme.colorScheme.onPrimary,
+                              ),
                             ),
                           ),
                         ),
@@ -244,6 +266,8 @@ class VerifyResetScreenState extends State<VerifyResetScreen> {
                                   ? null
                                   : () => _resendOTP(authProvider.otpMethod),
                               style: OutlinedButton.styleFrom(
+                                foregroundColor: theme.colorScheme.primary,
+                                side: BorderSide(color: theme.colorScheme.primary),
                                 padding: const EdgeInsets.symmetric(vertical: 16),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8),
@@ -251,7 +275,9 @@ class VerifyResetScreenState extends State<VerifyResetScreen> {
                               ),
                               child: Text(
                                 resendCooldown > 0 ? 'Resend in ${resendCooldown}s' : 'Resend OTP',
-                                style: const TextStyle(fontSize: 16),
+                                style: theme.textTheme.labelLarge?.copyWith(
+                                  color: theme.colorScheme.primary,
+                                ),
                               ),
                             ),
                           ),
@@ -262,22 +288,35 @@ class VerifyResetScreenState extends State<VerifyResetScreen> {
                           focusNode: _newPasswordFocusNode,
                           decoration: InputDecoration(
                             labelText: 'New Password',
-                            prefixIcon: const Icon(Icons.lock),
+                            labelStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+                            prefixIcon: Icon(Icons.lock, color: theme.colorScheme.primary),
                             suffixIcon: IconButton(
                               icon: Icon(
                                 _obscureNewPassword ? Icons.visibility_off : Icons.visibility,
+                                color: theme.colorScheme.onSurfaceVariant,
                               ),
                               onPressed: () => setState(() => _obscureNewPassword = !_obscureNewPassword),
                             ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(color: theme.colorScheme.outline),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(color: theme.colorScheme.outline),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(color: theme.colorScheme.primary, width: 2),
                             ),
                             errorText: _errors['newPassword']?.isNotEmpty == true ? _errors['newPassword'] : null,
+                            errorStyle: TextStyle(color: theme.colorScheme.error),
                           ),
                           enabled: !authProvider.isLoading,
                           obscureText: _obscureNewPassword,
                           onChanged: (_) => _validateForm(),
                           autocorrect: false,
+                          style: TextStyle(color: theme.colorScheme.onSurface),
                         ),
                         const SizedBox(height: 16),
                         TextFormField(
@@ -285,24 +324,37 @@ class VerifyResetScreenState extends State<VerifyResetScreen> {
                           focusNode: _confirmPasswordFocusNode,
                           decoration: InputDecoration(
                             labelText: 'Confirm Password',
-                            prefixIcon: const Icon(Icons.lock),
+                            labelStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+                            prefixIcon: Icon(Icons.lock, color: theme.colorScheme.primary),
                             suffixIcon: IconButton(
                               icon: Icon(
                                 _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
+                                color: theme.colorScheme.onSurfaceVariant,
                               ),
                               onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
                             ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(color: theme.colorScheme.outline),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(color: theme.colorScheme.outline),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(color: theme.colorScheme.primary, width: 2),
                             ),
                             errorText: _errors['confirmPassword']?.isNotEmpty == true
                                 ? _errors['confirmPassword']
                                 : null,
+                            errorStyle: TextStyle(color: theme.colorScheme.error),
                           ),
                           enabled: !authProvider.isLoading,
                           obscureText: _obscureConfirmPassword,
                           onChanged: (_) => _validateForm(),
                           autocorrect: false,
+                          style: TextStyle(color: theme.colorScheme.onSurface),
                         ),
                         const SizedBox(height: 24),
                         AnimatedContainer(
@@ -311,19 +363,24 @@ class VerifyResetScreenState extends State<VerifyResetScreen> {
                           child: ElevatedButton(
                             onPressed: authProvider.isLoading ? null : _resetPassword,
                             style: ElevatedButton.styleFrom(
+                              backgroundColor: theme.colorScheme.primary,
+                              foregroundColor: theme.colorScheme.onPrimary,
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8),
                               ),
+                              elevation: 2,
                             ),
                             child: authProvider.isLoading
-                                ? const SpinKitCircle(
-                              color: Colors.white,
+                                ? SpinKitFadingCircle(
+                              color: theme.colorScheme.onPrimary,
                               size: 24,
                             )
-                                : const Text(
+                                : Text(
                               'Reset Password',
-                              style: TextStyle(fontSize: 16),
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                color: theme.colorScheme.onPrimary,
+                              ),
                             ),
                           ),
                         ),
@@ -331,7 +388,12 @@ class VerifyResetScreenState extends State<VerifyResetScreen> {
                       const SizedBox(height: 16),
                       TextButton(
                         onPressed: () => _handleNavigation(context),
-                        child: const Text('Back to Sign In'),
+                        child: Text(
+                          'Back to Sign In',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -344,26 +406,39 @@ class VerifyResetScreenState extends State<VerifyResetScreen> {
     );
   }
 
-  Widget _buildBackgroundOverlay() {
+  Widget _buildBackgroundOverlay(BuildContext context) {
+    final theme = Provider.of<ThemeProvider>(context).currentTheme;
     return Stack(
       children: [
         Container(
-          color: Colors.grey[100],
+          color: theme.colorScheme.background.withOpacity(0.9),
         ),
         Positioned(
           top: 50,
           left: 20,
-          child: Icon(Icons.location_pin, size: 40, color: Colors.blue.withOpacity(0.2)),
+          child: Icon(
+            Icons.location_pin,
+            size: 40,
+            color: theme.colorScheme.primary.withOpacity(0.2),
+          ),
         ),
         Positioned(
           bottom: 100,
           right: 30,
-          child: Icon(Icons.access_time, size: 50, color: Colors.green.withOpacity(0.2)),
+          child: Icon(
+            Icons.access_time,
+            size: 50,
+            color: theme.colorScheme.secondary.withOpacity(0.2),
+          ),
         ),
         Positioned(
           top: 200,
           right: 50,
-          child: Icon(Icons.qr_code, size: 45, color: Colors.purple.withOpacity(0.2)),
+          child: Icon(
+            Icons.qr_code,
+            size: 45,
+            color: theme.colorScheme.tertiary.withOpacity(0.2),
+          ),
         ),
         Positioned(
           top: 100,
@@ -373,7 +448,20 @@ class VerifyResetScreenState extends State<VerifyResetScreen> {
             width: 10,
             height: 10,
             decoration: BoxDecoration(
-              color: Colors.blue.withOpacity(0.3),
+              color: theme.colorScheme.primary.withOpacity(0.3),
+              shape: BoxShape.circle,
+            ),
+          ),
+        ),
+        Positioned(
+          bottom: 150,
+          left: 50,
+          child: AnimatedContainer(
+            duration: const Duration(seconds: 4),
+            width: 12,
+            height: 12,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.secondary.withOpacity(0.3),
               shape: BoxShape.circle,
             ),
           ),

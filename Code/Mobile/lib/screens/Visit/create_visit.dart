@@ -945,7 +945,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                 _selectedDelegationId = agent.delegationID;
                 _phoneError = null;
               });
-              final locationDetails = await LocationService.getLocationDetailsById(agent.delegationID);
+              final locationDetails = await LocationService.getLocationDetailsById(agent.delegationID!);
               if (locationDetails['success'] == true && locationDetails.containsKey('address')) {
                 setState(() {
                   _selectedRegionId = locationDetails['regionID'] as String?;

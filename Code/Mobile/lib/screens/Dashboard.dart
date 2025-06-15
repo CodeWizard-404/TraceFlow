@@ -17,7 +17,9 @@ import '../models/receipt_book_type.dart';
 import '../models/visit.dart';
 import '../widgets/appbar/app_bar.dart';
 import '../widgets/appbar/sidebar.dart';
+import '../widgets/commen/button.dart';
 import '../widgets/commen/spacer.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class SupervisorDashboard extends StatefulWidget {
   const SupervisorDashboard({super.key});
@@ -38,21 +40,20 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> with SingleTi
   User? _regionalManager;
   User? _director;
   late AnimationController _animationController;
-  bool _isAnimationInitialized = false; // Flag to track animation initialization
+  bool _isAnimationInitialized = false;
 
   @override
   void initState() {
     super.initState();
-// Initialize AnimationController immediately
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
-    _isAnimationInitialized = true; // Mark as initialized
+    _isAnimationInitialized = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _fetchData();
       if (_isAnimationInitialized) {
-        _animationController.forward(); // Start animation after frame
+        _animationController.forward();
       }
     });
   }
@@ -293,8 +294,6 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> with SingleTi
     );
   }
 
-
-
   Widget _buildSectionCard(BuildContext context, {required String title, required List<Widget> children}) {
     final theme = Theme.of(context);
     return Container(
@@ -336,7 +335,9 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> with SingleTi
       spacing: 16,
       runSpacing: 16,
       children: [
-        _buildStatItem('Agents', numAgents.toString(), Icons.group, theme),
+        _buildStatItem('Agents', numAgents.toString(), Icons
+
+            .group, theme),
         _buildStatItem('Receipt Books', numReceiptBooks.toString(), Icons.book, theme),
         _buildStatItem('Visits', numVisits.toString(), Icons.location_on, theme),
         _buildStatItem('Visits (7 Days)', visitsLast7Days.toString(), Icons.timer, theme),
@@ -416,6 +417,131 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> with SingleTi
 
   Widget _buildAgentsAssigned(List<Agent> agents, int agentsWithVisits, int numAgents) {
     final theme = Theme.of(context);
+    final TextEditingController _searchController = TextEditingController();
+    String _searchQuery = '';
+
+    List<Agent> _filterAgents(List<Agent> agents, String query) {
+      if (query.isEmpty) return agents;
+      final lowercaseQuery = query.toLowerCase();
+      return agents.where((agent) {
+        final fullName = '${agent.name} ${agent.lastname}'.toLowerCase();
+        final phone = agent.phone?.toLowerCase() ?? '';
+        return fullName.contains(lowercaseQuery) || phone.contains(lowercaseQuery);
+      }).toList();
+    }
+
+    Future<void> _makePhoneCall(String? phoneNumber) async {
+      if (phoneNumber == null || phoneNumber.isEmpty || phoneNumber == 'N/A') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('No valid phone number available')),
+        );
+        return;
+      }
+      final Uri phoneUri = Uri(scheme: 'tel', path: phoneNumber);
+      if (await canLaunchUrl(phoneUri)) {
+        await launchUrl(phoneUri);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not launch phone call')),
+        );
+      }
+    }
+
+    void _showAgentsPopup() {
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return StatefulBuilder(
+            builder: (context, setState) {
+              final filteredAgents = _filterAgents(agents, _searchQuery);
+              return AlertDialog(
+                title: Text(
+                  'Assigned Agents',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                content: Container(
+                  width: double.maxFinite,
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.of(context).size.height * 0.5,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextField(
+                        controller: _searchController,
+                        decoration: InputDecoration(
+                          labelText: 'Search by name or phone',
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                          prefixIcon: Icon(Icons.search, color: theme.colorScheme.primary),
+                        ),
+                        onChanged: (value) {
+                          setState(() {
+                            _searchQuery = value;
+                          });
+                        },
+                      ),
+                      const CustomSpacer(height: 8),
+                      Expanded(
+                        child: filteredAgents.isEmpty
+                            ? Text(
+                          'No agents found.',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurface,
+                          ),
+                        )
+                            : ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: filteredAgents.length,
+                          itemBuilder: (context, index) {
+                            final agent = filteredAgents[index];
+                            return ListTile(
+                              leading: Icon(Icons.person, color: theme.colorScheme.primary),
+                              title: Text(
+                                '${agent.name} ${agent.lastname}',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              subtitle: Text(
+                                'Phone: ${agent.phone ?? 'N/A'}',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.onSurface.withOpacity(0.7),
+                                ),
+                              ),
+                              trailing: IconButton(
+                                icon: Icon(Icons.phone, color: theme.colorScheme.primary),
+                                onPressed: () => _makePhoneCall(agent.phone),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: TextButton.styleFrom(
+                      foregroundColor: theme.colorScheme.primary,
+                    ),
+                    child: const Text('Close'),
+                  ),
+                ],
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                backgroundColor: theme.colorScheme.surface,
+              );
+            },
+          );
+        },
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -423,7 +549,7 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> with SingleTi
         Text('Agents with Visits: $agentsWithVisits', style: theme.textTheme.bodyMedium),
         const CustomSpacer(height: 8),
         ElevatedButton(
-          onPressed: () => Navigator.pushNamed(context, '/agents'),
+          onPressed: _showAgentsPopup,
           style: ElevatedButton.styleFrom(
             backgroundColor: theme.colorScheme.primary,
             foregroundColor: theme.colorScheme.onPrimary,
@@ -437,17 +563,69 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> with SingleTi
 
   Widget _buildNotifications(List<AppNotification.Notification> notifications, NotificationProvider provider) {
     final theme = Theme.of(context);
+    final sentNotifications = notifications.where((n) => n.status == 'sent').toList();
+
+    // Map notification types to icons
+    final notificationIcons = {
+      'visit': Icons.location_on,
+      'receipt': Icons.book,
+      'timesheet': Icons.schedule,
+      'alert': Icons.warning,
+      'info': Icons.info,
+    };
+
     return Column(
       children: [
         SizedBox(
           height: 150,
           child: ListView.builder(
-            itemCount: notifications.length,
-            itemBuilder: (context, index) => ListTile(
-              title: Text(notifications[index].message, style: theme.textTheme.bodyMedium),
-              subtitle: Text(notifications[index].createdAt.toString(), style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface.withOpacity(0.7))),
-              onTap: () => provider.markNotificationAsRead(notifications[index].notificationID),
-            ),
+            itemCount: sentNotifications.length,
+            itemBuilder: (context, index) {
+              final notification = sentNotifications[index];
+              final icon = notificationIcons[notification.type ?? 'info'] ?? Icons.info;
+              return Card(
+                elevation: 2,
+                margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 0),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  side: BorderSide(
+                    color: theme.colorScheme.primary.withOpacity(0.3),
+                    width: 1,
+                  ),
+                ),
+                child: ListTile(
+                  leading: Icon(
+                    icon,
+                    color: theme.colorScheme.primary,
+                    size: 24,
+                  ),
+                  title: Text(
+                    notification.message,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
+                  subtitle: Text(
+                    notification.createdAt.toString(),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurface.withOpacity(0.7),
+                    ),
+                  ),
+                  onTap: () => provider.markNotificationAsRead(notification.notificationID),
+                  trailing: notification.status == 'sent'
+                      ? Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: theme.colorScheme.primary,
+                    ),
+                  )
+                      : null,
+                ),
+              );
+            },
           ),
         ),
         Row(
@@ -456,10 +634,20 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> with SingleTi
             IconButton(
               icon: Icon(Icons.refresh, color: theme.colorScheme.primary),
               onPressed: provider.fetchNotifications,
+              tooltip: 'Refresh',
+              style: IconButton.styleFrom(
+                backgroundColor: theme.colorScheme.background,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
             ),
             IconButton(
               icon: Icon(Icons.clear_all, color: theme.colorScheme.primary),
               onPressed: provider.markAllNotificationsAsRead,
+              tooltip: 'Clear All',
+              style: IconButton.styleFrom(
+                backgroundColor: theme.colorScheme.background,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
             ),
           ],
         ),
@@ -472,12 +660,120 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> with SingleTi
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Supervisor: ${user.firstName} ${user.lastName}', style: theme.textTheme.bodyMedium),
-        if (_regionalManager != null)
-          Text('Regional Manager: ${_regionalManager!.firstName} ${_regionalManager!.lastName}', style: theme.textTheme.bodyMedium),
-        if (_director != null)
-          Text('Director: ${_director!.firstName} ${_director!.lastName}', style: theme.textTheme.bodyMedium),
+        Text(
+          'Organization Hierarchy',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: theme.colorScheme.primary,
+          ),
+        ),
+        const CustomSpacer(height: 8),
+        if (_regionalManager != null || _director != null)
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.background,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: theme.colorScheme.primary.withOpacity(0.3),
+                width: 1,
+              ),
+            ),
+            child: Column(
+              children: [
+                if (_director != null) ...[
+                  _buildHierarchyItem(
+                    context,
+                    title: 'Director',
+                    name: '${_director!.firstName} ${_director!.lastName}',
+                    phone: _director!.phone ?? 'N/A',
+                    email: _director!.email ?? 'N/A',
+                    icon: Icons.star,
+                  ),
+                  if (_regionalManager != null)
+                    const CustomSpacer(height: 8),
+                ],
+                if (_regionalManager != null)
+                  _buildHierarchyItem(
+                    context,
+                    title: 'Regional Manager',
+                    name: '${_regionalManager!.firstName} ${_regionalManager!.lastName}',
+                    phone: _regionalManager!.phone ?? 'N/A',
+                    email: _regionalManager!.email ?? 'N/A',
+                    icon: Icons.person,
+                  ),
+                _buildHierarchyItem(
+                  context,
+                  title: 'Supervisor',
+                  name: '${user.firstName} ${user.lastName}',
+                  phone: user.phone ?? 'N/A',
+                  email: user.email ?? 'N/A',
+                  icon: Icons.supervisor_account,
+                ),
+              ],
+            ),
+          )
+        else
+          Text(
+            'No hierarchy information available.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurface.withOpacity(0.6),
+            ),
+          ),
       ],
+    );
+  }
+
+  Widget _buildHierarchyItem(BuildContext context, {required String title, required String name, required String phone, required String email, required IconData icon}) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+      decoration: BoxDecoration(
+        border: Border(
+          left: BorderSide(
+            color: theme.colorScheme.primary,
+            width: 3,
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: theme.colorScheme.primary, size: 24),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+                Text(
+                  name,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  'Phone: $phone',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurface.withOpacity(0.7),
+                  ),
+                ),
+                Text(
+                  'Email: $email',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurface.withOpacity(0.7),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -497,17 +793,20 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> with SingleTi
         .entries
         .map((e) => BarChartGroupData(
       x: e.key,
-      barRods: [BarChartRodData(toY: e.value.value.toDouble(), color: theme.colorScheme.primary)],
+      barRods: [BarChartRodData(toY: e.value.value.toDouble(), color: theme.colorScheme.primary, width: 20)],
     ))
         .toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Text('Receipt books by type.', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface.withOpacity(0.7))),
+        const CustomSpacer(height: 8),
         Text('Total Receipt Books: ${receiptBooks.length}', style: theme.textTheme.bodyMedium),
         if (barData.isNotEmpty)
-          SizedBox(
-            height: 200,
+          Container(
+            height: 250,
+            width: MediaQuery.of(context).size.width - 24,
             child: BarChart(
               BarChartData(
                 barGroups: barData,
@@ -515,12 +814,23 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> with SingleTi
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
-                      getTitlesWidget: (value, _) => Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Text(
-                          receiptBooksByType.keys.elementAt(value.toInt()),
-                          style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface.withOpacity(0.7)),
-                          textAlign: TextAlign.center,
+                      reservedSize: 80,
+                      getTitlesWidget: (value, _) => Transform.rotate(
+                        angle: -45 * 3.141592653589793 / 180,
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 12),
+                          child: SizedBox(
+                            width: 120,
+                            child: Text(
+                              receiptBooksByType.keys.elementAt(value.toInt()),
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: theme.colorScheme.onSurface.withOpacity(0.7),
+                                fontSize: 14,
+                              ),
+                              textAlign: TextAlign.left,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -528,15 +838,32 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> with SingleTi
                   leftTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
+                      reservedSize: 50,
                       getTitlesWidget: (value, _) => Text(
                         value.toInt().toString(),
-                        style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface.withOpacity(0.7)),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurface.withOpacity(0.7),
+                          fontSize: 14,
+                        ),
                       ),
                     ),
                   ),
                 ),
                 borderData: FlBorderData(show: false),
                 gridData: FlGridData(show: true, drawVerticalLine: false),
+                barTouchData: BarTouchData(
+                  enabled: true,
+                  touchTooltipData: BarTouchTooltipData(
+                    tooltipPadding: const EdgeInsets.all(8),
+                    getTooltipItem: (group, groupIndex, rod, rodIndex) => BarTooltipItem(
+                      '${receiptBooksByType.keys.elementAt(group.x.toInt())}: ${rod.toY.toInt()}',
+                      theme.textTheme.bodyMedium!.copyWith(
+                        color: Colors.white,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ),
           ),
@@ -550,13 +877,26 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> with SingleTi
       acc[visit.status ?? 'Unknown'] = (acc[visit.status ?? 'Unknown'] ?? 0) + 1;
       return acc;
     });
+
+    final statusColors = {
+      'pending': Colors.orange,
+      'validated': Colors.green,
+      'visited': theme.colorScheme.primary,
+      'rejected': Colors.red,
+      'Unknown': Colors.grey,
+    };
+
     final pieData = visitStatusCounts.entries
         .map((e) => PieChartSectionData(
       title: e.key,
       value: e.value.toDouble(),
-      color: Colors.primaries[visitStatusCounts.keys.toList().indexOf(e.key) % Colors.primaries.length],
+      color: statusColors[e.key] ?? Colors.grey,
       radius: 60,
-      titleStyle: theme.textTheme.bodySmall?.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
+      titleStyle: theme.textTheme.bodyMedium?.copyWith(
+        color: Colors.white,
+        fontWeight: FontWeight.bold,
+        fontSize: 14,
+      ),
     ))
         .toList();
 
@@ -565,143 +905,163 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> with SingleTi
       acc[date] = (acc[date] ?? 0) + 1;
       return acc;
     });
-    final lineData = visitsByDate.entries
-        .map((e) => FlSpot(
-      DateTime.parse(e.key).millisecondsSinceEpoch.toDouble(),
-      e.value.toDouble(),
+
+    final filteredVisitsByDate = visitsByDate.entries.where((e) => e.value > 0).toList();
+    final barData = filteredVisitsByDate
+        .asMap()
+        .entries
+        .map((e) => BarChartGroupData(
+      x: e.key,
+      barRods: [BarChartRodData(toY: e.value.value.toDouble(), color: theme.colorScheme.primary, width: 20)],
     ))
-        .toList()
-      ..sort((a, b) => a.x.compareTo(b.x));
+        .toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
+        Text('Visit statuses and counts per date.', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface.withOpacity(0.7))),
+        const CustomSpacer(height: 8),
+        Row(
           children: [
-            _buildFilterDropdown(
-              value: _visitFilters['status'],
-              items: [
-                const DropdownMenuItem(value: 'all', child: Text('All Statuses')),
-                const DropdownMenuItem(value: 'pending', child: Text('Pending')),
-                const DropdownMenuItem(value: 'validated', child: Text('Validated')),
-                const DropdownMenuItem(value: 'visited', child: Text('Visited')),
-              ],
-              onChanged: (value) => setState(() => _visitFilters['status'] = value ?? 'all'),
-              label: 'Status',
+            IconButton(
+              icon: Icon(
+                Icons.filter_alt_rounded,
+                color: theme.colorScheme.primary,
+              ),
+              onPressed: () => showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                ),
+                builder: (_) => VisitFilterSheet(
+                  agents: agents,
+                  initialFilters: _visitFilters,
+                  onApply: (filters) => setState(() => _visitFilters.addAll(filters)),
+                ),
+              ),
+              tooltip: 'Filter',
+              style: IconButton.styleFrom(
+                backgroundColor: theme.colorScheme.background,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
             ),
-            _buildFilterDropdown(
-              value: _visitFilters['agent'],
-              items: [
-                const DropdownMenuItem(value: '', child: Text('All Agents')),
-                ...agents.map((a) => DropdownMenuItem(value: a.agentID, child: Text('${a.name} ${a.lastname}')))
-              ],
-              onChanged: (value) => setState(() => _visitFilters['agent'] = value ?? ''),
-              label: 'Agent',
-            ),
-            _buildDateFilterButton(
-              label: 'Start Date',
-              value: _visitFilters['dateStart']!.isEmpty ? 'Select' : _visitFilters['dateStart']!,
-              onPressed: () async {
-                final picked = await showDatePicker(context: context, initialDate: DateTime.now(), firstDate: DateTime(2000), lastDate: DateTime(2100));
-                if (picked != null) setState(() => _visitFilters['dateStart'] = picked.toIso8601String().split('T')[0]);
-              },
-            ),
-            _buildDateFilterButton(
-              label: 'End Date',
-              value: _visitFilters['dateEnd']!.isEmpty ? 'Select' : _visitFilters['dateEnd']!,
-              onPressed: () async {
-                final picked = await showDatePicker(context: context, initialDate: DateTime.now(), firstDate: DateTime(2000), lastDate: DateTime(2100));
-                if (picked != null) setState(() => _visitFilters['dateEnd'] = picked.toIso8601String().split('T')[0]);
-              },
+            const SizedBox(width: 8),
+            IconButton(
+              icon: Icon(
+                Icons.clear,
+                color: theme.colorScheme.primary,
+              ),
+              onPressed: () => setState(() {
+                _visitFilters['status'] = 'all';
+                _visitFilters['agent'] = '';
+                _visitFilters['dateStart'] = '';
+                _visitFilters['dateEnd'] = '';
+              }),
+              tooltip: 'Clear Filters',
+              style: IconButton.styleFrom(
+                backgroundColor: theme.colorScheme.background,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
             ),
           ],
         ),
         const CustomSpacer(height: 8),
         Text('Total Visits: ${filteredVisits.length}', style: theme.textTheme.bodyMedium),
         if (pieData.isNotEmpty)
-          SizedBox(
-            height: 200,
-            child: PieChart(
-              PieChartData(
-                sections: pieData,
-                centerSpaceRadius: 40,
-                sectionsSpace: 2,
+          Container(
+            height: 250,
+            width: visitStatusCounts.length * 130.0,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: SizedBox(
+                width: visitStatusCounts.length * 130.0,
+                child: PieChart(
+                  PieChartData(
+                    sections: pieData,
+                    centerSpaceRadius: 40,
+                    sectionsSpace: 4,
+                    borderData: FlBorderData(show: false),
+                    pieTouchData: PieTouchData(
+                      enabled: true,
+                      touchCallback: (FlTouchEvent event, pieTouchResponse) {},
+                    ),
+                  ),
+                ),
               ),
             ),
           ),
-        if (lineData.isNotEmpty)
-          SizedBox(
-            height: 200,
-            child: LineChart(
-              LineChartData(
-                lineBarsData: [
-                  LineChartBarData(spots: lineData, isCurved: true, color: theme.colorScheme.primary),
-                ],
-                titlesData: FlTitlesData(
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      getTitlesWidget: (value, _) => Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Text(
-                          DateTime.fromMillisecondsSinceEpoch(value.toInt()).toString().split(' ')[0],
-                          style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface.withOpacity(0.7)),
+        if (barData.isNotEmpty)
+          Container(
+            height: 250,
+            width: filteredVisitsByDate.length * 50.0,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: SizedBox(
+                width: filteredVisitsByDate.length * 50.0,
+                child: BarChart(
+                  BarChartData(
+                    barGroups: barData,
+                    titlesData: FlTitlesData(
+                      bottomTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 80,
+                          getTitlesWidget: (value, _) => Transform.rotate(
+                            angle: -45 * 3.141592653589793 / 180,
+                            child: Padding(
+                              padding: const EdgeInsets.only(top: 12),
+                              child: SizedBox(
+                                width: 120,
+                                child: Text(
+                                  filteredVisitsByDate[value.toInt()].key,
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: theme.colorScheme.onSurface.withOpacity(0.7),
+                                    fontSize: 14,
+                                  ),
+                                  textAlign: TextAlign.left,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      leftTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 50,
+                          getTitlesWidget: (value, _) => Text(
+                            value.toInt().toString(),
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onSurface.withOpacity(0.7),
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    borderData: FlBorderData(show: false),
+                    gridData: FlGridData(show: true, drawVerticalLine: false),
+                    barTouchData: BarTouchData(
+                      enabled: true,
+                      touchTooltipData: BarTouchTooltipData(
+                        tooltipPadding: const EdgeInsets.all(8),
+                        getTooltipItem: (group, groupIndex, rod, rodIndex) => BarTooltipItem(
+                          '${filteredVisitsByDate[group.x.toInt()].key}: ${rod.toY.toInt()} visits',
+                          theme.textTheme.bodyMedium!.copyWith(
+                            color: Colors.white,
+                            fontSize: 16,
+                          ),
                         ),
                       ),
                     ),
                   ),
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      getTitlesWidget: (value, _) => Text(
-                        value.toInt().toString(),
-                        style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface.withOpacity(0.7)),
-                      ),
-                    ),
-                  ),
                 ),
-                borderData: FlBorderData(show: false),
-                gridData: FlGridData(show: true, drawVerticalLine: false),
               ),
             ),
           ),
       ],
-    );
-  }
-
-  Widget _buildFilterDropdown({required String? value, required List<DropdownMenuItem<String>> items, required ValueChanged<String?> onChanged, required String label}) {
-    final theme = Theme.of(context);
-    return Container(
-      width: 160,
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: DropdownButtonFormField<String>(
-        value: value,
-        items: items,
-        onChanged: onChanged,
-        decoration: InputDecoration(
-          labelText: label,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-          filled: true,
-          fillColor: theme.colorScheme.surface,
-        ),
-        style: theme.textTheme.bodyMedium,
-      ),
-    );
-  }
-
-  Widget _buildDateFilterButton({required String label, required String value, required VoidCallback onPressed}) {
-    final theme = Theme.of(context);
-    return TextButton(
-      onPressed: onPressed,
-      style: TextButton.styleFrom(
-        backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
-        foregroundColor: theme.colorScheme.primary,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      ),
-      child: Text('$label: $value', style: theme.textTheme.bodyMedium),
     );
   }
 
@@ -719,49 +1079,382 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> with SingleTi
         .entries
         .map((e) => BarChartGroupData(
       x: e.key,
-      barRods: [BarChartRodData(toY: (e.value['visits'] as int).toDouble(), color: theme.colorScheme.primary)],
+      barRods: [BarChartRodData(toY: (e.value['visits'] as int).toDouble(), color: theme.colorScheme.primary, width: 20)],
     ))
         .toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Text('Visits per agent.', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface.withOpacity(0.7))),
+        const CustomSpacer(height: 8),
         if (barData.isNotEmpty)
-          SizedBox(
-            height: 200,
-            child: BarChart(
-              BarChartData(
-                barGroups: barData,
-                titlesData: FlTitlesData(
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      getTitlesWidget: (value, _) => Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Text(
-                          visitsPerAgent[value.toInt()]['name'] as String,
-                          style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface.withOpacity(0.7)),
-                          textAlign: TextAlign.center,
+          Container(
+            height: 250,
+            width: visitsPerAgent.length * 80.0,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: SizedBox(
+                width: visitsPerAgent.length * 80.0,
+                child: BarChart(
+                  BarChartData(
+                    barGroups: barData,
+                    titlesData: FlTitlesData(
+                      bottomTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 80,
+                          getTitlesWidget: (value, _) => Transform.rotate(
+                            angle: -45 * 3.141592653589793 / 180,
+                            child: Padding(
+                              padding: const EdgeInsets.only(top: 12),
+                              child: SizedBox(
+                                width: 120,
+                                child: Text(
+                                  visitsPerAgent[value.toInt()]['name'] as String,
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: theme.colorScheme.onSurface.withOpacity(0.7),
+                                    fontSize: 14,
+                                  ),
+                                  textAlign: TextAlign.left,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      leftTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 50,
+                          getTitlesWidget: (value, _) => Text(
+                            value.toInt().toString(),
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onSurface.withOpacity(0.7),
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    borderData: FlBorderData(show: false),
+                    gridData: FlGridData(show: true, drawVerticalLine: false),
+                    barTouchData: BarTouchData(
+                      enabled: true,
+                      touchTooltipData: BarTouchTooltipData(
+                        tooltipPadding: const EdgeInsets.all(8),
+                        getTooltipItem: (group, groupIndex, rod, rodIndex) => BarTooltipItem(
+                          '${visitsPerAgent[group.x.toInt()]['name']}: ${rod.toY.toInt()} visits',
+                          theme.textTheme.bodyMedium!.copyWith(
+                            color: Colors.white,
+                            fontSize: 16,
+                          ),
                         ),
                       ),
                     ),
                   ),
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      getTitlesWidget: (value, _) => Text(
-                        value.toInt().toString(),
-                        style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface.withOpacity(0.7)),
-                      ),
-                    ),
-                  ),
                 ),
-                borderData: FlBorderData(show: false),
-                gridData: FlGridData(show: true, drawVerticalLine: false),
               ),
             ),
           ),
       ],
     );
+  }
+}
+
+class VisitFilterSheet extends StatefulWidget {
+  final List<Agent> agents;
+  final Map<String, String> initialFilters;
+  final Function(Map<String, String>) onApply;
+
+  const VisitFilterSheet({
+    required this.agents,
+    required this.initialFilters,
+    required this.onApply,
+    super.key,
+  });
+
+  @override
+  State<VisitFilterSheet> createState() => _VisitFilterSheetState();
+}
+
+class _VisitFilterSheetState extends State<VisitFilterSheet> {
+  late Map<String, String> _filters;
+  DateTime? _startDate;
+  DateTime? _endDate;
+
+  @override
+  void initState() {
+    super.initState();
+    _filters = Map.from(widget.initialFilters);
+    _startDate = _filters['dateStart']!.isEmpty ? null : DateTime.parse(_filters['dateStart']!);
+    _endDate = _filters['dateEnd']!.isEmpty ? null : DateTime.parse(_filters['dateEnd']!);
+  }
+
+  Widget _buildSectionCard(BuildContext context, {required String title, required List<Widget> children}) {
+    final theme = Theme.of(context);
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: theme.colorScheme.primary.withOpacity(0.7),
+          width: 1.5,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+            child: Text(
+              title,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ),
+          const Divider(height: 1, thickness: 1, color: Colors.grey),
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(children: children),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final allStatusOptions = {'all', 'pending', 'validated', 'visited', 'rejected'};
+    return Container(
+      padding: const EdgeInsets.all(16.0),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.background,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Filter Visits',
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: theme.colorScheme.onSurface,
+            ),
+          ),
+          const CustomSpacer(height: 16),
+          _buildSectionCard(
+            context,
+            title: 'Status',
+            children: [
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: allStatusOptions.map((option) {
+                  final isSelected = _filters['status'] == option;
+                  return GestureDetector(
+                    onTap: () => setState(() => _filters['status'] = option),
+                    child: Chip(
+                      label: Text(
+                        option.capitalize(),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: isSelected ? theme.colorScheme.primary : theme.colorScheme.onSurface,
+                        ),
+                      ),
+                      backgroundColor: isSelected
+                          ? theme.colorScheme.primary.withOpacity(0.2)
+                          : theme.colorScheme.background,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        side: BorderSide(
+                          color: isSelected
+                              ? theme.colorScheme.primary
+                              : theme.colorScheme.primary.withOpacity(0.7),
+                          width: 1,
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
+          ),
+          const CustomSpacer(height: 8),
+          _buildSectionCard(
+            context,
+            title: 'Agent',
+            children: [
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  GestureDetector(
+                    onTap: () => setState(() => _filters['agent'] = ''),
+                    child: Chip(
+                      label: Text(
+                        'All Agents',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: _filters['agent']!.isEmpty ? theme.colorScheme.primary : theme.colorScheme.onSurface,
+                        ),
+                      ),
+                      backgroundColor: _filters['agent']!.isEmpty
+                          ? theme.colorScheme.primary.withOpacity(0.2)
+                          : theme.colorScheme.background,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        side: BorderSide(
+                          color: _filters['agent']!.isEmpty
+                              ? theme.colorScheme.primary
+                              : theme.colorScheme.primary.withOpacity(0.7),
+                          width: 1,
+                        ),
+                      ),
+                    ),
+                  ),
+                  ...widget.agents.map((agent) {
+                    final isSelected = _filters['agent'] == agent.agentID;
+                    return GestureDetector(
+                      onTap: () => setState(() => _filters['agent'] = agent.agentID),
+                      child: Chip(
+                        label: Text(
+                          '${agent.name} ${agent.lastname}',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: isSelected ? theme.colorScheme.primary : theme.colorScheme.onSurface,
+                          ),
+                        ),
+                        backgroundColor: isSelected
+                            ? theme.colorScheme.primary.withOpacity(0.2)
+                            : theme.colorScheme.background,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          side: BorderSide(
+                            color: isSelected
+                                ? theme.colorScheme.primary
+                                : theme.colorScheme.primary.withOpacity(0.7),
+                            width: 1,
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ],
+              ),
+            ],
+          ),
+          const CustomSpacer(height: 8),
+          _buildSectionCard(
+            context,
+            title: 'Date Range',
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: _startDate ?? DateTime.now(),
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime(2100),
+                        );
+                        if (picked != null) {
+                          setState(() {
+                            _startDate = picked;
+                            _filters['dateStart'] = picked.toIso8601String().split('T')[0];
+                          });
+                        }
+                      },
+                      style: TextButton.styleFrom(
+                        backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
+                        foregroundColor: theme.colorScheme.primary,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      ),
+                      child: Text(
+                        _startDate == null ? 'Select Start Date' : _filters['dateStart']!,
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: _endDate ?? DateTime.now(),
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime(2100),
+                        );
+                        if (picked != null) {
+                          setState(() {
+                            _endDate = picked;
+                            _filters['dateEnd'] = picked.toIso8601String().split('T')[0];
+                          });
+                        }
+                      },
+                      style: TextButton.styleFrom(
+                        backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
+                        foregroundColor: theme.colorScheme.primary,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      ),
+                      child: Text(
+                        _endDate == null ? 'Select End Date' : _filters['dateEnd']!,
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const CustomSpacer(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              CustomButton(
+                label: 'Clear',
+                onPressed: () => setState(() {
+                  _filters['status'] = 'all';
+                  _filters['agent'] = '';
+                  _filters['dateStart'] = '';
+                  _filters['dateEnd'] = '';
+                  _startDate = null;
+                  _endDate = null;
+                }),
+                isOutlined: true,
+                backgroundColor: theme.colorScheme.surface,
+                textColor: theme.colorScheme.onSurface,
+              ),
+              CustomButton(
+                label: 'Apply',
+                onPressed: () {
+                  widget.onApply(_filters);
+                  Navigator.pop(context);
+                },
+                backgroundColor: theme.colorScheme.primary.withOpacity(0.8),
+                textColor: theme.colorScheme.primary,
+                isOutlined: true,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Extension to capitalize strings
+extension StringExtension on String {
+  String capitalize() {
+    return "${this[0].toUpperCase()}${substring(1)}";
   }
 }

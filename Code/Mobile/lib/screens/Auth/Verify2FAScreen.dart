@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/theme_provider.dart';
+import '../../widgets/commen/title_text.dart';
 
 class Verify2FAScreen extends StatefulWidget {
   const Verify2FAScreen({super.key});
@@ -54,6 +56,8 @@ class Verify2FAScreenState extends State<Verify2FAScreen> {
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final theme = themeProvider.currentTheme;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -61,7 +65,7 @@ class Verify2FAScreenState extends State<Verify2FAScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(authProvider.errorMessage!),
-            backgroundColor: Theme.of(context).colorScheme.error,
+            backgroundColor: theme.colorScheme.error,
             duration: const Duration(seconds: 5),
           ),
         );
@@ -72,7 +76,7 @@ class Verify2FAScreenState extends State<Verify2FAScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(_successMessage!),
-            backgroundColor: Colors.green,
+            backgroundColor: theme.colorScheme.primary,
             duration: const Duration(seconds: 5),
           ),
         );
@@ -81,9 +85,10 @@ class Verify2FAScreenState extends State<Verify2FAScreen> {
     });
 
     return Scaffold(
+      backgroundColor: theme.colorScheme.background,
       body: Stack(
         children: [
-          _buildBackgroundOverlay(),
+          _buildBackgroundOverlay(context),
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
@@ -93,81 +98,101 @@ class Verify2FAScreenState extends State<Verify2FAScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text(
-                        'Verify Your Identity',
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
+                      const CustomTitleText(text: 'Verify Your Identity'),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Enter the code sent to your ${authProvider.otpMethod}.',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onBackground.withOpacity(0.6),
                         ),
                       ),
                       const SizedBox(height: 48),
-                      // OTP field
                       TextFormField(
                         controller: _otpController,
                         decoration: InputDecoration(
                           labelText: 'Enter OTP',
-                          prefixIcon: const Icon(Icons.security),
+                          labelStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+                          prefixIcon: Icon(Icons.security, color: theme.colorScheme.primary),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(color: theme.colorScheme.outline),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(color: theme.colorScheme.outline),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(color: theme.colorScheme.primary, width: 2),
                           ),
                           errorText: _errors['otpCode']?.isNotEmpty == true
                               ? _errors['otpCode']
                               : null,
+                          errorStyle: TextStyle(color: theme.colorScheme.error),
                         ),
                         enabled: !authProvider.isLoading,
                         keyboardType: TextInputType.number,
                         maxLength: 6,
                         onChanged: (_) => _validateForm(),
+                        style: TextStyle(color: theme.colorScheme.onSurface),
                       ),
                       const SizedBox(height: 16),
-                      // Timer info
                       ValueListenableBuilder<int>(
                         valueListenable: authProvider.otpTimer,
                         builder: (_, otpTimer, __) => Text(
-                          'We sent a code to your ${authProvider.otpMethod}. '
-                              'Time remaining: ${(otpTimer ~/ 60).toString().padLeft(2, '0')}:'
+                          'Time remaining: ${(otpTimer ~/ 60).toString().padLeft(2, '0')}:'
                               '${(otpTimer % 60).toString().padLeft(2, '0')}',
-                          style: const TextStyle(fontSize: 14),
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
                           textAlign: TextAlign.center,
                         ),
                       ),
                       const SizedBox(height: 16),
-                      // Trust device checkbox
                       CheckboxListTile(
-                        title: const Text('Trust this device'),
+                        title: Text(
+                          'Trust this device',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurface,
+                          ),
+                        ),
                         value: _trustDevice,
                         onChanged: authProvider.isLoading
                             ? null
                             : (value) => setState(() => _trustDevice = value!),
                         controlAffinity: ListTileControlAffinity.leading,
+                        activeColor: theme.colorScheme.primary,
+                        checkColor: theme.colorScheme.onPrimary,
                       ),
                       const SizedBox(height: 16),
-                      // Verify OTP button
                       AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
                         width: double.infinity,
                         child: ElevatedButton(
                           onPressed: authProvider.isLoading ? null : _verify2FA,
                           style: ElevatedButton.styleFrom(
+                            backgroundColor: theme.colorScheme.primary,
+                            foregroundColor: theme.colorScheme.onPrimary,
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
+                            elevation: 2,
                           ),
                           child: authProvider.isLoading
-                              ? const SpinKitCircle(
-                            color: Colors.white,
+                              ? SpinKitFadingCircle(
+                            color: theme.colorScheme.onPrimary,
                             size: 24,
                           )
-                              : const Text(
+                              : Text(
                             'Verify OTP',
-                            style: TextStyle(fontSize: 16),
+                            style: theme.textTheme.labelLarge?.copyWith(
+                              color: theme.colorScheme.onPrimary,
+                            ),
                           ),
                         ),
                       ),
                       const SizedBox(height: 16),
-                      // Resend OTP button
                       ValueListenableBuilder<int>(
                         valueListenable: authProvider.resendCooldown,
                         builder: (_, resendCooldown, __) => AnimatedContainer(
@@ -178,6 +203,8 @@ class Verify2FAScreenState extends State<Verify2FAScreen> {
                                 ? null
                                 : () => _resend2FA(authProvider.otpMethod),
                             style: OutlinedButton.styleFrom(
+                              foregroundColor: theme.colorScheme.primary,
+                              side: BorderSide(color: theme.colorScheme.primary),
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8),
@@ -187,13 +214,14 @@ class Verify2FAScreenState extends State<Verify2FAScreen> {
                               resendCooldown > 0
                                   ? 'Resend in ${resendCooldown}s'
                                   : 'Resend OTP',
-                              style: const TextStyle(fontSize: 16),
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                color: theme.colorScheme.primary,
+                              ),
                             ),
                           ),
                         ),
                       ),
                       const SizedBox(height: 16),
-                      // Alternate method link
                       ValueListenableBuilder<int>(
                         valueListenable: authProvider.resendCooldown,
                         builder: (_, resendCooldown, __) => Column(
@@ -203,26 +231,40 @@ class Verify2FAScreenState extends State<Verify2FAScreen> {
                                 onPressed: authProvider.isLoading || resendCooldown > 0
                                     ? null
                                     : () => _resend2FA('email'),
-                                child: const Text('Can’t access your phone? Send to email instead.'),
+                                child: Text(
+                                  'Can’t access your phone? Send to email instead.',
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: theme.colorScheme.primary,
+                                  ),
+                                ),
                               ),
                             if (authProvider.otpMethod == 'email')
                               TextButton(
                                 onPressed: authProvider.isLoading || resendCooldown > 0
                                     ? null
                                     : () => _resend2FA('phone'),
-                                child: const Text('Send to phone instead.'),
+                                child: Text(
+                                  'Send to phone instead.',
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: theme.colorScheme.primary,
+                                  ),
+                                ),
                               ),
                           ],
                         ),
                       ),
                       const Divider(),
-                      // Back to login
                       TextButton(
                         onPressed: () {
                           authProvider.logout();
                           Navigator.pushReplacementNamed(context, '/login');
                         },
-                        child: const Text('Back to Sign In'),
+                        child: Text(
+                          'Back to Sign In',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -235,26 +277,39 @@ class Verify2FAScreenState extends State<Verify2FAScreen> {
     );
   }
 
-  Widget _buildBackgroundOverlay() {
+  Widget _buildBackgroundOverlay(BuildContext context) {
+    final theme = Provider.of<ThemeProvider>(context).currentTheme;
     return Stack(
       children: [
         Container(
-          color: Colors.grey[100],
+          color: theme.colorScheme.background.withOpacity(0.9),
         ),
         Positioned(
           top: 50,
           left: 20,
-          child: Icon(Icons.location_pin, size: 40, color: Colors.blue.withOpacity(0.2)),
+          child: Icon(
+            Icons.location_pin,
+            size: 40,
+            color: theme.colorScheme.primary.withOpacity(0.2),
+          ),
         ),
         Positioned(
           bottom: 100,
           right: 30,
-          child: Icon(Icons.access_time, size: 50, color: Colors.green.withOpacity(0.2)),
+          child: Icon(
+            Icons.access_time,
+            size: 50,
+            color: theme.colorScheme.secondary.withOpacity(0.2),
+          ),
         ),
         Positioned(
           top: 200,
           right: 50,
-          child: Icon(Icons.qr_code, size: 45, color: Colors.purple.withOpacity(0.2)),
+          child: Icon(
+            Icons.qr_code,
+            size: 45,
+            color: theme.colorScheme.tertiary.withOpacity(0.2),
+          ),
         ),
         Positioned(
           top: 100,
@@ -264,7 +319,20 @@ class Verify2FAScreenState extends State<Verify2FAScreen> {
             width: 10,
             height: 10,
             decoration: BoxDecoration(
-              color: Colors.blue.withOpacity(0.3),
+              color: theme.colorScheme.primary.withOpacity(0.3),
+              shape: BoxShape.circle,
+            ),
+          ),
+        ),
+        Positioned(
+          bottom: 150,
+          left: 50,
+          child: AnimatedContainer(
+            duration: const Duration(seconds: 4),
+            width: 12,
+            height: 12,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.secondary.withOpacity(0.3),
               shape: BoxShape.circle,
             ),
           ),
