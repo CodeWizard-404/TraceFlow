@@ -1,7 +1,8 @@
+import 'package:TraceFlow/models/reason.dart';
 import 'package:flutter/foundation.dart';
+
 import 'agent.dart';
 import 'checklist.dart';
-import 'reason.dart';
 
 class Visit {
   final String visitID;
@@ -15,8 +16,8 @@ class Visit {
   final String? agentID;
   final String? timesheetID;
   final String? calendarEventId;
-  final DateTime createdAt;
-  final DateTime updatedAt;
+  final DateTime? createdAt; // Changed to nullable
+  final DateTime? updatedAt; // Changed to nullable
   final List<Checklist>? checklists;
   final List<Reason>? reasons;
   final Agent? agent;
@@ -33,8 +34,8 @@ class Visit {
     this.agentID,
     this.timesheetID,
     this.calendarEventId,
-    required this.createdAt,
-    required this.updatedAt,
+    this.createdAt, // No longer required
+    this.updatedAt, // No longer required
     this.checklists,
     this.reasons,
     this.agent,
@@ -43,10 +44,18 @@ class Visit {
   factory Visit.fromJson(Map<String, dynamic> json) {
     if (kDebugMode) print('Visit.fromJson called with data: ${json.toString().substring(0, 100)}...');
     try {
+      String timeStr = json['time'] as String;
+      // Standardize time to 'HH:mm'
+      List<String> timeParts = timeStr.split(':');
+      if (timeParts.length >= 2) {
+        String hour = timeParts[0].padLeft(2, '0');
+        String minute = timeParts[1].padLeft(2, '0');
+        timeStr = '$hour:$minute';
+      }
       return Visit(
         visitID: json['visitID'] as String,
         date: DateTime.parse(json['date'] as String),
-        time: json['time'] as String,
+        time: timeStr,
         duration: json['duration'] as int?,
         location: json['location'] as String?,
         status: json['status'] as String?,
@@ -55,8 +64,8 @@ class Visit {
         agentID: json['agentID'] as String?,
         timesheetID: json['timesheetID'] as String?,
         calendarEventId: json['calendarEventId'] as String?,
-        createdAt: DateTime.parse(json['createdAt'] as String),
-        updatedAt: DateTime.parse(json['updatedAt'] as String),
+        createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt'] as String) : null,
+        updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt'] as String) : null,
         checklists: (json['Checklists'] as List<dynamic>?)?.map((e) => Checklist.fromJson(e as Map<String, dynamic>)).toList(),
         reasons: (json['Reasons'] as List<dynamic>?)?.map((e) => Reason.fromJson(e as Map<String, dynamic>)).toList(),
         agent: json['Agent'] != null ? Agent.fromJson(json['Agent'] as Map<String, dynamic>) : null,
@@ -80,8 +89,8 @@ class Visit {
       'agentID': agentID,
       'timesheetID': timesheetID,
       'calendarEventId': calendarEventId,
-      'createdAt': createdAt.toIso8601String(),
-      'updatedAt': updatedAt.toIso8601String(),
+      'createdAt': createdAt?.toIso8601String(),
+      'updatedAt': updatedAt?.toIso8601String(),
       'Checklists': checklists?.map((e) => e.toJson()).toList(),
       'Reasons': reasons?.map((e) => e.toJson()).toList(),
       'Agent': agent?.toJson(),

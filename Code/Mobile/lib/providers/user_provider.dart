@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:TraceFlow/models/user.dart';
 import 'package:TraceFlow/services/user_service.dart';
@@ -260,7 +262,10 @@ class UserProvider with ChangeNotifier {
       if (_errorMessage?.contains('401') ?? false) {
         await AuthService.logout();
       }
-      rethrow;
+      return User( // Return a default empty user to avoid breaking
+        userID: 'none',
+        email: 'none@example.com',
+      );
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -305,24 +310,28 @@ class UserProvider with ChangeNotifier {
       }
     }
 
-    Future<void> getDirectorByUser(String userID) async {
-      _isLoading = true;
-      _errorMessage = null;
-      notifyListeners();
-      try {
-        _currentUser = await UserService.getDirectorByUser(userID);
-      } catch (e) {
+  Future<void> getDirectorByUser(String userID) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      _currentUser = await UserService.getDirectorByUser(userID);
+    } catch (e) {
+      _currentUser = null;
+      _errorMessage = e.toString();
+      if (kDebugMode) print('Error in getDirectorByUser: $_errorMessage');
+      if (_errorMessage?.contains('401') ?? false) {
+        await AuthService.logout();
+      } else if (_errorMessage?.contains('403') ?? false) {
         _currentUser = null;
-        _errorMessage = _parseError(e);
-        if (kDebugMode) print('Error in getDirectorByUser: $_errorMessage');
-        if (_errorMessage?.contains('401') ?? false) {
-          await AuthService.logout();
-        }
-      } finally {
-        _isLoading = false;
-        notifyListeners();
       }
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
+  }
+
+
 
     void clearError() {
       _errorMessage = null;

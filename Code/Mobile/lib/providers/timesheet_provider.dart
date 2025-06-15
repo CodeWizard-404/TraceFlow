@@ -21,6 +21,7 @@ class TimesheetProvider with ChangeNotifier {
   void setSuggestedVisits(List<Visit> visits) {
     _suggestedVisits = visits;
     _selectedSuggestedVisitIds = visits.map((v) => v.visitID).toList();
+    if (kDebugMode) print('Setting suggested visits: ${visits.length}');
     notifyListeners();
   }
 
@@ -63,6 +64,7 @@ class TimesheetProvider with ChangeNotifier {
         );
       }
       clearSuggestedVisits();
+      await fetchTimesheetsBySupervisor(supervisorID); // Refresh timesheets after saving
     } catch (e) {
       _errorMessage = 'Failed to save suggestions: $e';
       if (kDebugMode) print(_errorMessage);
@@ -190,11 +192,11 @@ class TimesheetProvider with ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
     try {
-      // Default criteria with time interval
+// Default criteria with time interval
       final defaultCriteria = {
-        'time_interval': {
-          'start_time': '08:00',
-          'end_time': '17:00',
+        'timeInterval': {
+          'startHour': 8,
+          'endHour': 17,
         },
       };
       final result = await TimesheetService.suggestTimesheet(
@@ -204,8 +206,8 @@ class TimesheetProvider with ChangeNotifier {
         coordinates: coordinates,
         criteria: criteria ?? defaultCriteria,
       );
-      if (kDebugMode) print('Suggested timesheet for week $weekNumber, year $year');
-      return result;
+      if (kDebugMode) print('Suggested timesheet for week $weekNumber, year $year: $result');
+      return result; // Return the Map<String, dynamic> directly
     } catch (e) {
       _errorMessage = 'Failed to suggest timesheet: $e';
       if (kDebugMode) print(_errorMessage);

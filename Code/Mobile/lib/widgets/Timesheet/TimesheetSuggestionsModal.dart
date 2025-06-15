@@ -58,7 +58,7 @@ class TimesheetSuggestionsModalState extends State<TimesheetSuggestionsModal> {
   String? _locationError;
   Position? _userLocation;
 
-  // Form data
+// Form data
   String _startTime = '08:00';
   String _endTime = '17:00';
   int _maxVisitsPerAgentPerWeek = 2;
@@ -70,14 +70,14 @@ class TimesheetSuggestionsModalState extends State<TimesheetSuggestionsModal> {
   String? _selectedGovernorate;
   String? _selectedRecruitmentDelegation;
 
-  // Data for dropdowns
+// Data for dropdowns
   List<Agent> _agents = [];
   List<Delegation> _delegations = [];
   List<Region> _regions = [];
   List<Governorate> _governorates = [];
   List<Delegation> _recruitmentDelegations = [];
 
-  // Loading states
+// Loading states
   bool _isAgentsLoading = false;
   bool _isDelegationsLoading = false;
   bool _isRegionsLoading = false;
@@ -87,14 +87,20 @@ class TimesheetSuggestionsModalState extends State<TimesheetSuggestionsModal> {
   @override
   void initState() {
     super.initState();
+    _startTime = '08:00';
+    _endTime = '17:00';
     _fetchUserLocation();
+// Pre-fetch agents and delegations to ensure they're available
+    _fetchAgents();
+    _fetchDelegations();
   }
 
   Future<void> _fetchUserLocation() async {
+    if (kDebugMode) print('Fetching user location');
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        setState(() => _locationError = 'Location services are disabled.');
+        setState(() => _locationError = 'Location services are disabled. Proceeding without location.');
         return;
       }
 
@@ -102,13 +108,13 @@ class TimesheetSuggestionsModalState extends State<TimesheetSuggestionsModal> {
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          setState(() => _locationError = 'Location permissions are denied.');
+          setState(() => _locationError = 'Location permissions are denied. Proceeding without location.');
           return;
         }
       }
 
       if (permission == LocationPermission.deniedForever) {
-        setState(() => _locationError = 'Location permissions are permanently denied.');
+        setState(() => _locationError = 'Location permissions are permanently denied. Proceeding without location.');
         return;
       }
 
@@ -120,21 +126,30 @@ class TimesheetSuggestionsModalState extends State<TimesheetSuggestionsModal> {
         _userLocation = position;
         _locationError = null;
       });
+      if (kDebugMode) print('Location fetched: lat=${position.latitude}, lng=${position.longitude}');
     } catch (e) {
-      setState(() => _locationError = 'Failed to get location: $e');
+      setState(() => _locationError = 'Failed to get location: $e. Proceeding without location.');
       if (kDebugMode) print('Location error: $e');
     }
   }
 
   Future<void> _fetchAgents() async {
     if (_isAgentsLoading || _agents.isNotEmpty) return;
+    if (kDebugMode) print('Fetching agents for supervisor: ${widget.supervisorID}');
     setState(() => _isAgentsLoading = true);
     try {
-      final agentsData = await AgentService.getAgentsByUser(widget.supervisorID);
+      final agents = await AgentService.getAgentsByUser(widget.supervisorID);
       setState(() {
-        _agents = agentsData.map((data) => Agent.fromJson(data as Map<String, dynamic>)).toList();
+        _agents = agents;
       });
+      if (_agents.isEmpty) {
+        if (kDebugMode) print('No agents found');
+        widget.scaffoldMessengerKey.currentState?.showSnackBar(
+          const SnackBar(content: Text('No agents available')),
+        );
+      }
     } catch (e) {
+      if (kDebugMode) print('Error fetching agents: $e');
       widget.scaffoldMessengerKey.currentState?.showSnackBar(
         SnackBar(content: Text('Failed to fetch agents: $e')),
       );
@@ -143,15 +158,27 @@ class TimesheetSuggestionsModalState extends State<TimesheetSuggestionsModal> {
     }
   }
 
+
   Future<void> _fetchDelegations() async {
     if (_isDelegationsLoading || _delegations.isNotEmpty) return;
+    if (kDebugMode) print('Fetching delegations for supervisor: ${widget.supervisorID}');
     setState(() => _isDelegationsLoading = true);
     try {
       final delegationsData = await LocationService.getDelegationsByUser(widget.supervisorID);
+      if (kDebugMode) print('Delegations data received: $delegationsData');
       setState(() {
-        _delegations = delegationsData.map((data) => Delegation.fromJson(data as Map<String, dynamic>)).toList();
+        _delegations = (delegationsData as List<dynamic>)
+            .map((data) => Delegation.fromJson(data as Map<String, dynamic>))
+            .toList();
       });
+      if (_delegations.isEmpty) {
+        if (kDebugMode) print('No delegations found');
+        widget.scaffoldMessengerKey.currentState?.showSnackBar(
+          const SnackBar(content: Text('No delegations available')),
+        );
+      }
     } catch (e) {
+      if (kDebugMode) print('Error fetching delegations: $e');
       widget.scaffoldMessengerKey.currentState?.showSnackBar(
         SnackBar(content: Text('Failed to fetch delegations: $e')),
       );
@@ -162,17 +189,21 @@ class TimesheetSuggestionsModalState extends State<TimesheetSuggestionsModal> {
 
   Future<void> _fetchRegions() async {
     if (_isRegionsLoading || _regions.isNotEmpty) return;
+    if (kDebugMode) print('Fetching regions for supervisor: ${widget.supervisorID}');
     setState(() => _isRegionsLoading = true);
     try {
       final regionsData = await LocationService.getRegionsByUser(widget.supervisorID);
       setState(() {
-        _regions = regionsData.map((data) => Region.fromJson(data as Map<String, dynamic>)).toList();
+        _regions = (regionsData as List<dynamic>)
+            .map((data) => Region.fromJson(data as Map<String, dynamic>))
+            .toList();
         if (_regions.length == 1) {
           _selectedRegion = _regions[0].regionID;
           _fetchGovernorates(_regions[0].regionID);
         }
       });
     } catch (e) {
+      if (kDebugMode) print('Error fetching regions: $e');
       widget.scaffoldMessengerKey.currentState?.showSnackBar(
         SnackBar(content: Text('Failed to fetch regions: $e')),
       );
@@ -183,17 +214,21 @@ class TimesheetSuggestionsModalState extends State<TimesheetSuggestionsModal> {
 
   Future<void> _fetchGovernorates(String regionID) async {
     if (_isGovernoratesLoading || _governorates.any((g) => g.regionID == regionID)) return;
+    if (kDebugMode) print('Fetching governorates for region: $regionID');
     setState(() => _isGovernoratesLoading = true);
     try {
       final governoratesData = await LocationService.getGovernoratesByRegion(regionID);
       setState(() {
-        _governorates = governoratesData.map((data) => Governorate.fromJson(data as Map<String, dynamic>)).toList();
+        _governorates = (governoratesData as List<dynamic>)
+            .map((data) => Governorate.fromJson(data as Map<String, dynamic>))
+            .toList();
         if (_governorates.length == 1) {
           _selectedGovernorate = _governorates[0].governorateID;
           _fetchRecruitmentDelegations(_governorates[0].governorateID);
         }
       });
     } catch (e) {
+      if (kDebugMode) print('Error fetching governorates: $e');
       widget.scaffoldMessengerKey.currentState?.showSnackBar(
         SnackBar(content: Text('Failed to fetch governorates: $e')),
       );
@@ -204,16 +239,20 @@ class TimesheetSuggestionsModalState extends State<TimesheetSuggestionsModal> {
 
   Future<void> _fetchRecruitmentDelegations(String governorateId) async {
     if (_isRecruitmentDelegationsLoading || _recruitmentDelegations.any((d) => d.governorateID == governorateId)) return;
+    if (kDebugMode) print('Fetching recruitment delegations for governorate: $governorateId');
     setState(() => _isRecruitmentDelegationsLoading = true);
     try {
       final delegationsData = await LocationService.getDelegationsByGovernorate(governorateId);
       setState(() {
-        _recruitmentDelegations = delegationsData.map((data) => Delegation.fromJson(data as Map<String, dynamic>)).toList();
+        _recruitmentDelegations = (delegationsData as List<dynamic>)
+            .map((data) => Delegation.fromJson(data as Map<String, dynamic>))
+            .toList();
         if (_recruitmentDelegations.length == 1) {
           _selectedRecruitmentDelegation = _recruitmentDelegations[0].delegationID;
         }
       });
     } catch (e) {
+      if (kDebugMode) print('Error fetching recruitment delegations: $e');
       widget.scaffoldMessengerKey.currentState?.showSnackBar(
         SnackBar(content: Text('Failed to fetch recruitment delegations: $e')),
       );
@@ -242,6 +281,7 @@ class TimesheetSuggestionsModalState extends State<TimesheetSuggestionsModal> {
     required VoidCallback onTap,
     bool isLoading = false,
   }) {
+    if (kDebugMode) print('Building $label field with ${items.length} items');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -249,6 +289,11 @@ class TimesheetSuggestionsModalState extends State<TimesheetSuggestionsModal> {
         const SizedBox(height: 8),
         isLoading
             ? const Center(child: CircularProgressIndicator())
+            : items.isEmpty
+            ? Text(
+          'No $label available',
+          style: TextStyle(color: Theme.of(context).colorScheme.error),
+        )
             : Wrap(
           spacing: 8,
           children: items.map((item) {
@@ -257,6 +302,7 @@ class TimesheetSuggestionsModalState extends State<TimesheetSuggestionsModal> {
               label: Text(formatter(item)),
               selected: isSelected,
               onSelected: (selected) {
+                if (kDebugMode) print('Selected $label: $item, selected: $selected');
                 onTap();
                 setState(() {
                   if (selected) {
@@ -300,7 +346,39 @@ class TimesheetSuggestionsModalState extends State<TimesheetSuggestionsModal> {
                 ),
                 IconButton(
                   icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () {
+                    final timesheetProvider = Provider.of<TimesheetProvider>(context, listen: false);
+                    if (timesheetProvider.suggestedVisits.isNotEmpty) {
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Unsaved Suggestions'),
+                          content: const Text('You have unsaved suggestions. Do you want to save them?'),
+                          actions: [
+                            TextButton(
+                              onPressed: () {
+                                Navigator.pop(context); // Close dialog
+                                timesheetProvider.clearSuggestedVisits();
+                                Navigator.pop(context); // Close modal
+                              },
+                              child: const Text('Discard'),
+                            ),
+                            TextButton(
+                              onPressed: () async {
+                                await timesheetProvider.saveSuggestedVisits(widget.supervisorID);
+                                Navigator.pop(context); // Close dialog
+                                Navigator.pop(context); // Close modal
+                              },
+                              child: const Text('Save'),
+                            ),
+                          ],
+                        ),
+                      );
+                    } else {
+                      timesheetProvider.clearSuggestedVisits();
+                      Navigator.pop(context);
+                    }
+                  },
                 ),
               ],
             ),
@@ -319,17 +397,19 @@ class TimesheetSuggestionsModalState extends State<TimesheetSuggestionsModal> {
                   key: _formKey,
                   child: ListView(
                     children: [
-                      // Preferred Days
+// Preferred Days
                       _buildMultiSelectField(
                         label: 'Preferred Days',
                         items: weekDates,
                         selectedItems: _preferredDays,
                         formatter: (date) => DateFormat('EEE, d MMM').format(DateTime.parse(date)),
-                        onTap: () {},
+                        onTap: () {
+                          if (kDebugMode) print('Preferred days tapped');
+                        },
                         isLoading: false,
                       ),
                       const Divider(height: 16),
-                      // Delegations
+// Delegations
                       _buildMultiSelectField(
                         label: 'Delegations',
                         items: _delegations.map((d) => d.delegationID).toList(),
@@ -338,7 +418,7 @@ class TimesheetSuggestionsModalState extends State<TimesheetSuggestionsModal> {
                         onTap: _fetchDelegations,
                         isLoading: _isDelegationsLoading,
                       ),
-                      // Agents
+// Agents
                       _buildMultiSelectField(
                         label: 'Agents',
                         items: _agents.map((a) => a.agentID).toList(),
@@ -351,7 +431,7 @@ class TimesheetSuggestionsModalState extends State<TimesheetSuggestionsModal> {
                         isLoading: _isAgentsLoading,
                       ),
                       const Divider(height: 16),
-                      // Include Recruitment Visits
+// Include Recruitment Visits
                       SwitchListTile(
                         title: const Text('Include Recruitment Visits'),
                         value: _includeRecruitmentVisits,
@@ -368,7 +448,7 @@ class TimesheetSuggestionsModalState extends State<TimesheetSuggestionsModal> {
                           });
                         },
                       ),
-                      // Recruitment Areas
+// Recruitment Areas
                       if (_includeRecruitmentVisits) ...[
                         _isRegionsLoading
                             ? const Center(child: CircularProgressIndicator())
@@ -454,53 +534,93 @@ class TimesheetSuggestionsModalState extends State<TimesheetSuggestionsModal> {
                         ),
                       ],
                       const Divider(height: 16),
-                      // Time Interval
+// Time Interval
                       Row(
                         children: [
                           Expanded(
-                            child: TextFormField(
-                              initialValue: _startTime,
-                              decoration: const InputDecoration(
-                                labelText: 'Start Time (HH:mm)',
-                                border: OutlineInputBorder(),
-                              ),
-                              keyboardType: TextInputType.datetime,
-                              validator: (value) {
-                                if (value == null || !RegExp(r'^(?:[01]\d|2[0-3]):[0-5]\d$').hasMatch(value)) {
-                                  return 'Enter valid time (HH:mm, 00:00-23:59)';
+                            child: GestureDetector(
+                              onTap: () async {
+                                if (kDebugMode) print('Start time tapped');
+                                final time = await showTimePicker(
+                                  context: context,
+                                  initialTime: TimeOfDay(
+                                    hour: int.tryParse(_startTime.split(':')[0]) ?? 8,
+                                    minute: int.tryParse(_startTime.split(':')[1]) ?? 0,
+                                  ),
+                                );
+                                if (time != null) {
+                                  setState(() {
+                                    _startTime = '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+                                    if (kDebugMode) print('Start time set to: $_startTime');
+                                  });
                                 }
-                                return null;
                               },
-                              onSaved: (value) => _startTime = value!,
+                              child: AbsorbPointer(
+                                child: TextFormField(
+                                  decoration: const InputDecoration(
+                                    labelText: 'Start Time (HH:mm)',
+                                    border: OutlineInputBorder(),
+                                  ),
+                                  controller: TextEditingController(text: _startTime),
+                                  validator: (value) {
+                                    if (value == null || !RegExp(r'^(?:[01]\d|2[0-3]):[0-5]\d$').hasMatch(value)) {
+                                      return 'Invalid time (HH:mm, 00:00-23:59)';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                              ),
                             ),
                           ),
                           const SizedBox(width: 8),
                           Expanded(
-                            child: TextFormField(
-                              initialValue: _endTime,
-                              decoration: const InputDecoration(
-                                labelText: 'End Time (HH:mm)',
-                                border: OutlineInputBorder(),
-                              ),
-                              keyboardType: TextInputType.datetime,
-                              validator: (value) {
-                                if (value == null || !RegExp(r'^(?:[01]\d|2[0-3]):[0-5]\d$').hasMatch(value)) {
-                                  return 'Enter valid time (HH:mm, 00:00-23:59)';
+                            child: GestureDetector(
+                              onTap: () async {
+                                if (kDebugMode) print('End time tapped');
+                                final time = await showTimePicker(
+                                  context: context,
+                                  initialTime: TimeOfDay(
+                                    hour: int.tryParse(_endTime.split(':')[0]) ?? 17,
+                                    minute: int.tryParse(_endTime.split(':')[1]) ?? 0,
+                                  ),
+                                );
+                                if (time != null) {
+                                  setState(() {
+                                    _endTime = '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+                                    if (kDebugMode) print('End time set to: $_endTime');
+                                  });
                                 }
-                                final start = DateTime.parse('2000-01-01 $_startTime:00');
-                                final end = DateTime.parse('2000-01-01 $value:00');
-                                if (end.isBefore(start) || end.isAtSameMomentAs(start)) {
-                                  return 'End time must be after start time';
-                                }
-                                return null;
                               },
-                              onSaved: (value) => _endTime = value!,
+                              child: AbsorbPointer(
+                                child: TextFormField(
+                                  decoration: const InputDecoration(
+                                    labelText: 'End Time (HH:mm)',
+                                    border: OutlineInputBorder(),
+                                  ),
+                                  controller: TextEditingController(text: _endTime),
+                                  validator: (value) {
+                                    if (value == null || !RegExp(r'^(?:[01]\d|2[0-3]):[0-5]\d$').hasMatch(value)) {
+                                      return 'Invalid time (HH:mm, 00:00-23:59)';
+                                    }
+                                    try {
+                                      final start = DateTime.parse('2000-01-01 $_startTime:00');
+                                      final end = DateTime.parse('2000-01-01 $value:00');
+                                      if (end.isBefore(start) || end.isAtSameMomentAs(start)) {
+                                        return 'End time must be after start';
+                                      }
+                                    } catch (e) {
+                                      return 'Invalid time format';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                              ),
                             ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 8),
-                      // Max Visits Per Agent
+// Max Visits Per Agent
                       TextFormField(
                         initialValue: _maxVisitsPerAgentPerWeek.toString(),
                         decoration: const InputDecoration(
@@ -518,7 +638,7 @@ class TimesheetSuggestionsModalState extends State<TimesheetSuggestionsModal> {
                         onSaved: (value) => _maxVisitsPerAgentPerWeek = int.parse(value!),
                       ),
                       const Divider(height: 16),
-                      // Description
+// Description
                       TextFormField(
                         initialValue: _description,
                         decoration: const InputDecoration(
@@ -533,72 +653,94 @@ class TimesheetSuggestionsModalState extends State<TimesheetSuggestionsModal> {
                           ? const Center(child: CircularProgressIndicator())
                           : ElevatedButton(
                         onPressed: () async {
-                          if (_formKey.currentState!.validate()) {
-                            if (_userLocation == null) {
-                              widget.scaffoldMessengerKey.currentState?.showSnackBar(
-                                const SnackBar(content: Text('Location not available')),
-                              );
-                              return;
+                          if (kDebugMode) print('Generate button pressed');
+                          if (!_formKey.currentState!.validate()) {
+                            if (kDebugMode) print('Form validation failed');
+                            widget.scaffoldMessengerKey.currentState?.showSnackBar(
+                              const SnackBar(content: Text('Please correct the form errors')),
+                            );
+                            return;
+                          }
+                          if (kDebugMode) print('Form validated, saving form');
+                          _formKey.currentState!.save();
+                          setState(() => _isLoading = true);
+                          final timesheetProvider =
+                          Provider.of<TimesheetProvider>(context, listen: false);
+                          try {
+                            if (kDebugMode) print('Parsing startHour and endHour');
+                            final startHour = int.tryParse(_startTime.split(':')[0]) ?? 8;
+                            final endHour = int.tryParse(_endTime.split(':')[0]) ?? 17;
+                            if (kDebugMode) print('Building criteria');
+                            final recruitmentAreas = _includeRecruitmentVisits
+                                ? [
+                              if (_selectedRegion != null)
+                                _regions
+                                    .firstWhere((r) => r.regionID == _selectedRegion)
+                                    .name,
+                              if (_selectedGovernorate != null)
+                                _governorates
+                                    .firstWhere(
+                                        (g) => g.governorateID == _selectedGovernorate)
+                                    .name,
+                              if (_selectedRecruitmentDelegation != null)
+                                _recruitmentDelegations
+                                    .firstWhere((d) =>
+                                d.delegationID == _selectedRecruitmentDelegation)
+                                    .name,
+                            ].where((name) => name.isNotEmpty).toList()
+                                : [];
+                            final criteria = {
+                              'delegationIds': _delegationIds,
+                              'agentIds': _agentIds,
+                              'preferredDays': _preferredDays,
+                              'timeInterval': {
+                                'startHour': startHour,
+                                'endHour': endHour,
+                              },
+                              'maxVisitsPerAgentPerWeek': _maxVisitsPerAgentPerWeek,
+                              'includeRecruitmentVisits': _includeRecruitmentVisits,
+                              'recruitmentAreas': recruitmentAreas,
+                              'description': _description,
+                              'filters': {},
+                            };
+                            final Map<String, dynamic> coordinates = _userLocation != null
+                                ? {
+                              'lat': _userLocation!.latitude,
+                              'lng': _userLocation!.longitude,
                             }
-                            _formKey.currentState!.save();
-                            setState(() => _isLoading = true);
-                            final timesheetProvider = Provider.of<TimesheetProvider>(context, listen: false);
-                            try {
-                              final startHour = int.parse(_startTime.split(':')[0]);
-                              final endHour = int.parse(_endTime.split(':')[0]);
-                              final recruitmentAreas = _includeRecruitmentVisits
-                                  ? [
-                                if (_selectedRegion != null)
-                                  _regions.firstWhere((r) => r.regionID == _selectedRegion).name,
-                                if (_selectedGovernorate != null)
-                                  _governorates
-                                      .firstWhere((g) => g.governorateID == _selectedGovernorate)
-                                      .name,
-                                if (_selectedRecruitmentDelegation != null)
-                                  _recruitmentDelegations
-                                      .firstWhere((d) => d.delegationID == _selectedRecruitmentDelegation)
-                                      .name,
-                              ].where((name) => name.isNotEmpty).toList()
-                                  : [];
-                              final criteria = {
-                                'delegationIds': _delegationIds,
-                                'agentIds': _agentIds,
-                                'preferredDays': _preferredDays,
-                                'timeInterval': {
-                                  'startHour': startHour,
-                                  'endHour': endHour,
-                                },
-                                'maxVisitsPerAgentPerWeek': _maxVisitsPerAgentPerWeek,
-                                'includeRecruitmentVisits': _includeRecruitmentVisits,
-                                'recruitmentAreas': recruitmentAreas,
-                                'description': _description,
-                                'filters': {},
-                              };
-                              final coordinates = {
-                                'lat': _userLocation!.latitude,
-                                'lng': _userLocation!.longitude,
-                              };
-                              final result = await timesheetProvider.suggestTimesheet(
-                                supervisorID: widget.supervisorID,
-                                weekNumber: widget.weekNumber,
-                                year: widget.year,
-                                coordinates: coordinates,
-                                criteria: criteria,
-                              );
-                              final suggestedVisits = (result['suggestions'] as List)
-                                  .map((v) => Visit.fromJson(v as Map<String, dynamic>))
-                                  .toList();
-                              timesheetProvider.setSuggestedVisits(suggestedVisits);
-                              setState(() {
-                                _showSuggestions = true;
-                                _isLoading = false;
-                              });
-                            } catch (e) {
-                              setState(() => _isLoading = false);
-                              widget.scaffoldMessengerKey.currentState?.showSnackBar(
-                                SnackBar(content: Text('Failed to generate suggestions: $e')),
-                              );
+                                : {};
+                            if (kDebugMode) {
+                              print('Calling suggestTimesheet with:');
+                              print('SupervisorID: ${widget.supervisorID}');
+                              print('WeekNumber: ${widget.weekNumber}');
+                              print('Year: ${widget.year}');
+                              print('Coordinates: $coordinates');
+                              print('Criteria: $criteria');
                             }
+                            final result = await timesheetProvider.suggestTimesheet(
+                              supervisorID: widget.supervisorID,
+                              weekNumber: widget.weekNumber,
+                              year: widget.year,
+                              coordinates: coordinates,
+                              criteria: criteria,
+                            );
+                            if (kDebugMode) print('Received result: $result');
+                            final suggestedVisits = (result['suggestions'] as List)
+                                .map((v) => Visit.fromJson(v as Map<String, dynamic>))
+                                .toList();
+                            if (kDebugMode) print('Parsed ${suggestedVisits.length} suggested visits');
+                            timesheetProvider.setSuggestedVisits(suggestedVisits);
+                            setState(() {
+                              _showSuggestions = true;
+                              _isLoading = false;
+                            });
+                            if (kDebugMode) print('Suggestions displayed');
+                          } catch (e) {
+                            if (kDebugMode) print('Error in suggestTimesheet: $e');
+                            setState(() => _isLoading = false);
+                            widget.scaffoldMessengerKey.currentState?.showSnackBar(
+                              SnackBar(content: Text('Failed to generate suggestions: $e')),
+                            );
                           }
                         },
                         style: ElevatedButton.styleFrom(
@@ -620,17 +762,59 @@ class TimesheetSuggestionsModalState extends State<TimesheetSuggestionsModal> {
                   child: Column(
                     children: [
                       Expanded(
-                        child: ListView.builder(
-                          shrinkWrap: true,
-                          itemCount: timesheetProvider.suggestedVisits.length,
-                          itemBuilder: (context, index) {
-                            final visit = timesheetProvider.suggestedVisits[index];
-                            return VisitItem(
-                              visit: visit,
-                              isSuggested: true,
-                              isDraggable: false,
-                              onToggleSelection: (visitID) {
-                                timesheetProvider.toggleSuggestedVisitSelection(visitID);
+                        child: DragTarget<Visit>(
+                          onWillAccept: (data) => true,
+                          onAcceptWithDetails: (details) {
+                            final droppedVisit = details.data;
+                            final currentVisits = List<Visit>.from(timesheetProvider.suggestedVisits);
+                            final newIndex = currentVisits.indexWhere((v) => v.visitID == droppedVisit.visitID);
+                            currentVisits.removeWhere((v) => v.visitID == droppedVisit.visitID);
+                            currentVisits.insert(newIndex >= 0 ? newIndex : currentVisits.length, droppedVisit);
+                            timesheetProvider.setSuggestedVisits(currentVisits);
+                          },
+                          builder: (context, candidateData, rejectedData) {
+                            return ListView.builder(
+                              shrinkWrap: true,
+                              itemCount: timesheetProvider.suggestedVisits.length,
+                              itemBuilder: (context, index) {
+                                final visit = timesheetProvider.suggestedVisits[index];
+                                return LongPressDraggable<Visit>(
+                                  data: visit,
+                                  feedback: Material(
+                                    elevation: 4,
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Opacity(
+                                      opacity: 0.8,
+                                      child: VisitItem(
+                                        visit: visit,
+                                        isSuggested: true,
+                                        isDraggable: false,
+                                        onToggleSelection: (visitID) {
+                                          timesheetProvider.toggleSuggestedVisitSelection(visitID);
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                  childWhenDragging: Opacity(
+                                    opacity: 0.3,
+                                    child: VisitItem(
+                                      visit: visit,
+                                      isSuggested: true,
+                                      isDraggable: false,
+                                      onToggleSelection: (visitID) {
+                                        timesheetProvider.toggleSuggestedVisitSelection(visitID);
+                                      },
+                                    ),
+                                  ),
+                                  child: VisitItem(
+                                    visit: visit,
+                                    isSuggested: true,
+                                    isDraggable: true,
+                                    onToggleSelection: (visitID) {
+                                      timesheetProvider.toggleSuggestedVisitSelection(visitID);
+                                    },
+                                  ),
+                                );
                               },
                             );
                           },
@@ -664,7 +848,6 @@ class TimesheetSuggestionsModalState extends State<TimesheetSuggestionsModal> {
                               onPressed: () async {
                                 try {
                                   await timesheetProvider.saveSuggestedVisits(widget.supervisorID);
-                                  await timesheetProvider.fetchTimesheetsBySupervisor(widget.supervisorID);
                                   Navigator.pop(context);
                                   widget.scaffoldMessengerKey.currentState?.showSnackBar(
                                     const SnackBar(content: Text('Suggestions saved successfully')),

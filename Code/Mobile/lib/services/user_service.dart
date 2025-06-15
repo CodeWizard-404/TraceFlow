@@ -330,7 +330,7 @@ class UserService {
           );
           CookieManager.extractCookies(response);
           if (response.statusCode == 200) return response;
-          throw Exception('Failed to fetch regional managers by user: ${response.statusCode} - ${response.body}');
+          throw Exception('Failed to fetch regional managers by user: ${response.statusCode} - $response');
         },
       );
       return (response as List<dynamic>).map((json) => User.fromJson(json)).toList();
@@ -340,24 +340,39 @@ class UserService {
     }
   }
 
-  static Future<User> getDirectorByUser(String userID) async {
-    try {
-      final response = await AuthService.makeAuthenticatedRequest(
-        request: () async {
-          final url = Uri.parse('$baseUrl/users/$userID/director');
-          final response = await http.get(
-            url,
-            headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
-          );
-          CookieManager.extractCookies(response);
-          if (response.statusCode == 200) return response;
-          throw Exception('Failed to fetch director by user: ${response.statusCode} - ${response.body}');
-        },
-      );
-      return User.fromJson(response);
-    } catch (e) {
-      if (kDebugMode) print('Error fetching director by user: $e');
-      rethrow;
+  static Future<User?> getDirectorByUser(String userID) async {
+    final response = await AuthService.makeAuthenticatedRequest(
+      request: () async {
+        final url = Uri.parse('$baseUrl/users/$userID/director');
+        final response = await http.get(
+          url,
+          headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
+        );
+        CookieManager.extractCookies(response);
+        if (response.statusCode == 200) return response;
+        throw Exception('Failed to fetch director: ${response.statusCode} - $response');
+      },
+    );
+    final data = response;
+    if (data is List && data.isNotEmpty) {
+      return User.fromJson(data[0] as Map<String, dynamic>);
     }
+    return null;
   }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }
