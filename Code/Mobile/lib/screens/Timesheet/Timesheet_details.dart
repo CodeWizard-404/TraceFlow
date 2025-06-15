@@ -29,6 +29,7 @@ class TimesheetDetailsScreenState extends State<TimesheetDetailsScreen> with Sin
   late PageController _pageController;
   late AnimationController _animationController;
   String _currentView = 'week1';
+  final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
   @override
   void initState() {
@@ -127,14 +128,8 @@ class TimesheetDetailsScreenState extends State<TimesheetDetailsScreen> with Sin
       await timesheetProvider
           .fetchTimesheetsBySupervisor(authProvider.user!.userID!)
           .catchError((error) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => ErrorPage(
-              errorMessage: 'Failed to load timesheets: $error',
-              onRetry: _fetchTimesheets,
-            ),
-          ),
+        _scaffoldMessengerKey.currentState?.showSnackBar(
+          SnackBar(content: Text('Failed to load timesheets: $error')),
         );
       });
     }
@@ -148,6 +143,7 @@ class TimesheetDetailsScreenState extends State<TimesheetDetailsScreen> with Sin
         return WeekViewList(
           date,
           onDayTap: (day) => _setView('day', specificDate: day),
+          scaffoldMessengerKey: _scaffoldMessengerKey,
         );
       case 'week2':
         return WeekViewCalendar(
@@ -177,6 +173,7 @@ class TimesheetDetailsScreenState extends State<TimesheetDetailsScreen> with Sin
     final totalHeaderHeight = appBarHeight + navBarHeight + MediaQuery.of(context).padding.top;
 
     return Scaffold(
+      key: _scaffoldMessengerKey,
       drawer: const AppSidebar(),
       body: RefreshIndicator(
         onRefresh: _fetchTimesheets,
@@ -339,7 +336,3 @@ class TimesheetDetailsScreenState extends State<TimesheetDetailsScreen> with Sin
     return (date.difference(firstMonday).inDays / 7).ceil();
   }
 }
-
-
-
-

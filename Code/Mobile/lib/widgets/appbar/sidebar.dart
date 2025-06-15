@@ -75,6 +75,13 @@ class AppSidebar extends StatelessWidget {
                       label: 'Receipt Books',
                       route: '/receipt-books',
                     ),
+                    const CustomSpacer(height: 8),
+                    _buildNavItem(
+                      context,
+                      icon: Icons.map_outlined,
+                      label: 'Map',
+                      route: '/map',
+                    ),
                   ],
                 ),
               ),

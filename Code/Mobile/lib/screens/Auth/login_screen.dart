@@ -60,59 +60,6 @@ class LoginScreenState extends State<LoginScreen> {
         _identifierController.text.trim(), _passwordController.text.trim());
   }
 
-  Future<void> _biometricLogin() async {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    if (await authProvider.isFingerprintEnabled() &&
-        await authProvider.canUseBiometrics()) {
-      try {
-        final authenticated = await authProvider.authenticateWithBiometrics();
-        if (authenticated) {
-          final email = await authProvider.readStoredEmail();
-          final password = await authProvider.readStoredPassword();
-          if (email != null && password != null) {
-            await authProvider.login(email, password);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Biometric login successful'),
-                backgroundColor: Theme.of(context).colorScheme.primary,
-              ),
-            );
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                    'No stored credentials found. Please log in manually.'),
-                backgroundColor: Theme.of(context).colorScheme.error,
-              ),
-            );
-          }
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Biometric authentication failed.'),
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
-          );
-        }
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error during biometric login: $e'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
-      }
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content:
-          Text('Biometric login not enabled or not supported on this device.'),
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ),
-      );
-    }
-  }
-
   void _resetForm() {
     _identifierController.clear();
     _passwordController.clear();
@@ -142,68 +89,6 @@ class LoginScreenState extends State<LoginScreen> {
       } else if (authProvider.requires2FA) {
         Navigator.pushNamed(context, '/verify-2fa');
       } else if (authProvider.isAuthenticated && authProvider.permissionsLoaded) {
-        final fingerprintEnabled = await authProvider.isFingerprintEnabled();
-        if (fingerprintEnabled &&
-            _identifierController.text.isNotEmpty &&
-            _passwordController.text.isNotEmpty) {
-          final update = await showDialog<bool>(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text('Update Biometric Login'),
-              content: const Text(
-                  'Do you want to update the stored credentials for biometric login?'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  child: const Text('No'),
-                ),
-                TextButton(
-                  onPressed: () async {
-                    await authProvider.enableFingerprintLogin(
-                      _identifierController.text.trim(),
-                      _passwordController.text.trim(),
-                    );
-                    Navigator.pop(context, true);
-                  },
-                  child: const Text('Yes'),
-                ),
-              ],
-            ),
-          );
-          if (update != true) {
-            // No action needed; existing credentials are preserved
-          }
-        } else if (await authProvider.canUseBiometrics() &&
-            _identifierController.text.isNotEmpty &&
-            _passwordController.text.isNotEmpty) {
-          final enable = await showDialog<bool>(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text('Enable Biometric Login'),
-              content: const Text(
-                  'Would you like to enable biometric login for future sessions?'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  child: const Text('No'),
-                ),
-                TextButton(
-                  onPressed: () async {
-                    await authProvider.enableFingerprintLogin(
-                      _identifierController.text.trim(),
-                      _passwordController.text.trim(),
-                    );
-                    Navigator.pop(context, true);
-                  },
-                  child: const Text('Yes'),
-                ),
-              ],
-            ),
-          );
-          if (enable != true) {
-            await authProvider.disableFingerprintLogin();
-          }
-        }
         Navigator.pushReplacementNamed(context, '/timesheet-details');
       } else if (_successMessage != null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -358,19 +243,7 @@ class LoginScreenState extends State<LoginScreen> {
                               ),
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          IconButton(
-                            icon: Icon(
-                              Icons.fingerprint,
-                              color: theme.colorScheme.primary,
-                              size: 40,
-                            ),
-                            onPressed: authProvider.isLoading ||
-                                authProvider.deviceIdentifier == null
-                                ? null
-                                : _biometricLogin,
-                            tooltip: 'Login with Biometrics',
-                          ),
+
                         ],
                       ),
                       const SizedBox(height: 16),

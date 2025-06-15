@@ -413,6 +413,4 @@ class AuthService {
         return 'An unexpected error occurred.';
     }
   }
-
-
 }

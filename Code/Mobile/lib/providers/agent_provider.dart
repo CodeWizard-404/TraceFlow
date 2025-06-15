@@ -29,7 +29,8 @@ class AgentProvider with ChangeNotifier {
     double? latitude,
     double? longitude,
     String? locationAddress,
-  }) async {
+  })
+  async {
     if (kDebugMode) print('AgentProvider: Creating agent for $name $lastname');
     _isLoading = true;
     _errorMessage = null;
@@ -107,7 +108,8 @@ class AgentProvider with ChangeNotifier {
     String? phone,
     String? supervisorID,
     String? delegationID,
-  }) async {
+  })
+  async {
     if (kDebugMode) print('AgentProvider: Updating agent ID: $id');
     _isLoading = true;
     _errorMessage = null;
@@ -267,7 +269,7 @@ class AgentProvider with ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
     try {
-      final agents = await _agentService.getAgentsByUser(userID);
+      final agents = await AgentService.getAgentsByUser(userID);
       _agents = agents;
       if (kDebugMode) print('Fetched ${_agents.length} agents for user: $userID');
     } catch (e) {
@@ -304,17 +306,20 @@ class AgentProvider with ChangeNotifier {
   }
 
   Future<void> fetchAgentLocations() async {
-    if (kDebugMode) print('AgentProvider: Fetching agent locations');
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
     try {
-      _agents = await _agentService.fetchAgentLocations();
-      if (kDebugMode) print('Fetched ${_agents.length} agent locations');
+      final response = await AgentService.fetchAgentLocations();
+      // Ensure response is a List and cast each item to Map<String, dynamic>
+      if (response is List) {
+        _agents = response.map((data) => Agent.fromJson(data as Map<String, dynamic>)).toList();
+      } else {
+        throw Exception('Invalid response format: Expected a list of agent locations');
+      }
     } catch (e) {
-      _agents = [];
       _errorMessage = 'Failed to fetch agent locations: $e';
-      if (kDebugMode) print(_errorMessage);
+      print(_errorMessage);
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -325,7 +330,8 @@ class AgentProvider with ChangeNotifier {
     required double lat,
     required double lng,
     double radius = 5000,
-  }) async {
+  })
+  async {
     if (kDebugMode) print('AgentProvider: Fetching nearby agents at ($lat, $lng)');
     _isLoading = true;
     _errorMessage = null;
@@ -352,7 +358,8 @@ class AgentProvider with ChangeNotifier {
     required double southWestLng,
     required double northEastLat,
     required double northEastLng,
-  }) async {
+  })
+  async {
     if (kDebugMode) print('AgentProvider: Fetching agents by bounds');
     _isLoading = true;
     _errorMessage = null;
@@ -380,7 +387,8 @@ class AgentProvider with ChangeNotifier {
     required double latitude,
     required double longitude,
     required String address,
-  }) async {
+  })
+  async {
     if (kDebugMode) print('AgentProvider: Correcting location for agent ID: $agentId');
     _isLoading = true;
     _errorMessage = null;

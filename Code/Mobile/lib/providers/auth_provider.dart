@@ -7,8 +7,6 @@ import 'package:TraceFlow/services/auth_service.dart';
 import 'package:TraceFlow/services/cookie_manager.dart';
 import 'package:TraceFlow/utils/device_utils.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
-import 'package:local_auth/local_auth.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/role.dart';
 import '../services/http_client.dart';
 import '../utils/constants.dart';
@@ -32,11 +30,6 @@ class AuthProvider with ChangeNotifier {
   int? _tokenExpiry;
   Timer? _refreshTimer;
   String? _deviceIdentifier;
-  final LocalAuthentication _localAuth = LocalAuthentication();
-  final _storage = const FlutterSecureStorage(
-    aOptions: AndroidOptions(encryptedSharedPreferences: true),
-    iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
-  );
   DateTime? _lastRefreshTime;
 
   String? get deviceIdentifier => _deviceIdentifier;
@@ -62,131 +55,11 @@ class AuthProvider with ChangeNotifier {
     _startProactiveRefreshTimer();
   }
 
-  Future<bool> canUseBiometrics() async {
-    try {
-      final bool canAuthenticateWithBiometrics = await _localAuth.canCheckBiometrics;
-      final bool canAuthenticate = canAuthenticateWithBiometrics || await _localAuth.isDeviceSupported();
-      if (canAuthenticate) {
-        final List<BiometricType> availableBiometrics = await _localAuth.getAvailableBiometrics();
-        return availableBiometrics.isNotEmpty;
-      }
-      return false;
-    } catch (e) {
-      if (kDebugMode) print('Error checking biometrics: $e');
-      _errorMessage = 'Biometric check failed: $e';
-      notifyListeners();
-      return false;
-    }
-  }
-
-  Future<bool> authenticateWithBiometrics() async {
-    try {
-      return await _localAuth.authenticate(
-        localizedReason: 'Please authenticate to log in',
-        options: const AuthenticationOptions(
-          useErrorDialogs: true,
-          stickyAuth: true,
-          biometricOnly: true,
-        ),
-      );
-    } catch (e) {
-      if (kDebugMode) print('Biometric authentication error: $e');
-      _errorMessage = 'Biometric authentication failed: $e';
-      notifyListeners();
-      return false;
-    }
-  }
-
-  Future<String?> readStoredEmail() async {
-    try {
-      return await _storage.read(key: 'userEmail');
-    } catch (e) {
-      if (kDebugMode) print('Failed to read stored email: $e');
-      return null;
-    }
-  }
-
-  Future<String?> readStoredPassword() async {
-    try {
-      return await _storage.read(key: 'userPassword');
-    } catch (e) {
-      if (kDebugMode) print('Failed to read stored password: $e');
-      return null;
-    }
-  }
-
-  Future<void> enableFingerprintLogin(String email, String password) async {
-    try {
-      await _storage.write(key: 'fingerprintEnabled', value: 'true');
-      await _storage.write(key: 'userEmail', value: email);
-      await _storage.write(key: 'userPassword', value: password);
-      if (kDebugMode) print('Fingerprint login enabled with credentials');
-    } catch (e) {
-      if (kDebugMode) print('Failed to enable fingerprint: $e');
-      _errorMessage = 'Failed to enable fingerprint login';
-      notifyListeners();
-    }
-  }
-
-  Future<void> disableFingerprintLogin() async {
-    try {
-      await _storage.write(key: 'fingerprintEnabled', value: 'false');
-      await _storage.delete(key: 'userEmail');
-      await _storage.delete(key: 'userPassword');
-      if (kDebugMode) print('Fingerprint login disabled and credentials cleared');
-    } catch (e) {
-      if (kDebugMode) print('Failed to disable fingerprint: $e');
-      _errorMessage = 'Failed to disable fingerprint login';
-      notifyListeners();
-    }
-  }
-
-  Future<bool> isFingerprintEnabled() async {
-    try {
-      final value = await _storage.read(key: 'fingerprintEnabled');
-      return value == 'true';
-    } catch (e) {
-      if (kDebugMode) print('Failed to read fingerprint status: $e');
-      return false;
-    }
-  }
-
-  Future<String?> getFingerprintStatus() async {
-    try {
-      return await _storage.read(key: 'fingerprintEnabled');
-    } catch (e) {
-      if (kDebugMode) print('Failed to get fingerprint status: $e');
-      return null;
-    }
-  }
-
   Future<void> _restoreSession() async {
     _isLoading = true;
     notifyListeners();
     try {
       _deviceIdentifier = await DeviceUtils.getDeviceIdentifier();
-      final fingerprintEnabled = await isFingerprintEnabled();
-      final email = await readStoredEmail();
-      final password = await readStoredPassword();
-      if (fingerprintEnabled && email != null && password != null && await canUseBiometrics()) {
-        final authenticated = await authenticateWithBiometrics();
-        if (authenticated) {
-          if (_deviceIdentifier != null) {
-            if (kDebugMode) print('Biometric auth successful, attempting login with stored credentials');
-            await login(email, password);
-            return;
-          } else {
-            if (kDebugMode) print('No device identifier found');
-            _errorMessage = 'Device identifier missing. Please log in manually.';
-          }
-        } else {
-          if (kDebugMode) print('Biometric authentication failed');
-          _errorMessage = 'Biometric authentication failed. Please log in manually.';
-        }
-      } else {
-        if (kDebugMode) print('Biometric login not enabled, not supported, or no credentials stored');
-      }
-
       await CookieManager.loadCookies();
       if (CookieManager.cookies.containsKey('accessToken') &&
           CookieManager.cookies.containsKey('refreshToken')) {
@@ -495,6 +368,7 @@ class AuthProvider with ChangeNotifier {
     } finally {
       _isLoading = false;
       notifyListeners();
+
     }
   }
 
@@ -582,8 +456,6 @@ class AuthProvider with ChangeNotifier {
       _refreshToken = null;
       _tokenExpiry = null;
       _lastRefreshTime = null;
-      await _storage.delete(key: 'userEmail');
-      await _storage.delete(key: 'userPassword');
       await CookieManager.clearCookies();
       _isLoading = false;
       if (kDebugMode) print('Logout completed');

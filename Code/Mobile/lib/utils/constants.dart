@@ -1,4 +1,4 @@
-const String baseUrl = 'http://192.168.1c.20:5000/api';
+const String baseUrl = 'http://192.168.1.20:5000/api';
 const String keycloakUrl = 'http://localhost:8080';
 const String realm = 'TraceFlow';
 const String clientId = 'traceflow-backend';

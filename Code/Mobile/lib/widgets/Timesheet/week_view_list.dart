@@ -4,17 +4,33 @@ import 'package:provider/provider.dart';
 import '../../providers/timesheet_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../commen/empty_state.dart';
+import 'TimesheetSuggestionsModal.dart';
 import 'day_card.dart';
+import 'timesheet_suggestions_modal.dart';
 
 class WeekViewList extends StatelessWidget {
   final DateTime date;
   final Function(DateTime)? onDayTap;
+  final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey;
 
-  const WeekViewList(this.date, {this.onDayTap, super.key});
+  const WeekViewList(
+      this.date, {
+        this.onDayTap,
+        required this.scaffoldMessengerKey,
+        super.key,
+      });
 
   List<DateTime> _getWeekDays(DateTime date) {
     final startOfWeek = date.subtract(Duration(days: date.weekday - 1));
     return List.generate(7, (index) => startOfWeek.add(Duration(days: index)));
+  }
+
+  int _getWeekNumber(DateTime date) {
+    final startOfYear = DateTime(date.year, 1, 1);
+    final firstMonday = startOfYear.weekday <= 4
+        ? startOfYear.subtract(Duration(days: startOfYear.weekday - 1))
+        : startOfYear.add(Duration(days: 8 - startOfYear.weekday));
+    return (date.difference(firstMonday).inDays ~/ 7) + 1;
   }
 
   @override
@@ -42,14 +58,17 @@ class WeekViewList extends StatelessWidget {
                   },
                   tooltip: 'Sync to Calendar',
                 ),
+
                 IconButton(
-                  icon: Icon(Icons.lightbulb, color: theme.colorScheme.primary),
-                  onPressed: () async {
-                    await provider.suggestTimesheet(
-                      supervisorID: authProvider.user!.userID,
+                  icon: Icon(Icons.lightbulb, color:Colors.red),
+
+                  onPressed: () {
+                    TimesheetSuggestionsModal.show(
+                      context: context,
                       weekNumber: _getWeekNumber(date),
                       year: date.year,
-                      coordinates: {'lat': 36.8065, 'lng': 10.1815},
+                      supervisorID: authProvider.user!.userID,
+                      scaffoldMessengerKey: scaffoldMessengerKey,
                     );
                   },
                   tooltip: 'Generate Timesheet Suggestions',
@@ -89,13 +108,5 @@ class WeekViewList extends StatelessWidget {
         );
       },
     );
-  }
-
-  int _getWeekNumber(DateTime date) {
-    final startOfYear = DateTime(date.year, 1, 1);
-    final firstMonday = startOfYear.weekday <= 4
-        ? startOfYear.subtract(Duration(days: startOfYear.weekday - 1))
-        : startOfYear.add(Duration(days: 8 - startOfYear.weekday));
-    return (date.difference(firstMonday).inDays ~/ 7) + 1;
   }
 }
