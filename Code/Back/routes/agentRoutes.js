@@ -23,7 +23,7 @@ router.post('/upload', requirePermission('create_agents'), upload.single('file')
 router.get('/map/locations', requirePermission('access_agent_map_locations'), AgentController.getAgentLocations);
 router.get('/nearby', requirePermission('access_nearby_agents'), AgentController.getNearbyAgents);
 router.get('/bounds', requirePermission('access_agents_by_bounds'), AgentController.getAgentsByBounds);
-router.post('/correct-location', requirePermission('update_agents'), AgentController.correctAgentLocation);
+router.post('/correct-location', requirePermission('update_agents_location'), AgentController.correctAgentLocation);
 
 
 
