@@ -1,6 +1,6 @@
 /**
  * ReasonsList.tsx
- * Component for displaying a paginated list of reasons with editing and deletion.
+ * Component for displaying a list of reasons with editing and deletion.
  * Optimized with list virtualization, memoization, debouncing, and skeleton loading.
  * Uses existing AdminDashboard.css for styling.
  */
@@ -29,6 +29,7 @@ interface ReasonsListProps {
     currentPage: number;
     setCurrentPage: React.Dispatch<React.SetStateAction<number>>;
     itemsPerPage: number;
+    totalItems: number; // New prop for total items
 }
 
 // Constants
@@ -46,6 +47,7 @@ const ReasonsList: React.FC<ReasonsListProps> = React.memo(
         currentPage,
         setCurrentPage,
         itemsPerPage,
+        totalItems,
     }) => {
         const { effectivePermissions } = useAuth();
         const [editingID, setEditingID] = useState<string | null>(null);
@@ -84,7 +86,6 @@ const ReasonsList: React.FC<ReasonsListProps> = React.memo(
 
         // Dynamic loading state based on reasons prop
         useEffect(() => {
-            // Set loading to false when reasons is defined, even if empty
             if (reasons !== undefined) {
                 setLoading(false);
             }
@@ -99,14 +100,8 @@ const ReasonsList: React.FC<ReasonsListProps> = React.memo(
             [reasons, internalSearchQuery]
         );
 
-        // Pagination
-        const totalItems = filteredReasons.length;
+        // Calculate total pages based on totalItems
         const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
-        const paginatedReasons = useMemo(() => {
-            const start = (currentPage - 1) * itemsPerPage;
-            const end = start + itemsPerPage;
-            return filteredReasons.slice(start, end);
-        }, [filteredReasons, currentPage, itemsPerPage]);
 
         // Adjust currentPage
         useEffect(() => {
@@ -280,11 +275,11 @@ const ReasonsList: React.FC<ReasonsListProps> = React.memo(
                                 transition={{ duration: 0.3 }}
                             >
                                 <div className="hover-reveal-list">
-                                    {paginatedReasons.length > 0 ? (
+                                    {filteredReasons.length > 0 ? (
                                         <Virtuoso
                                             style={{ height: "400px" }}
-                                            totalCount={paginatedReasons.length}
-                                            data={paginatedReasons}
+                                            totalCount={filteredReasons.length}
+                                            data={filteredReasons}
                                             itemContent={renderReasonItem}
                                         />
                                     ) : (

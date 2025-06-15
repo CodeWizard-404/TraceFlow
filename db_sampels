@@ -7,7 +7,13 @@ VALUES
 ('chk_005', 'Review employee attendance', NOW(), NOW()),
 ('chk_006', 'Test security cameras', NOW(), NOW()),
 ('chk_007', 'Transfer a receipt book', NOW(), NOW()),
-('chk_008', 'Collect receipt stub', NOW(), NOW());
+('chk_008', 'Collect receipt stub', NOW(), NOW()),
+('chk_009', 'Update promotional signage', NOW(), NOW()),
+('chk_010', 'Calibrate weighing scales', NOW(), NOW()),
+('chk_011', 'Replenish shelf stock', NOW(), NOW()),
+('chk_012', 'Inspect lighting and electrical systems', NOW(), NOW()),
+('chk_013', 'Review sales reports', NOW(), NOW()),
+('chk_014', 'Check fire extinguisher status', NOW(), NOW());
 
 
 
@@ -19,4 +25,10 @@ VALUES
 ('rea_003', 'Inventory discrepancy', NOW(), NOW()),
 ('rea_004', 'Equipment malfunction', NOW(), NOW()),
 ('rea_005', 'Health and safety concern', NOW(), NOW()),
-('rea_006', 'Supplier delay', NOW(), NOW());
+('rea_006', 'Supplier delay', NOW(), NOW()),
+('rea_007', 'Regulatory audit', NOW(), NOW()),
+('rea_008', 'New employee onboarding', NOW(), NOW()),
+('rea_009', 'Store reopening', NOW(), NOW()),
+('rea_010', 'Management request', NOW(), NOW()),
+('rea_011', 'Quarterly review', NOW(), NOW()),
+('rea_012', 'Unexpected power outage', NOW(), NOW());

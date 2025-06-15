@@ -161,6 +161,8 @@ const AdminDashboard: React.FC = React.memo(() => {
     const [agents, setAgents] = useState<Agent[]>([]);
     const [agentsPage, setAgentsPage] = useState(1);
     const [usersPage, setUsersPage] = useState(1);
+    const [totalReasons, setTotalReasons] = useState(0);
+    const [totalChecklists, setTotalChecklists] = useState(0);
     const [notificationRules, setNotificationRules] = useState<NotificationRule[]>([]);
     const [notificationTypeFilter, setNotificationTypeFilter] = useState<string>("all");
     const [notificationChannelFilter, setNotificationChannelFilter] = useState<string>("all");
@@ -179,7 +181,7 @@ const AdminDashboard: React.FC = React.memo(() => {
     const [logSortOrder, setLogSortOrder] = useState<SortOrder>('desc');
     const [logsLoading, setLogsLoading] = useState(false);
     const [logFilters, setLogFilters] = useState<{
-        level: string;
+        level?: string;
         route?: string;
         service?: string;
         status?: number;
@@ -357,6 +359,7 @@ const AdminDashboard: React.FC = React.memo(() => {
         try {
             setChecklistsLoading(true);
             const checklistsData = await getAllChecklists();
+            setTotalChecklists(checklistsData.length); // Set total items
             const startIndex = (checklistsPage - 1) * ITEMS_PER_PAGE;
             const endIndex = startIndex + ITEMS_PER_PAGE;
             const paginatedChecklists = checklistsData.slice(startIndex, endIndex);
@@ -380,6 +383,7 @@ const AdminDashboard: React.FC = React.memo(() => {
         try {
             setReasonsLoading(true);
             const reasonsData = await getAllReasons();
+            setTotalReasons(reasonsData.length); // Set total items
             const startIndex = (reasonsPage - 1) * ITEMS_PER_PAGE;
             const endIndex = startIndex + ITEMS_PER_PAGE;
             const paginatedReasons = reasonsData.slice(startIndex, endIndex);
@@ -396,7 +400,6 @@ const AdminDashboard: React.FC = React.memo(() => {
             setReasonsLoading(false);
         }
     }, [userPermissions.canViewReasons, reasonsPage, setCachedData, t, setGlobalError, clearError]);
-
     const handleRefreshAgents = useCallback(async () => {
         if (!userPermissions.canViewAgents) return;
         cache.delete("all_agents");
@@ -788,6 +791,7 @@ const AdminDashboard: React.FC = React.memo(() => {
                         checklistsData = await getAllChecklists();
                         setCachedData("all_checklists", checklistsData);
                     }
+                    setTotalChecklists((checklistsData as Checklist[]).length); // Set total items
                     const startIndex = (checklistsPage - 1) * ITEMS_PER_PAGE;
                     const endIndex = startIndex + ITEMS_PER_PAGE;
                     const paginatedChecklists = (checklistsData as Checklist[]).slice(startIndex, endIndex);
@@ -799,6 +803,7 @@ const AdminDashboard: React.FC = React.memo(() => {
                         reasonsData = await getAllReasons();
                         setCachedData("all_reasons", reasonsData);
                     }
+                    setTotalReasons((reasonsData as Reason[]).length); // Set total items
                     const startIndex = (reasonsPage - 1) * ITEMS_PER_PAGE;
                     const endIndex = startIndex + ITEMS_PER_PAGE;
                     const paginatedReasons = (reasonsData as Reason[]).slice(startIndex, endIndex);
@@ -838,7 +843,7 @@ const AdminDashboard: React.FC = React.memo(() => {
                         setCachedData("all_ai_configs", configsData);
                     }
                     setAIConfigs(configsData as AIConfig[]);
-                } else if (view === "logs") { // New logs fetch logic
+                } else if (view === "logs") {
                     setLogsLoading(true);
                     const params = {
                         page: logsPage,
@@ -1731,6 +1736,7 @@ const AdminDashboard: React.FC = React.memo(() => {
                                 currentPage={checklistsPage}
                                 setCurrentPage={setChecklistsPage}
                                 itemsPerPage={ITEMS_PER_PAGE}
+                                totalItems={totalChecklists}
                             />
                         )}
                         {view === "checklist-details" && (
@@ -1763,6 +1769,7 @@ const AdminDashboard: React.FC = React.memo(() => {
                                 currentPage={reasonsPage}
                                 setCurrentPage={setReasonsPage}
                                 itemsPerPage={ITEMS_PER_PAGE}
+                                totalItems={totalReasons} // Pass total items
                             />
                         )}
                         {view === "reason-details" && (

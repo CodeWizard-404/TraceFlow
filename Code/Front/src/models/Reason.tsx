@@ -1,6 +1,8 @@
 interface Reason {
     reasonID: string;
     item: string;
+    createdAt: Date;
+    updatedAt: Date;
 }
 
 interface VisitReason extends Reason {

@@ -17,24 +17,22 @@ const stringifyObject = (obj) => {
 const isEncryptedData = (value) => {
     if (typeof value !== 'string' && typeof value !== 'object') return false;
 
-    // String-based checks for base64, hex, or bytea
     if (typeof value === 'string') {
-        const base64Regex = /^[A-Za-z0-9+/=]+$/; // Strict base64 check
+        const base64Regex = /^[A-Za-z0-9+/=]+$/;
         return (
             value.includes('bytea') ||
             value.includes('\\x') ||
-            /^[0-9a-fA-F]{8,}$/.test(value) || // Hex string (at least 8 chars)
-            (base64Regex.test(value) && value.length > 20) || // Base64 string
-            (value.length > 50 && !/\s/.test(value) && /[^a-zA-Z0-9\s]/.test(value)) // Long unreadable string
+            /^[0-9a-fA-F]{8,}$/.test(value) ||
+            (base64Regex.test(value) && value.length > 20) ||
+            (value.length > 50 && !/\s/.test(value) && /[^a-zA-Z0-9\s]/.test(value))
         );
     }
 
-    // Object-based check for QR code-like data or Buffers
     if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
         const keys = Object.keys(value);
         return (
-            (keys.length > 50 && keys.every(key => !isNaN(key)) && Object.values(value).every(val => typeof val === 'number')) || // QR code pixel data
-            (value.type === 'Buffer' && Array.isArray(value.data)) // Buffer object
+            (keys.length > 50 && keys.every(key => !isNaN(key)) && Object.values(value).every(val => typeof val === 'number')) ||
+            (value.type === 'Buffer' && Array.isArray(value.data))
         );
     }
 
@@ -42,9 +40,9 @@ const isEncryptedData = (value) => {
 };
 
 /**
- * Sanitizes an object by replacing encrypted fields with 'encrypted' and sensitive fields with 'removed'.
+ * Sanitizes an object by replacing encrypted fields with 'encrypted' and sensitive fields with 'encrypted'.
  * @param {Object} obj - The object to sanitize.
- * @param {string[]} sensitiveFields - Fields to remove.
+ * @param {string[]} sensitiveFields - Fields to mark as 'encrypted'.
  * @param {string} service - The service name (e.g., 'auth', 'role').
  * @returns {Object} - Sanitized object.
  */
@@ -54,14 +52,13 @@ const sanitizeObject = (obj, sensitiveFields = ['password'], service = 'api') =>
         return obj.map(item => sanitizeObject(item, sensitiveFields, service));
     }
 
-    // For auth controller, add accessToken and refreshToken to sensitive fields
-    const authSensitiveFields = service === 'auth'
-        ? [...sensitiveFields, 'accessToken', 'refreshToken', 'tempToken']
-        : sensitiveFields;
+    // Hardcode: always treat accessToken, refreshToken, and password as encrypted
+    const authSensitiveFields = [...new Set([...sensitiveFields, 'accessToken', 'refreshToken', 'tempToken', 'password'])];
 
     return Object.fromEntries(
         Object.entries(obj).map(([key, value]) => {
-            if (authSensitiveFields.includes(key)) {
+            // Hardcode: explicitly check for accessToken, refreshToken, and password (case-insensitive)
+            if (['accesstoken', 'refreshtoken', 'password'].includes(key.toLowerCase())) {
                 return [key, 'encrypted'];
             }
             // Hardcode: if key is qrCode (any case), force to 'encrypted'
@@ -88,7 +85,6 @@ const sanitizeObject = (obj, sensitiveFields = ['password'], service = 'api') =>
  * @returns {Object|Array|string} - Processed response body.
  */
 const processResponse = (res, depth = 0, service = 'api') => {
-    // Limit recursion depth to prevent stack overflow
     if (depth > 10) {
         return 'truncated: max depth exceeded';
     }
@@ -96,11 +92,9 @@ const processResponse = (res, depth = 0, service = 'api') => {
     if (!res || typeof res !== 'object') return res;
 
     if (Array.isArray(res)) {
-        // For role controller, summarize roles array
         if (service === 'role') {
             return res.map(role => processResponse(role, depth + 1, service));
         }
-        // Summarize arrays with more than 1 item for other controllers
         if (res.length > 1) {
             return {
                 data: sanitizeObject(res[0], ['password'], service),
@@ -113,9 +107,15 @@ const processResponse = (res, depth = 0, service = 'api') => {
         return [];
     }
 
-    // Handle objects with large nested arrays or deep nesting
     return Object.fromEntries(
         Object.entries(res).map(([key, value]) => {
+            // Hardcode: for roles object (case-insensitive), return only the count of permissions
+            if (key.toLowerCase() === 'roles' && Array.isArray(value)) {
+                return [key, value.map(role => ({
+                    ...sanitizeObject(role, ['password'], service),
+                    permissions: role.permissions ? `${role.permissions.length} permissions` : '0 permissions'
+                }))];
+            }
             // For role controller, summarize permissions array (case-insensitive)
             if (service === 'role' && key.toLowerCase() === 'permissions' && Array.isArray(value)) {
                 if (value.length > 0) {
@@ -127,7 +127,6 @@ const processResponse = (res, depth = 0, service = 'api') => {
                 return [key, []];
             }
             if (Array.isArray(value)) {
-                // Summarize nested arrays with more than 1 item for other controllers
                 if (value.length > 1) {
                     return [key, {
                         data: sanitizeObject(value[0], ['password'], service),
@@ -151,7 +150,7 @@ const processResponse = (res, depth = 0, service = 'api') => {
  * Sanitizes a request object by removing sensitive fields and headers.
  * @param {Object} req - The Express request object.
  * @param {Object} [options] - Configuration options for sanitization.
- * @param {string[]} [options.sensitiveFields=['password']] - Fields to remove from the body.
+ * @param {string[]} [options.sensitiveFields=['password']] - Fields to mark as 'encrypted'.
  * @param {string} [options.service='api'] - Service name for context-specific sanitization.
  * @returns {Object} - Sanitized request data with full body, query, and params.
  */
@@ -196,9 +195,9 @@ const logRequest = ({
     const ipAddress = req.ip || req.headers['x-forwarded-for'] || 'N/A';
     const userId = req.user?.userID || 'N/A';
 
-    // Final sanitization to catch any missed qrCode fields
+    // Final sanitization to catch any missed sensitive fields
     const sanitizedResponse = res ? JSON.parse(JSON.stringify(res, (key, value) => {
-        if (key.toLowerCase() === 'qrcode') {
+        if (['accesstoken', 'refreshtoken', 'qrcode', 'password'].includes(key.toLowerCase())) {
             return 'encrypted';
         }
         return value;

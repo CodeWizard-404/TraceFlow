@@ -1291,7 +1291,7 @@
       "first": "First",
       "last": "Last",
       "resetRolesConfirm": "Are you sure you want to reset roles?",
-      "modifyPreMadeRolesWarning": "Warning: Modifying pre-made roles may affect system functionality.",
+      "modifyPreMadeRolesWarning": "Warning: Modifying System roles may affect system functionality.",
       "confirm": "Confirm",
       "cancel": "Cancel",
       "edit": "Edit",
@@ -1705,7 +1705,7 @@
     "title": "Roles",
     "categories": {
       "fixed": "Fixed Roles",
-      "premade": "Pre-made Roles",
+      "premade": "System Roles",
       "custom": "Custom Roles"
     },
     "roleCard": {
@@ -1719,7 +1719,7 @@
     },
     "confirmation": {
       "unsavedChanges": "You have unsaved changes. Are you sure you want to switch roles?",
-      "premadeWarning": "Warning: Modifying pre-made roles may affect system functionality. Are you sure you want to proceed?"
+      "premadeWarning": "Warning: Modifying System roles may affect system functionality. Are you sure you want to proceed?"
     },
     "actions": {
       "confirm": "Confirm",
