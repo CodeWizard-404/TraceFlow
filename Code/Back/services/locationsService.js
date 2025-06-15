@@ -1,19 +1,6 @@
 const { User, Role, Region, Governorate, Delegation } = require('../models');
 
-// Centralized error messages
-const ERROR_MESSAGES = {
-    MISSING_FIELDS: 'Missing required fields.',
-    USER_NOT_FOUND: 'User not found.',
-    REGION_NOT_FOUND: 'One or more regions not found.',
-    INVALID_REGION_ASSIGNMENT: 'Invalid region assignment.',
-    GOVERNORATE_NOT_FOUND: 'One or more governorates not found.',
-    INVALID_GOVERNORATE_ASSIGNMENT: 'Invalid governorate assignment.',
-    DELEGATION_NOT_FOUND: 'One or more delegations not found.',
-    INVALID_DELEGATION_ASSIGNMENT: 'Invalid delegation assignment.',
-    DB_UPDATE_FAILED: 'Database update failed.',
-    REGION_NOT_ASSIGNED: 'Governorate or Delegation not in assigned Regions.',
-    INVALID_ROLE_ASSIGNMENT: 'User does not have the required role.',
-};
+
 
 class LocationService {
 

@@ -338,7 +338,7 @@ class VisitController {
                 dynamicRecipients: [recipientID1, recipientID2],
                 triggeredByUserID: req.user.userID,
                 type: 'visit',
-                customMessage: `Visit ${id} updated with status ${status}`,
+                customMessage: `Visit ${visit.visit.Date} - ${visit.visit.time} updated with status ${visit.visit.status}`,
                 requestID,
             });
 

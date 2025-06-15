@@ -1,13 +1,5 @@
-/**
- * ChecklistAdd.tsx
- * Component for adding a new checklist item with validation and permission checks.
- * Optimized with memoization, debouncing, and fade-in animation for performance.
- * Uses existing AdminDashboard.css for styling.
- */
-
 import React, { useState, useCallback, useMemo } from "react";
-import { debounce } from "lodash";
-import { motion } from "framer-motion"; // Added Framer Motion import
+import { motion } from "framer-motion";
 import "../../AdminDashboard.css";
 import { createChecklist } from "../../../../apis/checklistAPI";
 import { useAuth } from "../../../../context/AuthContext";
@@ -71,12 +63,6 @@ const ChecklistAdd: React.FC<ChecklistAddProps> = React.memo(
             return null;
         }, [allChecklists]);
 
-        // Debounced input change handler
-        const debouncedSetNewItem = useCallback(
-            debounce((value: string) => setNewItem(value), 300),
-            []
-        );
-
         // Create checklist handler
         const handleCreate = useCallback(async () => {
             if (!userPermissions.canCreateChecklists) return;
@@ -138,7 +124,7 @@ const ChecklistAdd: React.FC<ChecklistAddProps> = React.memo(
                                 <input
                                     type="text"
                                     value={newItem}
-                                    onChange={(e) => debouncedSetNewItem(e.target.value)}
+                                    onChange={(e) => setNewItem(e.target.value)}
                                     onKeyDown={handleKeyDown}
                                     className="form-input"
                                     placeholder="Enter checklist item (5-100 chars)"

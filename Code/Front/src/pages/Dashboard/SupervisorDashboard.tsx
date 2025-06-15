@@ -450,9 +450,23 @@ const SupervisorDashboard: React.FC = () => {
     // Quick Action Handlers
     const handleStartVisit = () => {
         const today = new Date().toISOString().split('T')[0];
-        const todayVisitsFiltered = allVisits.filter(visit => visit.date.split('T')[0] === today);
+        const todayVisitsFiltered = allVisits.filter(visit => {
+            const isToday = visit.date.split('T')[0] === today;
+            // Validate coordinates: ensure latitude and longitude are non-zero and non-null
+            const hasValidCoordinates =
+                // Fallback to Agent coordinates if available
+                (visit.Agent?.latitude != null && visit.Agent?.latitude !== 0 &&
+                    visit.Agent?.longitude != null && visit.Agent?.longitude !== 0);
+            const hasValidLocation = visit.location && visit.location !== '';
+            return isToday && hasValidCoordinates && hasValidLocation && visit.status === 'validated';
+        });
+
         setTodayVisits(todayVisitsFiltered);
-        setShowMapPopup(true);
+        if (todayVisitsFiltered.length === 0) {
+            toast.info(t('dashboard.noValidVisitsToday'));
+        } else {
+            setShowMapPopup(true);
+        }
     };
 
     const handleGenerateTimesheets = () => {
@@ -1208,20 +1222,51 @@ const SupervisorDashboard: React.FC = () => {
             {/* Map Popup */}
             {showMapPopup && (
                 <div className="map-popup">
-                    <button className="map-popup-close" onClick={() => setShowMapPopup(false)}>Close</button>
-                    <MapComponent
-                        visits={todayVisits.map(visit => ({
-                            visitID: visit.visitID,
-                            latitude: visit.latitude || 0,
-                            longitude: visit.longitude || 0,
-                            location: visit.location || 'Unknown',
-                            time: visit.time,
-                            reasons: visit.Reasons ? visit.Reasons.map((r: any) => r.item).join(', ') : '',
-                            agentName: agents.find(a => a.agentID === visit.agentID)?.name || 'Unknown'
-                        }))}
-                        userLocation={userLocation}
-                        isTimesheetModal={true}
-                    />
+                    <div className="map-popup-content">
+                        <button className="map-popup-close" onClick={() => setShowMapPopup(false)}>X</button>
+                        <div className="map-popup-grid">
+                            <div className="visit-list">
+                                <h3>{t('dashboard.todaysVisits')}</h3>
+                                {todayVisits.length === 0 ? (
+                                    <p>{t('dashboard.noValidVisitsToday')}</p>
+                                ) : (
+                                    <ul>
+                                        {todayVisits.map(visit => {
+                                            const agent = agents.find(a => a.agentID === visit.agentID);
+                                            return (
+                                                <li key={visit.visitID}>
+                                                    <p><strong>{t('dashboard.time')}:</strong> {visit.time}</p>
+                                                    <p><strong>{t('dashboard.agent')}:</strong> {agent ? `${agent.name} ${agent.lastname}` : 'Unknown'}</p>
+                                                    <p><strong>{t('dashboard.location')}:</strong> {visit.location || 'Unknown'}</p>
+                                                    <p><strong>{t('dashboard.status')}:</strong> {visit.status}</p>
+                                                </li>
+                                            );
+                                        })}
+                                    </ul>
+                                )}
+                            </div>
+                            <div className="map-container">
+                                <MapComponent
+                                    visits={todayVisits.map(visit => ({
+                                        visitID: visit.visitID,
+                                        // Use Agent coordinates if visit coordinates are invalid
+                                        latitude: (visit.latitude != null && visit.latitude !== 0)
+                                            ? visit.latitude
+                                            : visit.Agent?.latitude || 0,
+                                        longitude: (visit.longitude != null && visit.longitude !== 0)
+                                            ? visit.longitude
+                                            : visit.Agent?.longitude || 0,
+                                        location: visit.location || 'Unknown',
+                                        time: visit.time,
+                                        reasons: visit.Reasons ? visit.Reasons.map((r: any) => r.item).join(', ') : '',
+                                        agentName: agents.find(a => a.agentID === visit.agentID)?.name || 'Unknown'
+                                    }))}
+                                    userLocation={userLocation}
+                                    isTimesheetModal={true}
+                                />
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
         </motion.div>

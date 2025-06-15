@@ -1,13 +1,5 @@
-/**
- * ReasonAdd.tsx
- * Component for adding a new reason item with validation and permission checks.
- * Optimized with memoization, debouncing, and fade-in animation for performance.
- * Uses existing AdminDashboard.css for styling.
- */
-
 import React, { useState, useCallback, useMemo } from "react";
-import { debounce } from "lodash";
-import { motion } from "framer-motion"; // Added Framer Motion import
+import { motion } from "framer-motion";
 import "../../AdminDashboard.css";
 import { createReason } from "../../../../apis/reasonAPI";
 import { useAuth } from "../../../../context/AuthContext";
@@ -55,12 +47,6 @@ const ReasonAdd: React.FC<ReasonAddProps> = React.memo(
                 return null;
             },
             [reasons]
-        );
-
-        // Debounced input change handler
-        const debouncedSetNewItem = useCallback(
-            debounce((value: string) => setNewItem(value), 300),
-            []
         );
 
         // Create reason handler
@@ -124,7 +110,7 @@ const ReasonAdd: React.FC<ReasonAddProps> = React.memo(
                                 <input
                                     type="text"
                                     value={newItem}
-                                    onChange={(e) => debouncedSetNewItem(e.target.value)}
+                                    onChange={(e) => setNewItem(e.target.value)}
                                     onKeyDown={handleKeyDown}
                                     className="form-input"
                                     placeholder="Enter reason item (5-100 chars)"

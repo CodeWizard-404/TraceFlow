@@ -769,6 +769,8 @@ const Timesheets: React.FC = React.memo(() => {
                         newVisitReasons[visit.visitID] = visit.Reasons.map((reason) => ({
                             reasonID: reason.reasonID,
                             item: reason.item,
+                            createdAt: reason.createdAt,
+                            updatedAt: reason.updatedAt,
                         }));
                     }
                 });

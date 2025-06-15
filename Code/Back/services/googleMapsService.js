@@ -61,27 +61,40 @@ class GoogleMapsService {
             let optimizedPoints = [];
             let params;
 
-            let AIService;
             if (optimizeWaypoints && allPoints.length > 0) {
-                const allLocations = [origin, ...allPoints];
-                const distanceMatrix = await this.getDistanceMatrix(allLocations, allLocations, mode);
-                if (!AIService) AIService = require('./aiService');
-                const aiOptimization = await AIService.optimizeRoute(origin, allPoints, mode, trafficModel, distanceMatrix);
-                waypointOrder = aiOptimization.waypointOrder;
+                try {
+                    let AIService = require('./aiService');
+                    const allLocations = [origin, ...allPoints];
+                    const distanceMatrix = await this.getDistanceMatrix(allLocations, allLocations, mode);
+                    const aiOptimization = await AIService.optimizeRoute(origin, allPoints, mode, trafficModel, distanceMatrix);
+                    waypointOrder = aiOptimization.waypointOrder;
 
-                optimizedPoints = waypointOrder.map(index => allPoints[index]);
-                const optimizedWaypoints = optimizedPoints.slice(0, -1); // All but last point as waypoints
-                const finalDestination = optimizedPoints[optimizedPoints.length - 1]; // Last point as destination
+                    optimizedPoints = waypointOrder.map(index => allPoints[index]);
+                    const optimizedWaypoints = optimizedPoints.slice(0, -1); // All but last point as waypoints
+                    const finalDestination = optimizedPoints[optimizedPoints.length - 1]; // Last point as destination
 
-                params = {
-                    origin,
-                    destination: finalDestination,
-                    mode,
-                    key: process.env.GOOGLE_MAPS_API_KEY,
-                    departure_time: 'now',
-                    traffic_model: trafficModel,
-                    waypoints: optimizedWaypoints.length > 0 ? `optimize:false|${optimizedWaypoints.join('|')}` : undefined,
-                };
+                    params = {
+                        origin,
+                        destination: finalDestination,
+                        mode,
+                        key: process.env.GOOGLE_MAPS_API_KEY,
+                        departure_time: 'now',
+                        traffic_model: trafficModel,
+                        waypoints: optimizedWaypoints.length > 0 ? `optimize:false|${optimizedWaypoints.join('|')}` : undefined,
+                    };
+                } catch (aiError) {
+                    console.warn(`AI optimization failed: ${aiError.message}. Falling back to default waypoint order.`);
+                    // Fallback to default params without AI optimization
+                    params = {
+                        origin,
+                        destination: destination || waypointLocations[waypointLocations.length - 1] || origin,
+                        mode,
+                        key: process.env.GOOGLE_MAPS_API_KEY,
+                        departure_time: 'now',
+                        traffic_model: trafficModel,
+                        waypoints: formattedWaypoints.length ? formattedWaypoints.join('|') : undefined,
+                    };
+                }
             } else {
                 params = {
                     origin,
@@ -93,7 +106,6 @@ class GoogleMapsService {
                     waypoints: formattedWaypoints.length ? formattedWaypoints.join('|') : undefined,
                 };
             }
-
 
             const url = 'https://maps.googleapis.com/maps/api/directions/json';
             const response = await axios.get(url, { params });
@@ -111,7 +123,6 @@ class GoogleMapsService {
                 const legTrafficRatio = leg.duration_in_traffic && leg.duration
                     ? leg.duration_in_traffic.value / leg.duration.value
                     : null;
-
 
                 const steps = leg.steps.map((step) => {
                     let trafficCondition = 'clear';
@@ -174,9 +185,9 @@ class GoogleMapsService {
                     }))
                 ),
                 polyline: route.overview_polyline.points,
-                waypointOrder: optimizeWaypoints ? waypointOrder : undefined,
+                waypointOrder: optimizeWaypoints && waypointOrder.length > 0 ? waypointOrder : undefined,
                 trafficSegments,
-                optimizedPoints: optimizeWaypoints ? optimizedPoints : undefined,
+                optimizedPoints: optimizeWaypoints && optimizedPoints.length > 0 ? optimizedPoints : undefined,
             };
 
             await this.redisClient?.set(cacheKey, JSON.stringify(data), 'EX', 3600);

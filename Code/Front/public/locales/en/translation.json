@@ -2021,7 +2021,7 @@
     "agentDetailsError": "Failed to retrieve agent details",
     "confirm": "Confirm",
     "cancel": "Cancel",
-    "confirmUpdateLocation": "Confirm Updating The ddragged Agent's Location ?"
+    "confirmUpdateLocation": "Confirm Updating The dragged Agent's Location ?"
   },
   "reports": {
     "scheduled": {
@@ -2321,6 +2321,11 @@
   "dashboard": {
     "title": "Supervisor Dashboard",
     "agents": "Agents",
+    "time": "Time",
+    "location": "Location",
+    "agent": "Agent",
+    "todaysVisits": "Today's Visits",
+    "status": "Status",
     "agentsAssigned": "Agents Assigned",
     "totalAgents": "Total Agents",
     "agentsWithVisits": "Agents with Visits",

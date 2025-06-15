@@ -627,7 +627,7 @@ body.dark .hierarchy-level li::before {
     transform: translate(-50%, -50%);
     width: 90%;
     max-width: 800px;
-    height: 80vh;
+    height: 82vh;
     background: #fff;
     border-radius: 1rem;
     box-shadow: 0 0 2rem rgba(0, 0, 0, 0.5);
@@ -646,6 +646,7 @@ body.dark .hierarchy-level li::before {
     width: 30px;
     height: 30px;
     cursor: pointer;
+    z-index: 1002;
 }
 
 body.dark .map-popup {
@@ -841,4 +842,51 @@ body.dark .custom-skeleton {}
     margin: '0.25rem 0';
     padding: '0.5rem 0';
     border-bottom: '1px solid #eee';
+}
+
+
+.map-popup {
+    max-width: 98% !important;
+    width: 98%;
+}
+
+.map-popup-grid {
+    display: grid;
+    grid-template-columns: 1fr 4fr;
+    gap: 1rem;
+}
+
+
+.visit-list h3 {
+    margin-top: 0;
+    color: #333;
+}
+
+.visit-list ul {
+    list-style: none;
+    padding: 0;
+}
+
+.visit-list li {
+    margin-bottom: 15px;
+    padding: 10px;
+    border: 1px solid #eee;
+    border-radius: 0.8rem;
+}
+
+body.dark .visit-list li {
+    border: 1px solid #444;
+}
+
+.visit-list p {
+    margin: 5px 0;
+    font-size: 0.9rem;
+}
+
+.visit-list strong {
+    color: #4cb1c7;
+}
+
+body.dark .visit-list strong {
+    color: #63b3ed;
 }

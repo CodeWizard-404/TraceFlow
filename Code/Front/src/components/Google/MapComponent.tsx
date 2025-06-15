@@ -58,6 +58,7 @@ const PERMISSIONS = {
   ACCESS_AGENT_MAP_LOCATIONS: import.meta.env.VITE_PERMISSIONS_READ_AGENT_MAP_LOCATIONS,
   CREATE_AGENTS: import.meta.env.VITE_PERMISSIONS_CREATE_AGENTS,
   UPDATE_AGENTS: import.meta.env.VITE_PERMISSIONS_UPDATE_AGENTS,
+  UPDATE_AGENTS_LOCATION: import.meta.env.VITE_PERMISSIONS_UPDATE_AGENTS_LOCATION,
   ACCESS_REGIONS: import.meta.env.VITE_PERMISSIONS_READ_REGIONS,
   ACCESS_GOVERNORATES: import.meta.env.VITE_PERMISSIONS_READ_GOVERNORATES,
   ACCESS_DELEGATIONS: import.meta.env.VITE_PERMISSIONS_READ_DELEGATIONS,
@@ -285,6 +286,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
       ),
       updateAgents: effectivePermissions?.some(
         (p) => p.name === import.meta.env.VITE_PERMISSIONS_UPDATE_AGENTS
+      ),
+      updateAgentsLocation: effectivePermissions?.some(
+        (p) => p.name === import.meta.env.VITE_PERMISSIONS_UPDATE_AGENTS_LOCATION
       ),
       accessRegions: effectivePermissions?.some(
         (p) => p.name === import.meta.env.VITE_PERMISSIONS_ACCESS_REGIONS
@@ -2400,7 +2404,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
                     key={marker.id}
                     position={{ lat: marker.lat, lng: marker.lng }}
                     title={`${marker.name} ${marker.lastname}`}
-                    draggable={userPermissions.updateAgents}
+                    draggable={userPermissions.updateAgentsLocation}
                     onDragStart={() => handleMarkerDragStart(marker.id)}
                     onDragEnd={(e: google.maps.MapMouseEvent) => handleMarkerDragEnd(e, marker.id)}
                     onClick={() => handleMarkerClick(marker)}
