@@ -259,16 +259,17 @@ class TimesheetController {
             await RedisUtils.publishEvent('cache:invalidate', `timesheet:${result.timesheet.timesheetID}`);
 
             const supervisor = await User.findByPk(supervisorID);
-            const recipientID = supervisor?.regionalManagerID || supervisor?.supervisorID || null;
+            const recipientID1 = supervisor?.regionalManagerID || null;
+            const recipientID2 = supervisorID || null;
             const requestID = uuidv4();
             await NotificationService.triggerNotification({
                 event: 'timesheet:created',
                 data: { timesheetID: result.timesheet.timesheetID, supervisorID, weekNumber, year, status },
                 metadata: { createdBy: req.user.email },
-                dynamicRecipients: recipientID ? [recipientID] : undefined,
+                dynamicRecipients: [recipientID1, recipientID2],
                 triggeredByUserID: req.user.userID,
                 type: 'timesheet',
-                customMessage: `Timesheet created for week ${weekNumber}, year ${year}`,
+                customMessage: `Visit(s) created for week ${weekNumber}, year ${year}`,
                 requestID,
             });
 
@@ -372,16 +373,17 @@ class TimesheetController {
             }
 
             const supervisor = await User.findByPk(timesheet.supervisorID);
-            const recipientID = supervisor?.regionalManagerID || supervisor?.supervisorID || null;
+            const recipientID1 = supervisor?.regionalManagerID || null;
+            const recipientID2 = timesheet.supervisorID || null;
             const requestID = uuidv4();
             await NotificationService.triggerNotification({
                 event: 'timesheet:validated',
                 data: { timesheetID: id, status, supervisorID: timesheet.supervisorID },
                 metadata: { validatedBy: req.user.email },
-                dynamicRecipients: recipientID ? [recipientID] : undefined,
+                dynamicRecipients: [recipientID1, recipientID2],
                 triggeredByUserID: req.user.userID,
                 type: 'timesheet',
-                customMessage: `Timesheet ${id} validated with status ${status}`,
+                customMessage: `Visit(s) ${id} validated with status ${status}`,
                 requestID,
             });
 
@@ -454,20 +456,7 @@ class TimesheetController {
             await RedisUtils.publishEvent('cache:invalidate', 'timesheets:all');
             await RedisUtils.publishEvent('cache:invalidate', `timesheets:supervisor:${supervisorID}`);
 
-            const supervisor = await User.findByPk(supervisorID);
-            const recipientID = supervisor?.regionalManagerID || supervisor?.supervisorID || null;
             const requestID = uuidv4();
-            await NotificationService.triggerNotification({
-                event: 'timesheet:suggested',
-                data: { supervisorID, weekNumber, year, suggestionCount: result.suggestions.length },
-                metadata: { suggestedBy: req.user.email },
-                dynamicRecipients: recipientID ? [recipientID] : undefined,
-                triggeredByUserID: req.user.userID,
-                type: 'timesheet',
-                customMessage: `Suggested timesheet for week ${weekNumber}, year ${year}`,
-                requestID,
-            });
-
             logRequest({
                 req,
                 res: result,
@@ -536,15 +525,6 @@ class TimesheetController {
             await RedisUtils.publishEvent('cache:invalidate', 'timesheets:all');
 
             const requestID = uuidv4();
-            await NotificationService.triggerNotification({
-                event: 'timesheet:suggestion_canceled',
-                data: { requestId },
-                metadata: { canceledBy: req.user.email },
-                triggeredByUserID: req.user.userID,
-                type: 'timesheet',
-                customMessage: `Canceled timesheet suggestion request ${requestId}`,
-                requestID,
-            });
 
             logRequest({
                 req,
@@ -651,20 +631,7 @@ class TimesheetController {
             await RedisUtils.publishEvent('cache:invalidate', `timesheets:supervisor:${timesheet.supervisorID}`);
             await RedisUtils.publishEvent('cache:invalidate', `visits:by_timesheet:${id}`);
 
-            const supervisor = await User.findByPk(timesheet.supervisorID);
-            const recipientID = supervisor?.regionalManagerID || supervisor?.supervisorID || null;
             const requestID = uuidv4();
-            await NotificationService.triggerNotification({
-                event: 'timesheet:synced',
-                data: { timesheetID: id, supervisorID: timesheet.supervisorID, syncedVisitCount: syncResults.length },
-                metadata: { syncedBy: req.user.email },
-                dynamicRecipients: recipientID ? [recipientID] : undefined,
-                triggeredByUserID: req.user.userID,
-                type: 'timesheet',
-                customMessage: `Timesheet ${id} synced to calendar`,
-                requestID,
-            });
-
             logRequest({
                 req,
                 res: { timesheetID: id, syncedVisits: syncResults },

@@ -1,144 +1,139 @@
 const ChecklistService = require('../services/checklistService');
 const NotificationService = require('../services/notificationService');
-const logger = require('../utils/logger');
+const { sequelize } = require('../config/db');
+const Sequelize = require('sequelize');
+const { getRedisClient } = require('../config/redis');
+const RedisUtils = require('../utils/redisUtils');
+const cache = require('../utils/cache');
+const { v4: uuidv4 } = require('uuid');
+const { logRequest } = require('../utils/controllerUtils');
 
 /**
- * Controller for managing checklist operations with structured logging.
+ * Controller for managing checklist operations with structured logging and notifications.
  */
 class ChecklistController {
     // --- Checklist Retrieval Methods ---
 
-    /**
-     * Get all checklists.
-     * @param {Object} req - Express request object.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with checklists or error.
-     */
     static async getAllChecklists(req, res) {
-        const actorID = req.user?.userID || 'unknown';
         try {
-            const checklists = await ChecklistService.getAllChecklists();
-            logger.info('Successfully fetched all checklists', {
-                route: 'checklists',
-                method: req.method,
-                url: req.originalUrl,
+            const cacheInstance = await cache();
+            const checklists = await cacheInstance.getOrSet('checklists:all', async () => {
+                return await ChecklistService.getAllChecklists();
+            }, 'api');
+
+            logRequest({
+                req,
+                res: checklists,
                 status: 200,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { checklistCount: checklists.length }
+                message: `Retrieved ${checklists.length} checklists`,
+                level: 'info',
+                metadata: { checklistCount: checklists.length },
+                service: 'checklist',
+                defaultRoute: 'checklists'
             });
+
             return res.status(200).json(checklists);
         } catch (error) {
-            logger.error('Failed to fetch all checklists', {
-                route: 'checklists',
-                method: req.method,
-                url: req.originalUrl,
+            logRequest({
+                req,
+                error,
                 status: error.status || 500,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { error: error.message }
+                message: `Failed to fetch checklists: ${error.message}`,
+                level: 'error',
+                service: 'checklist',
+                defaultRoute: 'checklists'
             });
             return res.status(error.status || 500).json({ error: error.message || 'Failed to retrieve checklists' });
         }
     }
 
-    /**
-     * Get a checklist by ID.
-     * @param {Object} req - Express request object with checklist ID in params.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with checklist or error.
-     */
     static async getChecklistByID(req, res) {
-        const actorID = req.user?.userID || 'unknown';
         try {
             const { id: checklistID } = req.params;
             if (!checklistID) {
-                logger.warn('Get checklist failed: Missing checklistID', {
-                    route: 'checklists',
-                    method: req.method,
-                    url: req.originalUrl,
+                logRequest({
+                    req,
                     status: 400,
-                    ip: req.ip,
-                    traceId: req.traceId,
-                    userId: actorID,
-                    metadata: {}
+                    message: 'Checklist ID is required',
+                    level: 'info',
+                    service: 'checklist',
+                    defaultRoute: 'checklists'
                 });
                 return res.status(400).json({ error: 'Checklist ID is required' });
             }
-            const checklist = await ChecklistService.getItemById(checklistID);
-            logger.info('Successfully fetched checklist', {
-                route: 'checklists',
-                method: req.method,
-                url: req.originalUrl,
+
+            const cacheInstance = await cache();
+            const checklist = await cacheInstance.getOrSet(`checklist:${checklistID}`, async () => {
+                return await ChecklistService.getItemById(checklistID);
+            }, 'api');
+
+            logRequest({
+                req,
+                res: checklist,
                 status: 200,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { checklistID }
+                message: `Retrieved checklist ${checklistID}`,
+                level: 'info',
+                metadata: { checklistID },
+                service: 'checklist',
+                defaultRoute: 'checklists'
             });
+
             return res.status(200).json(checklist);
         } catch (error) {
-            logger.error('Failed to fetch checklist', {
-                route: 'checklists',
-                method: req.method,
-                url: req.originalUrl,
+            logRequest({
+                req,
+                error,
                 status: error.status || 404,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { error: error.message }
+                message: `Failed to fetch checklist: ${error.message}`,
+                level: 'error',
+                service: 'checklist',
+                defaultRoute: 'checklists'
             });
             return res.status(error.status || 404).json({ error: error.message || 'Checklist not found' });
         }
     }
 
-    /**
-     * Get checklists by visit ID.
-     * @param {Object} req - Express request object with visit ID in params.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with checklists or error.
-     */
     static async getChecklistsByVisitID(req, res) {
-        const actorID = req.user?.userID || 'unknown';
         try {
             const { id: visitID } = req.params;
             if (!visitID) {
-                logger.warn('Get checklists by visit failed: Missing visitID', {
-                    route: 'checklists/visit',
-                    method: req.method,
-                    url: req.originalUrl,
+                logRequest({
+                    req,
                     status: 400,
-                    ip: req.ip,
-                    traceId: req.traceId,
-                    userId: actorID,
-                    metadata: {}
+                    message: 'Visit ID is required',
+                    level: 'info',
+                    service: 'checklist',
+                    defaultRoute: 'checklists'
                 });
                 return res.status(400).json({ error: 'Visit ID is required' });
             }
-            const checklists = await ChecklistService.getChecklistsByVisitId(visitID);
-            logger.info('Successfully fetched checklists by visit', {
-                route: 'checklists/visit',
-                method: req.method,
-                url: req.originalUrl,
+
+            const cacheInstance = await cache();
+            const checklists = await cacheInstance.getOrSet(`checklists:visit:${visitID}`, async () => {
+                return await ChecklistService.getChecklistsByVisitId(visitID);
+            }, 'api');
+
+            logRequest({
+                req,
+                res: checklists,
                 status: 200,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { visitID, checklistCount: checklists.length }
+                message: `Retrieved ${checklists.length} checklists for visit ${visitID}`,
+                level: 'info',
+                metadata: { visitID, checklistCount: checklists.length },
+                service: 'checklist',
+                defaultRoute: 'checklists'
             });
+
             return res.status(200).json(checklists);
         } catch (error) {
-            logger.error('Failed to fetch checklists by visit', {
-                route: 'checklists/visit',
-                method: req.method,
-                url: req.originalUrl,
+            logRequest({
+                req,
+                error,
                 status: error.status || 404,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { error: error.message }
+                message: `Failed to fetch checklists by visit: ${error.message}`,
+                level: 'error',
+                service: 'checklist',
+                defaultRoute: 'checklists'
             });
             return res.status(error.status || 404).json({ error: error.message || 'Checklists not found for visit' });
         }
@@ -146,171 +141,203 @@ class ChecklistController {
 
     // --- Checklist Modification Methods ---
 
-    /**
-     * Create a new checklist item.
-     * @param {Object} req - Express request object with text in body.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with created checklist or error.
-     */
     static async createChecklist(req, res) {
-        const actorID = req.user?.userID || 'unknown';
+        const transaction = await sequelize.transaction({ isolationLevel: Sequelize.Transaction.ISOLATION_LEVELS.READ_COMMITTED });
         try {
             const { text } = req.body;
             if (!text) {
-                logger.warn('Create checklist failed: Missing text', {
-                    route: 'checklists',
-                    method: req.method,
-                    url: req.originalUrl,
+                await transaction.rollback();
+                logRequest({
+                    req,
                     status: 400,
-                    ip: req.ip,
-                    traceId: req.traceId,
-                    userId: actorID,
-                    metadata: {}
+                    message: 'Checklist text is required',
+                    level: 'info',
+                    service: 'checklist',
+                    defaultRoute: 'checklists'
                 });
                 return res.status(400).json({ error: 'Checklist text is required' });
             }
-            const checklist = await ChecklistService.createItem(text, actorID);
+
+            const checklist = await ChecklistService.createItem(text, req.user.userID, { transaction });
+
+            const cacheInstance = await cache();
+            const redis = getRedisClient();
+            await cacheInstance.invalidateByTag('checklists');
+            await cacheInstance.invalidate(`checklist:${checklist.checklistID}`);
+            await redis.set('checklists:last_updated', Date.now().toString());
+            await RedisUtils.publishEvent('cache:invalidate', 'checklists');
+
+            const requestID = uuidv4();
             await NotificationService.triggerNotification({
                 event: 'checklist:created',
                 data: { checklistID: checklist.checklistID, text },
-                metadata: { createdBy: req.user.email }
+                metadata: { createdBy: req.user.email },
+                dynamicRecipients: [],
+                triggeredByUserID: req.user.userID,
+                type: 'checklist',
+                customMessage: `Checklist item created`,
+                requestID,
             });
-            logger.info('Successfully created checklist', {
-                route: 'checklists',
-                method: req.method,
-                url: req.originalUrl,
+
+            logRequest({
+                req,
+                res: checklist,
                 status: 201,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { checklistID: checklist.checklistID, text }
+                message: `Created checklist ${checklist.checklistID}`,
+                level: 'info',
+                metadata: { checklistID: checklist.checklistID, text, requestID },
+                service: 'checklist',
+                defaultRoute: 'checklists'
             });
+
+            await transaction.commit();
             return res.status(201).json(checklist);
         } catch (error) {
-            logger.error('Failed to create checklist', {
-                route: 'checklists',
-                method: req.method,
-                url: req.originalUrl,
+            await transaction.rollback();
+            logRequest({
+                req,
+                error,
                 status: error.status || 500,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { error: error.message }
+                message: `Failed to create checklist: ${error.message}`,
+                level: 'error',
+                service: 'checklist',
+                defaultRoute: 'checklists'
             });
             return res.status(error.status || 500).json({ error: error.message || 'Failed to create checklist' });
         }
     }
 
-    /**
-     * Update a checklist item.
-     * @param {Object} req - Express request object with checklist ID in params and text in body.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with updated checklist or error.
-     */
     static async updateChecklist(req, res) {
-        const actorID = req.user?.userID || 'unknown';
+        const transaction = await sequelize.transaction({ isolationLevel: Sequelize.Transaction.ISOLATION_LEVELS.READ_COMMITTED });
         try {
             const { id: checklistID } = req.params;
             const { text } = req.body;
             if (!checklistID || !text) {
-                logger.warn('Update checklist failed: Missing checklistID or text', {
-                    route: 'checklists',
-                    method: req.method,
-                    url: req.originalUrl,
+                await transaction.rollback();
+                logRequest({
+                    req,
                     status: 400,
-                    ip: req.ip,
-                    traceId: req.traceId,
-                    userId: actorID,
-                    metadata: {}
+                    message: 'Checklist ID and text are required',
+                    level: 'info',
+                    service: 'checklist',
+                    defaultRoute: 'checklists'
                 });
                 return res.status(400).json({ error: 'Checklist ID and text are required' });
             }
-            const checklist = await ChecklistService.updateItem(checklistID, text, actorID);
+
+            const checklist = await ChecklistService.updateItem(checklistID, text, req.user.userID, { transaction });
+
+            const cacheInstance = await cache();
+            const redis = getRedisClient();
+            await cacheInstance.invalidateByTag('checklists');
+            await cacheInstance.invalidate(`checklist:${checklistID}`);
+            await redis.set('checklists:last_updated', Date.now().toString());
+            await RedisUtils.publishEvent('cache:invalidate', 'checklists');
+
+            const requestID = uuidv4();
             await NotificationService.triggerNotification({
                 event: 'checklist:updated',
                 data: { checklistID, text },
-                metadata: { updatedBy: req.user.email }
+                metadata: { updatedBy: req.user.email },
+                dynamicRecipients: [],
+                triggeredByUserID: req.user.userID,
+                type: 'checklist',
+                customMessage: `Checklist item updated`,
+                requestID,
             });
-            logger.info('Successfully updated checklist', {
-                route: 'checklists',
-                method: req.method,
-                url: req.originalUrl,
+
+            logRequest({
+                req,
+                res: checklist,
                 status: 200,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { checklistID, text }
+                message: `Updated checklist ${checklistID}`,
+                level: 'info',
+                metadata: { checklistID, text, requestID },
+                service: 'checklist',
+                defaultRoute: 'checklists'
             });
+
+            await transaction.commit();
             return res.status(200).json(checklist);
         } catch (error) {
-            logger.error('Failed to update checklist', {
-                route: 'checklists',
-                method: req.method,
-                url: req.originalUrl,
+            await transaction.rollback();
+            logRequest({
+                req,
+                error,
                 status: error.status || 404,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { error: error.message }
+                message: `Failed to update checklist: ${error.message}`,
+                level: 'error',
+                service: 'checklist',
+                defaultRoute: 'checklists'
             });
             return res.status(error.status || 404).json({ error: error.message || 'Failed to update checklist' });
         }
     }
 
-    /**
-     * Delete a checklist item.
-     * @param {Object} req - Express request object with checklist ID in params.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} Empty response or error.
-     */
     static async deleteChecklist(req, res) {
-        const actorID = req.user?.userID || 'unknown';
+        const transaction = await sequelize.transaction({ isolationLevel: Sequelize.Transaction.ISOLATION_LEVELS.READ_COMMITTED });
         try {
             const { id: checklistID } = req.params;
             if (!checklistID) {
-                logger.warn('Delete checklist failed: Missing checklistID', {
-                    route: 'checklists',
-                    method: req.method,
-                    url: req.originalUrl,
+                await transaction.rollback();
+                logRequest({
+                    req,
                     status: 400,
-                    ip: req.ip,
-                    traceId: req.traceId,
-                    userId: actorID,
-                    metadata: {}
+                    message: 'Checklist ID is required',
+                    level: 'info',
+                    service: 'checklist',
+                    defaultRoute: 'checklists'
                 });
                 return res.status(400).json({ error: 'Checklist ID is required' });
             }
-            await ChecklistService.deleteItem(checklistID, actorID);
+
+
+            await ChecklistService.deleteItem(checklistID, req.user.userID, { transaction });
+
+            const cacheInstance = await cache();
+            const redis = getRedisClient();
+            await cacheInstance.invalidateByTag('checklists');
+            await cacheInstance.invalidate(`checklist:${checklistID}`);
+            await redis.set('checklists:last_updated', Date.now().toString());
+            await RedisUtils.publishEvent('cache:invalidate', 'checklists');
+
+            const requestID = uuidv4();
             await NotificationService.triggerNotification({
                 event: 'checklist:deleted',
                 data: { checklistID },
-                metadata: { deletedBy: req.user.email }
+                metadata: { deletedBy: req.user.email },
+                dynamicRecipients: [],
+                triggeredByUserID: req.user.userID,
+                type: 'checklist',
+                customMessage: `Checklist item deleted`,
+                requestID,
             });
-            logger.info('Successfully deleted checklist', {
-                route: 'checklists',
-                method: req.method,
-                url: req.originalUrl,
+
+            logRequest({
+                req,
                 status: 204,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { checklistID }
+                message: `Deleted checklist ${checklistID}`,
+                level: 'info',
+                metadata: { checklistID, requestID },
+                service: 'checklist',
+                defaultRoute: 'checklists'
             });
+
+            await transaction.commit();
             return res.status(204).send();
         } catch (error) {
-            logger.error('Failed to delete checklist', {
-                route: 'checklists',
-                method: req.method,
-                url: req.originalUrl,
+            await transaction.rollback();
+            logRequest({
+                req,
+                error,
                 status: error.status || 404,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { error: error.message }
+                message: `Failed to delete checklist: ${error.message}`,
+                level: 'error',
+                service: 'checklist',
+                defaultRoute: 'checklists'
             });
             return res.status(error.status || 404).json({ error: error.message || 'Failed to delete checklist' });
         }
     }
 }
-
 module.exports = ChecklistController;

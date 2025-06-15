@@ -5,25 +5,15 @@ const AuthService = require('./authService');
 const { nanoid } = require('nanoid');
 require('dotenv').config();
 
-
 const ERROR_MESSAGES = {
     GOOGLE_LOGIN_FAILED: 'Google login failed. Ensure your account is registered.',
     KEYCLOAK_TOKEN_EXCHANGE_FAILED: 'Failed to exchange Keycloak authorization code.',
     USER_NOT_FOUND: 'No account found with this Google email. Please use an existing account.',
     CALENDAR_AUTH_FAILED: 'Failed to authorize Google Calendar access.',
     KEYCLOAK_ADMIN_TOKEN_FAILED: 'Server issue. Try again.',
-
 };
 
 class GoogleAuthService {
-
-
-
-
-
-
-
-
     static async googleLogin(code, res) {
         try {
             const keycloakBaseUrl = `${process.env.KEYCLOAK_URL}/realms/${process.env.REALM}`;
@@ -71,6 +61,11 @@ class GoogleAuthService {
 
             if (!user.keycloakId || user.keycloakId !== userInfo.sub) {
                 await user.update({ keycloakId: userInfo.sub });
+            }
+
+            // Set hasGoogleAuth to true
+            if (!user.hasGoogleAuth) {
+                await user.update({ hasGoogleAuth: true });
             }
 
             // Store tokens in Vault
@@ -122,68 +117,6 @@ class GoogleAuthService {
         }
     }
 
-    static async googleCalendarCallback(code, userId) {
-        try {
-            if (!userId) throw new Error('Missing userId in state parameter');
-            const user = await User.findOne({ where: { userID: userId } });
-            if (!user) throw new Error('User not found');
-
-            const response = await axios.post(
-                'https://oauth2.googleapis.com/token',
-                new URLSearchParams({
-                    client_id: process.env.GOOGLE_CALENDAR_CLIENT_ID,
-                    client_secret: process.env.GOOGLE_CALENDAR_CLIENT_SECRET,
-                    code,
-                    grant_type: 'authorization_code',
-                    redirect_uri: process.env.GOOGLE_CALENDAR_REDIRECT_URI,
-                }),
-                { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
-            );
-
-            const { access_token, refresh_token, expires_in } = response.data;
-
-            if (!refresh_token) {
-                throw new Error('No refresh token received from Google. Ensure access_type=offline and prompt=consent are set.');
-            }
-
-            // Store both access and refresh tokens in Vault
-            await VaultService.storeTokens(userId, access_token, refresh_token, expires_in);
-            await User.update(
-                { hasCalendarAccess: true },
-                { where: { userID: userId } }
-            );
-
-            return { message: 'Calendar access granted', user: { userID: userId }, refreshToken: refresh_token };
-        } catch (error) {
-            throw new Error(`${ERROR_MESSAGES.CALENDAR_AUTH_FAILED}: ${error.message}`);
-        }
-    }
-
-
-
-
-
-
-
-
-    async getKeycloakAdminToken() {
-        try {
-            const response = await axios.post(
-                `${process.env.KEYCLOAK_URL}/realms/master/protocol/openid-connect/token`,
-                new URLSearchParams({
-                    grant_type: 'password',
-                    client_id: 'admin-cli',
-                    username: process.env.KEYCLOAK_KEYCLOAK_ADMIN_USER || 'admin',
-                    password: process.env.KEYCLOAK_KEYCLOAK_ADMIN_PASSWORDWORD || 'admin',
-                })
-            );
-            return response.data.access_token;
-        } catch (error) {
-            throw Object.assign(new Error(ERROR_MESSAGES.KEYCLOAK_ADMIN_TOKEN_FAILED), { status: 503 });
-        }
-    }
-
-
     static async googleIdTokenLogin(idToken, res) {
         try {
             // Validate Google ID token
@@ -210,8 +143,7 @@ class GoogleAuthService {
             const keycloakUser = userResponse.data[0];
             const keycloakId = keycloakUser.id;
 
-            // Generate Keycloak token using password grant (assuming user has a password)
-            // For Google-only users, use admin API to impersonate
+            // Generate Keycloak token using password grant or impersonation
             let tokenResponse;
             try {
                 tokenResponse = await axios.post(
@@ -260,6 +192,11 @@ class GoogleAuthService {
 
             if (!user.keycloakId) {
                 await user.update({ keycloakId });
+            }
+
+            // Set hasGoogleAuth to true
+            if (!user.hasGoogleAuth) {
+                await user.update({ hasGoogleAuth: true });
             }
 
             // Store tokens in Vault
@@ -319,6 +256,59 @@ class GoogleAuthService {
         }
     }
 
+    static async googleCalendarCallback(code, userId) {
+        try {
+            if (!userId) throw new Error('Missing userId in state parameter');
+            const user = await User.findOne({ where: { userID: userId } });
+            if (!user) throw new Error('User not found');
+
+            const response = await axios.post(
+                'https://oauth2.googleapis.com/token',
+                new URLSearchParams({
+                    client_id: process.env.GOOGLE_CALENDAR_CLIENT_ID,
+                    client_secret: process.env.GOOGLE_CALENDAR_CLIENT_SECRET,
+                    code,
+                    grant_type: 'authorization_code',
+                    redirect_uri: process.env.GOOGLE_CALENDAR_REDIRECT_URI,
+                }),
+                { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+            );
+
+            const { access_token, refresh_token, expires_in } = response.data;
+
+            if (!refresh_token) {
+                throw new Error('No refresh token received from Google. Ensure access_type=offline and prompt=consent are set.');
+            }
+
+            // Store both access and refresh tokens in Vault
+            await VaultService.storeTokens(userId, access_token, refresh_token, expires_in);
+            await User.update(
+                { hasCalendarAccess: true },
+                { where: { userID: userId } }
+            );
+
+            return { message: 'Calendar access granted', user: { userID: userId }, refreshToken: refresh_token };
+        } catch (error) {
+            throw new Error(`${ERROR_MESSAGES.CALENDAR_AUTH_FAILED}: ${error.message}`);
+        }
+    }
+
+    async getKeycloakAdminToken() {
+        try {
+            const response = await axios.post(
+                `${process.env.KEYCLOAK_URL}/realms/master/protocol/openid-connect/token`,
+                new URLSearchParams({
+                    grant_type: 'password',
+                    client_id: 'admin-cli',
+                    username: process.env.KEYCLOAK_KEYCLOAK_ADMIN_USER || 'admin',
+                    password: process.env.KEYCLOAK_KEYCLOAK_ADMIN_PASSWORDWORD || 'admin',
+                })
+            );
+            return response.data.access_token;
+        } catch (error) {
+            throw Object.assign(new Error(ERROR_MESSAGES.KEYCLOAK_ADMIN_TOKEN_FAILED), { status: 503 });
+        }
+    }
 }
 
 module.exports = GoogleAuthService;

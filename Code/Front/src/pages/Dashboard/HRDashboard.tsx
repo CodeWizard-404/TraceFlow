@@ -20,9 +20,10 @@ import { FaUsers, FaBook, FaClock, FaMapMarkerAlt, FaChartBar, FaSitemap, FaBell
 import { debounce } from 'lodash';
 import Governorate from '../../models/Governorate';
 import Delegation from '../../models/Delegation';
-import { GeneratedReport, ReportSchedule } from '../../models/Report';
-import { listSchedules, listGeneratedReports, generateReport, scheduleReport, downloadReport, deleteSchedule, deleteGeneratedReport, validReportTypes } from '../../apis/reportAPI';
+import { GeneratedReport } from '../../models/Report';
+import { listGeneratedReports, downloadReport, validReportTypes } from '../../apis/reportAPI';
 import TimesheetStatus from '../../models/Enum/TimesheetStatus';
+import { initSocket, onNotification, offNotification, joinRoom, disconnectSocket, isSocketConnected } from "../../lib/socket";
 
 const { TabPane } = Tabs;
 const { RangePicker } = DatePicker;
@@ -129,6 +130,42 @@ const HRDashboard: React.FC = () => {
 
 
 
+    // WebSocket setup for real-time updates
+    const setupWebSocket = useCallback(() => {
+        if (!isSocketConnected()) initSocket();
+
+        const handleEntityEvent = async (event: string, data: unknown) => {
+            console.log(`Received entity event: ${event}`, { data });
+            const entity = event.split(':')[0];
+            const action = event.split(':')[1];
+
+            if (entity === 'timesheet' && (action === 'created' || action === 'validated')) {
+                const updatedTimesheets = await getAllTimesheets();
+                setTimesheets(Array.isArray(updatedTimesheets) ? updatedTimesheets : []);
+                setVisits(Array.isArray(updatedTimesheets) ? updatedTimesheets.flatMap((ts: any) => ts.Visits || []) : []);
+            } else if (entity === 'visit' && (action === 'logged' || action === 'updated' || action === 'deleted')) {
+                const updatedTimesheets = await getAllTimesheets();
+                setTimesheets(Array.isArray(updatedTimesheets) ? updatedTimesheets : []);
+                setVisits(Array.isArray(updatedTimesheets) ? updatedTimesheets.flatMap((ts: any) => ts.Visits || []) : []);
+            }
+        };
+
+        onNotification(handleEntityEvent);
+        joinRoom('timesheet');
+        joinRoom('visit');
+
+        return () => {
+            offNotification();
+            disconnectSocket();
+        };
+    }, [
+        getAllTimesheets,
+    ]);
+
+    useEffect(() => {
+        const cleanup = setupWebSocket();
+        return cleanup;
+    }, [setupWebSocket]);
 
 
 
@@ -1116,19 +1153,24 @@ const HRDashboard: React.FC = () => {
 
     // Users Tab
     const userColumns = [
-        { title: "Status", dataIndex: 'isOnline', key: 'isOnline', render: (isOnline: boolean) => isOnline ? <Tag color="green">Online</Tag> : <Tag color="red">Offline</Tag>, orderBy: (a: User, b: User) => a.isOnline ? -1 : 1 },
+        {
+            title: "Status",
+            dataIndex: 'isOnline',
+            key: 'isOnline',
+            render: (isOnline: boolean) => isOnline ? <Tag color="green">Online</Tag> : <Tag color="red">Offline</Tag>,
+            defaultSortOrder: 'ascend' as 'ascend',
+            sorter: (a: User, b: User) => (a.isOnline === b.isOnline ? 0 : a.isOnline ? -1 : 1),
+        },
         { title: 'Name', dataIndex: 'firstname', key: 'name', sorter: (a: User, b: User) => `${a.firstname} ${a.lastname}`.localeCompare(`${b.firstname} ${b.lastname}`), render: (_: any, record: User) => `${record.firstname} ${record.lastname}` },
         { title: 'Email', dataIndex: 'email', key: 'email', sorter: (a: User, b: User) => a.email.localeCompare(b.email) },
         { title: 'Phone', dataIndex: 'phone', key: 'phone', sorter: (a: User, b: User) => a.phone.localeCompare(b.phone) },
-        { title: 'Roles', dataIndex: 'Roles', key: 'roles', render: (roles: any[]) => roles?.map(r => r.name).join(', ') || 'N/A', sorter: (a: User, b: User) => `${a.Roles?.map(r => r.name).join(', ') || ''}`.localeCompare(`${b.Roles?.map(r => r.name).join(', ') || ''}`), orderBy: (a: User, b: User) => a.Roles?.map(r => r.name).join(', ') || '' },
+        { title: 'Roles', dataIndex: 'Roles', key: 'roles', render: (roles: any[]) => roles?.map(r => r.name).join(', ') || 'N/A', sorter: (a: User, b: User) => `${a.Roles?.map(r => r.name).join(', ') || ''}`.localeCompare(`${b.Roles?.map(r => r.name).join(', ') || ''}`), orderBy: (a: User) => a.Roles?.map(r => r.name).join(', ') || '' },
         { title: 'Regions', key: 'regions', render: (_: any, record: User) => record.Regions?.length || 0, sorter: (a: User, b: User) => a.Regions?.length! - b.Regions?.length! },
         { title: 'Agents', key: 'agents', render: (_: any, record: User) => agents.filter(a => a.supervisorID === record.userID).length, sorter: (a: User, b: User) => agents.filter(a => a.supervisorID === a.supervisorID).length - agents.filter(a => a.supervisorID === b.userID).length },
         { title: 'Visits', key: 'visits', render: (_: any, record: User) => timesheets.filter(ts => ts.supervisorID === record.userID).reduce((sum, ts) => sum + (ts.Visits?.length || 0), 0), sorter: (a: User, b: User) => timesheets.filter(ts => ts.supervisorID === a.userID).reduce((sum, ts) => sum + (ts.Visits?.length || 0), 0) - timesheets.filter(ts => ts.supervisorID === b.userID).reduce((sum, ts) => sum + (ts.Visits?.length || 0), 0) },
         { title: 'Receipt Books', key: 'receiptBooks', render: (_: any, record: User) => receiptBooks.filter(rb => rb.holder?.userID === record.userID).length, sorter: (a: User, b: User) => receiptBooks.filter(rb => rb.holder?.userID === a.userID).length - receiptBooks.filter(rb => rb.holder?.userID === b.userID).length },
         { title: 'Created At', dataIndex: 'createdAt', key: 'createdAt', sorter: (a: User, b: User) => new Date(a.createdAt!).getTime() - new Date(b.createdAt!).getTime(), render: (createdAt: string) => <span>{new Date(createdAt).toLocaleString()}</span> },
-
     ];
-
     const roleDistributionData = useMemo(() => {
         return users.reduce((acc: any, u: any) => {
             u.Roles?.forEach((r: any) => {
@@ -1185,10 +1227,14 @@ const HRDashboard: React.FC = () => {
                     filterOption={filterOption}
                 >
                     <Option value="">All</Option>
-                    <Option value="Agent">Agent</Option>
                     <Option value="Director">Director</Option>
                     <Option value="Regional Manager">Regional Manager</Option>
                     <Option value="Supervisor">Supervisor</Option>
+                    <Option value="Agent">HR</Option>
+                    <Option value="Admin">Stock Manager</Option>
+                    <Option value="Super Admin">Purchase Team</Option>
+                    <Option value="Super Admin">Super Admin</Option>
+
                 </Select>
                 <Select
                     placeholder="Filter by Region"
@@ -1452,13 +1498,12 @@ const HRDashboard: React.FC = () => {
     ];
 
     const timesheetStatusData = useMemo(() => {
-        const statusCounts = timesheets.reduce((acc, t) => {
+        const statusCounts = timesheets.reduce((acc: Record<string, number>, t) => {
             acc[t.status] = (acc[t.status] || 0) + 1;
             return acc;
         }, {});
         return Object.entries(statusCounts).map(([name, value]) => ({ name, value }));
     }, [timesheets]);
-
     const timesheetChartData = useMemo(() => {
         const trend = timesheets.reduce((acc: any, ts: any) => {
             const week = `Week ${ts.weekNumber} ${ts.year}`;
@@ -2088,7 +2133,12 @@ const HRDashboard: React.FC = () => {
             { title: 'Report Type', dataIndex: 'reportType', key: 'reportType', sorter: (a: GeneratedReport, b: GeneratedReport) => a.reportType.localeCompare(b.reportType) },
             { title: 'Format', dataIndex: 'format', key: 'format', sorter: (a: GeneratedReport, b: GeneratedReport) => a.format.localeCompare(b.format) },
             { title: 'Generated At', dataIndex: 'generatedAt', key: 'generatedAt', render: (date: string) => new Date(date).toLocaleString(), sorter: (a: GeneratedReport, b: GeneratedReport) => new Date(a.generatedAt).getTime() - new Date(b.generatedAt).getTime() },
-            { title: 'Generated By', dataIndex: 'Generator', key: 'generator', render: (generator: any) => generator ? `${generator.firstname} ${generator.lastname}` : 'N/A', sorter: (a: GeneratedReport, b: GeneratedReport) => a.generator ? a.generator.localeCompare(b.generator) : -1 },
+            {
+                title: 'Generated By', dataIndex: 'Generator', key: 'generator', render: (generator: any) => generator ? `${generator.firstname} ${generator.lastname}` : 'N/A', sorter: (a: GeneratedReport, b: GeneratedReport) => {
+                    if (!a.Generator || !b.Generator) return -1;
+                    return `${a.Generator.firstname} ${a.Generator.lastname}`.localeCompare(`${b.Generator.firstname} ${b.Generator.lastname}`);
+                }
+            },
             {
                 title: 'Actions',
                 key: 'actions',
@@ -2289,8 +2339,8 @@ const HRDashboard: React.FC = () => {
                 </Space>
             </div>
         );
-    };
 
+    };
 
 
 

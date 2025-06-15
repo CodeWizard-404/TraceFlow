@@ -135,7 +135,7 @@ const CustomMapModal: React.FC<CustomMapModalProps> = ({
 };
 
 
-const TimesheetsSkeleton: React.FC = () => (
+const TimesheetsSkeleton: React.FC<{ viewMode: ViewMode }> = ({ viewMode }) => (
     <div className="timesheets-container">
         <header className="timesheets-header">
             <div className="view-toggle">
@@ -160,10 +160,12 @@ const TimesheetsSkeleton: React.FC = () => (
                     className="custom-skeleton pulsing"
                     style={{ width: "40px", height: "40px" }}
                 />
-                <div
-                    className="custom-skeleton pulsing"
-                    style={{ width: "40px", height: "40px" }}
-                />
+                {(viewMode === "week" || viewMode === "day") && (
+                    <div
+                        className="custom-skeleton pulsing"
+                        style={{ width: "120px", height: "40px", marginLeft: "8px" }}
+                    />
+                )}
             </div>
             <div className="action-buttons">
                 <div
@@ -176,26 +178,175 @@ const TimesheetsSkeleton: React.FC = () => (
                 />
             </div>
         </header>
-        <section className="year-view">
-            {Array.from({ length: 12 }).map((_, i) => (
-                <div className="month-card" key={i}>
+        {(viewMode === "week" || viewMode === "day") && (
+            <div className="filter-controls">
+                {Array.from({ length: 4 }).map((_, i) => (
+                    <div
+                        key={i}
+                        className="custom-skeleton pulsing"
+                        style={{ width: "150px", height: "40px", marginRight: "8px" }}
+                    />
+                ))}
+            </div>
+        )}
+        {viewMode === "year" && (
+            <section className="year-view">
+                {Array.from({ length: 12 }).map((_, i) => (
+                    <div className="month-card" key={i}>
+                        <div
+                            className="custom-skeleton pulsing"
+                            style={{ width: "150px", height: "24px", marginBottom: "16px" }}
+                        />
+                        <div className="weeks-grid">
+                            {Array.from({ length: 4 }).map((_, j) => (
+                                <div className="week-tile" key={j}>
+                                    <div
+                                        className="custom-skeleton pulsing"
+                                        style={{ width: "100%", height: "80px" }}
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                ))}
+            </section>
+        )}
+        {viewMode === "month" && (
+            <section className="month-view">
+                <div className="month-header">
                     <div
                         className="custom-skeleton pulsing"
-                        style={{ width: "150px", height: "24px", marginBottom: "16px" }}
+                        style={{ width: "40px", height: "40px" }}
                     />
-                    <div className="weeks-grid">
-                        {Array.from({ length: 4 }).map((_, j) => (
-                            <div className="week-tile" key={j}>
-                                <div
-                                    className="custom-skeleton pulsing"
-                                    style={{ width: "100%", height: "80px" }}
-                                />
+                    <div
+                        className="custom-skeleton pulsing"
+                        style={{ width: "150px", height: "24px" }}
+                    />
+                    <div
+                        className="custom-skeleton pulsing"
+                        style={{ width: "40px", height: "40px" }}
+                    />
+                </div>
+                <div className="weeks-grid">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                        <div className="week-card" key={i}>
+                            <div
+                                className="custom-skeleton pulsing"
+                                style={{ width: "100px", height: "20px", marginBottom: "8px" }}
+                            />
+                            <div
+                                className="custom-skeleton pulsing"
+                                style={{ width: "150px", height: "16px", marginBottom: "8px" }}
+                            />
+                            <div
+                                className="custom-skeleton pulsing"
+                                style={{ width: "120px", height: "16px" }}
+                            />
+                        </div>
+                    ))}
+                </div>
+            </section>
+        )}
+        {viewMode === "week" && (
+            <section className="week-view">
+                <div className="week-header">
+                    <div
+                        className="custom-skeleton pulsing"
+                        style={{ width: "120px", height: "40px" }}
+                    />
+                    <div className="week-header-middle">
+                        <div
+                            className="custom-skeleton pulsing"
+                            style={{ width: "40px", height: "40px" }}
+                        />
+                        <div
+                            className="custom-skeleton pulsing"
+                            style={{ width: "100px", height: "24px" }}
+                        />
+                        <div
+                            className="custom-skeleton pulsing"
+                            style={{ width: "40px", height: "40px" }}
+                        />
+                    </div>
+                    <div
+                        className="custom-skeleton pulsing"
+                        style={{ width: "120px", height: "40px" }}
+                    />
+                </div>
+                <div className="week-details">
+                    <div className="week-details-header">
+                        <div className="week-details-info">
+                            <div
+                                className="custom-skeleton pulsing"
+                                style={{ width: "150px", height: "16px", marginBottom: "8px" }}
+                            />
+                            <div
+                                className="custom-skeleton pulsing"
+                                style={{ width: "100px", height: "16px" }}
+                            />
+                        </div>
+                        <div
+                            className="custom-skeleton pulsing"
+                            style={{ width: "120px", height: "40px" }}
+                        />
+                    </div>
+                    <div className="days-grid">
+                        {Array.from({ length: 7 }).map((_, i) => (
+                            <div className="day-column" key={i}>
+                                <div className="day-tile">
+                                    <div
+                                        className="custom-skeleton pulsing"
+                                        style={{ width: "60px", height: "16px", marginBottom: "8px" }}
+                                    />
+                                    <div
+                                        className="custom-skeleton pulsing"
+                                        style={{ width: "30px", height: "24px" }}
+                                    />
+                                </div>
+                                <div className="visits-list">
+                                    {Array.from({ length: 2 }).map((_, j) => (
+                                        <div className="visit-card" key={j}>
+                                            <div
+                                                className="custom-skeleton pulsing"
+                                                style={{ width: "100%", height: "100px" }}
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         ))}
                     </div>
                 </div>
-            ))}
-        </section>
+            </section>
+        )}
+        {viewMode === "day" && (
+            <section className="day-view">
+                <div className="day-header">
+                    <div
+                        className="custom-skeleton pulsing"
+                        style={{ width: "40px", height: "40px" }}
+                    />
+                    <div
+                        className="custom-skeleton pulsing"
+                        style={{ width: "200px", height: "24px" }}
+                    />
+                    <div
+                        className="custom-skeleton pulsing"
+                        style={{ width: "40px", height: "40px" }}
+                    />
+                </div>
+                <div className="visits-list">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                        <div className="visit-card" key={i}>
+                            <div
+                                className="custom-skeleton pulsing"
+                                style={{ width: "100%", height: "100px" }}
+                            />
+                        </div>
+                    ))}
+                </div>
+            </section>
+        )}
     </div>
 );
 
@@ -1366,7 +1517,7 @@ const Timesheets: React.FC = React.memo(() => {
 
 
     if (loading || !permissionsLoaded) {
-        return <TimesheetsSkeleton />;
+        return <TimesheetsSkeleton viewMode={viewMode} />;
     }
 
     return (

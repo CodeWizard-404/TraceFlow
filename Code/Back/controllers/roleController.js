@@ -1,18 +1,41 @@
+const { validationResult } = require('express-validator');
 const RoleService = require('../services/roleService');
 const NotificationService = require('../services/notificationService');
-const logger = require('../utils/logger');
 const { getRedisClient } = require('../config/redis');
 const RedisUtils = require('../utils/redisUtils');
 const cache = require('../utils/cache');
-const { Role } = require('../models');
+const { Role, User } = require('../models');
 const { Op } = require('sequelize');
 const { v4: uuidv4 } = require('uuid');
 const { logRequest } = require('../utils/controllerUtils');
+const { sequelize } = require('../config/db');
+const Sequelize = require('sequelize');
 
+
+
+const ERROR_MESSAGES = {
+    MISSING_FIELDS: 'Please fill in all required fields.',
+    ROLE_NOT_FOUND: 'Role not found.',
+    USER_NOT_FOUND: 'User not found.',
+    INVALID_ROLE_IDS: 'Invalid or empty role IDs array.',
+    SERVER_ERROR: 'Something broke. Try again later.',
+};
 
 class RoleController {
+    static formatError(error) {
+        return {
+            error: error.message || ERROR_MESSAGES.SERVER_ERROR,
+            details: error.details || undefined,
+        };
+    }
+
     static async getAllRoles(req, res) {
         try {
+            const errors = validationResult(req);
+            if (!errors.isEmpty()) {
+                throw Object.assign(new Error(ERROR_MESSAGES.MISSING_FIELDS), { status: 400, details: errors.array() });
+            }
+
             const cacheInstance = await cache();
             const redis = getRedisClient();
             const cacheKey = 'roles:all';
@@ -26,7 +49,6 @@ class RoleController {
             if (isStale) {
                 await cacheInstance.invalidate(cacheKey);
                 await redis.set(lastUpdatedKey, now.toString());
-                logger.debug(`Invalidated stale cache for ${cacheKey} due to timestamp`);
             }
 
             const roles = await cacheInstance.getOrSet(cacheKey, async () => {
@@ -43,38 +65,38 @@ class RoleController {
                 level: 'info',
                 metadata: { roleCount: roles.length, cacheHit: !isStale },
                 service: 'role',
-                defaultRoute: 'roles'
+                defaultRoute: 'roles',
             });
 
             return res.status(200).json(roles);
         } catch (error) {
+            const response = RoleController.formatError(error);
+            const status = error.status || 500;
+
             logRequest({
                 req,
                 error,
-                status: 500,
-                message: `Failed to retrieve roles: ${error.message}`,
+                status,
+                message: `Failed to retrieve roles: ${response.error}`,
                 level: 'error',
                 service: 'role',
-                defaultRoute: 'roles'
+                defaultRoute: 'roles',
             });
 
-            return res.status(500).json({ error: 'Failed to retrieve roles' });
+            return res.status(status).json(response);
         }
     }
 
     static async getRoleById(req, res) {
         try {
+            const errors = validationResult(req);
+            if (!errors.isEmpty()) {
+                throw Object.assign(new Error(ERROR_MESSAGES.MISSING_FIELDS), { status: 400, details: errors.array() });
+            }
+
             const { roleID } = req.params;
             if (!roleID) {
-                logRequest({
-                    req,
-                    status: 400,
-                    message: 'Role ID is required',
-                    level: 'error',
-                    service: 'role',
-                    defaultRoute: 'roles'
-                });
-                return res.status(400).json({ error: 'Role ID is required' });
+                throw Object.assign(new Error(ERROR_MESSAGES.MISSING_FIELDS), { status: 400 });
             }
 
             const cacheInstance = await cache();
@@ -90,38 +112,38 @@ class RoleController {
                 level: 'info',
                 metadata: { roleID, name: role.name },
                 service: 'role',
-                defaultRoute: 'roles'
+                defaultRoute: 'roles',
             });
 
             return res.status(200).json(role);
         } catch (error) {
+            const response = RoleController.formatError(error);
+            const status = error.status || 404;
+
             logRequest({
                 req,
                 error,
-                status: 404,
-                message: `Failed to retrieve role: ${error.message}`,
+                status,
+                message: `Failed to retrieve role: ${response.error}`,
                 level: 'error',
                 service: 'role',
-                defaultRoute: 'roles'
+                defaultRoute: 'roles',
             });
 
-            return res.status(404).json({ error: 'Role not found' });
+            return res.status(status).json(response);
         }
     }
 
     static async getRolesByUser(req, res) {
         try {
+            const errors = validationResult(req);
+            if (!errors.isEmpty()) {
+                throw Object.assign(new Error(ERROR_MESSAGES.MISSING_FIELDS), { status: 400, details: errors.array() });
+            }
+
             const { userID } = req.params;
             if (!userID) {
-                logRequest({
-                    req,
-                    status: 400,
-                    message: 'User ID is required',
-                    level: 'error',
-                    service: 'role',
-                    defaultRoute: 'roles'
-                });
-                return res.status(400).json({ error: 'User ID is required' });
+                throw Object.assign(new Error(ERROR_MESSAGES.MISSING_FIELDS), { status: 400 });
             }
 
             const cacheInstance = await cache();
@@ -135,57 +157,65 @@ class RoleController {
                 status: 200,
                 message: `Retrieved roles for user ${userID}`,
                 level: 'info',
-                metadata: { roleCount: roles.length },
+                metadata: { userID, roleCount: roles.length },
                 service: 'role',
-                defaultRoute: 'roles'
+                defaultRoute: 'roles',
             });
 
             return res.status(200).json(roles);
         } catch (error) {
+            const response = RoleController.formatError(error);
+            const status = error.status || 404;
+
             logRequest({
                 req,
                 error,
-                status: 404,
-                message: `Failed to retrieve user roles: ${error.message}`,
+                status,
+                message: `Failed to retrieve user roles: ${response.error}`,
                 level: 'error',
                 service: 'role',
-                defaultRoute: 'roles'
+                defaultRoute: 'roles',
             });
 
-            return res.status(404).json({ error: 'User roles not found' });
+            return res.status(status).json(response);
         }
     }
 
     static async createRole(req, res) {
+        const transaction = await sequelize.transaction({ isolationLevel: Sequelize.Transaction.ISOLATION_LEVELS.READ_COMMITTED });
         try {
-            const { name, description } = req.body;
-            if (!name) {
-                logRequest({
-                    req,
-                    status: 400,
-                    message: 'Role name is required',
-                    level: 'error',
-                    service: 'role',
-                    defaultRoute: 'roles'
-                });
-                return res.status(400).json({ error: 'Role name is required' });
+            const errors = validationResult(req);
+            if (!errors.isEmpty()) {
+                await transaction.rollback();
+                throw Object.assign(new Error(ERROR_MESSAGES.MISSING_FIELDS), { status: 400, details: errors.array() });
             }
 
-            const role = await RoleService.createRole(name, description, req.user.userID);
+            const { name, description } = req.body;
+            if (!name) {
+                await transaction.rollback();
+                throw Object.assign(new Error(ERROR_MESSAGES.MISSING_FIELDS), { status: 400 });
+            }
+
+            const actorID = req.user?.userID || 'unknown';
+            const role = await RoleService.createRole(name, description, actorID, { transaction });
 
             const cacheInstance = await cache();
+            const redis = getRedisClient();
             await cacheInstance.invalidateByTag('roles');
             await cacheInstance.invalidate('roles:all');
-            await getRedisClient().set('roles:last_updated', Date.now().toString());
-            await RedisUtils.publishEvent('cache:invalidate', 'roles:all');
+            await redis.set('roles:last_updated', Date.now().toString());
+            await RedisUtils.publishEvent('cache:invalidate', 'roles');
 
+            const requestID = uuidv4();
             await NotificationService.triggerNotification({
                 event: 'role:created',
                 data: { roleID: role.roleID, name, description },
-                metadata: { triggeredBy: req.user.email },
-                triggeredByUserID: req.user.userID,
+                metadata: { triggeredBy: req.user?.email || 'unknown' },
+                dynamicRecipients: [],
+                triggeredByUserID: actorID,
                 type: 'role',
-                requestID: uuidv4(),
+                customMessage: `Role ${name} created`,
+                requestID,
             });
 
             logRequest({
@@ -194,61 +224,69 @@ class RoleController {
                 status: 201,
                 message: `Created role ${name}`,
                 level: 'info',
-                metadata: { roleID: role.roleID, name, createdBy: req.user.email },
+                metadata: { roleID: role.roleID, name, createdBy: req.user?.email, requestID },
                 service: 'role',
-                defaultRoute: 'roles'
+                defaultRoute: 'roles',
             });
 
+            await transaction.commit();
             return res.status(201).json(role);
         } catch (error) {
+            await transaction.rollback();
+            const response = RoleController.formatError(error);
+            const status = error.status || 400;
+
             logRequest({
                 req,
                 error,
-                status: 400,
-                message: `Failed to create role: ${error.message}`,
+                status,
+                message: `Failed to create role: ${response.error}`,
                 level: 'error',
                 service: 'role',
-                defaultRoute: 'roles'
+                defaultRoute: 'roles',
             });
 
-            return res.status(400).json({ error: error.message || 'Failed to create role' });
+            return res.status(status).json(response);
         }
     }
 
     static async updateRole(req, res) {
+        const transaction = await sequelize.transaction({ isolationLevel: Sequelize.Transaction.ISOLATION_LEVELS.READ_COMMITTED });
         try {
+            const errors = validationResult(req);
+            if (!errors.isEmpty()) {
+                await transaction.rollback();
+                throw Object.assign(new Error(ERROR_MESSAGES.MISSING_FIELDS), { status: 400, details: errors.array() });
+            }
+
             const { roleID } = req.params;
             const { name, description } = req.body;
             if (!roleID) {
-                logRequest({
-                    req,
-                    status: 400,
-                    message: 'Role ID is required',
-                    level: 'error',
-                    service: 'role',
-                    defaultRoute: 'roles'
-                });
-                return res.status(400).json({ error: 'Role ID is required' });
+                await transaction.rollback();
+                throw Object.assign(new Error(ERROR_MESSAGES.MISSING_FIELDS), { status: 400 });
             }
 
-            const role = await RoleService.updateRole(roleID, { name, description }, req.user.userID);
+            const actorID = req.user?.userID || 'unknown';
+            const role = await RoleService.updateRole(roleID, { name, description }, actorID, { transaction });
 
             const cacheInstance = await cache();
+            const redis = getRedisClient();
             await cacheInstance.invalidateByTag('roles');
             await cacheInstance.invalidate('roles:all');
             await cacheInstance.invalidate(`role:${roleID}`);
-            await getRedisClient().set('roles:last_updated', Date.now().toString());
-            await RedisUtils.invalidateUser(req.user.userID);
-            await RedisUtils.publishEvent('cache:invalidate', `role:${roleID}`);
-            await RedisUtils.publishEvent('cache:invalidate', 'roles:all');
+            await redis.set('roles:last_updated', Date.now().toString());
+            await RedisUtils.publishEvent('cache:invalidate', 'roles');
 
+            const requestID = uuidv4();
             await NotificationService.triggerNotification({
                 event: 'role:updated',
                 data: { roleID, name: role.name, description: role.description },
-                metadata: { triggeredBy: req.user.email },
-                triggeredByUserID: req.user.userID,
+                metadata: { triggeredBy: req.user?.email || 'unknown' },
+                dynamicRecipients: [],
+                triggeredByUserID: actorID,
                 type: 'role',
-                requestID: uuidv4(),
+                customMessage: `Role ${role.name} updated `,
+                requestID,
             });
 
             logRequest({
@@ -257,133 +295,150 @@ class RoleController {
                 status: 200,
                 message: `Updated role ${roleID}`,
                 level: 'info',
-                metadata: { roleID, name: role.name, updatedBy: req.user.email },
+                metadata: { roleID, name: role.name, updatedBy: req.user?.email, requestID },
                 service: 'role',
-                defaultRoute: 'roles'
+                defaultRoute: 'roles',
             });
 
+            await transaction.commit();
             return res.status(200).json(role);
         } catch (error) {
+            await transaction.rollback();
+            const response = RoleController.formatError(error);
+            const status = error.status || 400;
+
             logRequest({
                 req,
                 error,
-                status: 400,
-                message: `Failed to update role: ${error.message}`,
+                status,
+                message: `Failed to update role: ${response.error}`,
                 level: 'error',
                 service: 'role',
-                defaultRoute: 'roles'
+                defaultRoute: 'roles',
             });
 
-            return res.status(400).json({ error: error.message || 'Failed to update role' });
+            return res.status(status).json(response);
         }
     }
 
     static async deleteRole(req, res) {
+        const transaction = await sequelize.transaction({ isolationLevel: Sequelize.Transaction.ISOLATION_LEVELS.READ_COMMITTED });
         try {
-            const { roleID } = req.params;
-            if (!roleID) {
-                logRequest({
-                    req,
-                    status: 400,
-                    message: 'Role ID is required',
-                    level: 'error',
-                    service: 'role',
-                    defaultRoute: 'roles'
-                });
-                return res.status(400).json({ error: 'Role ID is required' });
+            const errors = validationResult(req);
+            if (!errors.isEmpty()) {
+                await transaction.rollback();
+                throw Object.assign(new Error(ERROR_MESSAGES.MISSING_FIELDS), { status: 400, details: errors.array() });
             }
 
-            await RoleService.deleteRole(roleID, req.user.userID);
+            const { roleID } = req.params;
+            if (!roleID) {
+                await transaction.rollback();
+                throw Object.assign(new Error(ERROR_MESSAGES.MISSING_FIELDS), { status: 400 });
+            }
+
+            const actorID = req.user?.userID || 'unknown';
+            const role = await Role.findByPk(roleID);
+            await RoleService.deleteRole(roleID, actorID, { transaction });
 
             const cacheInstance = await cache();
+            const redis = getRedisClient();
             await cacheInstance.invalidateByTag('roles');
             await cacheInstance.invalidate('roles:all');
             await cacheInstance.invalidate(`role:${roleID}`);
-            await getRedisClient().set('roles:last_updated', Date.now().toString());
-            await RedisUtils.publishEvent('cache:invalidate', `role:${roleID}`);
-            await RedisUtils.publishEvent('cache:invalidate', 'roles:all');
+            await redis.set('roles:last_updated', Date.now().toString());
+            await RedisUtils.publishEvent('cache:invalidate', 'roles');
 
+            const requestID = uuidv4();
             await NotificationService.triggerNotification({
                 event: 'role:deleted',
                 data: { roleID },
-                metadata: { triggeredBy: req.user.email },
-                triggeredByUserID: req.user.userID,
+                metadata: { triggeredBy: req.user?.email || 'unknown' },
+                dynamicRecipients: [],
+                triggeredByUserID: actorID,
                 type: 'role',
-                requestID: uuidv4(),
+                customMessage: `Role ${role.name} deleted`,
+                requestID,
             });
+
+            const response = { message: 'Role deleted successfully' };
 
             logRequest({
                 req,
-                res: { message: 'Role deleted successfully' },
+                res: response,
                 status: 200,
                 message: `Deleted role ${roleID}`,
                 level: 'info',
-                metadata: { roleID, deletedBy: req.user.email },
+                metadata: { roleID, deletedBy: req.user?.email, requestID },
                 service: 'role',
-                defaultRoute: 'roles'
+                defaultRoute: 'roles',
             });
 
-            return res.status(200).json({ message: 'Role deleted successfully' });
+            await transaction.commit();
+            return res.status(200).json(response);
         } catch (error) {
+            await transaction.rollback();
+            const response = RoleController.formatError(error);
+            const status = error.status || 400;
+
             logRequest({
                 req,
                 error,
-                status: 400,
-                message: `Failed to delete role: ${error.message}`,
+                status,
+                message: `Failed to delete role: ${response.error}`,
                 level: 'error',
                 service: 'role',
-                defaultRoute: 'roles'
+                defaultRoute: 'roles',
             });
 
-            return res.status(400).json({ error: error.message || 'Failed to delete role' });
+            return res.status(status).json(response);
         }
     }
 
     static async assignRolesToUser(req, res) {
+        const transaction = await sequelize.transaction({ isolationLevel: Sequelize.Transaction.ISOLATION_LEVELS.READ_COMMITTED });
         try {
+            const errors = validationResult(req);
+            if (!errors.isEmpty()) {
+                await transaction.rollback();
+                throw Object.assign(new Error(ERROR_MESSAGES.MISSING_FIELDS), { status: 400, details: errors.array() });
+            }
+
             const { userID } = req.params;
             const { roleIDs } = req.body;
             if (!userID || !Array.isArray(roleIDs) || roleIDs.length === 0) {
-                logRequest({
-                    req,
-                    status: 400,
-                    message: 'User ID and non-empty role IDs array are required',
-                    level: 'info',
-                    service: 'role',
-                    defaultRoute: 'roles'
-                });
-                return res.status(400).json({ error: 'User ID and non-empty role IDs array are required' });
+                await transaction.rollback();
+                throw Object.assign(new Error(ERROR_MESSAGES.INVALID_ROLE_IDS), { status: 400 });
             }
 
-            const result = await RoleService.assignRolesToUser(userID, roleIDs, req.user.userID);
+            const actorID = req.user?.userID || 'unknown';
+            const result = await RoleService.assignRolesToUser(userID, roleIDs, actorID, { transaction });
 
             const cacheInstance = await cache();
             const redis = getRedisClient();
             await RedisUtils.invalidateUser(userID);
-            await cacheInstance.invalidateByTag('users');
-            await cacheInstance.invalidateByTag('roles');
+            await cacheInstance.invalidateByTag(['users', 'roles']);
             await cacheInstance.invalidate('roles:all');
             await cacheInstance.invalidate(`user:${userID}:roles`);
             await redis.set('roles:last_updated', Date.now().toString());
-            await RedisUtils.publishEvent('cache:invalidate', `user:${userID}:roles`);
-            await RedisUtils.publishEvent('cache:invalidate', 'roles:all');
-            await RedisUtils.publishEvent('role:assigned', { userID, roleIDs });
+            await RedisUtils.publishEvent('cache:invalidate', 'roles');
 
             const roles = await Role.findAll({
                 where: { roleID: { [Op.in]: roleIDs } },
                 attributes: ['name'],
+                transaction,
             });
             const roleNames = roles.map(role => role.name).join(', ');
+            const user = await User.findByPk(userID, { transaction });
 
             const requestID = uuidv4();
             await NotificationService.triggerNotification({
                 event: 'role:assigned',
                 data: { userID, roleIDs, roleNames },
-                metadata: { triggeredBy: req.user.email },
+                metadata: { triggeredBy: req.user?.email || 'unknown' },
                 dynamicRecipients: [userID],
-                triggeredByUserID: req.user.userID,
+                triggeredByUserID: actorID,
                 type: 'user',
-                customMessage: `Assigned roles ${roleNames} to user`,
+                customMessage: `Assigned roles ${roleNames} to user ${user.firstname} ${user.lastname}`,
                 requestID,
             });
 
@@ -393,72 +448,77 @@ class RoleController {
                 status: 201,
                 message: `Assigned roles to user ${userID}`,
                 level: 'info',
-                metadata: { userID, roleCount: roleIDs.length, status: true, requestID },
+                metadata: { userID, roleCount: roleIDs.length, roleNames, requestID },
                 service: 'role',
-                defaultRoute: 'roles'
+                defaultRoute: 'roles',
             });
 
-            return res.status(201).json(userID);
+            await transaction.commit();
+            return res.status(201).json({ userID, roleIDs });
         } catch (error) {
+            await transaction.rollback();
+            const response = RoleController.formatError(error);
+            const status = error.status || 400;
+
             logRequest({
                 req,
                 error,
-                status: error.status || 400,
-                message: `Failed to assign roles: ${error.message}`,
+                status,
+                message: `Failed to assign roles: ${response.error}`,
                 level: 'error',
                 service: 'role',
-                defaultRoute: 'roles'
+                defaultRoute: 'roles',
             });
 
-            return res.status(400).json({ error: error.message || 'Failed to assign roles' });
+            return res.status(status).json(response);
         }
     }
 
     static async revokeRolesFromUser(req, res) {
+        const transaction = await sequelize.transaction({ isolationLevel: Sequelize.Transaction.ISOLATION_LEVELS.READ_COMMITTED });
         try {
+            const errors = validationResult(req);
+            if (!errors.isEmpty()) {
+                await transaction.rollback();
+                throw Object.assign(new Error(ERROR_MESSAGES.MISSING_FIELDS), { status: 400, details: errors.array() });
+            }
+
             const { userID } = req.params;
             const { roleIDs } = req.body;
             if (!userID || !Array.isArray(roleIDs) || roleIDs.length === 0) {
-                logRequest({
-                    req,
-                    status: 400,
-                    message: 'User ID and non-empty role IDs array are required',
-                    level: 'info',
-                    service: 'role',
-                    defaultRoute: 'roles'
-                });
-                return res.status(400).json({ error: 'User ID and non-empty role IDs array are required' });
+                await transaction.rollback();
+                throw Object.assign(new Error(ERROR_MESSAGES.INVALID_ROLE_IDS), { status: 400 });
             }
 
-            const result = await RoleService.revokeRolesFromUser(userID, roleIDs, req.user.userID);
+            const actorID = req.user?.userID || 'unknown';
+            const result = await RoleService.revokeRolesFromUser(userID, roleIDs, actorID, { transaction });
 
             const cacheInstance = await cache();
             const redis = getRedisClient();
             await RedisUtils.invalidateUser(userID);
-            await cacheInstance.invalidateByTag('users');
-            await cacheInstance.invalidateByTag('roles');
+            await cacheInstance.invalidateByTag(['users', 'roles']);
             await cacheInstance.invalidate('roles:all');
             await cacheInstance.invalidate(`user:${userID}:roles`);
             await redis.set('roles:last_updated', Date.now().toString());
-            await RedisUtils.publishEvent('cache:invalidate', `user:${userID}:roles`);
-            await RedisUtils.publishEvent('cache:invalidate', 'roles:all');
-            await RedisUtils.publishEvent('role:revoked', { userID, roleIDs });
+            await RedisUtils.publishEvent('cache:invalidate', 'roles');
 
             const roles = await Role.findAll({
                 where: { roleID: { [Op.in]: roleIDs } },
                 attributes: ['name'],
+                transaction,
             });
             const roleNames = roles.map(role => role.name).join(', ');
+            const user = await User.findByPk(userID);
 
             const requestID = uuidv4();
             await NotificationService.triggerNotification({
                 event: 'role:revoked',
                 data: { userID, roleIDs, roleNames },
-                metadata: { triggeredBy: req.user.email },
+                metadata: { triggeredBy: req.user?.email || 'unknown' },
                 dynamicRecipients: [userID],
-                triggeredByUserID: req.user.userID,
+                triggeredByUserID: actorID,
                 type: 'user',
-                customMessage: `Revoked roles ${roleNames} from user`,
+                customMessage: `Revoked roles ${roleNames} from user ${user.firstname} ${user.lastname}`,
                 requestID,
             });
 
@@ -468,73 +528,95 @@ class RoleController {
                 status: 200,
                 message: `Revoked roles from user ${userID}`,
                 level: 'info',
-                metadata: { userID, roleCount: roleIDs.length, status: true, requestID },
+                metadata: { userID, roleCount: roleIDs.length, roleNames, requestID },
                 service: 'role',
-                defaultRoute: 'roles'
+                defaultRoute: 'roles',
             });
 
-            return res.status(200).json(userID);
+            await transaction.commit();
+            return res.status(200).json({ userID, roleIDs });
         } catch (error) {
+            await transaction.rollback();
+            const response = RoleController.formatError(error);
+            const status = error.status || 400;
+
             logRequest({
                 req,
                 error,
-                status: error.status || 400,
-                message: `Failed to revoke roles: ${error.message}`,
+                status,
+                message: `Failed to revoke roles: ${response.error}`,
                 level: 'error',
                 service: 'role',
-                defaultRoute: 'roles'
+                defaultRoute: 'roles',
             });
 
-            return res.status(400).json({ error: error.message || 'Failed to revoke roles' });
+            return res.status(status).json(response);
         }
     }
 
     static async resetMainRoles(req, res) {
+        const transaction = await sequelize.transaction({ isolationLevel: Sequelize.Transaction.ISOLATION_LEVELS.READ_COMMITTED });
         try {
-            const result = await RoleService.resetMainRolesToDefault(req.user.userID);
+            const errors = validationResult(req);
+            if (!errors.isEmpty()) {
+                await transaction.rollback();
+                throw Object.assign(new Error(ERROR_MESSAGES.MISSING_FIELDS), { status: 400, details: errors.array() });
+            }
+
+            const actorID = req.user?.userID || 'unknown';
+            const user = await User.findByPk(actorID);
+            const result = await RoleService.resetMainRolesToDefault(actorID, { transaction });
 
             const cacheInstance = await cache();
+            const redis = getRedisClient();
             await cacheInstance.invalidateByTag('roles');
             await cacheInstance.invalidate('roles:all');
-            await getRedisClient().set('roles:last_updated', Date.now().toString());
-            await RedisUtils.publishEvent('cache:invalidate', 'roles:all');
+            await redis.set('roles:last_updated', Date.now().toString());
+            await RedisUtils.publishEvent('cache:invalidate', 'roles');
 
+            const requestID = uuidv4();
             await NotificationService.triggerNotification({
                 event: 'role:reset',
                 data: { roleCount: result.length },
-                metadata: { triggeredBy: req.user.email },
-                triggeredByUserID: req.user.userID,
+                metadata: { triggeredBy: req.user?.email || 'unknown' },
+                dynamicRecipients: [],
+                triggeredByUserID: actorID,
                 type: 'role',
-                requestID: uuidv4(),
+                customMessage: `Main roles reset by user ${user.firstname} ${user.lastname}`,
+                requestID,
             });
+
+            const response = { message: 'Main roles reset successfully', details: result };
 
             logRequest({
                 req,
-                res: result,
+                res: response,
                 status: 200,
                 message: `Reset main roles`,
                 level: 'info',
-                metadata: { roleCount: result.length, resetBy: req.user.email },
+                metadata: { roleCount: result.length, resetBy: req.user?.email, requestID },
                 service: 'role',
-                defaultRoute: 'roles'
+                defaultRoute: 'roles',
             });
 
-            return res.status(200).json({
-                message: 'Main roles reset successfully',
-                details: result,
-            });
+            await transaction.commit();
+            return res.status(200).json(response);
         } catch (error) {
+            await transaction.rollback();
+            const response = RoleController.formatError(error);
+            const status = error.status || 500;
+
             logRequest({
                 req,
                 error,
-                status: 500,
-                message: `Failed to reset roles: ${error.message}`,
+                status,
+                message: `Failed to reset roles: ${response.error}`,
                 level: 'error',
                 service: 'role',
-                defaultRoute: 'roles'
+                defaultRoute: 'roles',
             });
 
-            return res.status(500).json({ error: 'Failed to reset roles' });
+            return res.status(status).json(response);
         }
     }
 }

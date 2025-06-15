@@ -570,7 +570,6 @@ class UserService {
                     { model: Governorate, through: { attributes: [] }, attributes: ['governorateID', 'name'] },
                     { model: Delegation, through: { attributes: [] }, attributes: ['delegationID', 'name'] },
                 ],
-                attributes: ['userID', 'email', 'firstname', 'lastname', 'phone', 'regionalManagerID', 'directorID', 'createdAt', 'updatedAt'],
             });
             if (!users.length) {
                 return [];

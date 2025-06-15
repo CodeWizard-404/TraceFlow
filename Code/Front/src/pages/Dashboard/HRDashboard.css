@@ -529,3 +529,7 @@ body.dark .ant-tree-node-selected {
     display: flex !important;
     justify-content: center !important;
 }
+
+.hr-dashboard .ant-row ul li {
+    padding: 0 !important;
+}

@@ -546,7 +546,7 @@ class NotificationService {
 
             // Get enabled rules
             const rules = await NotificationRule.findAll({ where: { event, enabled: true } });
-            if (!rules.length && !dynamicRecipients.length) {
+            if (!rules.length) {
                 const defaultRule = await this.createDefaultDisabledRule({ event, data, metadata });
                 if (defaultRule && defaultRule.enabled) {
                     await this.handlePriorityChange(defaultRule);

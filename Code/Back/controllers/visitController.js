@@ -45,21 +45,7 @@ class VisitController {
             await redis.set('visits:last_updated', Date.now().toString());
             await RedisUtils.publishEvent('cache:invalidate', `visit:${visitId}`);
 
-            const visitTimesheet = await Visit.findByPk(visitId, { include: [{ model: Timesheet, include: [{ model: User }] }] });
-            const recipientID1 = visitTimesheet?.Timesheet?.User?.regionalManagerID || null;
-            const recipientID2 = visitTimesheet?.Timesheet?.User?.userID || null;
             const requestID = uuidv4();
-            await NotificationService.triggerNotification({
-                event: 'visit:otp_validated',
-                data: { visitID: visitId, otpID: result.otpID },
-                metadata: { validatedBy: req.user.email },
-                dynamicRecipients: [recipientID1, recipientID2],
-                triggeredByUserID: req.user.userID,
-                type: 'visit',
-                customMessage: `OTP validated for visit ${visitId}`,
-                requestID,
-            });
-
             logRequest({
                 req,
                 res: result,
@@ -145,7 +131,7 @@ class VisitController {
                 logger.warn(`Failed to update calendar event for visit ${id}: ${calendarError.message}`);
             }
 
-            const timesheet = await Timesheet.findByPk(visit.timesheetID, { include: [{ model: User }] });
+            const timesheet = await Timesheet.findByPk(visit.visit.timesheetID, { include: [{ model: User }] });
             const recipientID1 = timesheet?.User?.regionalManagerID || null;
             const recipientID2 = timesheet?.User?.userID || null;
             const requestID = uuidv4();
@@ -267,21 +253,7 @@ class VisitController {
             await RedisUtils.publishEvent('cache:invalidate', `visit:${visitId}`);
 
             if (result.valid) {
-                const visitTimesheet = await Visit.findByPk(visitId, { include: [{ model: Timesheet, include: [{ model: User }] }] });
-                const recipientID1 = visitTimesheet?.Timesheet?.User?.regionalManagerID || null;
-                const recipientID2 = visitTimesheet?.Timesheet?.User?.userID || null;
                 const requestID = uuidv4();
-                await NotificationService.triggerNotification({
-                    event: 'visit:qr_verified',
-                    data: { visitID: visitId, qrData, otpID: result.otpID },
-                    metadata: { verifiedBy: req.user.email },
-                    dynamicRecipients: [recipientID1, recipientID2],
-                    triggeredByUserID: req.user.userID,
-                    type: 'visit',
-                    customMessage: `QR code verified for visit ${visitId}`,
-                    requestID,
-                });
-
                 logRequest({
                     req,
                     res: result,
@@ -583,21 +555,7 @@ class VisitController {
             await RedisUtils.publishEvent('cache:invalidate', `timesheet:${visit.Timesheet.timesheetID}`);
             await RedisUtils.publishEvent('cache:invalidate', `visits:by_timesheet:${visit.Timesheet.timesheetID}`);
 
-            const timesheet = await Timesheet.findByPk(visit.Timesheet.timesheetID, { include: [{ model: User }] });
-            const recipientID1 = timesheet?.User?.regionalManagerID || null;
-            const recipientID2 = timesheet?.User?.userID || null;
             const requestID = uuidv4();
-            await NotificationService.triggerNotification({
-                event: 'visit:synced',
-                data: { visitID: visitId, timesheetID: visit.Timesheet.timesheetID },
-                metadata: { syncedBy: req.user.email },
-                dynamicRecipients: [recipientID1, recipientID2],
-                triggeredByUserID: req.user.userID,
-                type: 'visit',
-                customMessage: `Visit ${visitId} synced to calendar`,
-                requestID,
-            });
-
             logRequest({
                 req,
                 res: { visitID: visitId, calendarEventId: event.id },
