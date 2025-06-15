@@ -7,65 +7,8 @@ const cache = require('../utils/cache');
 const { Role } = require('../models');
 const { Op } = require('sequelize');
 const { v4: uuidv4 } = require('uuid');
+const { logRequest } = require('../utils/controllerUtils');
 
-const truncateStringifiedObject = (obj) => {
-    const str = JSON.stringify(obj, null, 2);
-    const lines = str.split('\n');
-    if (lines.length > 3) {
-        return `${lines.slice(0, 2).join('\n')}...`;
-    }
-    return str;
-};
-
-const sanitizeRequest = (req) => {
-    const { password, ...sanitizedBody } = req.body || {};
-    const headers = Object.keys(req.headers).length > 5
-        ? { ...Object.fromEntries(Object.entries(req.headers).slice(0, 5)), truncated: true }
-        : req.headers;
-    const sanitizedHeaders = Object.fromEntries(
-        Object.entries(headers).map(([k, v]) => [k, typeof v === 'string' && v.length > 50 ? `${v.slice(0, 50)}...` : v])
-    );
-    return {
-        headers: truncateStringifiedObject(sanitizedHeaders),
-        body: sanitizedBody,
-        query: Object.keys(req.query).length > 5
-            ? truncateStringifiedObject({ ...Object.fromEntries(Object.entries(req.query).slice(0, 5)), truncated: true })
-            : truncateStringifiedObject(req.query),
-        params: truncateStringifiedObject(req.params),
-    };
-};
-
-const truncateResponse = (res) => {
-    if (Array.isArray(res) && res.length >= 5) {
-        return { data: res.slice(0, 5).map(item => truncateStringifiedObject(item)), additionalCount: res.length - 5 };
-    }
-    return truncateStringifiedObject(res);
-};
-
-const logRequest = ({ req, res, error, status, message, level, metadata = {} }) => {
-    const route = req.originalUrl.split('/api/')[1]?.split('/')[0] || 'roles';
-    const ipAddress = req.ip || req.headers['x-forwarded-for'] || 'unknown';
-    const userId = req.user?.userID || 'anonymous';
-    const service = 'role';
-
-    const logMetadata = error
-        ? { request: sanitizeRequest(req), error: error.message, ...metadata }
-        : { request: sanitizeRequest(req), response: truncateResponse(res), ...metadata };
-
-    logger.log({
-        level,
-        message,
-        fullUrl: req.originalUrl,
-        route,
-        ipAddress,
-        service,
-        status,
-        method: req.method,
-        userId,
-        traceId: req.traceId,
-        metadata: logMetadata,
-    });
-};
 
 class RoleController {
     static async getAllRoles(req, res) {
@@ -99,6 +42,8 @@ class RoleController {
                 message: `Retrieved ${roles.length} roles`,
                 level: 'info',
                 metadata: { roleCount: roles.length, cacheHit: !isStale },
+                service: 'role',
+                defaultRoute: 'roles'
             });
 
             return res.status(200).json(roles);
@@ -109,6 +54,8 @@ class RoleController {
                 status: 500,
                 message: `Failed to retrieve roles: ${error.message}`,
                 level: 'error',
+                service: 'role',
+                defaultRoute: 'roles'
             });
 
             return res.status(500).json({ error: 'Failed to retrieve roles' });
@@ -124,6 +71,8 @@ class RoleController {
                     status: 400,
                     message: 'Role ID is required',
                     level: 'error',
+                    service: 'role',
+                    defaultRoute: 'roles'
                 });
                 return res.status(400).json({ error: 'Role ID is required' });
             }
@@ -140,6 +89,8 @@ class RoleController {
                 message: `Retrieved role ${roleID}`,
                 level: 'info',
                 metadata: { roleID, name: role.name },
+                service: 'role',
+                defaultRoute: 'roles'
             });
 
             return res.status(200).json(role);
@@ -150,6 +101,8 @@ class RoleController {
                 status: 404,
                 message: `Failed to retrieve role: ${error.message}`,
                 level: 'error',
+                service: 'role',
+                defaultRoute: 'roles'
             });
 
             return res.status(404).json({ error: 'Role not found' });
@@ -165,6 +118,8 @@ class RoleController {
                     status: 400,
                     message: 'User ID is required',
                     level: 'error',
+                    service: 'role',
+                    defaultRoute: 'roles'
                 });
                 return res.status(400).json({ error: 'User ID is required' });
             }
@@ -181,6 +136,8 @@ class RoleController {
                 message: `Retrieved roles for user ${userID}`,
                 level: 'info',
                 metadata: { roleCount: roles.length },
+                service: 'role',
+                defaultRoute: 'roles'
             });
 
             return res.status(200).json(roles);
@@ -191,6 +148,8 @@ class RoleController {
                 status: 404,
                 message: `Failed to retrieve user roles: ${error.message}`,
                 level: 'error',
+                service: 'role',
+                defaultRoute: 'roles'
             });
 
             return res.status(404).json({ error: 'User roles not found' });
@@ -206,6 +165,8 @@ class RoleController {
                     status: 400,
                     message: 'Role name is required',
                     level: 'error',
+                    service: 'role',
+                    defaultRoute: 'roles'
                 });
                 return res.status(400).json({ error: 'Role name is required' });
             }
@@ -234,6 +195,8 @@ class RoleController {
                 message: `Created role ${name}`,
                 level: 'info',
                 metadata: { roleID: role.roleID, name, createdBy: req.user.email },
+                service: 'role',
+                defaultRoute: 'roles'
             });
 
             return res.status(201).json(role);
@@ -244,6 +207,8 @@ class RoleController {
                 status: 400,
                 message: `Failed to create role: ${error.message}`,
                 level: 'error',
+                service: 'role',
+                defaultRoute: 'roles'
             });
 
             return res.status(400).json({ error: error.message || 'Failed to create role' });
@@ -260,6 +225,8 @@ class RoleController {
                     status: 400,
                     message: 'Role ID is required',
                     level: 'error',
+                    service: 'role',
+                    defaultRoute: 'roles'
                 });
                 return res.status(400).json({ error: 'Role ID is required' });
             }
@@ -291,6 +258,8 @@ class RoleController {
                 message: `Updated role ${roleID}`,
                 level: 'info',
                 metadata: { roleID, name: role.name, updatedBy: req.user.email },
+                service: 'role',
+                defaultRoute: 'roles'
             });
 
             return res.status(200).json(role);
@@ -301,6 +270,8 @@ class RoleController {
                 status: 400,
                 message: `Failed to update role: ${error.message}`,
                 level: 'error',
+                service: 'role',
+                defaultRoute: 'roles'
             });
 
             return res.status(400).json({ error: error.message || 'Failed to update role' });
@@ -316,6 +287,8 @@ class RoleController {
                     status: 400,
                     message: 'Role ID is required',
                     level: 'error',
+                    service: 'role',
+                    defaultRoute: 'roles'
                 });
                 return res.status(400).json({ error: 'Role ID is required' });
             }
@@ -346,6 +319,8 @@ class RoleController {
                 message: `Deleted role ${roleID}`,
                 level: 'info',
                 metadata: { roleID, deletedBy: req.user.email },
+                service: 'role',
+                defaultRoute: 'roles'
             });
 
             return res.status(200).json({ message: 'Role deleted successfully' });
@@ -356,6 +331,8 @@ class RoleController {
                 status: 400,
                 message: `Failed to delete role: ${error.message}`,
                 level: 'error',
+                service: 'role',
+                defaultRoute: 'roles'
             });
 
             return res.status(400).json({ error: error.message || 'Failed to delete role' });
@@ -372,6 +349,8 @@ class RoleController {
                     status: 400,
                     message: 'User ID and non-empty role IDs array are required',
                     level: 'info',
+                    service: 'role',
+                    defaultRoute: 'roles'
                 });
                 return res.status(400).json({ error: 'User ID and non-empty role IDs array are required' });
             }
@@ -415,6 +394,8 @@ class RoleController {
                 message: `Assigned roles to user ${userID}`,
                 level: 'info',
                 metadata: { userID, roleCount: roleIDs.length, status: true, requestID },
+                service: 'role',
+                defaultRoute: 'roles'
             });
 
             return res.status(201).json(userID);
@@ -425,6 +406,8 @@ class RoleController {
                 status: error.status || 400,
                 message: `Failed to assign roles: ${error.message}`,
                 level: 'error',
+                service: 'role',
+                defaultRoute: 'roles'
             });
 
             return res.status(400).json({ error: error.message || 'Failed to assign roles' });
@@ -441,6 +424,8 @@ class RoleController {
                     status: 400,
                     message: 'User ID and non-empty role IDs array are required',
                     level: 'info',
+                    service: 'role',
+                    defaultRoute: 'roles'
                 });
                 return res.status(400).json({ error: 'User ID and non-empty role IDs array are required' });
             }
@@ -484,6 +469,8 @@ class RoleController {
                 message: `Revoked roles from user ${userID}`,
                 level: 'info',
                 metadata: { userID, roleCount: roleIDs.length, status: true, requestID },
+                service: 'role',
+                defaultRoute: 'roles'
             });
 
             return res.status(200).json(userID);
@@ -494,6 +481,8 @@ class RoleController {
                 status: error.status || 400,
                 message: `Failed to revoke roles: ${error.message}`,
                 level: 'error',
+                service: 'role',
+                defaultRoute: 'roles'
             });
 
             return res.status(400).json({ error: error.message || 'Failed to revoke roles' });
@@ -526,6 +515,8 @@ class RoleController {
                 message: `Reset main roles`,
                 level: 'info',
                 metadata: { roleCount: result.length, resetBy: req.user.email },
+                service: 'role',
+                defaultRoute: 'roles'
             });
 
             return res.status(200).json({
@@ -539,6 +530,8 @@ class RoleController {
                 status: 500,
                 message: `Failed to reset roles: ${error.message}`,
                 level: 'error',
+                service: 'role',
+                defaultRoute: 'roles'
             });
 
             return res.status(500).json({ error: 'Failed to reset roles' });
