@@ -445,3 +445,7 @@ body.dark .toggle-btn.active {
 .agent-management-container .metric-card {
     display: block !important;
 }
+
+.agent-management-container ul li {
+    padding: 0 !important;
+}

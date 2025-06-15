@@ -1,285 +1,208 @@
-
 const express = require('express');
 const router = express.Router();
-const { authenticateCookie, requirePermission } = require('../config/security');
-const SystemController = require('../controllers/systemController');
+const RoleController = require('../controllers/roleController');
+const { requirePermission } = require('../config/security');
 
 /**
  * @swagger
- * tags:
- *   name: System
- *   description: API endpoints for managing system logs and logger status
- */
-
-/**
- * @swagger
- * components:
- *   schemas:
- *     Log:
- *       type: object
- *       properties:
- *         logID:
- *           type: string
- *           description: Unique identifier for the log entry
- *         level:
- *           type: string
- *           enum: [debug, info, warn, error]
- *           description: Log level
- *         message:
- *           type: string
- *           description: Log message
- *         category:
- *           type: string
- *           description: Category of the log (e.g., auth, system, api)
- *         context:
- *           type: object
- *           description: Additional context for the log
- *         timestamp:
- *           type: string
- *           format: date-time
- *           description: Time of the log entry
- *       required:
- *         - logID
- *         - level
- *         - message
- *         - timestamp
- *     LogStatistics:
- *       type: object
- *       properties:
- *         totalLogs:
- *           type: integer
- *           description: Total number of logs
- *         byLevel:
- *           type: object
- *           additionalProperties:
- *             type: integer
- *           description: Log counts by level (e.g., debug, info)
- *         byCategory:
- *           type: object
- *           additionalProperties:
- *             type: integer
- *           description: Log counts by category
- *         timeRange:
- *           type: object
- *           properties:
- *             start:
- *               type: string
- *               format: date-time
- *             end:
- *               type: string
- *               format: date-time
- *           description: Time range of the statistics
- *       required:
- *         - totalLogs
- *     LoggerHealth:
- *       type: object
- *       properties:
- *         status:
- *           type: string
- *           enum: [healthy, degraded, unhealthy]
- *           description: Health status of the logger
- *         uptime:
- *           type: number
- *           description: Logger uptime in seconds
- *         lastLogTime:
- *           type: string
- *           format: date-time
- *           description: Timestamp of the last log entry
- *         storageUsage:
- *           type: number
- *           description: Storage usage in bytes
- *       required:
- *         - status
- *         - uptime
- *     LoggerMetrics:
- *       type: object
- *       properties:
- *         logRate:
- *           type: number
- *           description: Logs per second
- *         averageLogSize:
- *           type: number
- *           description: Average size of log entries in bytes
- *         errorRate:
- *           type: number
- *           description: Percentage of error-level logs
- *         topCategories:
- *           type: array
- *           items:
- *             type: string
- *           description: Most frequent log categories
- *       required:
- *         - logRate
- *         - errorRate
- */
-
-/**
- * @swagger
- * /api/system:
- *   get:
- *     summary: Get all system logs
- *     description: Retrieves all system logs with optional filtering by level, date, or context. Results are cached for performance.
- *     tags: [System]
+ * /api/roles/reset:
+ *   post:
+ *     summary: Reset main roles to default configuration
+ *     description: Resets predefined roles (e.g., Super Admin, Admin) to their default permissions and settings. Triggers a `role:reset` notification.
+ *     tags: [Roles]
  *     security:
- *       - cookieAuth: []
- *     parameters:
- *       - in: query
- *         name: level
- *         schema:
- *           type: string
- *           enum: [debug, info, warn, error]
- *         description: Filter logs by level
- *       - in: query
- *         name: startDate
- *         schema:
- *           type: string
- *           format: date-time
- *         description: Start date for log retrieval
- *       - in: query
- *         name: endDate
- *         schema:
- *           type: string
- *           format: date-time
- *         description: End date for log retrieval
+ *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: List of system logs
+ *         description: Main roles reset successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Main roles reset successfully
+ *                 details:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       roleName:
+ *                         type: string
+ *                       permissionsAssigned:
+ *                         type: integer
+ *                       permissionsRevoked:
+ *                         type: integer
+ *                       totalPermissions:
+ *                         type: integer
+ *       400:
+ *         description: Invalid input
+ *       401:
+ *         description: Unauthorized, missing or invalid token
+ *       500:
+ *         description: Internal server error
+ */
+router.post('/reset', requirePermission('reset_roles'), RoleController.resetMainRoles);
+
+/**
+ * @swagger
+ * /api/roles:
+ *   post:
+ *     summary: Create a new role
+ *     description: Creates a new role with the specified name and description. Triggers a `role:created` notification.
+ *     tags: [Roles]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 description: The unique name of the role
+ *                 example: Manager
+ *               description:
+ *                 type: string
+ *                 description: Optional description of the role
+ *                 example: Manages regional operations
+ *     responses:
+ *       201:
+ *         description: Role created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 roleID:
+ *                   type: string
+ *                 name:
+ *                   type: string
+ *                 description:
+ *                   type: string
+ *       400:
+ *         description: Missing required fields or role already exists
+ *       401:
+ *         description: Unauthorized, missing or invalid token
+ *       500:
+ *         description: Internal server error
+ */
+router.post('/', requirePermission('create_roles'), RoleController.createRole);
+
+/**
+ * @swagger
+ * /api/roles:
+ *   get:
+ *     summary: Get all roles
+ *     description: Retrieves a list of all roles with their permissions.
+ *     tags: [Roles]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of all roles
  *         content:
  *           application/json:
  *             schema:
  *               type: array
  *               items:
- *                 $ref: '#/components/schemas/Log'
- *       400:
- *         description: Invalid query parameters
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Invalid date format
+ *                 type: object
+ *                 properties:
+ *                   roleID:
+ *                     type: string
+ *                   name:
+ *                     type: string
+ *                   description:
+ *                     type: string
+ *                   Permissions:
+ *                     type: array
+ *                     items:
+ *                       type: object
+ *                       properties:
+ *                         permissionID:
+ *                           type: string
+ *                         name:
+ *                           type: string
+ *                         description:
+ *                           type: string
  *       401:
- *         description: Unauthorized - Invalid or missing authentication cookie
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Token required
- *       403:
- *         description: Forbidden - Insufficient permissions
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Permission 'view_logs' required
+ *         description: Unauthorized, missing or invalid token
  *       500:
  *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Something broke. Try again later.
  */
-router.get('/', authenticateCookie, requirePermission('view_logs'), SystemController.getLogs);
+router.get('/', requirePermission('access_all_roles'), RoleController.getAllRoles);
 
 /**
  * @swagger
- * /api/system/category/{category}:
+ * /api/roles/{roleID}:
  *   get:
- *     summary: Get logs by category
- *     description: Retrieves system logs filtered by a specific category (e.g., auth, system, api). Results are cached for performance.
- *     tags: [System]
+ *     summary: Get a role by ID
+ *     description: Retrieves details of a specific role by its ID, including associated permissions.
+ *     tags: [Roles]
  *     security:
- *       - cookieAuth: []
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
- *         name: category
+ *         name: roleID
  *         required: true
  *         schema:
  *           type: string
- *         description: The category of logs to retrieve
+ *         description: The ID of the role to retrieve
  *     responses:
  *       200:
- *         description: List of logs for the specified category
+ *         description: Role details
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Log'
+ *               type: object
+ *               properties:
+ *                 roleID:
+ *                   type: string
+ *                 name:
+ *                   type: string
+ *                 description:
+ *                   type: string
+ *                 Permissions:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       name:
+ *                         type: string
+ *                       description:
+ *                         type: string
  *       400:
- *         description: Missing or invalid category
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Invalid category
+ *         description: Missing roleID
  *       401:
- *         description: Unauthorized - Invalid or missing authentication cookie
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Token required
- *       403:
- *         description: Forbidden - Insufficient permissions
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Permission 'view_log_categories' required
+ *         description: Unauthorized, missing or invalid token
  *       404:
- *         description: Category not found
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Category not found
+ *         description: Role not found
  *       500:
  *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Something broke. Try again later.
  */
-router.get('/category/:category', authenticateCookie, requirePermission('view_log_categories'), SystemController.getLogsByCategory);
+router.get('/:roleID', requirePermission('read_role_details'), RoleController.getRoleById);
 
 /**
  * @swagger
- * /api/system/delete:
- *   post:
- *     summary: Delete specified logs
- *     description: Deletes logs based on provided filters (e.g., level, date range, category). Triggers a `system: logs_deleted` notification and invalidates cache.
- *     tags: [System]
+ * /api/roles/{roleID}:
+ *   put:
+ *     summary: Update a role
+ *     description: Updates the name and/or description of a role. Restricted roles cannot be renamed. Triggers a `role:updated` notification.
+ *     tags: [Roles]
  *     security:
- *       - cookieAuth: []
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: roleID
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the role to update
  *     requestBody:
  *       required: true
  *       content:
@@ -287,551 +210,235 @@ router.get('/category/:category', authenticateCookie, requirePermission('view_lo
  *           schema:
  *             type: object
  *             properties:
- *               logIDs:
+ *               name:
+ *                 type: string
+ *                 description: The new name of the role
+ *                 example: UpdatedManager
+ *               description:
+ *                 type: string
+ *                 description: The new description of the role
+ *                 example: Updated description for manager role
+ *     responses:
+ *       200:
+ *         description: Role updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 roleID:
+ *                   type: string
+ *                 name:
+ *                   type: string
+ *                 description:
+ *                   type: string
+ *       400:
+ *         description: Missing roleID or restricted role rename attempted
+ *       401:
+ *         description: Unauthorized, missing or invalid token
+ *       404:
+ *         description: Role not found
+ *       500:
+ *         description: Internal server error
+ */
+router.put('/:roleID', requirePermission('update_roles'), RoleController.updateRole);
+
+/**
+ * @swagger
+ * /api/roles/{roleID}:
+ *   delete:
+ *     summary: Delete a role
+ *     description: Deletes a role by its ID. Restricted roles cannot be deleted. Triggers a `role:deleted` notification.
+ *     tags: [Roles]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: roleID
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the role to delete
+ *     responses:
+ *       200:
+ *         description: Role deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Role deleted successfully
+ *       400:
+ *         description: Missing roleID or restricted role deletion attempted
+ *       401:
+ *         description: Unauthorized, missing or invalid token
+ *       404:
+ *         description: Role not found
+ *       500:
+ *         description: Internal server error
+ */
+router.delete('/:roleID', requirePermission('delete_roles'), RoleController.deleteRole);
+
+/**
+ * @swagger
+ * /api/roles/user/{userID}/assign:
+ *   post:
+ *     summary: Assign roles to a user
+ *     description: Assigns one or more roles to a user. Triggers a `role:assigned` notification.
+ *     tags: [Roles]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userID
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the user to assign roles to
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - roleIDs
+ *             properties:
+ *               roleIDs:
  *                 type: array
  *                 items:
  *                   type: string
- *                 description: Specific log IDs to delete
- *               level:
- *                 type: string
- *                 enum: [debug, info, warn, error]
- *                 description: Delete logs by level
- *               category:
- *                 type: string
- *                 description: Delete logs by category
- *               startDate:
- *                 type: string
- *                 format: date-time
- *                 description: Start date for deletion range
- *               endDate:
- *                 type: string
- *                 format: date-time
- *                 description: End date for deletion range
- *             required:
- *               - logIDs
+ *                 description: Array of role IDs to assign
+ *                 example: ["role1", "role2"]
  *     responses:
- *       200:
- *         description: Logs deleted successfully
+ *       201:
+ *         description: Roles assigned successfully
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 message:
+ *                 userID:
  *                   type: string
- *                   example: Logs deleted successfully
- *                 deletedCount:
- *                   type: integer
- *                   description: Number of logs deleted
+ *                 roleIDs:
+ *                   type: array
+ *                   items:
+ *                     type: string
  *       400:
- *         description: Invalid or missing filters
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: At least one filter is required
+ *         description: Missing userID or invalid/empty roleIDs
  *       401:
- *         description: Unauthorized - Invalid or missing authentication cookie
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Token required
- *       403:
- *         description: Forbidden - Insufficient permissions
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Permission 'delete_logs' required
+ *         description: Unauthorized, missing or invalid token
+ *       404:
+ *         description: User or roles not found
  *       500:
  *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Something broke. Try again later.
  */
-router.post('/delete', authenticateCookie, requirePermission('delete_logs'), SystemController.deleteLogs);
+router.post('/user/:userID/assign', requirePermission('assign_roles'), RoleController.assignRolesToUser);
 
 /**
  * @swagger
- * /api/system/archive:
+ * /api/roles/user/{userID}/revoke:
  *   post:
- *     summary: Archive logs
- *     description: Archives logs based on filters (e.g., level, date range, category). Triggers a `system: logs_archived` notification and invalidates cache.
- *     tags: [System]
+ *     summary: Revoke roles from a user
+ *     description: Revokes one or more roles from a user. Triggers a `role:revoked` notification.
+ *     tags: [Roles]
  *     security:
- *       - cookieAuth: []
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userID
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the user to revoke roles from
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
+ *             required:
+ *               - roleIDs
  *             properties:
- *               level:
- *                 type: string
- *                 enum: [debug, info, warn, error]
- *                 description: Archive logs by level
- *               category:
- *                 type: string
- *                 description: Archive logs by category
- *               startDate:
- *                 type: string
- *                 format: date-time
- *                 description: Start date for archiving range
- *               endDate:
- *                 type: string
- *                 format: date-time
- *                 description: End date for archiving range
+ *               roleIDs:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Array of role IDs to revoke
+ *                 example: ["role1", "role2"]
  *     responses:
  *       200:
- *         description: Logs archived successfully
+ *         description: Roles revoked successfully
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 message:
+ *                 userID:
  *                   type: string
- *                   example: Logs archived successfully
- *                 archiveID:
- *                   type: string
- *                   description: Identifier for the archived logs
- *                 archivedCount:
- *                   type: integer
- *                   description: Number of logs archived
+ *                 roleIDs:
+ *                   type: array
+ *                   items:
+ *                     type: string
  *       400:
- *         description: Invalid or missing filters
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: At least one filter is required
+ *         description: Missing userID or invalid/empty roleIDs
  *       401:
- *         description: Unauthorized - Invalid or missing authentication cookie
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Token required
- *       403:
- *         description: Forbidden - Insufficient permissions
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Permission 'archive_logs' required
+ *         description: Unauthorized, missing or invalid token
+ *       404:
+ *         description: User or roles not found
  *       500:
  *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Something broke. Try again later.
  */
-router.post('/archive', authenticateCookie, requirePermission('archive_logs'), SystemController.archiveLogs);
+router.post('/user/:userID/revoke', requirePermission('revoke_roles'), RoleController.revokeRolesFromUser);
 
 /**
  * @swagger
- * /api/system/statistics:
+ * /api/roles/user/{userID}:
  *   get:
- *     summary: Get log statistics
- *     description: Retrieves statistics about system logs, such as counts by level, category, and time range. Results are cached for performance.
- *     tags: [System]
- *     security:
- *       - cookieAuth: []
- *     parameters:
- *       - in: query
- *         name: startDate
- *         schema:
- *           type: string
- *           format: date-time
- *         description: Start date for statistics
- *       - in: query
- *         name: endDate
- *         schema:
- *           type: string
- *           format: date-time
- *         description: End date for statistics
- *     responses:
- *       200:
- *         description: Log statistics
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/LogStatistics'
- *       400:
- *         description: Invalid query parameters
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Invalid date format
- *       401:
- *         description: Unauthorized - Invalid or missing authentication cookie
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Token required
- *       403:
- *         description: Forbidden - Insufficient permissions
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Permission 'view_log_statistics' required
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Something broke. Try again later.
- */
-router.get('/statistics', authenticateCookie, requirePermission('view_log_statistics'), SystemController.getLogStatistics);
-
-/**
- * @swagger
- * /api/system/export:
- *   get:
- *     summary: Export system logs
- *     description: Exports system logs in a downloadable format (e.g., CSV, JSON) based on filters. Results are not cached due to export nature.
- *     tags: [System]
- *     security:
- *       - cookieAuth: []
- *     parameters:
- *       - in: query
- *         name: format
- *         schema:
- *           type: string
- *           enum: [csv, json]
- *         description: Export format
- *       - in: query
- *         name: level
- *         schema:
- *           type: string
- *           enum: [debug, info, warn, error]
- *         description: Filter logs by level
- *       - in: query
- *         name: startDate
- *         schema:
- *           type: string
- *           format: date-time
- *         description: Start date for export
- *       - in: query
- *         name: endDate
- *         schema:
- *           type: string
- *           format: date-time
- *         description: End date for export
- *     responses:
- *       200:
- *         description: Logs exported successfully
- *         content:
- *           application/octet-stream:
- *             schema:
- *               type: string
- *               format: binary
- *       400:
- *         description: Invalid query parameters
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Invalid format
- *       401:
- *         description: Unauthorized - Invalid or missing authentication cookie
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Token required
- *       403:
- *         description: Forbidden - Insufficient permissions
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Permission 'export_logs' required
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Something broke. Try again later.
- */
-router.get('/export', authenticateCookie, requirePermission('export_logs'), SystemController.exportLogs);
-
-/**
- * @swagger
- * /api/system/clear:
- *   post:
- *     summary: Clear all system logs
- *     description: Deletes all system logs. Triggers a `system: logs_cleared` notification and invalidates cache.
- *     tags: [System]
- *     security:
- *       - cookieAuth: []
- *     responses:
- *       200:
- *         description: All logs cleared successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: All logs cleared successfully
- *       401:
- *         description: Unauthorized - Invalid or missing authentication cookie
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Token required
- *       403:
- *         description: Forbidden - Insufficient permissions
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Permission 'clear_logs' required
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Something broke. Try again later.
- */
-router.post('/clear', authenticateCookie, requirePermission('clear_logs'), SystemController.clearAllLogs);
-
-/**
- * @swagger
- * /api/system/unique/{field}:
- *   get:
- *     summary: Get unique values for a log field
- *     description: Retrieves unique values for a specified log field (e.g., category, level). Results are cached for performance.
- *     tags: [System]
- *     security:
- *       - cookieAuth: []
+ *     summary: Get roles for a user
+ *     description: Retrieves all roles assigned to a specific user, including their permissions.
+ *     tags: [Roles]
  *     parameters:
  *       - in: path
- *         name: field
+ *         name: userID
  *         required: true
  *         schema:
  *           type: string
- *           enum: [category, level]
- *         description: The log field to retrieve unique values for
+ *         description: The ID of the user whose roles to retrieve
  *     responses:
  *       200:
- *         description: List of unique values
+ *         description: List of roles for the user
  *         content:
  *           application/json:
  *             schema:
  *               type: array
  *               items:
- *                 type: string
+ *                 type: object
+ *                 properties:
+ *                   roleID:
+ *                     type: string
+ *                   name:
+ *                     type: string
+ *                   description:
+ *                     type: string
+ *                   Permissions:
+ *                     type: array
+ *                     items:
+ *                       type: object
+ *                       properties:
+ *                         name:
+ *                           type: string
+ *                         description:
+ *                           type: string
  *       400:
- *         description: Invalid or unsupported field
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Unsupported field
- *       401:
- *         description: Unauthorized - Invalid or missing authentication cookie
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Token required
- *       403:
- *         description: Forbidden - Insufficient permissions
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Permission 'view_log_filters' required
+ *         description: Missing userID
+ *       404:
+ *         description: User not found
  *       500:
  *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Something broke. Try again later.
  */
-router.get('/unique/:field', authenticateCookie, requirePermission('view_log_filters'), SystemController.getUniqueValues);
-
-/**
- * @swagger
- * /api/system/health:
- *   get:
- *     summary: Check logger health
- *     description: Retrieves the health status of the logging system. Results are cached for performance.
- *     tags: [System]
- *     security:
- *       - cookieAuth: []
- *     responses:
- *       200:
- *         description: Logger health status
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/LoggerHealth'
- *       401:
- *         description: Unauthorized - Invalid or missing authentication cookie
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Token required
- *       403:
- *         description: Forbidden - Insufficient permissions
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Permission 'view_logger_health' required
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Something broke. Try again later.
- */
-router.get('/health', authenticateCookie, requirePermission('view_logger_health'), SystemController.getLoggerHealth);
-
-/**
- * @swagger
- * /api/system/metrics:
- *   get:
- *     summary: Get logger metrics
- *     description: Retrieves performance metrics for the logging system, such as log rate and error rate. Results are cached for performance.
- *     tags: [System]
- *     security:
- *       - cookieAuth: []
- *     responses:
- *       200:
- *         description: Logger metrics
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/LoggerMetrics'
- *       401:
- *         description: Unauthorized - Invalid or missing authentication cookie
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Token required
- *       403:
- *         description: Forbidden - Insufficient permissions
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Permission 'view_logger_metrics' required
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Something broke. Try again later.
- */
-router.get('/metrics', authenticateCookie, requirePermission('view_logger_metrics'), SystemController.getLoggerMetrics);
+router.get('/user/:userID', RoleController.getRolesByUser);
 
 module.exports = router;
