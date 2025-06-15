@@ -129,7 +129,7 @@ class TimesheetService {
     Map<String, dynamic>? criteria,
   }) async {
     if (kDebugMode) print('Suggesting timesheet for supervisor: $supervisorID');
-    return await AuthService.makeAuthenticatedRequest(
+    final data = await AuthService.makeAuthenticatedRequest(
       request: () async {
         final url = Uri.parse('$baseUrl/timesheets/suggest');
         if (kDebugMode) print('POST $url');
@@ -151,13 +151,11 @@ class TimesheetService {
         }
         throw Exception('Failed to suggest timesheet: ${response.body}');
       },
-    ).then((response) {
-      final data = json.decode(response.body);
-      if (data is Map<String, dynamic>) {
-        return data;
-      }
-      throw Exception('Invalid timesheet suggestion response format');
-    });
+    );
+    if (data is Map<String, dynamic>) {
+      return data;
+    }
+    throw Exception('Invalid timesheet suggestion response format');
   }
 
   static Future<void> cancelTimesheetSuggestion(String requestId) async {

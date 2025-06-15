@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -21,14 +22,20 @@ class VisitItem extends StatelessWidget {
   });
 
   bool get _canDrag {
-    return isDraggable && !isSuggested && visit.status?.toLowerCase() != 'visited';
+    return isDraggable && visit.status?.toLowerCase() != 'visited';
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final timeFormat = DateFormat('HH:mm');
-    final formattedTime = timeFormat.format(DateTime.parse('2025-01-01 ${visit.time}'));
+    String formattedTime;
+    try {
+      formattedTime = timeFormat.format(DateTime.parse('2000-01-01 ${visit.time}:00'));
+    } catch (e) {
+      formattedTime = visit.time; // Fallback to raw time if parsing fails
+      if (kDebugMode) print('Error parsing time: ${visit.time}, $e');
+    }
 
     return Consumer2<AgentProvider, TimesheetProvider>(
       builder: (context, agentProvider, timesheetProvider, child) {

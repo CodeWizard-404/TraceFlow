@@ -57,6 +57,13 @@ class AppSidebar extends StatelessWidget {
                   children: [
                     _buildNavItem(
                       context,
+                      icon: Icons.home_outlined,
+                      label: 'Dashboard',
+                      route: '/supervisor-dashboard',
+                    ),
+                    const CustomSpacer(height: 8),
+                    _buildNavItem(
+                      context,
                       icon: Icons.person_outline,
                       label: 'Profile',
                       route: '/profile',

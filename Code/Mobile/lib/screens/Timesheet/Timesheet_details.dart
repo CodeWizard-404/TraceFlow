@@ -24,12 +24,14 @@ class TimesheetDetailsScreen extends StatefulWidget {
   TimesheetDetailsScreenState createState() => TimesheetDetailsScreenState();
 }
 
-class TimesheetDetailsScreenState extends State<TimesheetDetailsScreen> with SingleTickerProviderStateMixin {
+class TimesheetDetailsScreenState extends State<TimesheetDetailsScreen>
+    with SingleTickerProviderStateMixin {
   DateTime _currentDate = DateTime.now();
   late PageController _pageController;
   late AnimationController _animationController;
   String _currentView = 'week1';
-  final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+  final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey =
+  GlobalKey<ScaffoldMessengerState>();
 
   @override
   void initState() {
@@ -60,7 +62,8 @@ class TimesheetDetailsScreenState extends State<TimesheetDetailsScreen> with Sin
         return (date.difference(firstMonday).inDays / 7).floor();
       case 'month':
         final baseDate = DateTime(now.year - 100, 1, 1);
-        final totalMonths = (date.year - baseDate.year) * 12 + date.month - baseDate.month;
+        final totalMonths =
+            (date.year - baseDate.year) * 12 + date.month - baseDate.month;
         return totalMonths;
       case 'year':
         return date.year - now.year;
@@ -106,18 +109,23 @@ class TimesheetDetailsScreenState extends State<TimesheetDetailsScreen> with Sin
     setState(() {
       _currentView = view;
       if (specificDate != null) _currentDate = specificDate;
-      _pageController.jumpToPage(_getOffset(_currentDate));
+      // Only jump to page if PageView is available
+      if (_pageController.hasClients) {
+        _pageController.jumpToPage(_getOffset(_currentDate));
+      }
     });
   }
 
   void _jumpToNow() {
     setState(() {
       _currentDate = DateTime.now();
-      _pageController.animateToPage(
-        _getOffset(_currentDate),
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
+      if (_pageController.hasClients) {
+        _pageController.animateToPage(
+          _getOffset(_currentDate),
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
     });
   }
 
@@ -125,17 +133,24 @@ class TimesheetDetailsScreenState extends State<TimesheetDetailsScreen> with Sin
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final timesheetProvider = Provider.of<TimesheetProvider>(context, listen: false);
     if (authProvider.user?.userID != null) {
-      await timesheetProvider
-          .fetchTimesheetsBySupervisor(authProvider.user!.userID!)
-          .catchError((error) {
+      try {
+        await timesheetProvider.fetchTimesheetsBySupervisor(authProvider.user!.userID!);
+      } catch (error) {
         _scaffoldMessengerKey.currentState?.showSnackBar(
           SnackBar(content: Text('Failed to load timesheets: $error')),
         );
-      });
+      }
+    } else {
+      _scaffoldMessengerKey.currentState?.showSnackBar(
+        const SnackBar(content: Text('User not authenticated')),
+      );
     }
   }
 
-  Widget _buildView(DateTime date) {
+  Widget _buildView(DateTime date, bool hasTimesheets) {
+    if (!hasTimesheets) {
+      return const EmptyState(text: 'No timesheets available');
+    }
     switch (_currentView) {
       case 'day':
         return DayView(date);
@@ -195,14 +210,22 @@ class TimesheetDetailsScreenState extends State<TimesheetDetailsScreen> with Sin
               child: TimesheetNavigationBar(
                 currentView: _currentView,
                 currentDate: _currentDate,
-                onPrevious: () => _pageController.previousPage(
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
-                ),
-                onNext: () => _pageController.nextPage(
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
-                ),
+                onPrevious: () {
+                  if (_pageController.hasClients) {
+                    _pageController.previousPage(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                    );
+                  }
+                },
+                onNext: () {
+                  if (_pageController.hasClients) {
+                    _pageController.nextPage(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                    );
+                  }
+                },
               ),
             ),
             SliverToBoxAdapter(
@@ -211,14 +234,12 @@ class TimesheetDetailsScreenState extends State<TimesheetDetailsScreen> with Sin
                   if (provider.isLoading) {
                     return const Center(child: CustomProgressIndicator());
                   }
-                  if (provider.timesheets.isEmpty) {
-                    return const EmptyState(text: 'No timesheets available');
-                  }
                   return Container(
                     height: MediaQuery.of(context).size.height - totalHeaderHeight,
                     padding: const EdgeInsets.all(8.0),
                     child: PageView.builder(
                       controller: _pageController,
+                      physics: const AlwaysScrollableScrollPhysics(),
                       onPageChanged: _navigateToDate,
                       itemBuilder: (context, index) {
                         final date = _getDateForIndex(index);
@@ -227,7 +248,7 @@ class TimesheetDetailsScreenState extends State<TimesheetDetailsScreen> with Sin
                           child: _buildSectionCard(
                             context,
                             title: _getViewTitle(),
-                            children: [_buildView(date)],
+                            children: [_buildView(date, provider.timesheets.isNotEmpty)],
                           ),
                         );
                       },

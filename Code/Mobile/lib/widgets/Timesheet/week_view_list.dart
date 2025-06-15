@@ -6,7 +6,6 @@ import '../../providers/auth_provider.dart';
 import '../commen/empty_state.dart';
 import 'TimesheetSuggestionsModal.dart';
 import 'day_card.dart';
-import 'timesheet_suggestions_modal.dart';
 
 class WeekViewList extends StatelessWidget {
   final DateTime date;

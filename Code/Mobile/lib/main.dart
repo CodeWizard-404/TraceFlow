@@ -3,6 +3,7 @@ import 'package:TraceFlow/screens/Auth/ProfileScreen.dart';
 import 'package:TraceFlow/screens/Auth/Verify2FAScreen.dart';
 import 'package:TraceFlow/screens/Auth/forgot_password_screen.dart';
 import 'package:TraceFlow/screens/Auth/verify_reset_screen.dart';
+import 'package:TraceFlow/screens/Dashboard.dart';
 import 'package:TraceFlow/screens/MapScreen.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -97,6 +98,7 @@ class MyApp extends StatelessWidget {
             '/profile': (_) => const ProfileScreen(),
             '/transfer-receipt-books': (_) => const TransferReceiptBookScreen(),
             '/map': (_) => const MapScreen(),
+            '/supervisor-dashboard': (_) => const SupervisorDashboard(),
           },
           onGenerateRoute: (settings) {
             return MaterialPageRoute(
@@ -306,6 +308,12 @@ class RouterOutlet extends StatelessWidget {
             break;
           case '/transfer-receipt-books':
             page = const TransferReceiptBookScreen();
+            break;
+            case '/map':
+            page = const MapScreen();
+            break;
+            case '/supervisor-dashboard':
+            page = const SupervisorDashboard();
             break;
           default:
             page = ErrorPage(
