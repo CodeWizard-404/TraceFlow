@@ -1,15 +1,6 @@
-/**
- * PermsList.tsx
- * Component for displaying a categorized list of permissions with toggleable PermView under each permission.
- * Optimized with memoization, debouncing, and efficient state management.
- * Includes skeleton loader and animated transitions for PermView.
- * Categories are sorted alphabetically.
- */
-
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { FaFilter, FaSearch } from "react-icons/fa";
 import { AnimatePresence, motion } from "framer-motion";
-import { debounce } from "lodash";
 
 // Context and Models
 import { useAuth } from "../../../context/AuthContext";
@@ -75,22 +66,10 @@ const PermsList: React.FC<PermsListProps> = React.memo(
             [userRoles]
         );
 
-        // Debounced search query setters
-        const debouncedSetPermissionSearch = useCallback(
-            debounce((value: string) => setPermissionSearch(value), 300),
-            []
-        );
-
-        const debouncedSetInternalSearchQuery = useCallback(
-            debounce((value: string) => setInternalSearchQuery(value), 300),
-            []
-        );
-
         // Sync global search query
         useEffect(() => {
-            debouncedSetInternalSearchQuery(searchQuery);
-            return () => debouncedSetInternalSearchQuery.cancel();
-        }, [searchQuery, debouncedSetInternalSearchQuery]);
+            setInternalSearchQuery(searchQuery);
+        }, [searchQuery]);
 
         // Dynamic loading state based on permissionsList prop
         useEffect(() => {
@@ -106,10 +85,12 @@ const PermsList: React.FC<PermsListProps> = React.memo(
             );
             const searchTerm = permissionSearch || internalSearchQuery;
             if (searchTerm) {
+                // Transform search term: replace spaces with underscores for matching
+                const transformedSearchTerm = searchTerm.replace(/\s+/g, "_").toLowerCase();
                 result = result.filter(
                     (perm) =>
-                        perm.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        perm.class.toLowerCase().includes(searchTerm.toLowerCase())
+                        perm.name.toLowerCase().includes(transformedSearchTerm) ||
+                        perm.class.toLowerCase().includes(transformedSearchTerm)
                 );
             }
             if (selectedCategory !== "all") {
@@ -198,7 +179,7 @@ const PermsList: React.FC<PermsListProps> = React.memo(
                                         type="text"
                                         placeholder="Search permissions..."
                                         value={permissionSearch}
-                                        onChange={(e) => debouncedSetPermissionSearch(e.target.value)}
+                                        onChange={(e) => setPermissionSearch(e.target.value)}
                                         className="search-input"
                                         aria-label="Search permissions"
                                     />

@@ -288,7 +288,7 @@ export const suggestTimesheet = async (data: {
   criteria: {
     delegationIds?: string[];
     agentIds?: string[];
-    preferredDays?: string[]; // Expected in YYYY-MM-DD format
+    preferredDays?: string[];
     timeInterval?: { startHour: number; endHour: number };
     maxVisitsPerAgentPerWeek?: number;
     includeRecruitmentVisits?: boolean;

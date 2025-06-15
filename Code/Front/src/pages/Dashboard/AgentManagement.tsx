@@ -167,6 +167,7 @@ const PERMSSIONS = {
     CREATE_AGENTS: import.meta.env.VITE_PERMISSIONS_CREATE_AGENTS,
     READ_ALL_AGENTS: import.meta.env.VITE_PERMISSIONS_READ_ALL_AGENTS,
     UPDATE_AGENTS: import.meta.env.VITE_PERMISSIONS_UPDATE_AGENTS,
+    UPDATE_AGENTS_LOCATION: import.meta.env.VITE_PERMISSIONS_UPDATE_AGENTS_LOCATION,
     DELETE_AGENTS: import.meta.env.VITE_PERMISSIONS_DELETE_AGENTS,
     READ_AGENT_MAP_LOCATIONS: import.meta.env.VITE_PERMISSIONS_READ_AGENT_MAP_LOCATIONS,
     READ_NEARBY_AGENTS: import.meta.env.VITE_PERMISSIONS_READ_NEARBY_AGENTS,
@@ -235,6 +236,7 @@ const AgentManagement: React.FC = () => {
             createAgents: effectivePermissions?.includes(PERMSSIONS.CREATE_AGENTS),
             readAllAgents: effectivePermissions?.includes(PERMSSIONS.READ_ALL_AGENTS),
             updateAgents: effectivePermissions?.includes(PERMSSIONS.UPDATE_AGENTS),
+            updateAgentsLocation: effectivePermissions?.includes(PERMSSIONS.UPDATE_AGENTS_LOCATION),
             deleteAgents: effectivePermissions?.includes(PERMSSIONS.DELETE_AGENTS),
         }),
         [effectivePermissions]
