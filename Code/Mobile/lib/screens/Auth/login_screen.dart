@@ -243,7 +243,6 @@ class LoginScreenState extends State<LoginScreen> {
                               ),
                             ),
                           ),
-
                         ],
                       ),
                       const SizedBox(height: 16),
@@ -264,6 +263,21 @@ class LoginScreenState extends State<LoginScreen> {
                     ],
                   ),
                 ),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: 16,
+            left: 16,
+            child: Consumer<ThemeProvider>(
+              builder: (context, themeProvider, _) => _buildIconButton(
+                context,
+                icon: _getThemeIcon(themeProvider.themeMode),
+                tooltip: 'Toggle Theme',
+                onTap: () {
+                  final nextMode = _getNextThemeMode(themeProvider.themeMode);
+                  themeProvider.setTheme(nextMode);
+                },
               ),
             ),
           ),
@@ -334,5 +348,54 @@ class LoginScreenState extends State<LoginScreen> {
         ),
       ],
     );
+  }
+
+  Widget _buildIconButton(
+      BuildContext context, {
+        required IconData icon,
+        required String tooltip,
+        VoidCallback? onTap,
+        Color? color,
+      }) {
+    final theme = Theme.of(context);
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        splashColor: (color ?? theme.colorScheme.primary).withOpacity(0.2),
+        highlightColor: (color ?? theme.colorScheme.primary).withOpacity(0.1),
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Icon(
+            icon,
+            color: color ?? theme.colorScheme.primary,
+            size: 18,
+          ),
+        ),
+      ),
+    );
+  }
+
+  IconData _getThemeIcon(ThemeMode mode) {
+    switch (mode) {
+      case ThemeMode.system:
+        return Icons.hdr_auto;
+      case ThemeMode.light:
+        return Icons.light_mode_rounded;
+      case ThemeMode.dark:
+        return Icons.brightness_2;
+    }
+  }
+
+  ThemeMode _getNextThemeMode(ThemeMode current) {
+    switch (current) {
+      case ThemeMode.system:
+        return ThemeMode.light;
+      case ThemeMode.light:
+        return ThemeMode.dark;
+      case ThemeMode.dark:
+        return ThemeMode.system;
+    }
   }
 }

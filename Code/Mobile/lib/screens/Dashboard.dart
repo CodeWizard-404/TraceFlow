@@ -237,7 +237,12 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> with SingleTi
                         _buildSectionCard(
                           context,
                           title: 'Key Statistics',
-                          children: [_buildHeaderStats(numAgents, numReceiptBooks, numVisits, visitsLast7Days, pendingVisits, activeAgents, avgVisitDuration, validatedVisits, completionRate)],
+                          children: [
+                            _buildHeaderStats(numAgents, numReceiptBooks,
+                                numVisits, visitsLast7Days, pendingVisits,
+                                activeAgents, avgVisitDuration,
+                                validatedVisits, completionRate)
+                          ],
                         ),
                         const CustomSpacer(height: 8),
                         _buildSectionCard(
@@ -249,13 +254,20 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> with SingleTi
                         _buildSectionCard(
                           context,
                           title: 'Agents Assigned',
-                          children: [_buildAgentsAssigned(agents, agentsWithVisits, numAgents)],
+                          children: [
+                            _buildAgentsAssigned(
+                                agents, agentsWithVisits, numAgents)
+                          ],
                         ),
                         const CustomSpacer(height: 8),
                         _buildSectionCard(
                           context,
-                          title: 'Notifications (${notifications.where((n) => n.status != 'read').length})',
-                          children: [_buildNotifications(notifications, notificationProvider)],
+                          title:
+                          'Notifications (${notifications.where((n) => n.status != 'read').length})',
+                          children: [
+                            _buildNotifications(
+                                notifications, notificationProvider)
+                          ],
                         ),
                         const CustomSpacer(height: 8),
                         _buildSectionCard(
@@ -267,19 +279,26 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> with SingleTi
                         _buildSectionCard(
                           context,
                           title: 'Receipt Books',
-                          children: [_buildReceiptBooks(receiptBooks, receiptBookProvider)],
+                          children: [
+                            _buildReceiptBooks(
+                                receiptBooks, receiptBookProvider)
+                          ],
                         ),
                         const CustomSpacer(height: 8),
                         _buildSectionCard(
                           context,
                           title: 'Visits',
-                          children: [_buildVisits(filteredVisits, agents, timesheets)],
+                          children: [
+                            _buildVisits(filteredVisits, agents, timesheets)
+                          ],
                         ),
                         const CustomSpacer(height: 8),
                         _buildSectionCard(
                           context,
                           title: 'KPIs',
-                          children: [_buildKPIs(allVisits, agents, timesheets)],
+                          children: [
+                            _buildKPIs(allVisits, agents, timesheets)
+                          ],
                         ),
                       ],
                     ),
@@ -294,7 +313,8 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> with SingleTi
     );
   }
 
-  Widget _buildSectionCard(BuildContext context, {required String title, required List<Widget> children}) {
+  Widget _buildSectionCard(BuildContext context,
+      {required String title, required List<Widget> children}) {
     final theme = Theme.of(context);
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4),
@@ -329,28 +349,43 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> with SingleTi
     );
   }
 
-  Widget _buildHeaderStats(int numAgents, int numReceiptBooks, int numVisits, int visitsLast7Days, int pendingVisits, int activeAgents, String avgVisitDuration, int validatedVisits, String completionRate) {
+  Widget _buildHeaderStats(
+      int numAgents,
+      int numReceiptBooks,
+      int numVisits,
+      int visitsLast7Days,
+      int pendingVisits,
+      int activeAgents,
+      String avgVisitDuration,
+      int validatedVisits,
+      String completionRate) {
     final theme = Theme.of(context);
     return Wrap(
       spacing: 16,
       runSpacing: 16,
       children: [
-        _buildStatItem('Agents', numAgents.toString(), Icons
-
-            .group, theme),
-        _buildStatItem('Receipt Books', numReceiptBooks.toString(), Icons.book, theme),
+        _buildStatItem('Agents', numAgents.toString(), Icons.group, theme),
+        _buildStatItem(
+            'Receipt Books', numReceiptBooks.toString(), Icons.book, theme),
         _buildStatItem('Visits', numVisits.toString(), Icons.location_on, theme),
-        _buildStatItem('Visits (7 Days)', visitsLast7Days.toString(), Icons.timer, theme),
-        _buildStatItem('Pending Visits', pendingVisits.toString(), Icons.pending, theme),
-        _buildStatItem('Active Agents', activeAgents.toString(), Icons.person, theme),
-        _buildStatItem('Avg Duration', '$avgVisitDuration min', Icons.hourglass_empty, theme),
-        _buildStatItem('Validated Visits', validatedVisits.toString(), Icons.check_circle, theme),
-        _buildStatItem('Completion Rate', '$completionRate%', Icons.percent, theme),
+        _buildStatItem(
+            'Visits (7 Days)', visitsLast7Days.toString(), Icons.timer, theme),
+        _buildStatItem(
+            'Pending Visits', pendingVisits.toString(), Icons.pending, theme),
+        _buildStatItem(
+            'Active Agents', activeAgents.toString(), Icons.person, theme),
+        _buildStatItem('Avg Duration', '$avgVisitDuration min',
+            Icons.hourglass_empty, theme),
+        _buildStatItem('Validated Visits', validatedVisits.toString(),
+            Icons.check_circle, theme),
+        _buildStatItem(
+            'Completion Rate', '$completionRate%', Icons.percent, theme),
       ],
     );
   }
 
-  Widget _buildStatItem(String title, String value, IconData icon, ThemeData theme) {
+  Widget _buildStatItem(
+      String title, String value, IconData icon, ThemeData theme) {
     return AnimatedBuilder(
       animation: _animationController,
       builder: (context, child) => Transform.translate(
@@ -369,8 +404,13 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> with SingleTi
               children: [
                 Icon(icon, size: 32, color: theme.colorScheme.primary),
                 const CustomSpacer(height: 4),
-                Text(value, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-                Text(title, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface.withOpacity(0.7))),
+                Text(value,
+                    style: theme.textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.bold)),
+                Text(
+                    title,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurface.withOpacity(0.7))),
               ],
             ),
           ),
@@ -385,26 +425,44 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> with SingleTi
       spacing: 8,
       runSpacing: 8,
       children: [
-        _buildActionButton(context, 'Add Timesheet', Icons.schedule, () => Navigator.pushNamed(context, '/timesheet-details')),
-        _buildActionButton(context, 'Assign Receipt Book', Icons.book, () => Navigator.pushNamed(context, '/transfer-receipt-books')),
-        _buildActionButton(context, 'Sync to Calendar', Icons.calendar_today, () async {
-          final timesheetProvider = Provider.of<TimesheetProvider>(context, listen: false);
-          final user = Provider.of<AuthProvider>(context, listen: false).user!;
-          await timesheetProvider.syncTimesheetToCalendar(user.userID);
-        }),
-        _buildActionButton(context, 'Start Visit', Icons.location_on, () => Navigator.pushNamed(context, '/create-visit')),
-        _buildActionButton(context, 'Generate Timesheets', Icons.auto_fix_high, () => Navigator.pushNamed(context, '/timesheet-details', arguments: {'openSuggestionModal': true})),
-        _buildActionButton(context, 'Edit Profile', Icons.person, () => Navigator.pushNamed(context, '/profile')),
-        _buildActionButton(context, 'Notification Preferences', Icons.notifications, () => Navigator.pushNamed(context, '/profile', arguments: {'scrollTo': 'notification-preferences'})),
+        _buildActionButton(context, 'Add Timesheet', Icons.schedule,
+                () => Navigator.pushNamed(context, '/timesheet-details')),
+        _buildActionButton(context, 'Assign Receipt Book', Icons.book,
+                () => Navigator.pushNamed(context, '/transfer-receipt-books')),
+        _buildActionButton(context, 'Sync to Calendar', Icons.calendar_today,
+                () async {
+              final timesheetProvider =
+              Provider.of<TimesheetProvider>(context, listen: false);
+              final user = Provider.of<AuthProvider>(context, listen: false).user!;
+              await timesheetProvider.syncTimesheetToCalendar(user.userID);
+            }),
+        _buildActionButton(context, 'Start Visit', Icons.location_on,
+                () => Navigator.pushNamed(context, '/create-visit')),
+        _buildActionButton(
+            context,
+            'Generate Timesheets',
+            Icons.auto_fix_high,
+                () => Navigator.pushNamed(context, '/timesheet-details',
+                arguments: {'openSuggestionModal': true})),
+        _buildActionButton(context, 'Edit Profile', Icons.person,
+                () => Navigator.pushNamed(context, '/profile')),
+        _buildActionButton(
+            context,
+            'Notification Preferences',
+            Icons.notifications,
+                () => Navigator.pushNamed(context, '/profile',
+                arguments: {'scrollTo': 'notification-preferences'})),
       ],
     );
   }
 
-  Widget _buildActionButton(BuildContext context, String label, IconData icon, VoidCallback onPressed) {
+  Widget _buildActionButton(
+      BuildContext context, String label, IconData icon, VoidCallback onPressed) {
     final theme = Theme.of(context);
     return ElevatedButton.icon(
       icon: Icon(icon, size: 20),
-      label: Text(label, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
+      label: Text(label,
+          style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
       onPressed: onPressed,
       style: ElevatedButton.styleFrom(
         backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
@@ -415,7 +473,8 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> with SingleTi
     );
   }
 
-  Widget _buildAgentsAssigned(List<Agent> agents, int agentsWithVisits, int numAgents) {
+  Widget _buildAgentsAssigned(
+      List<Agent> agents, int agentsWithVisits, int numAgents) {
     final theme = Theme.of(context);
     final TextEditingController _searchController = TextEditingController();
     String _searchQuery = '';
@@ -474,8 +533,10 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> with SingleTi
                         controller: _searchController,
                         decoration: InputDecoration(
                           labelText: 'Search by name or phone',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                          prefixIcon: Icon(Icons.search, color: theme.colorScheme.primary),
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8)),
+                          prefixIcon:
+                          Icon(Icons.search, color: theme.colorScheme.primary),
                         ),
                         onChanged: (value) {
                           setState(() {
@@ -498,7 +559,8 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> with SingleTi
                           itemBuilder: (context, index) {
                             final agent = filteredAgents[index];
                             return ListTile(
-                              leading: Icon(Icons.person, color: theme.colorScheme.primary),
+                              leading: Icon(Icons.person,
+                                  color: theme.colorScheme.primary),
                               title: Text(
                                 '${agent.name} ${agent.lastname}',
                                 style: theme.textTheme.bodyMedium?.copyWith(
@@ -508,11 +570,13 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> with SingleTi
                               subtitle: Text(
                                 'Phone: ${agent.phone ?? 'N/A'}',
                                 style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.onSurface.withOpacity(0.7),
+                                  color: theme.colorScheme.onSurface
+                                      .withOpacity(0.7),
                                 ),
                               ),
                               trailing: IconButton(
-                                icon: Icon(Icons.phone, color: theme.colorScheme.primary),
+                                icon: Icon(Icons.phone,
+                                    color: theme.colorScheme.primary),
                                 onPressed: () => _makePhoneCall(agent.phone),
                               ),
                             );
@@ -546,7 +610,8 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> with SingleTi
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('Total Agents: $numAgents', style: theme.textTheme.bodyMedium),
-        Text('Agents with Visits: $agentsWithVisits', style: theme.textTheme.bodyMedium),
+        Text('Agents with Visits: $agentsWithVisits',
+            style: theme.textTheme.bodyMedium),
         const CustomSpacer(height: 8),
         ElevatedButton(
           onPressed: _showAgentsPopup,
@@ -561,7 +626,8 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> with SingleTi
     );
   }
 
-  Widget _buildNotifications(List<AppNotification.Notification> notifications, NotificationProvider provider) {
+  Widget _buildNotifications(
+      List<AppNotification.Notification> notifications, NotificationProvider provider) {
     final theme = Theme.of(context);
     final sentNotifications = notifications.where((n) => n.status == 'sent').toList();
 
@@ -702,14 +768,6 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> with SingleTi
                     email: _regionalManager!.email ?? 'N/A',
                     icon: Icons.person,
                   ),
-                _buildHierarchyItem(
-                  context,
-                  title: 'Supervisor',
-                  name: '${user.firstName} ${user.lastName}',
-                  phone: user.phone ?? 'N/A',
-                  email: user.email ?? 'N/A',
-                  icon: Icons.supervisor_account,
-                ),
               ],
             ),
           )
@@ -724,7 +782,12 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> with SingleTi
     );
   }
 
-  Widget _buildHierarchyItem(BuildContext context, {required String title, required String name, required String phone, required String email, required IconData icon}) {
+  Widget _buildHierarchyItem(BuildContext context,
+      {required String title,
+        required String name,
+        required String phone,
+        required String email,
+        required IconData icon}) {
     final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
@@ -777,7 +840,8 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> with SingleTi
     );
   }
 
-  Widget _buildReceiptBooks(List<ReceiptBook> receiptBooks, ReceiptBookProvider provider) {
+  Widget _buildReceiptBooks(
+      List<ReceiptBook> receiptBooks, ReceiptBookProvider provider) {
     final theme = Theme.of(context);
     final receiptBooksByType = receiptBooks.fold<Map<String, int>>({}, (acc, book) {
       final type = provider.receiptBookTypes.firstWhere(
@@ -793,16 +857,24 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> with SingleTi
         .entries
         .map((e) => BarChartGroupData(
       x: e.key,
-      barRods: [BarChartRodData(toY: e.value.value.toDouble(), color: theme.colorScheme.primary, width: 20)],
+      barRods: [
+        BarChartRodData(
+            toY: e.value.value.toDouble(),
+            color: theme.colorScheme.primary,
+            width: 20)
+      ],
     ))
         .toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Receipt books by type.', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface.withOpacity(0.7))),
+        Text('Receipt books by type.',
+            style: theme.textTheme.bodySmall
+                ?.copyWith(color: theme.colorScheme.onSurface.withOpacity(0.7))),
         const CustomSpacer(height: 8),
-        Text('Total Receipt Books: ${receiptBooks.length}', style: theme.textTheme.bodyMedium),
+        Text('Total Receipt Books: ${receiptBooks.length}',
+            style: theme.textTheme.bodyMedium),
         if (barData.isNotEmpty)
           Container(
             height: 250,
@@ -855,13 +927,14 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> with SingleTi
                   enabled: true,
                   touchTooltipData: BarTouchTooltipData(
                     tooltipPadding: const EdgeInsets.all(8),
-                    getTooltipItem: (group, groupIndex, rod, rodIndex) => BarTooltipItem(
-                      '${receiptBooksByType.keys.elementAt(group.x.toInt())}: ${rod.toY.toInt()}',
-                      theme.textTheme.bodyMedium!.copyWith(
-                        color: Colors.white,
-                        fontSize: 16,
-                      ),
-                    ),
+                    getTooltipItem: (group, groupIndex, rod, rodIndex) =>
+                        BarTooltipItem(
+                          '${receiptBooksByType.keys.elementAt(group.x.toInt())}: ${rod.toY.toInt()}',
+                          theme.textTheme.bodyMedium!.copyWith(
+                            color: Colors.white,
+                            fontSize: 16,
+                          ),
+                        ),
                   ),
                 ),
               ),
@@ -871,9 +944,11 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> with SingleTi
     );
   }
 
-  Widget _buildVisits(List<Visit> filteredVisits, List<Agent> agents, List<Timesheet> timesheets) {
+  Widget _buildVisits(
+      List<Visit> filteredVisits, List<Agent> agents, List<Timesheet> timesheets) {
     final theme = Theme.of(context);
-    final visitStatusCounts = filteredVisits.fold<Map<String, int>>({}, (acc, visit) {
+    final visitStatusCounts = filteredVisits.fold<Map<String, int>>(
+        {}, (acc, visit) {
       acc[visit.status ?? 'Unknown'] = (acc[visit.status ?? 'Unknown'] ?? 0) + 1;
       return acc;
     });
@@ -912,14 +987,21 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> with SingleTi
         .entries
         .map((e) => BarChartGroupData(
       x: e.key,
-      barRods: [BarChartRodData(toY: e.value.value.toDouble(), color: theme.colorScheme.primary, width: 20)],
+      barRods: [
+        BarChartRodData(
+            toY: e.value.value.toDouble(),
+            color: theme.colorScheme.primary,
+            width: 20)
+      ],
     ))
         .toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Visit statuses and counts per date.', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface.withOpacity(0.7))),
+        Text('Visit statuses and counts per date.',
+            style: theme.textTheme.bodySmall
+                ?.copyWith(color: theme.colorScheme.onSurface.withOpacity(0.7))),
         const CustomSpacer(height: 8),
         Row(
           children: [
@@ -967,7 +1049,8 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> with SingleTi
           ],
         ),
         const CustomSpacer(height: 8),
-        Text('Total Visits: ${filteredVisits.length}', style: theme.textTheme.bodyMedium),
+        Text('Total Visits: ${filteredVisits.length}',
+            style: theme.textTheme.bodyMedium),
         if (pieData.isNotEmpty)
           Container(
             height: 250,
@@ -1047,13 +1130,14 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> with SingleTi
                       enabled: true,
                       touchTooltipData: BarTouchTooltipData(
                         tooltipPadding: const EdgeInsets.all(8),
-                        getTooltipItem: (group, groupIndex, rod, rodIndex) => BarTooltipItem(
-                          '${filteredVisitsByDate[group.x.toInt()].key}: ${rod.toY.toInt()} visits',
-                          theme.textTheme.bodyMedium!.copyWith(
-                            color: Colors.white,
-                            fontSize: 16,
-                          ),
-                        ),
+                        getTooltipItem: (group, groupIndex, rod, rodIndex) =>
+                            BarTooltipItem(
+                              '${filteredVisitsByDate[group.x.toInt()].key}: ${rod.toY.toInt()} visits',
+                              theme.textTheme.bodyMedium!.copyWith(
+                                color: Colors.white,
+                                fontSize: 16,
+                              ),
+                            ),
                       ),
                     ),
                   ),
@@ -1065,7 +1149,8 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> with SingleTi
     );
   }
 
-  Widget _buildKPIs(List<Visit> allVisits, List<Agent> agents, List<Timesheet> timesheets) {
+  Widget _buildKPIs(
+      List<Visit> allVisits, List<Agent> agents, List<Timesheet> timesheets) {
     final theme = Theme.of(context);
     final visitsPerAgent = agents
         .map((a) => {
@@ -1079,14 +1164,21 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> with SingleTi
         .entries
         .map((e) => BarChartGroupData(
       x: e.key,
-      barRods: [BarChartRodData(toY: (e.value['visits'] as int).toDouble(), color: theme.colorScheme.primary, width: 20)],
+      barRods: [
+        BarChartRodData(
+            toY: (e.value['visits'] as int).toDouble(),
+            color: theme.colorScheme.primary,
+            width: 20)
+      ],
     ))
         .toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Visits per agent.', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface.withOpacity(0.7))),
+        Text('Visits per agent.',
+            style: theme.textTheme.bodySmall
+                ?.copyWith(color: theme.colorScheme.onSurface.withOpacity(0.7))),
         const CustomSpacer(height: 8),
         if (barData.isNotEmpty)
           Container(
@@ -1144,13 +1236,14 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> with SingleTi
                       enabled: true,
                       touchTooltipData: BarTouchTooltipData(
                         tooltipPadding: const EdgeInsets.all(8),
-                        getTooltipItem: (group, groupIndex, rod, rodIndex) => BarTooltipItem(
-                          '${visitsPerAgent[group.x.toInt()]['name']}: ${rod.toY.toInt()} visits',
-                          theme.textTheme.bodyMedium!.copyWith(
-                            color: Colors.white,
-                            fontSize: 16,
-                          ),
-                        ),
+                        getTooltipItem: (group, groupIndex, rod, rodIndex) =>
+                            BarTooltipItem(
+                              '${visitsPerAgent[group.x.toInt()]['name']}: ${rod.toY.toInt()} visits',
+                              theme.textTheme.bodyMedium!.copyWith(
+                                color: Colors.white,
+                                fontSize: 16,
+                              ),
+                            ),
                       ),
                     ),
                   ),
@@ -1183,6 +1276,8 @@ class _VisitFilterSheetState extends State<VisitFilterSheet> {
   late Map<String, String> _filters;
   DateTime? _startDate;
   DateTime? _endDate;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
 
   @override
   void initState() {
@@ -1192,7 +1287,18 @@ class _VisitFilterSheetState extends State<VisitFilterSheet> {
     _endDate = _filters['dateEnd']!.isEmpty ? null : DateTime.parse(_filters['dateEnd']!);
   }
 
-  Widget _buildSectionCard(BuildContext context, {required String title, required List<Widget> children}) {
+  List<Agent> _filterAgents(List<Agent> agents, String query) {
+    if (query.isEmpty) return agents;
+    final lowercaseQuery = query.toLowerCase();
+    return agents.where((agent) {
+      final fullName = '${agent.name} ${agent.lastname}'.toLowerCase();
+      final phone = agent.phone?.toLowerCase() ?? '';
+      return fullName.contains(lowercaseQuery) || phone.contains(lowercaseQuery);
+    }).toList();
+  }
+
+  Widget _buildSectionCard(BuildContext context,
+      {required String title, required List<Widget> children}) {
     final theme = Theme.of(context);
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4),
@@ -1231,6 +1337,8 @@ class _VisitFilterSheetState extends State<VisitFilterSheet> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final allStatusOptions = {'all', 'pending', 'validated', 'visited', 'rejected'};
+    final filteredAgents = _filterAgents(widget.agents, _searchQuery);
+
     return Container(
       padding: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
@@ -1264,7 +1372,9 @@ class _VisitFilterSheetState extends State<VisitFilterSheet> {
                       label: Text(
                         option.capitalize(),
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: isSelected ? theme.colorScheme.primary : theme.colorScheme.onSurface,
+                          color: isSelected
+                              ? theme.colorScheme.primary
+                              : theme.colorScheme.onSurface,
                         ),
                       ),
                       backgroundColor: isSelected
@@ -1290,6 +1400,20 @@ class _VisitFilterSheetState extends State<VisitFilterSheet> {
             context,
             title: 'Agent',
             children: [
+              TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  labelText: 'Search by name or phone',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  prefixIcon: Icon(Icons.search, color: theme.colorScheme.primary),
+                ),
+                onChanged: (value) {
+                  setState(() {
+                    _searchQuery = value;
+                  });
+                },
+              ),
+              const CustomSpacer(height: 8),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
@@ -1300,7 +1424,9 @@ class _VisitFilterSheetState extends State<VisitFilterSheet> {
                       label: Text(
                         'All Agents',
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: _filters['agent']!.isEmpty ? theme.colorScheme.primary : theme.colorScheme.onSurface,
+                          color: _filters['agent']!.isEmpty
+                              ? theme.colorScheme.primary
+                              : theme.colorScheme.onSurface,
                         ),
                       ),
                       backgroundColor: _filters['agent']!.isEmpty
@@ -1317,7 +1443,7 @@ class _VisitFilterSheetState extends State<VisitFilterSheet> {
                       ),
                     ),
                   ),
-                  ...widget.agents.map((agent) {
+                  ...filteredAgents.map((agent) {
                     final isSelected = _filters['agent'] == agent.agentID;
                     return GestureDetector(
                       onTap: () => setState(() => _filters['agent'] = agent.agentID),
@@ -1325,7 +1451,9 @@ class _VisitFilterSheetState extends State<VisitFilterSheet> {
                         label: Text(
                           '${agent.name} ${agent.lastname}',
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: isSelected ? theme.colorScheme.primary : theme.colorScheme.onSurface,
+                            color: isSelected
+                                ? theme.colorScheme.primary
+                                : theme.colorScheme.onSurface,
                           ),
                         ),
                         backgroundColor: isSelected
@@ -1367,18 +1495,23 @@ class _VisitFilterSheetState extends State<VisitFilterSheet> {
                         if (picked != null) {
                           setState(() {
                             _startDate = picked;
-                            _filters['dateStart'] = picked.toIso8601String().split('T')[0];
+                            _filters['dateStart'] =
+                            picked.toIso8601String().split('T')[0];
                           });
                         }
                       },
                       style: TextButton.styleFrom(
                         backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
                         foregroundColor: theme.colorScheme.primary,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8)),
+                        padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       ),
                       child: Text(
-                        _startDate == null ? 'Select Start Date' : _filters['dateStart']!,
+                        _startDate == null
+                            ? 'Select Start Date'
+                            : _filters['dateStart']!,
                         style: theme.textTheme.bodyMedium,
                       ),
                     ),
@@ -1396,15 +1529,18 @@ class _VisitFilterSheetState extends State<VisitFilterSheet> {
                         if (picked != null) {
                           setState(() {
                             _endDate = picked;
-                            _filters['dateEnd'] = picked.toIso8601String().split('T')[0];
+                            _filters['dateEnd'] =
+                            picked.toIso8601String().split('T')[0];
                           });
                         }
                       },
                       style: TextButton.styleFrom(
                         backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
                         foregroundColor: theme.colorScheme.primary,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8)),
+                        padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       ),
                       child: Text(
                         _endDate == null ? 'Select End Date' : _filters['dateEnd']!,
@@ -1429,6 +1565,8 @@ class _VisitFilterSheetState extends State<VisitFilterSheet> {
                   _filters['dateEnd'] = '';
                   _startDate = null;
                   _endDate = null;
+                  _searchQuery = '';
+                  _searchController.clear();
                 }),
                 isOutlined: true,
                 backgroundColor: theme.colorScheme.surface,

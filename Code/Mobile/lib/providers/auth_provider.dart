@@ -31,6 +31,7 @@ class AuthProvider with ChangeNotifier {
   Timer? _refreshTimer;
   String? _deviceIdentifier;
   DateTime? _lastRefreshTime;
+  bool _otpVerified = false;
 
   String? get deviceIdentifier => _deviceIdentifier;
   User? get user => _user;
@@ -43,6 +44,7 @@ class AuthProvider with ChangeNotifier {
   String get otpMethod => _otpMethod;
   String? get userID => _userID;
   bool get requires2FA => _requires2FA;
+  bool get otpVerified => _otpVerified;
   bool get isSupervisor {
     final isSupervisor = _userRoles?.any((role) => role.toLowerCase() == 'supervisor') ?? false;
     if (kDebugMode) print('isSupervisor evaluated: $isSupervisor, roles: $_userRoles');
@@ -368,13 +370,13 @@ class AuthProvider with ChangeNotifier {
     } finally {
       _isLoading = false;
       notifyListeners();
-
     }
   }
 
   Future<void> initiatePasswordReset(String identifier) async {
     _isLoading = true;
     _errorMessage = null;
+    _otpVerified = false;
     notifyListeners();
     try {
       final result = await AuthService.initiatePasswordReset(identifier);
@@ -382,9 +384,10 @@ class AuthProvider with ChangeNotifier {
       _otpTimer.value = 600;
       _otpMethod = result['message']?.contains('email') ?? false ? 'email' : 'phone';
       _startotpTimer();
-      _errorMessage = result['message'] ?? 'Password reset initiated';
+      if (kDebugMode) print('Password reset initiated, userID: $_userID, otpMethod: $_otpMethod');
     } catch (e) {
       _errorMessage = _parseError(e);
+      if (kDebugMode) print('Password reset initiation error: $_errorMessage');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -403,9 +406,11 @@ class AuthProvider with ChangeNotifier {
     try {
       final result = await AuthService.verifyPasswordResetOTP(_userID!, otpCode);
       _tempToken = result['tempToken'];
-      _errorMessage = 'OTP verified successfully';
+      _otpVerified = true;
+      if (kDebugMode) print('OTP verified, tempToken: $_tempToken, otpVerified: $_otpVerified');
     } catch (e) {
       _errorMessage = _parseError(e);
+      if (kDebugMode) print('OTP verification error: $_errorMessage');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -423,11 +428,14 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
     try {
       await AuthService.resetPassword(_userID!, newPassword, _tempToken!);
+      _otpVerified = false;
       _errorMessage = 'Password reset successfully! Please log in.';
       _userID = null;
       _tempToken = null;
+      if (kDebugMode) print('Password reset successful');
     } catch (e) {
       _errorMessage = _parseError(e);
+      if (kDebugMode) print('Password reset error: $_errorMessage');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -456,6 +464,7 @@ class AuthProvider with ChangeNotifier {
       _refreshToken = null;
       _tokenExpiry = null;
       _lastRefreshTime = null;
+      _otpVerified = false;
       await CookieManager.clearCookies();
       _isLoading = false;
       if (kDebugMode) print('Logout completed');

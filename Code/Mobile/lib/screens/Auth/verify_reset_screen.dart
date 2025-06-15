@@ -4,6 +4,7 @@ import 'package:flutter_spinkit/flutter_spinkit.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../widgets/commen/title_text.dart';
+import 'package:flutter/foundation.dart';
 
 class VerifyResetScreen extends StatefulWidget {
   const VerifyResetScreen({super.key});
@@ -15,115 +16,70 @@ class VerifyResetScreen extends StatefulWidget {
 class VerifyResetScreenState extends State<VerifyResetScreen> {
   final _formKey = GlobalKey<FormState>();
   final _otpController = TextEditingController();
-  final _newPasswordController = TextEditingController();
+  final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  final _otpFocusNode = FocusNode();
-  final _newPasswordFocusNode = FocusNode();
-  final _confirmPasswordFocusNode = FocusNode();
-  bool _obscureNewPassword = true;
-  bool _obscureConfirmPassword = true;
-  bool _showResetFields = false;
   Map<String, String> _errors = {};
-  String? _successMessage;
-  bool _hasNavigated = false;
-  DateTime _lastNavigation = DateTime.now();
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && !_showResetFields) {
-        _otpFocusNode.requestFocus();
-      }
-    });
-  }
 
   @override
   void dispose() {
     _otpController.dispose();
-    _newPasswordController.dispose();
+    _passwordController.dispose();
     _confirmPasswordController.dispose();
-    _otpFocusNode.dispose();
-    _newPasswordFocusNode.dispose();
-    _confirmPasswordFocusNode.dispose();
     super.dispose();
   }
 
   String? _validateOTP(String? value) {
-    if (value?.isEmpty ?? true) return 'Please enter the 6-digit OTP.';
-    if (!RegExp(r'^\d{6}$').hasMatch(value!)) return 'OTP must be exactly 6 digits.';
+    if (value?.isEmpty ?? true) return 'Please enter the OTP.';
+    if (!RegExp(r'^\d{6}$').hasMatch(value!)) return 'OTP must be 6 digits.';
     return null;
   }
 
-  String? _validateNewPassword(String? value) {
+  String? _validatePassword(String? value) {
     if (value?.isEmpty ?? true) return 'Please enter a password.';
-    if (value!.length < 8) return 'Password must be at least 8 characters long.';
+    if (value!.length < 8) return 'Password must be at least 8 characters.';
+    if (!RegExp(r'^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,}$').hasMatch(value)) {
+      return 'Password must contain letters and numbers.';
+    }
     return null;
   }
 
   String? _validateConfirmPassword(String? value) {
     if (value?.isEmpty ?? true) return 'Please confirm your password.';
-    if (value != _newPasswordController.text) return 'Passwords do not match.';
+    if (value != _passwordController.text) return 'Passwords do not match.';
     return null;
   }
 
-  bool _validateForm() {
-    final newErrors = {
-      if (!_showResetFields) 'otpCode': _validateOTP(_otpController.text) ?? '',
-      if (_showResetFields) 'newPassword': _validateNewPassword(_newPasswordController.text) ?? '',
-      if (_showResetFields) 'confirmPassword': _validateConfirmPassword(_confirmPasswordController.text) ?? '',
-    };
+  bool _validateForm({bool isPasswordStep = false}) {
+    final newErrors = <String, String>{};
+    if (!isPasswordStep) {
+      newErrors['otp'] = _validateOTP(_otpController.text) ?? '';
+    } else {
+      newErrors['password'] = _validatePassword(_passwordController.text) ?? '';
+      newErrors['confirmPassword'] = _validateConfirmPassword(_confirmPasswordController.text) ?? '';
+    }
     setState(() => _errors = newErrors);
     return newErrors.values.every((err) => err.isEmpty);
   }
 
-  Future<void> _verifyResetOTP() async {
+  Future<void> _verifyOTP() async {
     if (!_validateForm()) return;
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     await authProvider.verifyPasswordResetOTP(_otpController.text.trim());
-    if (authProvider.errorMessage == null) {
-      setState(() {
-        _showResetFields = true;
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) _newPasswordFocusNode.requestFocus();
-        });
-      });
-    }
   }
 
   Future<void> _resetPassword() async {
-    if (!_validateForm()) return;
+    if (!_validateForm(isPasswordStep: true)) return;
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    await authProvider.resetPassword(_newPasswordController.text.trim());
-    if (authProvider.errorMessage == null) {
-      setState(() => _successMessage = 'Password reset successfully.');
+    await authProvider.resetPassword(_passwordController.text.trim());
+    if (authProvider.errorMessage == 'Password reset successfully! Please log in.') {
+      if (kDebugMode) print('Navigating to /login after password reset');
+      Navigator.pushReplacementNamed(context, '/login');
     }
-  }
-
-  Future<void> _resendOTP(String method) async {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    await authProvider.resend2FA(method);
-    if (authProvider.errorMessage == null) {
-      setState(() {
-        _successMessage = 'OTP resent successfully.';
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) _otpFocusNode.requestFocus();
-        });
-      });
-    }
-  }
-
-  void _handleNavigation(BuildContext context) {
-    final now = DateTime.now();
-    if (_hasNavigated || now.difference(_lastNavigation).inMilliseconds < 1000) return;
-    _hasNavigated = true;
-    _lastNavigation = now;
-    Navigator.pushReplacementNamed(context, '/login');
   }
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final authProvider = Provider.of<AuthProvider>(context);
     final themeProvider = Provider.of<ThemeProvider>(context);
     final theme = themeProvider.currentTheme;
 
@@ -133,36 +89,17 @@ class VerifyResetScreenState extends State<VerifyResetScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(authProvider.errorMessage!),
-            backgroundColor: theme.colorScheme.error,
+            backgroundColor: authProvider.errorMessage!.contains('success')
+                ? theme.colorScheme.primary
+                : theme.colorScheme.error,
             duration: const Duration(seconds: 5),
           ),
         );
         authProvider.clearError();
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            if (_showResetFields) {
-              _newPasswordFocusNode.requestFocus();
-            } else {
-              _otpFocusNode.requestFocus();
-            }
-          }
-        });
-      } else if (_successMessage != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(_successMessage!),
-            backgroundColor: theme.colorScheme.primary,
-            duration: const Duration(seconds: 5),
-          ),
-        );
-        if (_successMessage!.contains('Password reset successfully')) {
-          Future.delayed(const Duration(seconds: 2), () {
-            if (mounted) _handleNavigation(context);
-          });
-        }
-        setState(() => _successMessage = null);
       }
     });
+
+    final isPasswordStep = authProvider.otpVerified;
 
     return Scaffold(
       backgroundColor: theme.colorScheme.background,
@@ -178,23 +115,24 @@ class VerifyResetScreenState extends State<VerifyResetScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const CustomTitleText(text: 'Reset Password'),
+                      CustomTitleText(text: isPasswordStep ? 'Reset Password' : 'Verify OTP'),
                       const SizedBox(height: 8),
                       Text(
-                        'Enter the code sent to your ${authProvider.otpMethod}.',
+                        isPasswordStep
+                            ? 'Enter your new password.'
+                            : 'Enter the 6-digit code sent to your ${authProvider.otpMethod}.',
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: theme.colorScheme.onBackground.withOpacity(0.6),
                         ),
                       ),
                       const SizedBox(height: 48),
-                      if (!_showResetFields) ...[
+                      if (!isPasswordStep) ...[
                         TextFormField(
                           controller: _otpController,
-                          focusNode: _otpFocusNode,
                           decoration: InputDecoration(
-                            labelText: 'Enter Reset OTP',
+                            labelText: 'OTP',
                             labelStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant),
-                            prefixIcon: Icon(Icons.security, color: theme.colorScheme.primary),
+                            prefixIcon: Icon(Icons.lock, color: theme.colorScheme.primary),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
                               borderSide: BorderSide(color: theme.colorScheme.outline),
@@ -207,96 +145,46 @@ class VerifyResetScreenState extends State<VerifyResetScreen> {
                               borderRadius: BorderRadius.circular(8),
                               borderSide: BorderSide(color: theme.colorScheme.primary, width: 2),
                             ),
-                            errorText: _errors['otpCode']?.isNotEmpty == true ? _errors['otpCode'] : null,
+                            errorText: _errors['otp']?.isNotEmpty == true ? _errors['otp'] : null,
                             errorStyle: TextStyle(color: theme.colorScheme.error),
                           ),
                           enabled: !authProvider.isLoading,
+                          onChanged: (_) => _validateForm(),
                           keyboardType: TextInputType.number,
                           maxLength: 6,
-                          onChanged: (_) => _validateForm(),
                           style: TextStyle(color: theme.colorScheme.onSurface),
                         ),
-                        const SizedBox(height: 16),
-                        ValueListenableBuilder<int>(
-                          valueListenable: authProvider.otpTimer,
-                          builder: (_, otpTimer, __) => Text(
-                            'Time remaining: ${(otpTimer ~/ 60).toString().padLeft(2, '0')}:${(otpTimer % 60).toString().padLeft(2, '0')}',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
                         const SizedBox(height: 24),
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: authProvider.isLoading ? null : _verifyResetOTP,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: theme.colorScheme.primary,
-                              foregroundColor: theme.colorScheme.onPrimary,
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              elevation: 2,
-                            ),
-                            child: authProvider.isLoading
-                                ? SpinKitFadingCircle(
-                              color: theme.colorScheme.onPrimary,
-                              size: 24,
-                            )
-                                : Text(
-                              'Verify OTP',
-                              style: theme.textTheme.labelLarge?.copyWith(
-                                color: theme.colorScheme.onPrimary,
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Resend OTP in ${authProvider.otpTimer.value} seconds',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onBackground.withOpacity(0.6),
                               ),
                             ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        ValueListenableBuilder<int>(
-                          valueListenable: authProvider.resendCooldown,
-                          builder: (_, resendCooldown, __) => AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            width: double.infinity,
-                            child: OutlinedButton(
-                              onPressed: authProvider.isLoading || resendCooldown > 0
-                                  ? null
-                                  : () => _resendOTP(authProvider.otpMethod),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: theme.colorScheme.primary,
-                                side: BorderSide(color: theme.colorScheme.primary),
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
+                            if (authProvider.otpTimer.value == 0)
+                              TextButton(
+                                onPressed: authProvider.isLoading
+                                    ? null
+                                    : () => authProvider.resend2FA(authProvider.otpMethod),
+                                child: Text(
+                                  'Resend',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.primary,
+                                  ),
                                 ),
                               ),
-                              child: Text(
-                                resendCooldown > 0 ? 'Resend in ${resendCooldown}s' : 'Resend OTP',
-                                style: theme.textTheme.labelLarge?.copyWith(
-                                  color: theme.colorScheme.primary,
-                                ),
-                              ),
-                            ),
-                          ),
+                          ],
                         ),
                       ] else ...[
                         TextFormField(
-                          controller: _newPasswordController,
-                          focusNode: _newPasswordFocusNode,
+                          controller: _passwordController,
                           decoration: InputDecoration(
                             labelText: 'New Password',
                             labelStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant),
                             prefixIcon: Icon(Icons.lock, color: theme.colorScheme.primary),
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                _obscureNewPassword ? Icons.visibility_off : Icons.visibility,
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                              onPressed: () => setState(() => _obscureNewPassword = !_obscureNewPassword),
-                            ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
                               borderSide: BorderSide(color: theme.colorScheme.outline),
@@ -309,30 +197,23 @@ class VerifyResetScreenState extends State<VerifyResetScreen> {
                               borderRadius: BorderRadius.circular(8),
                               borderSide: BorderSide(color: theme.colorScheme.primary, width: 2),
                             ),
-                            errorText: _errors['newPassword']?.isNotEmpty == true ? _errors['newPassword'] : null,
+                            errorText: _errors['password']?.isNotEmpty == true
+                                ? _errors['password']
+                                : null,
                             errorStyle: TextStyle(color: theme.colorScheme.error),
                           ),
                           enabled: !authProvider.isLoading,
-                          obscureText: _obscureNewPassword,
-                          onChanged: (_) => _validateForm(),
-                          autocorrect: false,
+                          onChanged: (_) => _validateForm(isPasswordStep: true),
+                          obscureText: true,
                           style: TextStyle(color: theme.colorScheme.onSurface),
                         ),
                         const SizedBox(height: 16),
                         TextFormField(
                           controller: _confirmPasswordController,
-                          focusNode: _confirmPasswordFocusNode,
                           decoration: InputDecoration(
                             labelText: 'Confirm Password',
                             labelStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant),
                             prefixIcon: Icon(Icons.lock, color: theme.colorScheme.primary),
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                              onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
-                            ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
                               borderSide: BorderSide(color: theme.colorScheme.outline),
@@ -351,43 +232,46 @@ class VerifyResetScreenState extends State<VerifyResetScreen> {
                             errorStyle: TextStyle(color: theme.colorScheme.error),
                           ),
                           enabled: !authProvider.isLoading,
-                          obscureText: _obscureConfirmPassword,
-                          onChanged: (_) => _validateForm(),
-                          autocorrect: false,
+                          onChanged: (_) => _validateForm(isPasswordStep: true),
+                          obscureText: true,
                           style: TextStyle(color: theme.colorScheme.onSurface),
                         ),
-                        const SizedBox(height: 24),
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: authProvider.isLoading ? null : _resetPassword,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: theme.colorScheme.primary,
-                              foregroundColor: theme.colorScheme.onPrimary,
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              elevation: 2,
+                      ],
+                      const SizedBox(height: 24),
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: authProvider.isLoading
+                              ? null
+                              : isPasswordStep
+                              ? _resetPassword
+                              : _verifyOTP,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: theme.colorScheme.primary,
+                            foregroundColor: theme.colorScheme.onPrimary,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
                             ),
-                            child: authProvider.isLoading
-                                ? SpinKitFadingCircle(
+                            elevation: 2,
+                          ),
+                          child: authProvider.isLoading
+                              ? SpinKitFadingCircle(
+                            color: theme.colorScheme.onPrimary,
+                            size: 24,
+                          )
+                              : Text(
+                            isPasswordStep ? 'Reset Password' : 'Submit OTP',
+                            style: theme.textTheme.labelLarge?.copyWith(
                               color: theme.colorScheme.onPrimary,
-                              size: 24,
-                            )
-                                : Text(
-                              'Reset Password',
-                              style: theme.textTheme.labelLarge?.copyWith(
-                                color: theme.colorScheme.onPrimary,
-                              ),
                             ),
                           ),
                         ),
-                      ],
+                      ),
                       const SizedBox(height: 16),
                       TextButton(
-                        onPressed: () => _handleNavigation(context),
+                        onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
                         child: Text(
                           'Back to Sign In',
                           style: theme.textTheme.bodyMedium?.copyWith(
@@ -398,6 +282,21 @@ class VerifyResetScreenState extends State<VerifyResetScreen> {
                     ],
                   ),
                 ),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: 16,
+            left: 16,
+            child: Consumer<ThemeProvider>(
+              builder: (context, themeProvider, _) => _buildIconButton(
+                context,
+                icon: _getThemeIcon(themeProvider.themeMode),
+                tooltip: 'Toggle Theme',
+                onTap: () {
+                  final nextMode = _getNextThemeMode(themeProvider.themeMode);
+                  themeProvider.setTheme(nextMode);
+                },
               ),
             ),
           ),
@@ -468,5 +367,54 @@ class VerifyResetScreenState extends State<VerifyResetScreen> {
         ),
       ],
     );
+  }
+
+  Widget _buildIconButton(
+      BuildContext context, {
+        required IconData icon,
+        required String tooltip,
+        VoidCallback? onTap,
+        Color? color,
+      }) {
+    final theme = Theme.of(context);
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        splashColor: (color ?? theme.colorScheme.primary).withOpacity(0.2),
+        highlightColor: (color ?? theme.colorScheme.primary).withOpacity(0.1),
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Icon(
+            icon,
+            color: color ?? theme.colorScheme.primary,
+            size: 18,
+          ),
+        ),
+      ),
+    );
+  }
+
+  IconData _getThemeIcon(ThemeMode mode) {
+    switch (mode) {
+      case ThemeMode.system:
+        return Icons.hdr_auto;
+      case ThemeMode.light:
+        return Icons.light_mode_rounded;
+      case ThemeMode.dark:
+        return Icons.brightness_2;
+    }
+  }
+
+  ThemeMode _getNextThemeMode(ThemeMode current) {
+    switch (current) {
+      case ThemeMode.system:
+        return ThemeMode.light;
+      case ThemeMode.light:
+        return ThemeMode.dark;
+      case ThemeMode.dark:
+        return ThemeMode.system;
+    }
   }
 }

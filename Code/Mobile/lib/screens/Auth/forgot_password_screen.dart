@@ -4,6 +4,7 @@ import 'package:flutter_spinkit/flutter_spinkit.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../widgets/commen/title_text.dart';
+import 'package:flutter/foundation.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -17,7 +18,6 @@ class ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final _identifierController = TextEditingController();
   Map<String, String> _errors = {};
   String? _successMessage;
-  bool _hasNavigated = false;
 
   @override
   void dispose() {
@@ -47,11 +47,17 @@ class ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     if (!_validateForm()) return;
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     await authProvider.initiatePasswordReset(_identifierController.text.trim());
+    if (authProvider.userID != null && authProvider.errorMessage == null) {
+      if (kDebugMode) print('Navigating to /reset-password with userID: ${authProvider.userID}');
+      Navigator.pushNamed(context, '/reset-password');
+    } else if (authProvider.errorMessage != null) {
+      setState(() => _successMessage = null);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final authProvider = Provider.of<AuthProvider>(context);
     final themeProvider = Provider.of<ThemeProvider>(context);
     final theme = themeProvider.currentTheme;
 
@@ -66,12 +72,6 @@ class ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           ),
         );
         authProvider.clearError();
-      } else if (authProvider.userID != null && !_hasNavigated) {
-        final currentRoute = ModalRoute.of(context)?.settings.name;
-        if (currentRoute != '/reset-password') {
-          _hasNavigated = true;
-          Navigator.pushNamed(context, '/reset-password');
-        }
       } else if (_successMessage != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -180,6 +180,21 @@ class ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               ),
             ),
           ),
+          Positioned(
+            bottom: 16,
+            left: 16,
+            child: Consumer<ThemeProvider>(
+              builder: (context, themeProvider, _) => _buildIconButton(
+                context,
+                icon: _getThemeIcon(themeProvider.themeMode),
+                tooltip: 'Toggle Theme',
+                onTap: () {
+                  final nextMode = _getNextThemeMode(themeProvider.themeMode);
+                  themeProvider.setTheme(nextMode);
+                },
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -247,5 +262,54 @@ class ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         ),
       ],
     );
+  }
+
+  Widget _buildIconButton(
+      BuildContext context, {
+        required IconData icon,
+        required String tooltip,
+        VoidCallback? onTap,
+        Color? color,
+      }) {
+    final theme = Theme.of(context);
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        splashColor: (color ?? theme.colorScheme.primary).withOpacity(0.2),
+        highlightColor: (color ?? theme.colorScheme.primary).withOpacity(0.1),
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Icon(
+            icon,
+            color: color ?? theme.colorScheme.primary,
+            size: 18,
+          ),
+        ),
+      ),
+    );
+  }
+
+  IconData _getThemeIcon(ThemeMode mode) {
+    switch (mode) {
+      case ThemeMode.system:
+        return Icons.hdr_auto;
+      case ThemeMode.light:
+        return Icons.light_mode_rounded;
+      case ThemeMode.dark:
+        return Icons.brightness_2;
+    }
+  }
+
+  ThemeMode _getNextThemeMode(ThemeMode current) {
+    switch (current) {
+      case ThemeMode.system:
+        return ThemeMode.light;
+      case ThemeMode.light:
+        return ThemeMode.dark;
+      case ThemeMode.dark:
+        return ThemeMode.system;
+    }
   }
 }
