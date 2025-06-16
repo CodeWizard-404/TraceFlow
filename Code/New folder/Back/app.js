@@ -68,6 +68,7 @@ ensureRedisInitialized().then(() => {
 
     setupMiddleware(app);
 
+    // Configure express-jsdoc-swagger before routes
     expressJSDocSwagger(app)({
         info: {
             title: 'TraceFlow API',
@@ -77,10 +78,11 @@ ensureRedisInitialized().then(() => {
         servers: [
             {
                 url: process.env.NODE_ENV === 'production' ? process.env.PROD_URL : `${process.env.DEV_URL}:${process.env.PORT}`,
+                description: process.env.NODE_ENV === 'production' ? 'Production server' : 'Development server',
             },
         ],
-        baseDir: __dirname,
-        filesPattern: ['./routes/*.js', './models/**/*.js'],
+        baseDir: path.join(__dirname, 'routes'),
+        filesPattern: '*.js',
         security: {
             BearerAuth: {
                 type: 'http',
@@ -93,20 +95,27 @@ ensureRedisInitialized().then(() => {
                 name: 'accessToken',
             },
         },
+        onError: (error, file) => {
+            console.error(`Error parsing JSDoc in ${file}:`, error);
+            logger.error('JSDoc parsing error', {
+                file,
+                error: error.message,
+                stack: error.stack,
+                service: 'swagger',
+            });
+        },
     });
+
+    // Setup Redoc
+    app.use('/api/docs', redoc({
+        title: 'TraceFlow API Documentation',
+        specUrl: '/api/docs/swagger.json',
+        nonce: (req, res) => res.locals.nonce, // Use res.locals.nonce
+    }));
 
     app.use('/logo', express.static(path.join(__dirname, 'Templates/logo')));
 
     setupRoutes(app);
-
-    app.get('/openapi.json', (req, res) => {
-        res.sendFile(path.join(__dirname, 'openapi.json'));
-    });
-
-    app.use('/api/docs', redoc({
-        title: 'TraceFlow API Documentation',
-        specUrl: '/openapi.json',
-    }));
 
     app.get('/api/test', authenticateCookie, (req, res) => {
         res.json({ message: 'Secure endpoint accessed', user: req.user });

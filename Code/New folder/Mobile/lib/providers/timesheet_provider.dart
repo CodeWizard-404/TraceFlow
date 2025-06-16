@@ -1,48 +1,86 @@
 import 'package:flutter/foundation.dart';
 import '../models/timesheet.dart';
+import '../models/visit.dart';
 import '../services/timesheet_service.dart';
 
 class TimesheetProvider with ChangeNotifier {
   List<Timesheet> _timesheets = [];
   Timesheet? _currentTimesheet;
+  List<Visit> _suggestedVisits = [];
+  List<String> _selectedSuggestedVisitIds = [];
   bool _isLoading = false;
   String? _errorMessage;
 
   List<Timesheet> get timesheets => _timesheets;
   Timesheet? get currentTimesheet => _currentTimesheet;
+  List<Visit> get suggestedVisits => _suggestedVisits;
+  List<String> get selectedSuggestedVisitIds => _selectedSuggestedVisitIds;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
-  Future<void> createTimesheetForManager({
-    required int weekNumber,
-    required int year,
-    required String supervisorID,
-    required List<Map<String, dynamic>> visits,
-    String status = 'pending',
-  }) async {
-    if (kDebugMode) print('TimesheetProvider.createTimesheetForManager called');
+  void setSuggestedVisits(List<Visit> visits) {
+    _suggestedVisits = visits;
+    _selectedSuggestedVisitIds = visits.map((v) => v.visitID).toList();
+    if (kDebugMode) print('Setting suggested visits: ${visits.length}');
+    notifyListeners();
+  }
+
+  void toggleSuggestedVisitSelection(String visitID) {
+    if (_selectedSuggestedVisitIds.contains(visitID)) {
+      _selectedSuggestedVisitIds.remove(visitID);
+    } else {
+      _selectedSuggestedVisitIds.add(visitID);
+    }
+    notifyListeners();
+  }
+
+  void selectAllSuggestedVisits() {
+    _selectedSuggestedVisitIds = _suggestedVisits.map((v) => v.visitID).toList();
+    notifyListeners();
+  }
+
+  void clearSuggestedVisits() {
+    _suggestedVisits = [];
+    _selectedSuggestedVisitIds = [];
+    notifyListeners();
+  }
+
+  Future<void> saveSuggestedVisits(String supervisorID) async {
     _isLoading = true;
-    _errorMessage = null;
     notifyListeners();
     try {
-      final timesheet = await TimesheetService.createTimesheetForManager(
-        weekNumber: weekNumber,
-        year: year,
-        supervisorID: supervisorID,
-        visits: visits,
-        status: status,
-      );
-      _timesheets.add(timesheet);
-      _currentTimesheet = timesheet;
-      if (kDebugMode) print('Created timesheet: ${timesheet.timesheetID}');
+      final selectedVisits = _suggestedVisits
+          .where((v) => _selectedSuggestedVisitIds.contains(v.visitID))
+          .toList();
+      for (var visit in selectedVisits) {
+        final date = visit.date;
+        final weekNumber = _getWeekNumber(date);
+        await createTimesheetForSupervisor(
+          weekNumber: weekNumber,
+          year: date.year,
+          supervisorID: supervisorID,
+          visits: [visit.toJson()],
+          status: 'pending',
+        );
+      }
+      clearSuggestedVisits();
+      await fetchTimesheetsBySupervisor(supervisorID); // Refresh timesheets after saving
     } catch (e) {
-      _errorMessage = 'Failed to create timesheet: $e';
+      _errorMessage = 'Failed to save suggestions: $e';
       if (kDebugMode) print(_errorMessage);
       rethrow;
     } finally {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  int _getWeekNumber(DateTime date) {
+    final startOfYear = DateTime(date.year, 1, 1);
+    final firstMonday = startOfYear.weekday <= 4
+        ? startOfYear.subtract(Duration(days: startOfYear.weekday - 1))
+        : startOfYear.add(Duration(days: 8 - startOfYear.weekday));
+    return (date.difference(firstMonday).inDays ~/ 7) + 1;
   }
 
   Future<void> createTimesheetForSupervisor({
@@ -154,15 +192,22 @@ class TimesheetProvider with ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
     try {
+// Default criteria with time interval
+      final defaultCriteria = {
+        'timeInterval': {
+          'startHour': 8,
+          'endHour': 17,
+        },
+      };
       final result = await TimesheetService.suggestTimesheet(
         supervisorID: supervisorID,
         weekNumber: weekNumber,
         year: year,
         coordinates: coordinates,
-        criteria: criteria,
+        criteria: criteria ?? defaultCriteria,
       );
-      if (kDebugMode) print('Suggested timesheet for week $weekNumber, year $year');
-      return result;
+      if (kDebugMode) print('Suggested timesheet for week $weekNumber, year $year: $result');
+      return result; // Return the Map<String, dynamic> directly
     } catch (e) {
       _errorMessage = 'Failed to suggest timesheet: $e';
       if (kDebugMode) print(_errorMessage);

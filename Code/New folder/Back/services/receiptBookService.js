@@ -852,8 +852,19 @@ class ReceiptBookService {
                     [recipientType === 'user' ? 'toUserID' : 'toAgentID']: recipientID,
                     status: 'Pending',
                 },
+                order: [['createdAt', 'DESC']], // Get most recent transfers first
             });
-            if (transfers.length !== bookIDs.length) {
+
+            // Group transfers by bookID and take the most recent one per book
+            const latestTransfers = bookIDs.map(bookID => {
+                const transfer = transfers.find(t => t.bookID === bookID);
+                if (!transfer) {
+                    throw new Error(`No pending transfer found for book ${bookID}`);
+                }
+                return transfer;
+            });
+
+            if (latestTransfers.length !== bookIDs.length) {
                 const error = new Error('Invalid or incomplete transfer set');
                 error.status = 400;
                 throw error;
@@ -1155,13 +1166,24 @@ class ReceiptBookService {
 
             const transaction = await ReceiptBook.sequelize.transaction();
             try {
-                // Validate book number format (example: alphanumeric, 1-50 characters)
+                // Validate book number and type formats
                 if (!/^[a-zA-Z0-9]{1,50}$/.test(number)) {
                     results.detailedLog.skipped.push({
                         bookNumber: number,
                         bookType: type,
                         timestamp: new Date().toISOString(),
                         reason: 'Invalid book number format: must be 1-50 alphanumeric characters',
+                    });
+                    results.summary.recordsSkipped++;
+                    await transaction.rollback();
+                    continue;
+                }
+                if (!/^[a-zA-Z0-9\s-]{1,50}$/.test(type)) {
+                    results.detailedLog.skipped.push({
+                        bookNumber: number,
+                        bookType: type,
+                        timestamp: new Date().toISOString(),
+                        reason: 'Invalid book type format: must be 1-50 alphanumeric characters, spaces, or hyphens',
                     });
                     results.summary.recordsSkipped++;
                     await transaction.rollback();
@@ -1183,15 +1205,35 @@ class ReceiptBookService {
                 }
 
                 // Find or create receipt book type
+                const normalizedType = type.trim().toLowerCase();
                 let bookType = await ReceiptBookType.findOne({
-                    where: { name: { [Op.iLike]: type } },
+                    where: { name: { [Op.iLike]: normalizedType } },
                     transaction,
                 });
                 if (!bookType) {
-                    bookType = await ReceiptBookType.create(
-                        { name: type },
-                        { transaction }
-                    );
+                    try {
+                        bookType = await ReceiptBookType.create(
+                            { name: type.trim() },
+                            { transaction }
+                        );
+                        results.detailedLog.created.push({
+                            bookNumber: number,
+                            bookType: type,
+                            timestamp: new Date().toISOString(),
+                            details: `Created new receipt book type '${type}'`,
+                        });
+                    } catch (error) {
+                        results.detailedLog.errors.push({
+                            bookNumber: number,
+                            bookType: type,
+                            timestamp: new Date().toISOString(),
+                            operation: 'Type creation',
+                            reason: `Failed to create receipt book type: ${error.message}`,
+                        });
+                        results.summary.errorsEncountered++;
+                        await transaction.rollback();
+                        continue;
+                    }
                 }
 
                 // Create receipt book

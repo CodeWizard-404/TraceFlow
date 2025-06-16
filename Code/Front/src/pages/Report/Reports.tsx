@@ -4,6 +4,8 @@ import { FaDownload, FaTrash, FaFilter, FaList, FaPlus, FaClock, FaChevronDown, 
 import Select from "react-select";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import { confirmAlert } from 'react-confirm-alert';
+import 'react-confirm-alert/src/react-confirm-alert.css';
 import {
   ReportSchedule,
   GeneratedReport,
@@ -859,25 +861,51 @@ const ReportingPage: React.FC = () => {
   };
 
   const handleDeleteSchedule = async (scheduleID: string) => {
-    if (window.confirm(t("reports.confirmDelete"))) {
-      try {
-        await deleteSchedule(scheduleID);
-        setSchedules(schedules.filter(schedule => schedule.scheduleID !== scheduleID));
-      } catch (err: any) {
-        setError(err.message || t("reports.errors.deleteSchedule"));
-      }
-    }
+    confirmAlert({
+      title: t('reports.confirmDelete.title'),
+      message: t('reports.confirmDelete.message'),
+      buttons: [
+        {
+          label: t('reports.confirmDelete.yes'),
+          onClick: async () => {
+            try {
+              await deleteSchedule(scheduleID);
+              setSchedules(schedules.filter(schedule => schedule.scheduleID !== scheduleID));
+            } catch (err: any) {
+              setError(err.message || t("reports.errors.deleteSchedule"));
+            }
+          },
+        },
+        {
+          label: t('reports.confirmDelete.no'),
+          onClick: () => { },
+        },
+      ],
+    });
   };
 
   const handleDeleteGeneratedReport = async (reportID: string) => {
-    if (window.confirm(t("reports.confirmDelete"))) {
-      try {
-        await deleteGeneratedReport(reportID);
-        setGeneratedReports(generatedReports.filter(report => report.generatedReportID !== reportID));
-      } catch (err: any) {
-        setError(err.message || t("reports.errors.deleteReport"));
-      }
-    }
+    confirmAlert({
+      title: t('reports.confirmDelete.title'),
+      message: t('reports.confirmDelete.message'),
+      buttons: [
+        {
+          label: t('reports.confirmDelete.yes'),
+          onClick: async () => {
+            try {
+              await deleteGeneratedReport(reportID);
+              setGeneratedReports(generatedReports.filter(report => report.generatedReportID !== reportID));
+            } catch (err: any) {
+              setError(err.message || t("reports.errors.deleteReport"));
+            }
+          },
+        },
+        {
+          label: t('reports.confirmDelete.no'),
+          onClick: () => { },
+        },
+      ],
+    });
   };
 
   const validateIPAddress = (ip: string): boolean => {

@@ -5,6 +5,8 @@ import { AIConfig } from '../../../models/AI';
 import { deleteAIConfig, testAIConfig, updateAIConfig } from '../../../apis/aiAPI';
 import { getUserById } from '../../../apis/userAPI';
 import { ViewMode } from '../adminTypes';
+import { confirmAlert } from 'react-confirm-alert';
+import 'react-confirm-alert/src/react-confirm-alert.css';
 
 interface AIConfigsListProps {
     configs: AIConfig[];
@@ -148,16 +150,29 @@ const AIConfigsList: React.FC<AIConfigsListProps> = ({
     };
 
     const handleDelete = async (configID: string) => {
-        if (!window.confirm(t('adminDashboard.actions.deleteConfirm'))) return;
-        try {
-            await deleteAIConfig(configID);
-            setConfigs(configs.filter((config) => config.configID !== configID));
-            setError(null);
-        } catch (err: any) {
-            setError(t('adminDashboard.error.deleteAIConfigFailed') || err.message);
-        }
+        confirmAlert({
+            title: t('adminDashboard.actions.deleteConfirmTitle'),
+            message: t('adminDashboard.actions.deleteConfirm'),
+            buttons: [
+                {
+                    label: t('adminDashboard.actions.yes'),
+                    onClick: async () => {
+                        try {
+                            await deleteAIConfig(configID);
+                            setConfigs(configs.filter((config) => config.configID !== configID));
+                            setError(null);
+                        } catch (err: any) {
+                            setError(t('adminDashboard.error.deleteAIConfigFailed') || err.message);
+                        }
+                    },
+                },
+                {
+                    label: t('adminDashboard.actions.no'),
+                    onClick: () => { },
+                },
+            ],
+        });
     };
-
     const handleTest = async (configID: string) => {
         try {
             const testResult = await testAIConfig(configID);

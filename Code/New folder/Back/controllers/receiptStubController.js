@@ -1,9 +1,16 @@
 const ReceiptStubService = require('../services/receiptStubService');
 const NotificationService = require('../services/notificationService');
-const logger = require('../utils/logger');
+const { ReceiptBook } = require('../models');
+const { sequelize } = require('../config/db');
+const Sequelize = require('sequelize');
+const { getRedisClient } = require('../config/redis');
+const RedisUtils = require('../utils/redisUtils');
+const cache = require('../utils/cache');
+const { v4: uuidv4 } = require('uuid');
+const { logRequest } = require('../utils/controllerUtils');
 
 /**
- * Controller for managing receipt stub operations with structured logging.
+ * Controller for managing receipt stub operations with structured logging and notifications.
  */
 class ReceiptStubController {
     /**
@@ -13,49 +20,57 @@ class ReceiptStubController {
      * @returns {Promise<void>} JSON response with result or error.
      */
     static async collectStub(req, res) {
-        const actorID = req.user?.userID || 'unknown';
+        const transaction = await sequelize.transaction({ isolationLevel: Sequelize.Transaction.ISOLATION_LEVELS.READ_COMMITTED });
         try {
             const { bookIDs } = req.body;
             if (!Array.isArray(bookIDs) || bookIDs.length === 0) {
-                logger.warn('Collect stub failed: Invalid or missing bookIDs', {
-                    route: 'receipt-stubs/collect',
-                    method: req.method,
-                    url: req.originalUrl,
+                await transaction.rollback();
+                logRequest({
+                    req,
                     status: 400,
-                    ip: req.ip,
-                    traceId: req.traceId,
-                    userId: actorID,
-                    metadata: {}
+                    message: 'bookIDs must be a non-empty array',
+                    level: 'info',
+                    service: 'receipt_stub',
+                    defaultRoute: 'receipt-stubs'
                 });
                 return res.status(400).json({ error: 'bookIDs must be a non-empty array' });
             }
-            const result = await ReceiptStubService.collectStub(bookIDs, actorID);
-            await NotificationService.triggerNotification({
-                event: 'receipt_stub:collection_initiated',
-                data: { bookIDs },
-                metadata: { initiatedBy: req.user.email }
-            });
-            logger.info('Successfully initiated stub collection', {
-                route: 'receipt-stubs/collect',
-                method: req.method,
-                url: req.originalUrl,
+
+            const result = await ReceiptStubService.collectStub(bookIDs, req.user.userID, { transaction });
+
+            const cacheInstance = await cache();
+            const redis = getRedisClient();
+            await cacheInstance.invalidateByTag('receipt_stubs');
+            for (const bookID of bookIDs) {
+                await cacheInstance.invalidate(`receipt_book:${bookID}`);
+                await RedisUtils.publishEvent('cache:invalidate', `receipt_book:${bookID}`);
+            }
+            await redis.set('receipt_stubs:last_updated', Date.now().toString());
+            await RedisUtils.publishEvent('cache:invalidate', 'receipt_stubs');
+
+            logRequest({
+                req,
+                res: result,
                 status: 200,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { bookIDs }
+                message: `Initiated stub collection for ${bookIDs.length} books`,
+                level: 'info',
+                metadata: { bookIDs, bookCount: bookIDs.length },
+                service: 'receipt_stub',
+                defaultRoute: 'receipt-stubs'
             });
+
+            await transaction.commit();
             return res.status(200).json(result);
         } catch (error) {
-            logger.error('Failed to initiate stub collection', {
-                route: 'receipt-stubs/collect',
-                method: req.method,
-                url: req.originalUrl,
+            await transaction.rollback();
+            logRequest({
+                req,
+                error,
                 status: error.status || 400,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { error: error.message }
+                message: `Failed to initiate stub collection: ${error.message}`,
+                level: 'error',
+                service: 'receipt_stub',
+                defaultRoute: 'receipt-stubs'
             });
             return res.status(error.status || 400).json({ error: error.message || 'Failed to initiate stub collection' });
         }
@@ -68,49 +83,57 @@ class ReceiptStubController {
      * @returns {Promise<void>} JSON response with result or error.
      */
     static async validateStubCollection(req, res) {
-        const actorID = req.user?.userID || 'unknown';
+        const transaction = await sequelize.transaction({ isolationLevel: Sequelize.Transaction.ISOLATION_LEVELS.READ_COMMITTED });
         try {
             const { bookIDs, otpCode } = req.body;
             if (!Array.isArray(bookIDs) || bookIDs.length === 0 || !otpCode) {
-                logger.warn('Validate stub collection failed: Missing or invalid bookIDs or otpCode', {
-                    route: 'receipt-stubs/validate',
-                    method: req.method,
-                    url: req.originalUrl,
+                await transaction.rollback();
+                logRequest({
+                    req,
                     status: 400,
-                    ip: req.ip,
-                    traceId: req.traceId,
-                    userId: actorID,
-                    metadata: {}
+                    message: 'bookIDs must be a non-empty array and otpCode is required',
+                    level: 'info',
+                    service: 'receipt_stub',
+                    defaultRoute: 'receipt-stubs'
                 });
                 return res.status(400).json({ error: 'bookIDs must be a non-empty array and otpCode is required' });
             }
-            const result = await ReceiptStubService.validateStubCollection(bookIDs, actorID, otpCode);
-            await NotificationService.triggerNotification({
-                event: 'receipt_stub:collection_validated',
-                data: { bookIDs },
-                metadata: { validatedBy: req.user.email }
-            });
-            logger.info('Successfully validated stub collection', {
-                route: 'receipt-stubs/validate',
-                method: req.method,
-                url: req.originalUrl,
+
+            const result = await ReceiptStubService.validateStubCollection(bookIDs, req.user.userID, otpCode, { transaction });
+
+            const cacheInstance = await cache();
+            const redis = getRedisClient();
+            await cacheInstance.invalidateByTag('receipt_stubs');
+            for (const bookID of bookIDs) {
+                await cacheInstance.invalidate(`receipt_book:${bookID}`);
+                await RedisUtils.publishEvent('cache:invalidate', `receipt_book:${bookID}`);
+            }
+            await redis.set('receipt_stubs:last_updated', Date.now().toString());
+            await RedisUtils.publishEvent('cache:invalidate', 'receipt_stubs');
+
+            logRequest({
+                req,
+                res: result,
                 status: 200,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { bookIDs }
+                message: `Validated stub collection for ${bookIDs.length} books`,
+                level: 'info',
+                metadata: { bookIDs, bookCount: bookIDs.length },
+                service: 'receipt_stub',
+                defaultRoute: 'receipt-stubs'
             });
+
+            await transaction.commit();
             return res.status(200).json(result);
         } catch (error) {
-            logger.error('Failed to validate stub collection', {
-                route: 'receipt-stubs/validate',
-                method: req.method,
-                url: req.originalUrl,
+            await transaction.rollback();
+            logRequest({
+                req,
+                error,
                 status: error.status || 400,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { error: error.message }
+                message: `Failed to validate stub collection: ${error.message}`,
+                level: 'error',
+                service: 'receipt_stub',
+                defaultRoute: 'receipt-stubs'
             });
             return res.status(error.status || 400).json({ error: error.message || 'Failed to validate stub collection' });
         }
@@ -123,51 +146,76 @@ class ReceiptStubController {
      * @returns {Promise<void>} JSON response with result or error.
      */
     static async archiveStub(req, res) {
-        const actorID = req.user?.userID || 'unknown';
+        const transaction = await sequelize.transaction({ isolationLevel: Sequelize.Transaction.ISOLATION_LEVELS.READ_COMMITTED });
         try {
             const { bookIDs } = req.body;
             if (!Array.isArray(bookIDs) || bookIDs.length === 0) {
-                logger.warn('Archive stub failed: Invalid or missing bookIDs', {
-                    route: 'receipt-stubs/archive',
-                    method: req.method,
-                    url: req.originalUrl,
+                await transaction.rollback();
+                logRequest({
+                    req,
                     status: 400,
-                    ip: req.ip,
-                    traceId: req.traceId,
-                    userId: actorID,
-                    metadata: {}
+                    message: 'bookIDs must be a non-empty array',
+                    level: 'info',
+                    service: 'receipt_stub',
+                    defaultRoute: 'receipt-stubs'
                 });
                 return res.status(400).json({ error: 'bookIDs must be a non-empty array' });
             }
 
-            // Call archiveStub with the full array
-            const result = await ReceiptStubService.archiveStub(bookIDs, actorID);
+            // Fetch current holders for notification
+            const books = await ReceiptBook.findAll({
+                where: { bookID: bookIDs },
+                attributes: ['bookID', 'currentHolderID'],
+                transaction
+            });
+
+            const result = await ReceiptStubService.archiveStub(bookIDs, req.user.userID, { transaction });
+
+            const cacheInstance = await cache();
+            const redis = getRedisClient();
+            await cacheInstance.invalidateByTag('receipt_stubs');
+            for (const bookID of bookIDs) {
+                await cacheInstance.invalidate(`receipt_book:${bookID}`);
+                await RedisUtils.publishEvent('cache:invalidate', `receipt_book:${bookID}`);
+            }
+            await redis.set('receipt_stubs:last_updated', Date.now().toString());
+            await RedisUtils.publishEvent('cache:invalidate', 'receipt_stubs');
+
+            const requestID = uuidv4();
             await NotificationService.triggerNotification({
                 event: 'receipt_stub:archived',
                 data: { bookIDs },
-                metadata: { archivedBy: req.user.email }
+                metadata: { archivedBy: req.user.email },
+                dynamicRecipients: [],
+                triggeredByUserID: req.user.userID,
+                type: 'receipt_stub',
+                customMessage: `Archived stubs for ${bookIDs.length} receipt books`,
+                requestID,
             });
-            logger.info('Successfully archived stubs', {
-                route: 'receipt-stubs/archive',
-                method: req.method,
-                url: req.originalUrl,
+
+            logRequest({
+                req,
+                res: result,
                 status: 200,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { bookIDs }
+                message: `Archived stubs for ${bookIDs.length} books`,
+                level: 'info',
+                metadata: { bookIDs, bookCount: bookIDs.length, requestID },
+                service: 'receipt_stub',
+                defaultRoute: 'receipt-stubs'
             });
+
+            await transaction.commit();
             return res.status(200).json(result);
         } catch (error) {
-            logger.error('Failed to archive stubs', {
-                route: 'receipt-stubs/archive',
-                method: req.method,
-                url: req.originalUrl,
+            await transaction.rollback();
+            logRequest({
+                req,
+                error,
                 status: error.status || 400,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { error: error.message, bookIDs: req.body.bookIDs }
+                message: `Failed to archive stubs: ${error.message}`,
+                level: 'error',
+                service: 'receipt_stub',
+                defaultRoute: 'receipt-stubs'
             });
             return res.status(error.status || 400).json({ error: error.message || 'Failed to archive stubs' });
         }

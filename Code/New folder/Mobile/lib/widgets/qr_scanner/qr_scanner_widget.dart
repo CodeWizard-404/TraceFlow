@@ -235,7 +235,7 @@ class QRScannerWidgetState extends State<QRScannerWidget> {
                                 if (_isSuccess)
                                   Icon(
                                     Icons.check_circle,
-                                    color: Colors.green,
+                                    color: theme.colorScheme.primary,
                                     size: 80,
                                   ),
                               ],
@@ -268,8 +268,8 @@ class QRScannerWidgetState extends State<QRScannerWidget> {
       height: 40,
       decoration: BoxDecoration(
         border: Border(
-          top: BorderSide(color: Colors.green, width: 5),
-          left: BorderSide(color: Colors.green, width: 5),
+          top: BorderSide(color: theme.colorScheme.primary, width: 5),
+          left: BorderSide(color: theme.colorScheme.primary, width: 5),
         ),
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(12),
@@ -292,7 +292,7 @@ class QROverlayPainter extends CustomPainter {
     const qrSize = 313.0;
     final availableHeight = size.height - appBarHeight;
     final qrRect = Rect.fromCenter(
-      center: Offset(size.width / 2, size.height / 1.87),
+      center: Offset(size.width / 2, size.height / 1.805),
       width: qrSize,
       height: qrSize,
     );
@@ -314,7 +314,7 @@ class QROverlayPainter extends CustomPainter {
         center: Alignment.center,
         radius: qrSize / 2 + 20,
         colors: [
-          Colors.green.withOpacity(0.2),
+          theme.colorScheme.primary.withOpacity(0.2),
           Colors.transparent,
         ],
       ).createShader(qrRect);

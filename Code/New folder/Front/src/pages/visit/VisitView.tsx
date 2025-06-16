@@ -37,6 +37,8 @@ import { io } from 'socket.io-client';
 import User from "../../models/User";
 import { FaRoute } from "react-icons/fa";
 import { fetchUserProfile } from "../../apis/userAPI";
+import { confirmAlert } from 'react-confirm-alert';
+import 'react-confirm-alert/src/react-confirm-alert.css';
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
@@ -313,20 +315,30 @@ const VisitDetailsView: React.FC = () => {
     };
 
     const handleDelete = async () => {
-        if (
-            !visit ||
-            !userPermissions.canDeleteTimesheets ||
-            !window.confirm(t("visitDetails.confirmDelete"))
-        )
-            return;
-        try {
-            await deleteVisit(visit.visitID);
-            navigate("/timesheet");
-        } catch (err: unknown) {
-            const errorMessage =
-                err instanceof Error ? err.message : t("visitDetails.error.deleteFailed");
-            setError(errorMessage);
-        }
+        if (!visit || !userPermissions.canDeleteTimesheets) return;
+        confirmAlert({
+            title: t('visitDetails.confirmDeleteTitle'),
+            message: t('visitDetails.confirmDelete'),
+            buttons: [
+                {
+                    label: t('visitDetails.yes'),
+                    onClick: async () => {
+                        try {
+                            await deleteVisit(visit.visitID);
+                            navigate("/timesheet");
+                        } catch (err: unknown) {
+                            const errorMessage =
+                                err instanceof Error ? err.message : t("visitDetails.error.deleteFailed");
+                            setError(errorMessage);
+                        }
+                    },
+                },
+                {
+                    label: t('visitDetails.no'),
+                    onClick: () => { },
+                },
+            ],
+        });
     };
 
     const handleImageClick = (photo: string) =>

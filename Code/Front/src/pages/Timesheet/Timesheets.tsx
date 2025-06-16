@@ -11,6 +11,8 @@ import Visit from "../../models/Visit";
 import { VisitReason } from "../../models/Reason";
 import User from "../../models/User";
 import { useAuth } from "../../context/AuthContext";
+import { confirmAlert } from 'react-confirm-alert';
+import 'react-confirm-alert/src/react-confirm-alert.css';
 import {
     getTimesheetsBySupervisor,
     getAllTimesheets,
@@ -1372,24 +1374,38 @@ const Timesheets: React.FC = React.memo(() => {
                     return;
                 }
 
-                // Show confirmation dialog
-                const confirmMessage = t("timesheets.confirmValidate", {
-                    count: pendingVisitIds.length,
-                });
-                if (!window.confirm(confirmMessage)) {
-                    console.log('Validation cancelled by user');
-                    return;
-                }
+                // Show confirmation dialog using react-confirm-alert
+                confirmAlert({
+                    title: t('timesheets.confirmValidate.title', { count: pendingVisitIds.length }),
+                    message: t('timesheets.confirmValidate.message', { count: pendingVisitIds.length }),
+                    buttons: [
+                        {
+                            label: t('timesheets.confirmValidate.yes'),
+                            onClick: async () => {
+                                try {
+                                    // Call API to validate
+                                    await validateTimesheet(weekData.timesheetID, {
+                                        visitIDs: pendingVisitIds,
+                                        status: "validated",
+                                    });
+                                    console.log('Timesheet validated successfully:', weekData.timesheetID);
 
-                // Call API to validate
-                await validateTimesheet(weekData.timesheetID, {
-                    visitIDs: pendingVisitIds,
-                    status: "validated",
+                                    // Refresh timesheets
+                                    await fetchTimesheets();
+                                } catch (error) {
+                                    console.error("Failed to validate timesheet:", error);
+                                    setError(t("timesheets.errors.validateTimesheet"));
+                                }
+                            },
+                        },
+                        {
+                            label: t('timesheets.confirmValidate.no'),
+                            onClick: () => {
+                                console.log('Validation cancelled by user');
+                            },
+                        },
+                    ],
                 });
-                console.log('Timesheet validated successfully:', weekData.timesheetID);
-
-                // Refresh timesheets
-                await fetchTimesheets();
             } catch (error) {
                 console.error("Failed to validate timesheet:", error);
                 setError(t("timesheets.errors.validateTimesheet"));

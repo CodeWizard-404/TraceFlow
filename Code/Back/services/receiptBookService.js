@@ -1166,13 +1166,24 @@ class ReceiptBookService {
 
             const transaction = await ReceiptBook.sequelize.transaction();
             try {
-                // Validate book number format (example: alphanumeric, 1-50 characters)
+                // Validate book number and type formats
                 if (!/^[a-zA-Z0-9]{1,50}$/.test(number)) {
                     results.detailedLog.skipped.push({
                         bookNumber: number,
                         bookType: type,
                         timestamp: new Date().toISOString(),
                         reason: 'Invalid book number format: must be 1-50 alphanumeric characters',
+                    });
+                    results.summary.recordsSkipped++;
+                    await transaction.rollback();
+                    continue;
+                }
+                if (!/^[a-zA-Z0-9\s-]{1,50}$/.test(type)) {
+                    results.detailedLog.skipped.push({
+                        bookNumber: number,
+                        bookType: type,
+                        timestamp: new Date().toISOString(),
+                        reason: 'Invalid book type format: must be 1-50 alphanumeric characters, spaces, or hyphens',
                     });
                     results.summary.recordsSkipped++;
                     await transaction.rollback();
@@ -1194,15 +1205,35 @@ class ReceiptBookService {
                 }
 
                 // Find or create receipt book type
+                const normalizedType = type.trim().toLowerCase();
                 let bookType = await ReceiptBookType.findOne({
-                    where: { name: { [Op.iLike]: type } },
+                    where: { name: { [Op.iLike]: normalizedType } },
                     transaction,
                 });
                 if (!bookType) {
-                    bookType = await ReceiptBookType.create(
-                        { name: type },
-                        { transaction }
-                    );
+                    try {
+                        bookType = await ReceiptBookType.create(
+                            { name: type.trim() },
+                            { transaction }
+                        );
+                        results.detailedLog.created.push({
+                            bookNumber: number,
+                            bookType: type,
+                            timestamp: new Date().toISOString(),
+                            details: `Created new receipt book type '${type}'`,
+                        });
+                    } catch (error) {
+                        results.detailedLog.errors.push({
+                            bookNumber: number,
+                            bookType: type,
+                            timestamp: new Date().toISOString(),
+                            operation: 'Type creation',
+                            reason: `Failed to create receipt book type: ${error.message}`,
+                        });
+                        results.summary.errorsEncountered++;
+                        await transaction.rollback();
+                        continue;
+                    }
                 }
 
                 // Create receipt book

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:TraceFlow/models/user.dart';
 import 'package:TraceFlow/services/auth_service.dart';
 import 'package:TraceFlow/services/cookie_manager.dart';
@@ -19,8 +20,8 @@ class AuthProvider with ChangeNotifier {
   String? _userID;
   bool _requires2FA = false;
   String? _errorMessage;
-  int _otpTimer = 600;
-  int _resendCooldown = 0;
+  ValueNotifier<int> _otpTimer = ValueNotifier<int>(600);
+  ValueNotifier<int> _resendCooldown = ValueNotifier<int>(0);
   String _otpMethod = 'phone';
   Timer? _otpTimerInstance;
   String? _tempToken;
@@ -29,6 +30,7 @@ class AuthProvider with ChangeNotifier {
   int? _tokenExpiry;
   Timer? _refreshTimer;
   String? _deviceIdentifier;
+  DateTime? _lastRefreshTime;
 
   String? get deviceIdentifier => _deviceIdentifier;
   User? get user => _user;
@@ -36,8 +38,8 @@ class AuthProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get permissionsLoaded => _permissionsLoaded;
   String? get errorMessage => _errorMessage;
-  int get otpTimer => _otpTimer;
-  int get resendCooldown => _resendCooldown;
+  ValueNotifier<int> get otpTimer => _otpTimer;
+  ValueNotifier<int> get resendCooldown => _resendCooldown;
   String get otpMethod => _otpMethod;
   String? get userID => _userID;
   bool get requires2FA => _requires2FA;
@@ -50,32 +52,7 @@ class AuthProvider with ChangeNotifier {
 
   AuthProvider() {
     _restoreSession();
-  }
-
-  void _startProactiveRefreshTimer() {
-    _refreshTimer?.cancel();
-    if (_tokenExpiry == null || _refreshToken == null) return;
-    final now = DateTime.now().millisecondsSinceEpoch;
-    final timeToExpiry = (_tokenExpiry! - now - 30000) / 1000; // 30s buffer
-    if (timeToExpiry <= 0) {
-      _refreshAccessToken();
-      return;
-    }
-    _refreshTimer = Timer(Duration(seconds: timeToExpiry.toInt()), () async {
-      if (_refreshToken != null) {
-        await _refreshAccessToken();
-        _startProactiveRefreshTimer(); // Restart timer after refresh
-      } else {
-        if (kDebugMode) print('No refresh token available, stopping refresh timer');
-        _refreshTimer?.cancel();
-      }
-    });
-  }
-
-  Future<bool> _isTokenExpired() async {
-    if (_tokenExpiry == null) return true;
-    final now = DateTime.now().millisecondsSinceEpoch;
-    return now >= _tokenExpiry! - 30000; // 30s buffer
+    _startProactiveRefreshTimer();
   }
 
   Future<void> _restoreSession() async {
@@ -88,35 +65,90 @@ class AuthProvider with ChangeNotifier {
           CookieManager.cookies.containsKey('refreshToken')) {
         _refreshToken = CookieManager.cookies['refreshToken'];
         if (await _isTokenExpired()) {
-          await _refreshAccessToken();
+          await _refreshAccessToken(silent: true);
         }
         await _checkAuthStatus();
-        _startProactiveRefreshTimer();
       } else {
         _errorMessage = 'Please log in to continue.';
       }
     } catch (e) {
+      if (kDebugMode) print('Session restore error: $e');
       _errorMessage = 'Please log in to continue.';
-      await CookieManager.clearCookies();
+      if (e.toString().contains('401') || e.toString().contains('403')) {
+        await CookieManager.clearCookies();
+      }
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
+  Future<bool> _isTokenExpired() async {
+    final accessToken = CookieManager.cookies['accessToken'];
+    if (accessToken == null) return true;
+    try {
+      final decoded = JwtDecoder.decode(accessToken);
+      final expiry = decoded['exp'] * 1000;
+      final now = DateTime.now().millisecondsSinceEpoch;
+      return now >= expiry - 30000; // 30 seconds before expiry
+    } catch (e) {
+      if (kDebugMode) print('Failed to decode token: $e');
+      return true;
+    }
+  }
+
   Future<void> _checkAuthStatus() async {
     try {
       final result = await AuthService.checkAuthStatus();
+      if (kDebugMode) print('Auth status result: $result');
       _user = User.fromJson(result['user']);
-      _tokenExpiry = DateTime.now().millisecondsSinceEpoch + (result['expiresIn'] as int);
+      _userRoles = _user!.roles
+          .map((r) => r.name)
+          .where((n) => n != null)
+          .cast<String>()
+          .toList();
+      _tokenExpiry = DateTime.now().millisecondsSinceEpoch + (result['expiresIn'] as int? ?? 900000);
       await _fetchPermissions();
       if (!isSupervisor) {
         throw Exception('Access denied: Supervisor role required');
       }
     } catch (e) {
-      _errorMessage = _parseError(e);
-      await CookieManager.clearCookies();
-      throw Exception(_errorMessage);
+      if (kDebugMode) print('Check auth status error: $e');
+      final accessToken = CookieManager.cookies['accessToken'];
+      if (accessToken != null) {
+        try {
+          final decoded = JwtDecoder.decode(accessToken);
+          final roles = (decoded['realm_access']?['roles'] as List<dynamic>? ?? [])
+              .asMap()
+              .entries
+              .map((e) => Role(
+            roleID: 'role_${e.key + 1}',
+            name: e.value.toString(),
+            description: null,
+            permissions: [],
+          ))
+              .toList();
+          _user = User(
+            userID: decoded['sub']?.toString() ?? 'unknown',
+            email: decoded['email']?.toString() ?? 'unknown@example.com',
+            roles: roles,
+          );
+          _userRoles = roles
+              .map((r) => r.name)
+              .where((n) => n != null)
+              .cast<String>()
+              .toList();
+          await _fetchPermissions();
+          if (!isSupervisor) {
+            throw Exception('Access denied: Supervisor role required');
+          }
+        } catch (tokenError) {
+          if (kDebugMode) print('Token decode error: $tokenError');
+          throw Exception('Authentication failed: $e');
+        }
+      } else {
+        throw Exception('Authentication failed: $e');
+      }
     }
   }
 
@@ -125,17 +157,19 @@ class AuthProvider with ChangeNotifier {
     if (kDebugMode) print('Starting permissions fetch for user: ${_user?.userID}');
     notifyListeners();
     try {
-      if (_user != null) {
+      if (_user != null && _user!.userID != 'unknown') {
         final success = await _loadPermissionsWithRetry(_user!.userID);
         if (!success) {
-          if (kDebugMode) print('Permissions load failed, triggering logout');
-          await logout();
-          _errorMessage = 'Failed to load permissions. Please log in again.';
+          if (kDebugMode) print('Permissions load failed, setting empty permissions');
+          _permissions = [];
+          _errorMessage = 'Unable to load permissions. Some features may be unavailable.';
         } else {
           if (kDebugMode) print('Permissions loaded successfully: $_permissions');
         }
       } else {
-        if (kDebugMode) print('No user, skipping permissions fetch');
+        if (kDebugMode) print('No valid user ID, setting empty permissions');
+        _permissions = [];
+        _errorMessage = 'Unable to load permissions due to invalid user ID.';
       }
     } catch (e) {
       if (kDebugMode) print('Permissions fetch error: $e');
@@ -197,12 +231,11 @@ class AuthProvider with ChangeNotifier {
         _requires2FA = true;
         _userID = result['userID'];
         _authTempToken = result['tempToken'];
-        _otpTimer = 600;
+        _otpTimer.value = 600;
         _otpMethod = result['otpMethod'] ?? 'phone';
         _startotpTimer();
       } else {
         await _handleSuccessfulLogin(result);
-        _startProactiveRefreshTimer();
         if (kDebugMode) print('After login, isSupervisor: $isSupervisor');
         if (!isSupervisor) {
           if (kDebugMode) print('Supervisor role not found, logging out');
@@ -232,12 +265,11 @@ class AuthProvider with ChangeNotifier {
         _requires2FA = true;
         _userID = result['userID'];
         _authTempToken = result['tempToken'];
-        _otpTimer = 600;
+        _otpTimer.value = 600;
         _otpMethod = result['otpMethod'] ?? 'phone';
         _startotpTimer();
       } else {
         await _handleSuccessfulLogin(result);
-        _startProactiveRefreshTimer();
         if (!isSupervisor) {
           await logout();
           throw Exception('Access denied: Supervisor role required');
@@ -264,12 +296,11 @@ class AuthProvider with ChangeNotifier {
         _requires2FA = true;
         _userID = result['userID'];
         _authTempToken = result['tempToken'];
-        _otpTimer = 600;
+        _otpTimer.value = 600;
         _otpMethod = result['otpMethod'] ?? 'phone';
         _startotpTimer();
       } else {
         await _handleSuccessfulLogin(result);
-        _startProactiveRefreshTimer();
         if (!isSupervisor) {
           await logout();
           throw Exception('Access denied: Supervisor role required');
@@ -308,7 +339,6 @@ class AuthProvider with ChangeNotifier {
       _refreshToken = result['refreshToken'] ?? '';
       await _handleSuccessfulLogin(result);
       _requires2FA = false;
-      _startProactiveRefreshTimer();
       if (!isSupervisor) {
         await logout();
         throw Exception('Access denied: Supervisor role required');
@@ -322,15 +352,15 @@ class AuthProvider with ChangeNotifier {
   }
 
   Future<void> resend2FA(String method) async {
-    if (_userID == null || _resendCooldown > 0) return;
+    if (_userID == null || _resendCooldown.value > 0) return;
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
     try {
       final result = await AuthService.resend2FA(_userID!, method);
       _otpMethod = method;
-      _otpTimer = 600;
-      _resendCooldown = 60;
+      _otpTimer.value = 600;
+      _resendCooldown.value = 60;
       _errorMessage = result['message'] ?? 'OTP resent successfully';
       _startotpTimer();
     } catch (e) {
@@ -338,6 +368,7 @@ class AuthProvider with ChangeNotifier {
     } finally {
       _isLoading = false;
       notifyListeners();
+
     }
   }
 
@@ -348,9 +379,8 @@ class AuthProvider with ChangeNotifier {
     try {
       final result = await AuthService.initiatePasswordReset(identifier);
       _userID = result['userID'];
-      _otpTimer = 600;
-      _otpMethod =
-      result['message']?.contains('email') ?? false ? 'email' : 'phone';
+      _otpTimer.value = 600;
+      _otpMethod = result['message']?.contains('email') ?? false ? 'email' : 'phone';
       _startotpTimer();
       _errorMessage = result['message'] ?? 'Password reset initiated';
     } catch (e) {
@@ -371,10 +401,7 @@ class AuthProvider with ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
     try {
-      final result = await AuthService.verifyPasswordResetOTP(
-        _userID!,
-        otpCode,
-      );
+      final result = await AuthService.verifyPasswordResetOTP(_userID!, otpCode);
       _tempToken = result['tempToken'];
       _errorMessage = 'OTP verified successfully';
     } catch (e) {
@@ -428,10 +455,12 @@ class AuthProvider with ChangeNotifier {
       _authTempToken = null;
       _refreshToken = null;
       _tokenExpiry = null;
+      _lastRefreshTime = null;
       await CookieManager.clearCookies();
       _isLoading = false;
       if (kDebugMode) print('Logout completed');
       notifyListeners();
+      _startProactiveRefreshTimer();
     }
   }
 
@@ -443,10 +472,9 @@ class AuthProvider with ChangeNotifier {
   void _startotpTimer() {
     _otpTimerInstance?.cancel();
     _otpTimerInstance = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (_otpTimer > 0) _otpTimer--;
-      if (_resendCooldown > 0) _resendCooldown--;
-      if (_otpTimer == 0 && _resendCooldown == 0) timer.cancel();
-      notifyListeners();
+      if (_otpTimer.value > 0) _otpTimer.value--;
+      if (_resendCooldown.value > 0) _resendCooldown.value--;
+      if (_otpTimer.value == 0 && _resendCooldown.value == 0) timer.cancel();
     });
   }
 
@@ -455,13 +483,18 @@ class AuthProvider with ChangeNotifier {
       if (kDebugMode) print('Handling successful login with result: ${jsonEncode(result)}');
       if (result['user'] != null) {
         if (kDebugMode) print('Parsing user from response: ${result['user']}');
-        _user = User.fromJson(result['user']);
+        _user = User.fromJson(result['user'] is Map<String, dynamic>
+            ? result['user']
+            : {
+          'userID': result['userID'] ?? 'unknown',
+          'email': result['email'] ?? 'unknown@example.com',
+          'roles': result['roles'] ?? [],
+        });
         _userRoles = _user!.roles
-            ?.map((role) => role.name)
+            .map((role) => role.name)
             .where((name) => name != null)
             .cast<String>()
-            .toList() ??
-            [];
+            .toList();
         if (kDebugMode) print('User parsed: ${_user!.userID}, ${_user!.email}, Roles: $_userRoles');
       } else {
         if (kDebugMode) print('Warning: user is null in login response, decoding token');
@@ -476,10 +509,11 @@ class AuthProvider with ChangeNotifier {
             'unknown@example.com';
         final userID = decodedToken['sub']?.toString() ?? 'unknown';
         final roles = (decodedToken['realm_access']?['roles'] as List<dynamic>? ?? [])
-            .where((r) => r != null)
-            .map((r) => Role(
-          roleID: r.toString(),
-          name: r.toString(),
+            .asMap()
+            .entries
+            .map((e) => Role(
+          roleID: 'role_${e.key + 1}',
+          name: e.value.toString(),
           description: null,
           permissions: [],
         ))
@@ -492,7 +526,11 @@ class AuthProvider with ChangeNotifier {
           phone: null,
           roles: roles,
         );
-        _userRoles = roles.map((role) => role.name).where((name) => name != null).cast<String>().toList();
+        _userRoles = roles
+            .map((role) => role.name)
+            .where((name) => name != null)
+            .cast<String>()
+            .toList();
         if (kDebugMode) print('User from token: $userID, $email, Roles: $_userRoles');
       }
       _tokenExpiry = (result['expiresIn'] != null
@@ -507,11 +545,17 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  Future<void> _refreshAccessToken() async {
+  Future<void> _refreshAccessToken({bool silent = false}) async {
     if (_refreshToken == null) {
       await logout();
       _errorMessage = 'Session expired. Please log in again.';
-      notifyListeners();
+      if (!silent) notifyListeners();
+      return;
+    }
+    // Prevent refreshing too soon
+    if (_lastRefreshTime != null &&
+        DateTime.now().difference(_lastRefreshTime!).inSeconds < 870) {
+      if (kDebugMode) print('Skipping token refresh: too soon since last refresh');
       return;
     }
     try {
@@ -520,13 +564,48 @@ class AuthProvider with ChangeNotifier {
       _tokenExpiry = (result['expiresIn'] != null
           ? DateTime.now().millisecondsSinceEpoch + result['expiresIn']
           : null) as int?;
-      if (kDebugMode) print('Token refreshed successfully, new expiry: $_tokenExpiry');
+      _lastRefreshTime = DateTime.now();
+      if (kDebugMode) print('Token refreshed successfully');
+      // Only check auth status if not silent to avoid UI rebuilds
+      if (!silent) await _checkAuthStatus();
     } catch (e) {
       if (kDebugMode) print('Token refresh failed: $e');
       await logout();
       _errorMessage = 'Session expired. Please log in again.';
-      notifyListeners();
+      if (!silent) notifyListeners();
     }
+  }
+
+  void _startProactiveRefreshTimer() {
+    _refreshTimer?.cancel();
+    _refreshTimer = Timer.periodic(const Duration(seconds: 60), (_) async {
+      if (_refreshToken != null) {
+        final accessToken = CookieManager.cookies['accessToken'];
+        if (accessToken == null) {
+          await logout();
+          _errorMessage = 'Session expired. Please log in again.';
+          notifyListeners();
+          return;
+        }
+        try {
+          final decoded = JwtDecoder.decode(accessToken);
+          final expiry = decoded['exp'] * 1000;
+          final now = DateTime.now().millisecondsSinceEpoch;
+          final timeToExpiry = expiry - now;
+          if (timeToExpiry <= 30000) { // 30 seconds before expiry
+            await _refreshAccessToken(silent: true);
+          }
+        } catch (e) {
+          if (kDebugMode) print('Failed to decode token for refresh: $e');
+          await logout();
+          _errorMessage = 'Session expired. Please log in again.';
+          notifyListeners();
+        }
+      } else {
+        if (kDebugMode) print('No refresh token, stopping refresh timer');
+        _refreshTimer?.cancel();
+      }
+    });
   }
 
   String _parseError(dynamic error) {
@@ -552,6 +631,8 @@ class AuthProvider with ChangeNotifier {
   void dispose() {
     _otpTimerInstance?.cancel();
     _refreshTimer?.cancel();
+    _otpTimer.dispose();
+    _resendCooldown.dispose();
     super.dispose();
   }
 }

@@ -4,20 +4,12 @@ import { useAuth } from "../../../context/AuthContext";
 import {
   getSupervisorsByUser,
   getRegionalManagersByUser,
-  getAllUsers,
 } from "../../../apis/userAPI";
 import User from "../../../models/User";
 import Role from "../../../models/Role";
 import { SortField, SortOrder, ViewMode } from "../adminTypes";
 import { t } from "i18next";
 import { debounce } from "lodash";
-import {
-  onNotification,
-  offNotification,
-  isSocketConnected,
-} from "../../../lib/socket";
-import { getEntityEvents, NotificationEvent } from "../../../lib/notifEvents";
-import "../AdminDashboard.css";
 import { motion } from "framer-motion";
 
 interface UsersListProps {
@@ -58,9 +50,6 @@ const formatDate = (date: string | Date): string => {
   return new Date(date).toLocaleString(undefined, options);
 };
 
-const isValidUser = (data: unknown): data is User => {
-  return !!data && typeof data === "object" && "userID" in data && typeof data.userID === "string";
-};
 
 const UsersList: React.FC<UsersListProps> = React.memo(
   ({
@@ -109,13 +98,6 @@ const UsersList: React.FC<UsersListProps> = React.memo(
     const debouncedSetSearchQuery = useCallback(
       debounce((value: string) => setInternalSearchQuery(value), 300),
       []
-    );
-
-    const debouncedSetUsers = useCallback(
-      debounce((updateFn: (prev: User[]) => User[]) => {
-        setUsers(updateFn);
-      }, 100),
-      [setUsers]
     );
 
     // Sync search query
@@ -197,171 +179,7 @@ const UsersList: React.FC<UsersListProps> = React.memo(
       [getCachedData, setCachedData, setError]
     );
 
-    useEffect(() => {
-      if (view !== "users" || !userPermissions.canViewUsers || !isSocketConnected()) {
-        return;
-      }
-
-      const refreshUsers = async () => {
-        setLoading(true);
-        try {
-          const cacheKey = `users_${isSuperAdmin ? "all" : "non_super_admin"}`;
-          cache.delete(cacheKey); // Clear cache to force refresh
-          const usersData = await fetchWithRetry(getAllUsers, cacheKey);
-          debouncedSetUsers(() => usersData);
-          setError(null);
-        } catch (err) {
-          console.error("Failed to refresh users on view change:", err);
-          setError(t("usersList.error.refreshFailed"));
-        } finally {
-          setLoading(false);
-        }
-      };
-
-      refreshUsers();
-    }, [view, userPermissions.canViewUsers, isSuperAdmin, fetchWithRetry, debouncedSetUsers, setError, t]);
-
-    // Real-time WebSocket updates
-    useEffect(() => {
-      if (!userPermissions.canViewUsers || !isSocketConnected()) {
-        return;
-      }
-
-      let isMounted = true;
-
-      const handleUserEvent = async (event: NotificationEvent, data: unknown) => {
-        if (!isMounted || !isValidUser(data)) {
-          console.warn(`Invalid WebSocket data for event ${event}:`, data);
-          return;
-        }
-
-        try {
-          const updatedUser: User = {
-            ...data,
-            createdAt: data.createdAt ? new Date(data.createdAt) : new Date(),
-            updatedAt: data.updatedAt ? new Date(data.updatedAt) : new Date(),
-            Roles: Array.isArray(data.Roles) ? data.Roles : [],
-            password: data.password || "",
-            firstname: data.firstname || "Unknown",
-            lastname: data.lastname || "User",
-            email: data.email || "",
-            phone: data.phone || "",
-          };
-
-          switch (event) {
-            case "user:created": {
-              const matchesSearch =
-                !internalSearchQuery ||
-                `${updatedUser.firstname} ${updatedUser.lastname}`
-                  .toLowerCase()
-                  .includes(internalSearchQuery.toLowerCase()) ||
-                updatedUser.email
-                  .toLowerCase()
-                  .includes(internalSearchQuery.toLowerCase()) ||
-                updatedUser.phone?.includes(internalSearchQuery);
-              const matchesRole =
-                roleFilter.length === 0 ||
-                (roleFilter.includes("No Roles") &&
-                  (!updatedUser.Roles || updatedUser.Roles.length === 0)) ||
-                updatedUser.Roles?.some((r) => roleFilter.includes(r.name));
-              if (matchesSearch && matchesRole) {
-                debouncedSetUsers((prev) => {
-                  if (prev.some((u) => u.userID === updatedUser.userID)) {
-                    return prev;
-                  }
-                  return [...prev, updatedUser];
-                });
-              }
-              break;
-            }
-            case "user:updated":
-            case "user:profile_updated":
-            case "user:supervisors_assigned":
-            case "user:supervisors_revoked": {
-              debouncedSetUsers((prev) => {
-                const index = prev.findIndex((u) => u.userID === updatedUser.userID);
-                if (index === -1) {
-                  console.warn(`User ${updatedUser.userID} not found for update event ${event}`);
-                  return prev;
-                }
-                const newUsers = [...prev];
-                newUsers[index] = updatedUser;
-                return newUsers;
-              });
-              break;
-            }
-            case "user:deleted": {
-              debouncedSetUsers((prev) =>
-                prev.filter((u) => u.userID !== data.userID)
-              );
-              break;
-            }
-            default:
-              console.warn(`Unhandled user event: ${event}`);
-              return;
-          }
-        } catch (err) {
-          console.error("Failed to handle user event:", err);
-          setError(t("usersList.error.realTimeUpdateFailed"));
-          // Fallback to full refresh only on error
-          cache.delete(`users_${isSuperAdmin ? "all" : "non_super_admin"}`);
-          try {
-            const usersData = await fetchWithRetry(
-              getAllUsers,
-              `users_${isSuperAdmin ? "all" : "non_super_admin"}`
-            );
-            if (isMounted) {
-              debouncedSetUsers(() => usersData);
-              setError(null);
-            }
-          } catch (refreshErr) {
-            console.error("Failed to refresh user list:", refreshErr);
-            setError(t("usersList.error.refreshFailed"));
-          }
-        }
-      };
-
-      const setupNotifications = async () => {
-        setLoading(true);
-        try {
-          const userEvents = await getEntityEvents("user");
-          if (!isMounted) return;
-
-          userEvents.forEach((event) => {
-            onNotification((ev: NotificationEvent, data: unknown) => {
-              if (ev === event && isMounted) {
-                handleUserEvent(ev, data);
-              }
-            });
-          });
-        } catch (err) {
-          console.error("Failed to set up WebSocket notifications:", err);
-          setError(t("usersList.error.websocketSetupFailed"));
-        } finally {
-          if (isMounted) {
-            setLoading(false);
-          }
-        }
-      };
-
-      setupNotifications();
-
-      return () => {
-        isMounted = false;
-        offNotification();
-      };
-    }, [
-      userPermissions.canViewUsers,
-      internalSearchQuery,
-      roleFilter,
-      isSuperAdmin,
-      setError,
-      debouncedSetUsers,
-      fetchWithRetry,
-      t,
-    ]);
-
-    // Filtered and sorted users (unchanged)
+    // Filtered and sorted users
     const filteredAndSortedUsers = useMemo(() => {
       let result = [...users].filter((user) => user && user.userID);
 

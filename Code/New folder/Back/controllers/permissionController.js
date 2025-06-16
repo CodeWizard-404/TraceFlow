@@ -1,266 +1,260 @@
 const PermissionService = require('../services/permissionService');
 const NotificationService = require('../services/notificationService');
-const logger = require('../utils/logger');
+const { sequelize } = require('../config/db');
+const Sequelize = require('sequelize');
+const { getRedisClient } = require('../config/redis');
+const RedisUtils = require('../utils/redisUtils');
+const cache = require('../utils/cache');
+const { v4: uuidv4 } = require('uuid');
+const { logRequest } = require('../utils/controllerUtils');
+const { User, Role } = require('../models');
+
 
 /**
  * Controller for managing permission-related operations with structured logging.
  */
 class PermissionController {
-    // --- Permission Retrieval Methods ---
-
-    /**
-     * Get all permissions.
-     * @param {Object} req - Express request object.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with permissions or error.
-     */
     static async getAllPermissions(req, res) {
-        const actorID = req.user?.userID || 'unknown';
         try {
-            const permissions = await PermissionService.getAllPermissions();
-            logger.info('Successfully fetched all permissions', {
-                route: 'permissions',
-                method: req.method,
-                url: req.originalUrl,
+            const cacheInstance = await cache();
+            const permissions = await cacheInstance.getOrSet('permissions:all', async () => {
+                return await PermissionService.getAllPermissions();
+            }, 'api');
+
+            logRequest({
+                req,
+                res: permissions,
                 status: 200,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { permissionCount: permissions.length }
+                message: `Retrieved ${permissions.length} permissions`,
+                level: 'info',
+                metadata: { permissionCount: permissions.length },
+                service: 'permission',
+                defaultRoute: 'permissions'
             });
+
             return res.status(200).json(permissions);
         } catch (error) {
-            logger.error('Failed to fetch permissions', {
-                route: 'permissions',
-                method: req.method,
-                url: req.originalUrl,
+            logRequest({
+                req,
+                error,
                 status: 500,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { error: error.message }
+                message: `Failed to fetch permissions: ${error.message}`,
+                level: 'error',
+                service: 'permission',
+                defaultRoute: 'permissions'
             });
             return res.status(500).json({ error: 'Failed to fetch permissions' });
         }
     }
 
-    /**
-     * Get a permission by ID.
-     * @param {Object} req - Express request object with permissionID in params.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with permission or error.
-     */
     static async getPermissionById(req, res) {
-        const actorID = req.user?.userID || 'unknown';
         try {
             const { permissionID } = req.params;
             if (!permissionID) {
-                logger.warn('Get permission failed: Missing permissionID', {
-                    route: 'permissions',
-                    method: req.method,
-                    url: req.originalUrl,
+                logRequest({
+                    req,
                     status: 400,
-                    ip: req.ip,
-                    traceId: req.traceId,
-                    userId: actorID,
-                    metadata: {}
+                    message: 'Permission ID is required',
+                    level: 'info',
+                    service: 'permission',
+                    defaultRoute: 'permissions'
                 });
                 return res.status(400).json({ error: 'Permission ID is required' });
             }
-            const permission = await PermissionService.getPermissionById(permissionID);
-            logger.info('Successfully fetched permission', {
-                route: 'permissions',
-                method: req.method,
-                url: req.originalUrl,
+
+            const cacheInstance = await cache();
+            const permission = await cacheInstance.getOrSet(`permission:${permissionID}`, async () => {
+                return await PermissionService.getPermissionById(permissionID);
+            }, 'api');
+
+            logRequest({
+                req,
+                res: permission,
                 status: 200,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { permissionID }
+                message: `Retrieved permission ${permissionID}`,
+                level: 'info',
+                metadata: { permissionID },
+                service: 'permission',
+                defaultRoute: 'permissions'
             });
+
             return res.status(200).json(permission);
         } catch (error) {
-            logger.error('Failed to fetch permission', {
-                route: 'permissions',
-                method: req.method,
-                url: req.originalUrl,
+            logRequest({
+                req,
+                error,
                 status: 404,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { error: error.message }
+                message: `Failed to fetch permission: ${error.message}`,
+                level: 'error',
+                service: 'permission',
+                defaultRoute: 'permissions'
             });
             return res.status(404).json({ error: 'Permission not found' });
         }
     }
 
-    /**
-     * Get permissions for a role.
-     * @param {Object} req - Express request object with roleID in params.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with permissions or error.
-     */
     static async getPermissionsByRole(req, res) {
-        const actorID = req.user?.userID || 'unknown';
         try {
             const { roleID } = req.params;
             if (!roleID) {
-                logger.warn('Get role permissions failed: Missing roleID', {
-                    route: 'permissions/role',
-                    method: req.method,
-                    url: req.originalUrl,
+                logRequest({
+                    req,
                     status: 400,
-                    ip: req.ip,
-                    traceId: req.traceId,
-                    userId: actorID,
-                    metadata: {}
+                    message: 'Role ID is required',
+                    level: 'info',
+                    service: 'permission',
+                    defaultRoute: 'permissions'
                 });
                 return res.status(400).json({ error: 'Role ID is required' });
             }
-            const permissions = await PermissionService.getPermissionsByRole(roleID);
-            logger.info('Successfully fetched permissions for role', {
-                route: 'permissions/role',
-                method: req.method,
-                url: req.originalUrl,
+
+            const cacheInstance = await cache();
+            const permissions = await cacheInstance.getOrSet(`permissions:role:${roleID}`, async () => {
+                return await PermissionService.getPermissionsByRole(roleID);
+            }, 'api');
+
+            logRequest({
+                req,
+                res: permissions,
                 status: 200,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { roleID, permissionCount: permissions.length }
+                message: `Retrieved ${permissions.length} permissions for role ${roleID}`,
+                level: 'info',
+                metadata: { roleID, permissionCount: permissions.length },
+                service: 'permission',
+                defaultRoute: 'permissions'
             });
+
             return res.status(200).json(permissions);
         } catch (error) {
-            logger.error('Failed to fetch role permissions', {
-                route: 'permissions/role',
-                method: req.method,
-                url: req.originalUrl,
+            logRequest({
+                req,
+                error,
                 status: 404,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { error: error.message }
+                message: `Failed to fetch role permissions: ${error.message}`,
+                level: 'error',
+                service: 'permission',
+                defaultRoute: 'permissions'
             });
             return res.status(404).json({ error: 'Role permissions not found' });
         }
     }
 
-    /**
-         * Get effective role-based permissions for a user.
-         * @param {Object} req - Express request object with userID in params.
-         * @param {Object} res - Express response object.
-         * @returns {Promise<void>} JSON response with permissions or error.
-         */
     static async getEffectivePermissions(req, res) {
-        const actorID = req.user?.userID || 'unknown';
         try {
             const { userID } = req.params;
             if (!userID) {
-                logger.warn('Get effective permissions failed: Missing userID', {
-                    route: 'permissions/effective',
-                    method: req.method,
-                    url: req.originalUrl,
+                logRequest({
+                    req,
                     status: 400,
-                    ip: req.ip,
-                    traceId: req.traceId,
-                    userId: actorID,
-                    metadata: {}
+                    message: 'User ID is required',
+                    level: 'info',
+                    service: 'permission',
+                    defaultRoute: 'permissions'
                 });
                 return res.status(400).json({ error: 'User ID is required' });
             }
-            const permissions = await PermissionService.getEffectivePermissions(userID);
-            logger.info('Successfully fetched role-based permissions for user', {
-                route: 'permissions/effective',
-                method: req.method,
-                url: req.originalUrl,
+
+            const cacheInstance = await cache();
+            const permissions = await cacheInstance.getOrSet(`permissions:user:${userID}`, async () => {
+                return await PermissionService.getEffectivePermissions(userID);
+            }, 'api');
+
+            logRequest({
+                req,
+                res: permissions,
                 status: 200,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { userID, permissionCount: permissions.length }
+                message: `Retrieved ${permissions.length} effective permissions for user ${userID}`,
+                level: 'info',
+                metadata: { userID, permissionCount: permissions.length },
+                service: 'permission',
+                defaultRoute: 'permissions'
             });
+
             return res.status(200).json(permissions);
         } catch (error) {
-            logger.error('Failed to fetch role-based permissions', {
-                route: 'permissions/effective',
-                method: req.method,
-                url: req.originalUrl,
+            logRequest({
+                req,
+                error,
                 status: 404,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { error: error.message }
+                message: `Failed to fetch effective permissions: ${error.message}`,
+                level: 'error',
+                service: 'permission',
+                defaultRoute: 'permissions'
             });
             return res.status(404).json({ error: 'Role-based permissions not found' });
         }
     }
 
-
-    // --- Permission Modification Methods ---
-
-    /**
-     * Update a permission.
-     * @param {Object} req - Express request object with permissionID in params and data in body.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with updated permission or error.
-     */
     static async updatePermission(req, res) {
-        const actorID = req.user?.userID || 'unknown';
+        const transaction = await sequelize.transaction({ isolationLevel: Sequelize.Transaction.ISOLATION_LEVELS.READ_COMMITTED });
         try {
             const { permissionID } = req.params;
             const { className, description } = req.body;
             if (!permissionID) {
-                logger.warn('Update permission failed: Missing permissionID', {
-                    route: 'permissions',
-                    method: req.method,
-                    url: req.originalUrl,
+                await transaction.rollback();
+                logRequest({
+                    req,
                     status: 400,
-                    ip: req.ip,
-                    traceId: req.traceId,
-                    userId: actorID,
-                    metadata: {}
+                    message: 'Permission ID is required',
+                    level: 'info',
+                    service: 'permission',
+                    defaultRoute: 'permissions'
                 });
                 return res.status(400).json({ error: 'Permission ID is required' });
             }
-            const permission = await PermissionService.updatePermission(permissionID, { className, description }, req.user.userID);
+
+            const permission = await PermissionService.updatePermission(permissionID, { className, description }, req.user.userID, { transaction });
+            const user = await User.findByPk(req.user.userID);
+
+            const cacheInstance = await cache();
+            const redis = getRedisClient();
+            await cacheInstance.invalidateByTag('permissions');
+            await cacheInstance.invalidate(`permission:${permissionID}`);
+            await redis.set('permissions:last_updated', Date.now().toString());
+            await RedisUtils.publishEvent('cache:invalidate', 'permissions');
+
+            const requestID = uuidv4();
             await NotificationService.triggerNotification({
                 event: 'permission:updated',
                 data: { permissionID, className },
-                metadata: { updatedBy: req.user.email }
+                metadata: { updatedBy: req.user?.email || 'unknown' },
+                dynamicRecipients: [],
+                triggeredByUserID: req.user?.userID || 'unknown',
+                type: 'permission',
+                customMessage: `Permission ${permission.name} updated by user ${user.firstame} ${user.lastname}`,
+                requestID,
             });
-            logger.info('Successfully updated permission', {
-                route: 'permissions',
-                method: req.method,
-                url: req.originalUrl,
+
+            logRequest({
+                req,
+                res: permission,
                 status: 200,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { permissionID }
+                message: `Updated permission ${permissionID}`,
+                level: 'info',
+                metadata: { permissionID, className, description, requestID },
+                service: 'permission',
+                defaultRoute: 'permissions'
             });
+
+            await transaction.commit();
             return res.status(200).json(permission);
         } catch (error) {
-            logger.error('Failed to update permission', {
-                route: 'permissions',
-                method: req.method,
-                url: req.originalUrl,
+            await transaction.rollback();
+            logRequest({
+                req,
+                error,
                 status: 400,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { error: error.message }
+                message: `Failed to update permission: ${error.message}`,
+                level: 'error',
+                service: 'permission',
+                defaultRoute: 'permissions'
             });
             return res.status(400).json({ error: error.message });
         }
     }
 
-    /**
-     * Assign permissions to a role.
-     * @param {Object} req - Express request object with roleID in params and permissionIDs in body.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with result or error.
-     */
     static async assignPermissionsToRole(req, res) {
-        const actorID = req.user?.userID || 'unknown';
+        const transaction = await sequelize.transaction({ isolationLevel: Sequelize.Transaction.ISOLATION_LEVELS.READ_COMMITTED });
         try {
             const { roleID } = req.params;
             let { permissionIDs } = req.body;
@@ -270,108 +264,137 @@ class PermissionController {
             }
 
             if (!roleID || !Array.isArray(permissionIDs) || permissionIDs.length === 0) {
-                logger.warn('Assign permissions failed: Invalid input', {
-                    route: 'permissions/assign',
-                    method: req.method,
-                    url: req.originalUrl,
+                await transaction.rollback();
+                logRequest({
+                    req,
                     status: 400,
-                    ip: req.ip,
-                    traceId: req.traceId,
-                    userId: actorID,
-                    metadata: { roleID, permissionIDs }
+                    message: 'Role ID and at least one permission ID are required',
+                    level: 'info',
+                    service: 'permission',
+                    defaultRoute: 'permissions'
                 });
                 return res.status(400).json({ error: 'Role ID and at least one permission ID are required' });
             }
 
-            const result = await PermissionService.assignPermissionsToRole(req.user, roleID, permissionIDs, req.user.userID);
+            const result = await PermissionService.assignPermissionsToRole(req.user, roleID, permissionIDs, req.user.userID, { transaction });
+            const user = await User.findByPk(req.user.userID);
+            const role = await Role.findByPk(roleID);
+
+            const cacheInstance = await cache();
+            const redis = getRedisClient();
+            await cacheInstance.invalidateByTag('permissions');
+            await cacheInstance.invalidate(`permissions:role:${roleID}`);
+            await redis.set('permissions:last_updated', Date.now().toString());
+            await RedisUtils.publishEvent('cache:invalidate', 'permissions');
+
+            const requestID = uuidv4();
             await NotificationService.triggerNotification({
                 event: 'permission:assigned',
                 data: { roleID, permissionIDs },
-                metadata: { assignedBy: req.user.email }
+                metadata: { assignedBy: req.user?.email || 'unknown' },
+                dynamicRecipients: [],
+                triggeredByUserID: req.user?.userID || 'unknown',
+                type: 'permission',
+                customMessage: `Permissions assigned to role ${role.name} by user ${user.firstame} ${user.lastname}`,
+                requestID,
             });
-            logger.info('Successfully assigned permissions to role', {
-                route: 'permissions/assign',
-                method: req.method,
-                url: req.originalUrl,
+
+            logRequest({
+                req,
+                res: result,
                 status: 200,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { roleID, permissionCount: permissionIDs.length }
+                message: `Assigned ${permissionIDs.length} permissions to role ${roleID}`,
+                level: 'info',
+                metadata: { roleID, permissionCount: permissionIDs.length, requestID },
+                service: 'permission',
+                defaultRoute: 'permissions'
             });
+
+            await transaction.commit();
             return res.status(200).json(result);
         } catch (error) {
-            logger.error('Failed to assign permissions', {
-                route: 'permissions/assign',
-                method: req.method,
-                url: req.originalUrl,
+            await transaction.rollback();
+            logRequest({
+                req,
+                error,
                 status: 400,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { error: error.message }
+                message: `Failed to assign permissions: ${error.message}`,
+                level: 'error',
+                service: 'permission',
+                defaultRoute: 'permissions'
             });
             return res.status(400).json({ error: error.message });
         }
     }
 
-    /**
-     * Revoke permissions from a role.
-     * @param {Object} req - Express request object with roleID in params and permissionIDs in body.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with result or error.
-     */
     static async revokePermissionsFromRole(req, res) {
-        const actorID = req.user?.userID || 'unknown';
+        const transaction = await sequelize.transaction({ isolationLevel: Sequelize.Transaction.ISOLATION_LEVELS.READ_COMMITTED });
         try {
             const { roleID } = req.params;
             const { permissionIDs } = req.body;
             if (!roleID || !Array.isArray(permissionIDs)) {
-                logger.warn('Revoke permissions failed: Invalid input', {
-                    route: 'permissions/revoke',
-                    method: req.method,
-                    url: req.originalUrl,
+                await transaction.rollback();
+                logRequest({
+                    req,
                     status: 400,
-                    ip: req.ip,
-                    traceId: req.traceId,
-                    userId: actorID,
-                    metadata: { roleID }
+                    message: 'Role ID and permission IDs are required',
+                    level: 'info',
+                    service: 'permission',
+                    defaultRoute: 'permissions'
                 });
                 return res.status(400).json({ error: 'Role ID and permission IDs are required' });
             }
-            const result = await PermissionService.revokePermissionsFromRole(roleID, permissionIDs, req.user.userID);
+
+            const result = await PermissionService.revokePermissionsFromRole(roleID, permissionIDs, req.user.userID, { transaction });
+            const user = await User.findByPk(req.user.userID);
+            const role = await Role.findByPk(roleID);
+
+            const cacheInstance = await cache();
+            const redis = getRedisClient();
+            await cacheInstance.invalidateByTag('permissions');
+            await cacheInstance.invalidate(`permissions:role:${roleID}`);
+            await redis.set('permissions:last_updated', Date.now().toString());
+            await RedisUtils.publishEvent('cache:invalidate', 'permissions');
+
+            const requestID = uuidv4();
             await NotificationService.triggerNotification({
                 event: 'permission:revoked',
                 data: { roleID, permissionIDs },
-                metadata: { revokedBy: req.user.email }
+                metadata: { revokedBy: req.user?.email || 'unknown' },
+                dynamicRecipients: [],
+                triggeredByUserID: req.user?.userID || 'unknown',
+                type: 'permission',
+                customMessage: `Permissions revoked from role ${role.name} by user ${user.firstame} ${user.lastname}`,
+                requestID,
             });
-            logger.info('Successfully revoked permissions from role', {
-                route: 'permissions/revoke',
-                method: req.method,
-                url: req.originalUrl,
+
+            logRequest({
+                req,
+                res: result,
                 status: 200,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { roleID, permissionCount: permissionIDs.length }
+                message: `Revoked ${permissionIDs.length} permissions from role ${roleID}`,
+                level: 'info',
+                metadata: { roleID, permissionCount: permissionIDs.length, requestID },
+                service: 'permission',
+                defaultRoute: 'permissions'
             });
+
+            await transaction.commit();
             return res.status(200).json(result);
         } catch (error) {
-            logger.error('Failed to revoke permissions', {
-                route: 'permissions/revoke',
-                method: req.method,
-                url: req.originalUrl,
+            await transaction.rollback();
+            logRequest({
+                req,
+                error,
                 status: 400,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { error: error.message }
+                message: `Failed to revoke permissions: ${error.message}`,
+                level: 'error',
+                service: 'permission',
+                defaultRoute: 'permissions'
             });
             return res.status(400).json({ error: error.message });
         }
     }
-
-
 }
 
 module.exports = PermissionController;

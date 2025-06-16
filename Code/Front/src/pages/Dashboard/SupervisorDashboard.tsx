@@ -1,3 +1,5 @@
+
+
 import React, { useEffect, useState, Component, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -1026,13 +1028,13 @@ const SupervisorDashboard: React.FC = () => {
                                     />
                                 </div>
                                 <p>{t('dashboard.totalVisits')}: {filteredVisits.length}</p>
-                                <div className="chart-grid chart-grid-2">
+                                <div className="chart-grid chart-grid-3">
                                     <ErrorBoundary fallback={<p className="error-text">{t('dashboard.errors.visitStatusChart')}</p>}>
                                         {visitPieData.length > 0 && (
                                             <div className="chart-container">
                                                 <h3>{t('dashboard.visitStatusDistribution')}</h3>
-                                                <PieChart width={300} height={300}>
-                                                    <Pie data={visitPieData} cx={150} cy={150} labelLine={false} outerRadius={80} dataKey="value">
+                                                <PieChart width={250} height={300}>
+                                                    <Pie data={visitPieData} cx={120} cy={120} labelLine={false} outerRadius={80} dataKey="value">
                                                         {visitPieData.map((_, index) => (
                                                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                                         ))}
@@ -1084,7 +1086,7 @@ const SupervisorDashboard: React.FC = () => {
                             <h2><FaChartBar /> {t('dashboard.kpis')}</h2>
                             <hr />
                             <div className="card-content">
-                                <div className="chart-grid chart-grid-2">
+                                <div className="chart-grid chart-grid-4">
                                     <ErrorBoundary fallback={<p className="error-text">{t('dashboard.errors.visitsPerAgent')}</p>}>
                                         {visitsPerAgent.length > 0 && (
                                             <div className="chart-container">

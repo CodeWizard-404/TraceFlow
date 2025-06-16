@@ -34,7 +34,6 @@ class AuthService {
         print('Google ID Token: $idToken');
       }
 
-      // Send ID token to backend for validation and login
       final tokenResponse = await http.post(
         Uri.parse('$baseUrl/auth/google'),
         headers: {'Content-Type': 'application/json'},
@@ -60,7 +59,8 @@ class AuthService {
         'refreshToken': refreshToken,
       });
 
-      // Fetch user data
+      await CookieManager.extractCookies(tokenResponse);
+
       final userResponse = await CustomHttpClient.get(
         Uri.parse('$baseUrl/users/profile'),
       );
@@ -78,7 +78,7 @@ class AuthService {
           'requires2FA': true,
           'tempToken': accessToken,
           'refreshToken': refreshToken,
-          'expiresIn': tokens['expiresIn'] * 1000,
+          'expiresIn': tokens['expiresIn'] ?? 900000,
           'otpMethod': 'phone',
         };
       }
@@ -86,7 +86,7 @@ class AuthService {
       return {
         'accessToken': accessToken,
         'refreshToken': refreshToken,
-        'expiresIn': tokens['expiresIn'] * 1000,
+        'expiresIn': tokens['expiresIn'] ?? 900000,
         'user': userData['user'],
       };
     } catch (e) {
@@ -117,12 +117,30 @@ class AuthService {
       final response = await CustomHttpClient.get(Uri.parse('$baseUrl/test'));
       if (response.statusCode == 200) {
         final result = json.decode(response.body);
+        if (kDebugMode) print('Check auth response: $result');
+        // Extract user data from the nested 'user' object
+        final userDataRaw = result['user'] as Map<String, dynamic>? ?? {};
+        final userData = {
+          'userID': userDataRaw['userID']?.toString() ??
+              result['userID']?.toString() ??
+              'unknown',
+          'email': userDataRaw['email']?.toString() ??
+              result['email']?.toString() ??
+              'unknown@example.com',
+          'roles': userDataRaw['roles'] ??
+              result['roles'] ??
+              [],
+        };
         final accessToken = CookieManager.cookies['accessToken'];
-        if (accessToken != null) _ensureRoles(result, accessToken);
-        return result;
+        if (accessToken != null) _ensureRoles(userData, accessToken);
+        return {
+          'user': userData,
+          'expiresIn': result['expiresIn'] ?? 900000,
+        };
       }
       throw Exception(_parseError(response));
     } catch (e) {
+      if (kDebugMode) print('Check auth error: $e');
       throw Exception(_parseError(e));
     }
   }
@@ -151,6 +169,7 @@ class AuthService {
             'accessToken': result['accessToken'],
             'refreshToken': result['refreshToken'] ?? '',
           });
+          await CookieManager.extractCookies(response);
         }
         return result;
       }
@@ -189,6 +208,7 @@ class AuthService {
             'accessToken': result['accessToken'],
             'refreshToken': result['refreshToken'] ?? '',
           });
+          await CookieManager.extractCookies(response);
         }
         return result;
       }
@@ -203,6 +223,10 @@ class AuthService {
       await CookieManager.saveCookies({'refreshToken': refreshToken});
       final response = await CustomHttpClient.post(
         Uri.parse('$baseUrl/auth/refresh'),
+        headers: CookieManager.getHeaders({
+          'Content-Type': 'application/x-www-form-urlencoded',
+        }),
+        body: 'refresh_token=$refreshToken',
       );
       if (response.statusCode == 200) {
         final result = json.decode(response.body);
@@ -210,11 +234,48 @@ class AuthService {
           'accessToken': result['accessToken'],
           'refreshToken': result['refreshToken'] ?? refreshToken,
         });
+        await CookieManager.extractCookies(response);
+        if (kDebugMode) print('Token refresh successful: ${result['accessToken']}');
         return result;
+      } else {
+        final error = jsonDecode(response.body)['error'] ?? 'Unknown error';
+        throw Exception('Refresh failed: $error');
       }
-      throw Exception(_parseError(response));
     } catch (e) {
-      throw Exception(_parseError(e));
+      if (kDebugMode) print('Refresh token error: $e');
+      if (e.toString().contains('Invalid refresh token') || e.toString().contains('401')) {
+        await CookieManager.clearCookies();
+        throw Exception('Session expired. Please log in again.');
+      }
+      throw Exception('Refresh failed: $e');
+    }
+  }
+
+  static Future<dynamic> makeAuthenticatedRequest({
+    required Future<http.Response> Function() request,
+  }) async {
+    try {
+      final response = await request();
+      if (response.statusCode == 401) {
+        final refreshToken = CookieManager.cookies['refreshToken'];
+        if (refreshToken == null || refreshToken.isEmpty) {
+          await CookieManager.clearCookies();
+          throw Exception('Session expired. Please log in again.');
+        }
+        try {
+          final refreshResult = await AuthService.refreshToken(refreshToken);
+          if (kDebugMode) print('Refresh result: $refreshResult');
+          final retryResponse = await request();
+          return json.decode(retryResponse.body);
+        } catch (e) {
+          await CookieManager.clearCookies();
+          throw Exception('Session expired. Please log in again.');
+        }
+      }
+      return json.decode(response.body);
+    } catch (e) {
+      if (kDebugMode) print('Authenticated request failed: $e');
+      rethrow;
     }
   }
 
@@ -299,30 +360,19 @@ class AuthService {
   }
 
   static void _ensureRoles(Map<String, dynamic> data, String accessToken) {
-    if (data['user'] == null ||
-        data['user']['roles'] == null ||
-        (data['user']['roles'] as List).isEmpty) {
+    if (data['roles'] == null || (data['roles'] as List).isEmpty) {
       final decodedToken = JwtDecoder.decode(accessToken);
       if (kDebugMode) {
-        print('Decoded token: ${jsonEncode(decodedToken)}');
+        print('Decoded token for roles: ${jsonEncode(decodedToken)}');
       }
       final realmRoles =
           (decodedToken['realm_access']?['roles'] as List<dynamic>?) ?? [];
-      data['user'] ??= {'roles': []};
-      data['user']['roles'] = realmRoles
+      data['roles'] = realmRoles
           .where((role) => role != null)
-          .toList()
-          .asMap()
-          .entries
-          .map((e) => {
-        'roleID': (e.key + 1).toString(),
-        'name': e.value.toString(),
-        'description': null,
-        'permissions': [],
-      })
+          .map((role) => role.toString())
           .toList();
       if (kDebugMode) {
-        print('Assigned roles: ${data['user']['roles']}');
+        print('Assigned roles: ${data['roles']}');
       }
     }
   }
@@ -361,35 +411,6 @@ class AuthService {
         return 'Server error. Please try again later.';
       default:
         return 'An unexpected error occurred.';
-    }
-  }
-
-  static Future<dynamic> makeAuthenticatedRequest({
-    required Future<http.Response> Function() request,
-  }) async {
-    try {
-      final response = await request();
-      if (response.statusCode == 401) {
-        final refreshToken = CookieManager.cookies['refreshToken'];
-        if (refreshToken == null || refreshToken.isEmpty) {
-          throw Exception('No refresh token available');
-        }
-        try {
-          final refreshResult = await refreshToken;
-          if (kDebugMode) print('Refresh result: $refreshResult');
-          final retryResponse = await request();
-          return json.decode(retryResponse.body);
-        } catch (e) {
-          if (e.toString().contains('Invalid refresh token')) {
-            await CookieManager.clearCookies();
-          }
-          throw Exception('Authentication failed');
-        }
-      }
-      return json.decode(response.body);
-    } catch (e) {
-      if (kDebugMode) print('Authenticated request failed: $e');
-      rethrow;
     }
   }
 }

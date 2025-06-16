@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -29,6 +30,12 @@ class DayCard extends StatelessWidget {
         final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
         return DragTarget<Visit>(
+          onWillAccept: (data) {
+            final today = DateTime.now();
+            final targetDate = DateTime(day.year, day.month, day.day);
+            final todayDate = DateTime(today.year, today.month, today.day);
+            return !targetDate.isBefore(todayDate);
+          },
           onAcceptWithDetails: (details) {
             final droppedVisit = details.data;
             final newDate = DateFormat('yyyy-MM-dd').format(day);
@@ -38,7 +45,7 @@ class DayCard extends StatelessWidget {
                 visitId: droppedVisit.visitID,
                 date: newDate,
                 time: droppedVisit.time,
-                status: 'pending', // Always set status to 'pending'
+                status: 'pending',
               )
                   .then((_) {
                 timesheetProvider.fetchTimesheetsBySupervisor(authProvider.user!.userID!);
@@ -56,46 +63,53 @@ class DayCard extends StatelessWidget {
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeInOut,
+                margin: const EdgeInsets.symmetric(vertical: 4),
                 decoration: BoxDecoration(
-                  color: candidateData.isNotEmpty ? theme.colorScheme.primary.withOpacity(0.1) : null,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Card(
-                  elevation: 5,
                   color: theme.cardTheme.color,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              title,
-                              style: theme.textTheme.headlineSmall,
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: theme.colorScheme.onSurface.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                chipLabel,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: theme.colorScheme.onSurface,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      DayView(day),
-                    ],
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: theme.colorScheme.primary.withOpacity(0.7),
+                    width: 1.5,
                   ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            title,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: theme.colorScheme.primary,
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.onSurface.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              chipLabel,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: theme.colorScheme.onSurface,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(1),
+                      child: DayView(day),
+                    ),
+                  ],
                 ),
               ),
             );

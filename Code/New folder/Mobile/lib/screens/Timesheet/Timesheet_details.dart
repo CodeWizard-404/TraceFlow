@@ -24,11 +24,14 @@ class TimesheetDetailsScreen extends StatefulWidget {
   TimesheetDetailsScreenState createState() => TimesheetDetailsScreenState();
 }
 
-class TimesheetDetailsScreenState extends State<TimesheetDetailsScreen> with SingleTickerProviderStateMixin {
+class TimesheetDetailsScreenState extends State<TimesheetDetailsScreen>
+    with SingleTickerProviderStateMixin {
   DateTime _currentDate = DateTime.now();
   late PageController _pageController;
   late AnimationController _animationController;
   String _currentView = 'week1';
+  final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey =
+  GlobalKey<ScaffoldMessengerState>();
 
   @override
   void initState() {
@@ -59,7 +62,8 @@ class TimesheetDetailsScreenState extends State<TimesheetDetailsScreen> with Sin
         return (date.difference(firstMonday).inDays / 7).floor();
       case 'month':
         final baseDate = DateTime(now.year - 100, 1, 1);
-        final totalMonths = (date.year - baseDate.year) * 12 + date.month - baseDate.month;
+        final totalMonths =
+            (date.year - baseDate.year) * 12 + date.month - baseDate.month;
         return totalMonths;
       case 'year':
         return date.year - now.year;
@@ -105,18 +109,23 @@ class TimesheetDetailsScreenState extends State<TimesheetDetailsScreen> with Sin
     setState(() {
       _currentView = view;
       if (specificDate != null) _currentDate = specificDate;
-      _pageController.jumpToPage(_getOffset(_currentDate));
+      // Only jump to page if PageView is available
+      if (_pageController.hasClients) {
+        _pageController.jumpToPage(_getOffset(_currentDate));
+      }
     });
   }
 
   void _jumpToNow() {
     setState(() {
       _currentDate = DateTime.now();
-      _pageController.animateToPage(
-        _getOffset(_currentDate),
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
+      if (_pageController.hasClients) {
+        _pageController.animateToPage(
+          _getOffset(_currentDate),
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
     });
   }
 
@@ -124,23 +133,24 @@ class TimesheetDetailsScreenState extends State<TimesheetDetailsScreen> with Sin
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final timesheetProvider = Provider.of<TimesheetProvider>(context, listen: false);
     if (authProvider.user?.userID != null) {
-      await timesheetProvider
-          .fetchTimesheetsBySupervisor(authProvider.user!.userID!)
-          .catchError((error) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => ErrorPage(
-              errorMessage: 'Failed to load timesheets: $error',
-              onRetry: _fetchTimesheets,
-            ),
-          ),
+      try {
+        await timesheetProvider.fetchTimesheetsBySupervisor(authProvider.user!.userID!);
+      } catch (error) {
+        _scaffoldMessengerKey.currentState?.showSnackBar(
+          SnackBar(content: Text('Failed to load timesheets: $error')),
         );
-      });
+      }
+    } else {
+      _scaffoldMessengerKey.currentState?.showSnackBar(
+        const SnackBar(content: Text('User not authenticated')),
+      );
     }
   }
 
-  Widget _buildView(DateTime date) {
+  Widget _buildView(DateTime date, bool hasTimesheets) {
+    if (!hasTimesheets) {
+      return const EmptyState(text: 'No timesheets available');
+    }
     switch (_currentView) {
       case 'day':
         return DayView(date);
@@ -148,6 +158,7 @@ class TimesheetDetailsScreenState extends State<TimesheetDetailsScreen> with Sin
         return WeekViewList(
           date,
           onDayTap: (day) => _setView('day', specificDate: day),
+          scaffoldMessengerKey: _scaffoldMessengerKey,
         );
       case 'week2':
         return WeekViewCalendar(
@@ -171,11 +182,13 @@ class TimesheetDetailsScreenState extends State<TimesheetDetailsScreen> with Sin
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final appBarHeight = 60.0;
     final navBarHeight = 40.0;
     final totalHeaderHeight = appBarHeight + navBarHeight + MediaQuery.of(context).padding.top;
 
     return Scaffold(
+      key: _scaffoldMessengerKey,
       drawer: const AppSidebar(),
       body: RefreshIndicator(
         onRefresh: _fetchTimesheets,
@@ -197,33 +210,45 @@ class TimesheetDetailsScreenState extends State<TimesheetDetailsScreen> with Sin
               child: TimesheetNavigationBar(
                 currentView: _currentView,
                 currentDate: _currentDate,
-                onPrevious: () => _pageController.previousPage(
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
-                ),
-                onNext: () => _pageController.nextPage(
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
-                ),
+                onPrevious: () {
+                  if (_pageController.hasClients) {
+                    _pageController.previousPage(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                    );
+                  }
+                },
+                onNext: () {
+                  if (_pageController.hasClients) {
+                    _pageController.nextPage(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                    );
+                  }
+                },
               ),
             ),
             SliverToBoxAdapter(
               child: Consumer<TimesheetProvider>(
                 builder: (context, provider, child) {
-                  if (provider.isLoading) return const CustomProgressIndicator();
-                  if (provider.timesheets.isEmpty) return const EmptyState(text: 'No timesheets available');
-                  return SizedBox(
-                    height: MediaQuery.of(context).size.height - totalHeaderHeight - 20,
+                  if (provider.isLoading) {
+                    return const Center(child: CustomProgressIndicator());
+                  }
+                  return Container(
+                    height: MediaQuery.of(context).size.height - totalHeaderHeight,
+                    padding: const EdgeInsets.all(8.0),
                     child: PageView.builder(
                       controller: _pageController,
+                      physics: const AlwaysScrollableScrollPhysics(),
                       onPageChanged: _navigateToDate,
                       itemBuilder: (context, index) {
                         final date = _getDateForIndex(index);
                         return SingleChildScrollView(
                           physics: const AlwaysScrollableScrollPhysics(),
-                          child: Padding(
-                            padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-                            child: _buildView(date),
+                          child: _buildSectionCard(
+                            context,
+                            title: _getViewTitle(),
+                            children: [_buildView(date, provider.timesheets.isNotEmpty)],
                           ),
                         );
                       },
@@ -248,6 +273,57 @@ class TimesheetDetailsScreenState extends State<TimesheetDetailsScreen> with Sin
           ).then((_) => _fetchTimesheets());
         },
         icon: Icons.add,
+      ),
+    );
+  }
+
+  String _getViewTitle() {
+    switch (_currentView) {
+      case 'day':
+        return 'Day View';
+      case 'week1':
+      case 'week2':
+        return 'Week View';
+      case 'month':
+        return 'Month View';
+      case 'year':
+        return 'Year View';
+      default:
+        return 'Timesheet';
+    }
+  }
+
+  Widget _buildSectionCard(BuildContext context, {required String title, required List<Widget> children}) {
+    final theme = Theme.of(context);
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: theme.colorScheme.primary.withOpacity(0.7),
+          width: 1.5,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+            child: Text(
+              title,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ),
+          const Divider(height: 1, thickness: 1, color: Colors.grey),
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(children: children),
+          ),
+        ],
       ),
     );
   }

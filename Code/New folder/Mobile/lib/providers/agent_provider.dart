@@ -29,7 +29,8 @@ class AgentProvider with ChangeNotifier {
     double? latitude,
     double? longitude,
     String? locationAddress,
-  }) async {
+  })
+  async {
     if (kDebugMode) print('AgentProvider: Creating agent for $name $lastname');
     _isLoading = true;
     _errorMessage = null;
@@ -107,7 +108,8 @@ class AgentProvider with ChangeNotifier {
     String? phone,
     String? supervisorID,
     String? delegationID,
-  }) async {
+  })
+  async {
     if (kDebugMode) print('AgentProvider: Updating agent ID: $id');
     _isLoading = true;
     _errorMessage = null;
@@ -165,43 +167,44 @@ class AgentProvider with ChangeNotifier {
     }
   }
 
-  Future<void> fetchAgentByPhone(String phone) async {
+  Future<Agent?> fetchAgentByPhone(String phone) async {
     if (kDebugMode) print('AgentProvider: Fetching agent by phone: $phone');
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
     try {
-      _currentAgent = await _agentService.fetchAgentByPhone(phone);
-      if (_currentAgent != null) {
-        _agents = [_currentAgent!];
-        if (kDebugMode) print('Agent fetched: ${_currentAgent!.agentID}');
+      final agent = await _agentService.fetchAgentByPhone(phone);
+      _currentAgent = agent;
+      if (agent != null) {
+        if (kDebugMode) print('Agent fetched: ${agent.agentID}');
       } else {
-        _agents = [];
         if (kDebugMode) print('No agent found for phone: $phone');
       }
+      return agent;
     } catch (e) {
       _currentAgent = null;
-      _agents = [];
       _errorMessage = 'Failed to fetch agent by phone: $e';
       if (kDebugMode) print(_errorMessage);
+      return null; // Return null instead of rethrowing
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  Future<void> fetchAgentsByDelegation(String delegationID) async {
+  Future<List<Agent>> fetchAgentsByDelegation(String delegationID) async {
     if (kDebugMode) print('AgentProvider: Fetching agents for delegation: $delegationID');
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
     try {
-      _agents = await _agentService.fetchAgentsByDelegation(delegationID);
-      if (kDebugMode) print('Fetched ${_agents.length} agents for delegation: $delegationID');
+      final agents = await _agentService.fetchAgentsByDelegation(delegationID);
+      if (kDebugMode) print('Fetched ${agents.length} agents for delegation: $delegationID');
+      return agents;
     } catch (e) {
-      _agents = [];
       _errorMessage = 'Failed to fetch agents by delegation: $e';
       if (kDebugMode) print(_errorMessage);
+      return [];
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -266,7 +269,7 @@ class AgentProvider with ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
     try {
-      final agents = await _agentService.getAgentsByUser(userID);
+      final agents = await AgentService.getAgentsByUser(userID);
       _agents = agents;
       if (kDebugMode) print('Fetched ${_agents.length} agents for user: $userID');
     } catch (e) {
@@ -303,17 +306,20 @@ class AgentProvider with ChangeNotifier {
   }
 
   Future<void> fetchAgentLocations() async {
-    if (kDebugMode) print('AgentProvider: Fetching agent locations');
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
     try {
-      _agents = await _agentService.fetchAgentLocations();
-      if (kDebugMode) print('Fetched ${_agents.length} agent locations');
+      final response = await AgentService.fetchAgentLocations();
+      // Ensure response is a List and cast each item to Map<String, dynamic>
+      if (response is List) {
+        _agents = response.map((data) => Agent.fromJson(data as Map<String, dynamic>)).toList();
+      } else {
+        throw Exception('Invalid response format: Expected a list of agent locations');
+      }
     } catch (e) {
-      _agents = [];
       _errorMessage = 'Failed to fetch agent locations: $e';
-      if (kDebugMode) print(_errorMessage);
+      print(_errorMessage);
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -324,7 +330,8 @@ class AgentProvider with ChangeNotifier {
     required double lat,
     required double lng,
     double radius = 5000,
-  }) async {
+  })
+  async {
     if (kDebugMode) print('AgentProvider: Fetching nearby agents at ($lat, $lng)');
     _isLoading = true;
     _errorMessage = null;
@@ -351,7 +358,8 @@ class AgentProvider with ChangeNotifier {
     required double southWestLng,
     required double northEastLat,
     required double northEastLng,
-  }) async {
+  })
+  async {
     if (kDebugMode) print('AgentProvider: Fetching agents by bounds');
     _isLoading = true;
     _errorMessage = null;
@@ -379,7 +387,8 @@ class AgentProvider with ChangeNotifier {
     required double latitude,
     required double longitude,
     required String address,
-  }) async {
+  })
+  async {
     if (kDebugMode) print('AgentProvider: Correcting location for agent ID: $agentId');
     _isLoading = true;
     _errorMessage = null;

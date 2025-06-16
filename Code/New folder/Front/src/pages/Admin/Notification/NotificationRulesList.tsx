@@ -1,4 +1,6 @@
 import React, { useMemo, useEffect, useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+
 import { FaTrash, FaEdit, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import { debounce } from 'lodash';
@@ -8,6 +10,8 @@ import { ViewMode } from '../adminTypes';
 import { onNotification, offNotification, isSocketConnected } from '../../../lib/socket';
 import { getEntityEvents, NotificationEvent } from '../../../lib/notifEvents';
 import '../AdminDashboard.css';
+import { confirmAlert } from 'react-confirm-alert';
+import 'react-confirm-alert/src/react-confirm-alert.css';
 
 interface NotificationRulesListProps {
     rules: NotificationRule[];
@@ -64,6 +68,8 @@ const NotificationRulesList: React.FC<NotificationRulesListProps> = React.memo(
         sortField,
         sortOrder,
     }) => {
+        const { t } = useTranslation();
+
         const [internalSearchQuery, setInternalSearchQuery] = useState(searchQuery);
         const [loading, setLoading] = useState(true);
         const [filterLoading, setFilterLoading] = useState(false);
@@ -350,15 +356,29 @@ const NotificationRulesList: React.FC<NotificationRulesListProps> = React.memo(
 
         const handleDeleteRule = useCallback(
             async (ruleID: string) => {
-                if (!window.confirm('Are you sure you want to delete this notification rule?')) return;
-                try {
-                    await deleteNotificationRule(ruleID);
-                    setRules((prev) => prev.filter((r) => r.ruleID !== ruleID));
-                    setExpandedRows((prev) => prev.filter((id) => id !== ruleID));
-                } catch (err: unknown) {
-                    console.error('Failed to delete notification rule:', err);
-                    setError('Failed to delete notification rule');
-                }
+                confirmAlert({
+                    title: t('notificationRules.deleteConfirmTitle'),
+                    message: t('notificationRules.deleteConfirm'),
+                    buttons: [
+                        {
+                            label: t('notificationRules.yes'),
+                            onClick: async () => {
+                                try {
+                                    await deleteNotificationRule(ruleID);
+                                    setRules((prev) => prev.filter((r) => r.ruleID !== ruleID));
+                                    setExpandedRows((prev) => prev.filter((id) => id !== ruleID));
+                                } catch (err: unknown) {
+                                    console.error('Failed to delete notification rule:', err);
+                                    setError('Failed to delete notification rule');
+                                }
+                            },
+                        },
+                        {
+                            label: t('notificationRules.no'),
+                            onClick: () => { },
+                        },
+                    ],
+                });
             },
             [setRules, setError]
         );

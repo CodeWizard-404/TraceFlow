@@ -156,6 +156,10 @@
   "visitDetails": {
     "title": "Visit Details",
     "loading": "Loading visit details...",
+    "confirmDeleteTitle": "Confirm Deletion",
+    "confirmDelete": "Are you sure you want to delete this visit?",
+    "yes": "Yes",
+    "no": "No",
     "error": {
       "title": "Oops!",
       "notFound": "Visit not found.",
@@ -164,12 +168,12 @@
       "validateFailed": "Failed to validate visit.",
       "rejectFailed": "Failed to reject visit.",
       "updateFailed": "Failed to update visit.",
-      "deleteFailed": "Failed to delete visit.",
       "cameraAccess": "Failed to access camera. Please ensure permissions are granted.",
       "cameraPlayFailed": "Failed to play camera stream.",
       "agentNotFound": "Agent not found with this phone number.",
       "supervisorNotFound": "Supervisor not found with this phone number.",
-      "agentsLoadFailed": "Failed to load agents for {{location}}."
+      "agentsLoadFailed": "Failed to load agents for {{location}}.",
+      "deleteFailed": "Failed to delete visit"
     },
     "whenWhere": {
       "title": "When & Where",
@@ -426,7 +430,12 @@
     "warnings": {
       "unsavedChanges": "You have unsaved changes. Are you sure you want to leave?"
     },
-    "confirmValidate": "Are you sure you want to validate {{count}} visit(s)?",
+    "confirmValidate": {
+      "title": "Confirm Validation",
+      "message": "Are you sure you want to validate {{count}} pending visit(s)?",
+      "yes": "Yes",
+      "no": "No"
+    },
     "suggestions": {
       "title": "Generate Timesheet Suggestions",
       "close": "Close",
@@ -751,7 +760,10 @@
       "cancel": "Cancel",
       "deleteConfirm": "Are you sure?",
       "uploading": "Uploading",
-      "saving": "Saving"
+      "saving": "Saving",
+      "deleteConfirmTitle": "Confirm Deletion",
+      "yes": "Yes",
+      "no": "No"
     },
     "errors": {
       "requiredFields": "Please fill in all required fields.",
@@ -794,8 +806,11 @@
       },
       "actions": {
         "newType": "New Type",
-        "deleteConfirm": "Are you sure you want to delete this type?",
         "retry": "Retry",
+        "deleteConfirmTitle": "Confirm Deletion",
+        "deleteConfirm": "Are you sure you want to delete this receipt book type?",
+        "yes": "Yes",
+        "no": "No",
         "aria": {
           "newType": "Create a new receipt book type",
           "edit": "Edit receipt book type {{name}}",
@@ -1285,6 +1300,10 @@
       "invalidDataFormat": "Invalid data format. Please provide a JSON array."
     },
     "actions": {
+      "deleteConfirmTitle": "Confirm Deletion",
+      "deleteConfirm": "Are you sure you want to delete this AI configuration?",
+      "yes": "Yes",
+      "no": "No",
       "back": "Back",
       "next": "Next",
       "previous": "Previous",
@@ -2115,7 +2134,8 @@
       "type": "Report Type",
       "format": "Format",
       "ascending": "Ascending",
-      "descending": "Descending"
+      "descending": "Descending",
+      "reportType": "Report Type"
     },
     "accordion": {
       "daterange": "Date Range",
@@ -2229,7 +2249,13 @@
       "deleteReport": "Failed to delete report.",
       "invalidIP": "Invalid IP address format."
     },
-    "loading": "Loading Reports..."
+    "loading": "Loading Reports...",
+    "confirmDelete": {
+      "title": "Confirm Deletion",
+      "message": "Are you sure you want to delete this?",
+      "yes": "Yes",
+      "no": "No"
+    }
   },
   "logs": {
     "timestamp": "Timestamp",
@@ -2510,5 +2536,66 @@
     "allUsers": "All Users",
     "allEvents": "All Events",
     "allPriorities": "All Priorities"
+  },
+  "notificationRules": {
+    "deleteConfirmTitle": "Confirm Deletion",
+    "deleteConfirm": "Are you sure you want to delete this notification rule?",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "stockManagerDashboard": {
+    "title": "Stock Manager Dashboard",
+    "errors": {
+      "fetchFailed": "Failed to load data. Please try again later.",
+      "cameraAccess": "Unable to access the camera for QR scanning.",
+      "archiveFailed": "Failed to archive selected receipt books.",
+      "uploadFailed": "Failed to upload receipt books.",
+      "sendToSupplierFailed": "Failed to send receipt books to supplier.",
+      "bookInventory": "An error occurred while loading the book inventory.",
+      "charts": "An error occurred while loading the charts.",
+      "transferCharts": "An error occurred while loading the transfer charts.",
+      "transferHistory": "An error occurred while loading the transfer history."
+    },
+    "totalBooks": "Total Receipt Books",
+    "totalBooksDesc": "All receipt books in the system",
+    "archivedBooks": "Archived Books",
+    "archivedBooksDesc": "Receipt books marked as archived",
+    "transfers": "Transfers",
+    "transfersDesc": "Total receipt book transfers",
+    "bookTypes": "Book Types",
+    "bookTypesDesc": "Distinct types of receipt books",
+    "actions": "Quick Actions",
+    "scanBooks": "Scan Books",
+    "archiveSelected": "Archive Selected",
+    "uploadBooks": "Upload Books",
+    "sendToSupplier": "Send to Supplier",
+    "refresh": "Refresh",
+    "bookInventory": "Book Inventory",
+    "allStatuses": "All Statuses",
+    "allTypes": "All Types",
+    "allRoles": "All Roles",
+    "allRegions": "All Regions",
+    "noBooks": "No receipt books found.",
+    "bookNumber": "Book Number",
+    "type": "Type",
+    "status": "Status",
+    "holder": "Holder",
+    "viewHistory": "View History",
+    "prev": "Previous",
+    "next": "Next",
+    "bookCharts": "Receipt Book Charts",
+    "bookStatus": "Book Status",
+    "holderRoles": "Holder Roles",
+    "transferCharts": "Transfer Charts",
+    "transferActivity": "Transfer Activity",
+    "transferStatus": "Transfer Status",
+    "booksByLocation": "Books by Location",
+    "transferHistory": "Transfer History",
+    "noTransfers": "No transfers found.",
+    "transferType": "Transfer Type",
+    "date": "Date",
+    "scanning": "Scanning QR code...",
+    "startScanning": "Start scanning QR code",
+    "upload": "Upload"
   }
 }

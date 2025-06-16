@@ -46,6 +46,9 @@ class Verify2FAScreenState extends State<Verify2FAScreen> {
   Future<void> _resend2FA(String method) async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     await authProvider.resend2FA(method);
+    if (authProvider.errorMessage == null) {
+      setState(() => _successMessage = 'OTP resent successfully.');
+    }
   }
 
   @override
@@ -64,7 +67,7 @@ class Verify2FAScreenState extends State<Verify2FAScreen> {
         );
         authProvider.clearError();
       } else if (authProvider.isAuthenticated && authProvider.permissionsLoaded) {
-        Navigator.pushReplacementNamed(context, '/timesheet/dashboard');
+        Navigator.pushReplacementNamed(context, '/timesheet-details');
       } else if (_successMessage != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -119,12 +122,15 @@ class Verify2FAScreenState extends State<Verify2FAScreen> {
                       ),
                       const SizedBox(height: 16),
                       // Timer info
-                      Text(
-                        'We sent a code to your ${authProvider.otpMethod}. '
-                            'Time remaining: ${(authProvider.otpTimer ~/ 60).toString().padLeft(2, '0')}:'
-                            '${(authProvider.otpTimer % 60).toString().padLeft(2, '0')}',
-                        style: const TextStyle(fontSize: 14),
-                        textAlign: TextAlign.center,
+                      ValueListenableBuilder<int>(
+                        valueListenable: authProvider.otpTimer,
+                        builder: (_, otpTimer, __) => Text(
+                          'We sent a code to your ${authProvider.otpMethod}. '
+                              'Time remaining: ${(otpTimer ~/ 60).toString().padLeft(2, '0')}:'
+                              '${(otpTimer % 60).toString().padLeft(2, '0')}',
+                          style: const TextStyle(fontSize: 14),
+                          textAlign: TextAlign.center,
+                        ),
                       ),
                       const SizedBox(height: 16),
                       // Trust device checkbox
@@ -162,43 +168,53 @@ class Verify2FAScreenState extends State<Verify2FAScreen> {
                       ),
                       const SizedBox(height: 16),
                       // Resend OTP button
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        width: double.infinity,
-                        child: OutlinedButton(
-                          onPressed: authProvider.isLoading || authProvider.resendCooldown > 0
-                              ? null
-                              : () => _resend2FA(authProvider.otpMethod),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                      ValueListenableBuilder<int>(
+                        valueListenable: authProvider.resendCooldown,
+                        builder: (_, resendCooldown, __) => AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          width: double.infinity,
+                          child: OutlinedButton(
+                            onPressed: authProvider.isLoading || resendCooldown > 0
+                                ? null
+                                : () => _resend2FA(authProvider.otpMethod),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
                             ),
-                          ),
-                          child: Text(
-                            authProvider.resendCooldown > 0
-                                ? 'Resend in ${authProvider.resendCooldown}s'
-                                : 'Resend OTP',
-                            style: const TextStyle(fontSize: 16),
+                            child: Text(
+                              resendCooldown > 0
+                                  ? 'Resend in ${resendCooldown}s'
+                                  : 'Resend OTP',
+                              style: const TextStyle(fontSize: 16),
+                            ),
                           ),
                         ),
                       ),
                       const SizedBox(height: 16),
                       // Alternate method link
-                      if (authProvider.otpMethod == 'phone')
-                        TextButton(
-                          onPressed: authProvider.isLoading || authProvider.resendCooldown > 0
-                              ? null
-                              : () => _resend2FA('email'),
-                          child: const Text('Can’t access your phone? Send to email instead.'),
+                      ValueListenableBuilder<int>(
+                        valueListenable: authProvider.resendCooldown,
+                        builder: (_, resendCooldown, __) => Column(
+                          children: [
+                            if (authProvider.otpMethod == 'phone')
+                              TextButton(
+                                onPressed: authProvider.isLoading || resendCooldown > 0
+                                    ? null
+                                    : () => _resend2FA('email'),
+                                child: const Text('Can’t access your phone? Send to email instead.'),
+                              ),
+                            if (authProvider.otpMethod == 'email')
+                              TextButton(
+                                onPressed: authProvider.isLoading || resendCooldown > 0
+                                    ? null
+                                    : () => _resend2FA('phone'),
+                                child: const Text('Send to phone instead.'),
+                              ),
+                          ],
                         ),
-                      if (authProvider.otpMethod == 'email')
-                        TextButton(
-                          onPressed: authProvider.isLoading || authProvider.resendCooldown > 0
-                              ? null
-                              : () => _resend2FA('phone'),
-                          child: const Text('Send to phone instead.'),
-                        ),
+                      ),
                       const Divider(),
                       // Back to login
                       TextButton(

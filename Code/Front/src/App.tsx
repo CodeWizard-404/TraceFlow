@@ -18,6 +18,8 @@ import SupervisorDashboard from './pages/Dashboard/SupervisorDashboard';
 import ManagerDashboard from './pages/Dashboard/ManagerDashboard';
 import HRDashboard from './pages/Dashboard/HRDashboard';
 import AdminSummaryDashboard from './pages/Dashboard/AdminDashboard';
+import StockManagerDashboard from './pages/Dashboard/StockManagerDashboard';
+
 
 // Lazy load route components
 const Timesheets = React.lazy(() => import('./pages/Timesheet/Timesheets'));
@@ -225,6 +227,9 @@ const AppContent: React.FC = React.memo(() => {
                 </RoleProtectedRoute>
               }
             />
+            <Route path="/stock-dashboard" element={
+              <StockManagerDashboard />
+            } />
             <Route path="/admin-dashboard"
               element={
                 <RoleProtectedRoute requiredRoles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>

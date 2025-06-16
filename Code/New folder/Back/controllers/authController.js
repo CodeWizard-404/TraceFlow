@@ -1,9 +1,8 @@
 const { validationResult } = require('express-validator');
-const logger = require('../utils/logger');
 const AuthService = require('../services/authService');
 const GoogleAuthService = require('../services/googleAuthService');
 const NodeCache = require('node-cache');
-const axios = require('axios');
+const { logRequest } = require('../utils/controllerUtils');
 
 const cache = new NodeCache({ stdTTL: 60, checkperiod: 120 });
 
@@ -27,8 +26,6 @@ class AuthController {
         return response;
     }
 
-
-
     static async googleCallback(req, res) {
         try {
             res.setHeader('Access-Control-Allow-Origin', process.env.FRONTEND_URL);
@@ -41,19 +38,19 @@ class AuthController {
             await AuthService.storeSession(result.user.userID, result.accessToken);
             const response = { redirect: `${process.env.FRONTEND_URL}/?login=success` };
 
-            logger.info('Google login completed successfully', {
-                traceId: req.traceId,
-                route: 'auth',
-                service: 'api',
+            logRequest({
+                req,
+                res: response,
                 status: 302,
-                method: req.method,
-                url: req.originalUrl,
-                ip: req.ip,
-                userId: result.user?.userID || null,
+                message: 'Google login completed successfully',
+                level: 'info',
                 metadata: {
                     redirectUrl: response.redirect.substring(0, 100),
-                    userEmail: result.user?.email ? logger.sensitive(result.user.email) : null
-                }
+                    userEmail: result.user?.email,
+                    userId: result.user?.userID || null,
+                },
+                service: 'auth',
+                defaultRoute: 'auth',
             });
 
             setTimeout(() => {
@@ -62,24 +59,21 @@ class AuthController {
         } catch (error) {
             const errorMessage = encodeURIComponent(error.message || 'Google login failed');
 
-            logger.error('Google login callback failed', {
-                traceId: req.traceId,
-                route: 'auth',
-                service: 'api',
+            logRequest({
+                req,
+                error,
                 status: 302,
-                method: req.method,
-                url: req.originalUrl,
-                ip: req.ip,
-                userId: null,
-                metadata: { error: errorMessage }
+                message: `Google login callback failed: ${errorMessage}`,
+                level: 'error',
+                metadata: { error: errorMessage },
+                service: 'auth',
+                defaultRoute: 'auth',
             });
 
             res.redirect(`${process.env.FRONTEND_URL}/login?error=${errorMessage}`);
         }
     }
 
-
-    // controllers/authController.js
     static async googleCalendarAuth(req, res) {
         try {
             res.setHeader('Access-Control-Allow-Origin', process.env.FRONTEND_URL);
@@ -92,20 +86,31 @@ class AuthController {
                 `access_type=offline&` +
                 `prompt=consent&` +
                 `state=${req.user.userID}`;
-            logger.info('Generated Google Calendar auth URL', { userId: req.user.userID, authUrl });
+
+            logRequest({
+                req,
+                res: { authUrl },
+                status: 302,
+                message: 'Generated Google Calendar auth URL',
+                level: 'info',
+                metadata: { userId: req.user.userID, authUrl },
+                service: 'auth',
+                defaultRoute: 'auth',
+            });
+
             res.redirect(authUrl);
         } catch (error) {
-            logger.error('Google calendar auth failed', {
-                traceId: req.traceId,
-                route: 'auth',
-                service: 'api',
+            logRequest({
+                req,
+                error,
                 status: 500,
-                method: req.method,
-                url: req.originalUrl,
-                ip: req.ip,
-                userId: req.user?.userID || null,
-                metadata: { error: error.message }
+                message: `Google calendar auth failed: ${error.message}`,
+                level: 'error',
+                metadata: { error: error.message },
+                service: 'auth',
+                defaultRoute: 'auth',
             });
+
             res.status(500).json({ error: ERROR_MESSAGES.SERVER_ERROR });
         }
     }
@@ -120,26 +125,22 @@ class AuthController {
             if (!state) throw new Error('Missing state parameter');
 
             const result = await GoogleAuthService.googleCalendarCallback(code, state);
-            // No need to store session here since Google Calendar auth doesn't generate a new access token
             const response = { redirect: `${process.env.FRONTEND_URL}/?calendar=success` };
-            logger.info('Google calendar callback result', {
-                userId: state,
-                hasRefreshToken: !!result.refreshToken,
-            });
 
-            logger.info('Google calendar login completed successfully', {
-                traceId: req.traceId,
-                route: 'auth',
-                service: 'api',
+            logRequest({
+                req,
+                res: response,
                 status: 302,
-                method: req.method,
-                url: req.originalUrl,
-                ip: req.ip,
-                userId: state || null,
+                message: 'Google calendar login completed successfully',
+                level: 'info',
                 metadata: {
                     redirectUrl: response.redirect.substring(0, 100),
-                    userEmail: result.user?.email ? logger.sensitive(result.user.email) : null
-                }
+                    userEmail: result.user?.email,
+                    userId: state || null,
+                    hasRefreshToken: !!result.refreshToken,
+                },
+                service: 'auth',
+                defaultRoute: 'auth',
             });
 
             setTimeout(() => {
@@ -148,22 +149,20 @@ class AuthController {
         } catch (error) {
             const errorMessage = encodeURIComponent(error.message || 'Google calendar login failed');
 
-            logger.error('Google calendar login callback failed', {
-                traceId: req.traceId,
-                route: 'auth',
-                service: 'api',
+            logRequest({
+                req,
+                error,
                 status: 302,
-                method: req.method,
-                url: req.originalUrl,
-                ip: req.ip,
-                userId: null,
-                metadata: { error: errorMessage }
+                message: `Google calendar login callback failed: ${errorMessage}`,
+                level: 'error',
+                metadata: { error: errorMessage },
+                service: 'auth',
+                defaultRoute: 'auth',
             });
 
             res.redirect(`${process.env.FRONTEND_URL}/login?error=${errorMessage}`);
         }
     }
-
 
     static async getGoogleCalendarAuthUrl(req, res) {
         try {
@@ -175,13 +174,34 @@ class AuthController {
                 `access_type=offline&` +
                 `prompt=consent&` +
                 `state=${req.user.userID}`;
+
+            logRequest({
+                req,
+                res: { authUrl },
+                status: 200,
+                message: 'Retrieved Google Calendar auth URL',
+                level: 'info',
+                metadata: { userId: req.user.userID, authUrl },
+                service: 'auth',
+                defaultRoute: 'auth',
+            });
+
             res.json({ authUrl });
         } catch (error) {
-            logger.error('Failed to get Google Calendar auth URL', { error: error.message });
+            logRequest({
+                req,
+                error,
+                status: 500,
+                message: `Failed to get Google Calendar auth URL: ${error.message}`,
+                level: 'error',
+                metadata: { error: error.message },
+                service: 'auth',
+                defaultRoute: 'auth',
+            });
+
             res.status(500).json({ error: 'Failed to get authorization URL' });
         }
     }
-
 
     static async googleIdTokenLogin(req, res) {
         try {
@@ -190,41 +210,38 @@ class AuthController {
 
             const result = await GoogleAuthService.googleIdTokenLogin(id_token, res);
 
-            logger.info('Google ID token login successful', {
-                traceId: req.traceId,
-                route: 'auth',
-                service: 'api',
+            logRequest({
+                req,
+                res: result,
                 status: 200,
-                method: req.method,
-                url: req.originalUrl,
-                ip: req.ip,
-                userId: result.user?.userID || null,
+                message: 'Google ID token login successful',
+                level: 'info',
                 metadata: {
-                    userEmail: result.user?.email ? logger.sensitive(result.user.email) : null,
+                    userEmail: result.user?.email,
+                    userId: result.user?.userID || null,
                 },
+                service: 'auth',
+                defaultRoute: 'auth',
             });
 
             return res.status(200).json(result);
         } catch (error) {
             const response = AuthController.formatError(error);
 
-            logger.error('Google ID token login failed', {
-                traceId: req.traceId,
-                route: 'auth',
-                service: 'api',
+            logRequest({
+                req,
+                error,
                 status: 400,
-                method: req.method,
-                url: req.originalUrl,
-                ip: req.ip,
-                userId: null,
+                message: `Google ID token login failed: ${response.error}`,
+                level: 'error',
                 metadata: { error: response.error },
+                service: 'auth',
+                defaultRoute: 'auth',
             });
 
             return res.status(400).json(response);
         }
     }
-
-
 
     static async login(req, res) {
         try {
@@ -243,35 +260,41 @@ class AuthController {
             const userId = `usr_${identifier}`;
             const session = await AuthService.getSession(userId);
             if (session && session.token) {
-                logger.info('Session found, reusing existing session', {
-                    traceId: req.traceId,
-                    route: 'auth',
-                    service: 'api',
-                    userId
-                });
-                return res.status(200).json({
+                const response = {
                     accessToken: session.token,
                     user: { userID: userId, email: identifier },
-                    expiresIn: 900000
+                    expiresIn: 900000,
+                };
+
+                logRequest({
+                    req,
+                    res: response,
+                    status: 200,
+                    message: 'Session found, reusing existing session',
+                    level: 'info',
+                    metadata: { userId },
+                    service: 'auth',
+                    defaultRoute: 'auth',
                 });
+
+                return res.status(200).json(response);
             }
 
             const result = await AuthService.login(identifier, password, deviceIdentifier, otpMethod, res);
 
-            logger.info('User login successful', {
-                traceId: req.traceId,
-                route: 'auth',
-                service: 'api',
+            logRequest({
+                req,
+                res: result,
                 status: 200,
-                method: req.method,
-                url: req.originalUrl,
-                ip: req.ip,
-                userId: result.user?.userID || null,
-                sensitiveFields: ['email'],
+                message: 'User login successful',
+                level: 'info',
                 metadata: {
+                    userId: result.user?.userID || null,
                     requires2FA: result.requires2FA,
-                    email: result.user?.email || null
-                }
+                    email: result.user?.email || null,
+                },
+                service: 'auth',
+                defaultRoute: 'auth',
             });
 
             return res.status(200).json(result);
@@ -279,16 +302,15 @@ class AuthController {
             const status = error.message === ERROR_MESSAGES.INVALID_CREDENTIALS ? 401 : 400;
             const response = AuthController.formatError(error);
 
-            logger.error('User login failed', {
-                traceId: req.traceId,
-                route: 'auth',
-                service: 'api',
+            logRequest({
+                req,
+                error,
                 status,
-                method: req.method,
-                url: req.originalUrl,
-                ip: req.ip,
-                userId: req.userID || null,
-                metadata: { error: response.error }
+                message: `User login failed: ${response.error}`,
+                level: 'error',
+                metadata: { error: response.error },
+                service: 'auth',
+                defaultRoute: 'auth',
             });
 
             return res.status(status).json(response);
@@ -307,40 +329,52 @@ class AuthController {
 
             const cacheKey = `2fa_${userID}_${deviceIdentifier}`;
             const cachedResult = cache.get(cacheKey);
-            if (cachedResult) return res.status(200).json(cachedResult);
+            if (cachedResult) {
+                logRequest({
+                    req,
+                    res: cachedResult,
+                    status: 200,
+                    message: 'Returning cached 2FA result',
+                    level: 'info',
+                    metadata: { userId: userID, deviceIdentifier },
+                    service: 'auth',
+                    defaultRoute: 'auth',
+                });
+
+                return res.status(200).json(cachedResult);
+            }
 
             const result = await AuthService.verify2FA(userID, otpCode, deviceIdentifier, trustDevice, tempToken, refreshToken, res);
             cache.set(cacheKey, result, 60);
 
-            logger.info('2FA verification successful', {
-                traceId: req.traceId,
-                route: 'auth',
-                service: 'api',
+            logRequest({
+                req,
+                res: result,
                 status: 200,
-                method: req.method,
-                url: req.originalUrl,
-                ip: req.ip,
-                userId: userID,
+                message: '2FA verification successful',
+                level: 'info',
                 metadata: {
-                    email: result.user?.email ? logger.sensitive(result.user.email) : null,
-                    trustDevice
-                }
+                    userId: userID,
+                    email: result.user?.email,
+                    trustDevice,
+                },
+                service: 'auth',
+                defaultRoute: 'auth',
             });
 
             return res.status(200).json(result);
         } catch (error) {
             const response = AuthController.formatError(error);
 
-            logger.error('2FA verification failed', {
-                traceId: req.traceId,
-                route: 'auth',
-                service: 'api',
+            logRequest({
+                req,
+                error,
                 status: 400,
-                method: req.method,
-                url: req.originalUrl,
-                ip: req.ip,
-                userId: req.body.userID || null,
-                metadata: { error: response.error }
+                message: `2FA verification failed: ${response.error}`,
+                level: 'error',
+                metadata: { error: response.error },
+                service: 'auth',
+                defaultRoute: 'auth',
             });
 
             return res.status(400).json(response);
@@ -354,32 +388,33 @@ class AuthController {
 
             const result = await AuthService.refreshToken(refreshToken, res);
 
-            logger.info('Token refresh successful', {
-                traceId: req.traceId,
-                route: 'auth',
-                service: 'api',
+            logRequest({
+                req,
+                res: result,
                 status: 200,
-                method: req.method,
-                url: req.originalUrl,
-                ip: req.ip,
-                userId: result.user?.userID || null,
-                metadata: { message: result.user?.message }
+                message: 'Token refresh successful',
+                level: 'info',
+                metadata: {
+                    userId: result.user?.userID || null,
+                    message: result.user?.message,
+                },
+                service: 'auth',
+                defaultRoute: 'auth',
             });
 
             return res.status(200).json(result);
         } catch (error) {
             const response = AuthController.formatError(error);
 
-            logger.error('Token refresh failed', {
-                traceId: req.traceId,
-                route: 'auth',
-                service: 'api',
+            logRequest({
+                req,
+                error,
                 status: 400,
-                method: req.method,
-                url: req.originalUrl,
-                ip: req.ip,
-                userId: null,
-                metadata: { error: response.error }
+                message: `Token refresh failed: ${response.error}`,
+                level: 'error',
+                metadata: { error: response.error },
+                service: 'auth',
+                defaultRoute: 'auth',
             });
 
             return res.status(400).json(response);
@@ -407,32 +442,33 @@ class AuthController {
                 keycloakLogoutUrl: result.keycloakLogoutUrl,
             };
 
-            logger.info('User logout successful', {
-                traceId: req.traceId,
-                route: 'auth',
-                service: 'api',
+            logRequest({
+                req,
+                res: response,
                 status: 200,
-                method: req.method,
-                url: req.originalUrl,
-                ip: req.ip,
-                userId: userId || null,
-                metadata: { message: response.message }
+                message: 'User logout successful',
+                level: 'info',
+                metadata: {
+                    userId: userId || null,
+                    message: response.message,
+                },
+                service: 'auth',
+                defaultRoute: 'auth',
             });
 
             return res.status(200).json(response);
         } catch (error) {
             const response = { error: error.message || 'Logout failed' };
 
-            logger.error('User logout failed', {
-                traceId: req.traceId,
-                route: 'auth',
-                service: 'api',
+            logRequest({
+                req,
+                error,
                 status: 500,
-                method: req.method,
-                url: req.originalUrl,
-                ip: req.ip,
-                userId: null,
-                metadata: { error: response.error }
+                message: `User logout failed: ${response.error}`,
+                level: 'error',
+                metadata: { error: response.error },
+                service: 'auth',
+                defaultRoute: 'auth',
             });
 
             return res.status(500).json(response);
@@ -449,32 +485,33 @@ class AuthController {
 
             const result = await AuthService.resend2FA(userID, otpMethod);
 
-            logger.info('2FA code resent successfully', {
-                traceId: req.traceId,
-                route: 'auth',
-                service: 'api',
+            logRequest({
+                req,
+                res: result,
                 status: 200,
-                method: req.method,
-                url: req.originalUrl,
-                ip: req.ip,
-                userId: userID,
-                metadata: { message: result.message }
+                message: '2FA code resent successfully',
+                level: 'info',
+                metadata: {
+                    userId: userID,
+                    message: result.message,
+                },
+                service: 'auth',
+                defaultRoute: 'auth',
             });
 
             return res.status(200).json(result);
         } catch (error) {
             const response = AuthController.formatError(error);
 
-            logger.error('2FA code resend failed', {
-                traceId: req.traceId,
-                route: 'auth',
-                service: 'api',
+            logRequest({
+                req,
+                error,
                 status: 400,
-                method: req.method,
-                url: req.originalUrl,
-                ip: req.ip,
-                userId: req.body.userID || null,
-                metadata: { error: response.error }
+                message: `2FA code resend failed: ${response.error}`,
+                level: 'error',
+                metadata: { error: response.error },
+                service: 'auth',
+                defaultRoute: 'auth',
             });
 
             return res.status(400).json(response);
@@ -491,32 +528,33 @@ class AuthController {
 
             const result = await AuthService.initiatePasswordReset(identifier);
 
-            logger.info('Password reset initiated successfully', {
-                traceId: req.traceId,
-                route: 'auth',
-                service: 'api',
+            logRequest({
+                req,
+                res: result,
                 status: 200,
-                method: req.method,
-                url: req.originalUrl,
-                ip: req.ip,
-                userId: result.userID,
-                metadata: { message: result.message }
+                message: 'Password reset initiated successfully',
+                level: 'info',
+                metadata: {
+                    userId: result.userID,
+                    message: result.message,
+                },
+                service: 'auth',
+                defaultRoute: 'auth',
             });
 
             return res.status(200).json(result);
         } catch (error) {
             const response = AuthController.formatError(error);
 
-            logger.error('Password reset initiation failed', {
-                traceId: req.traceId,
-                route: 'auth',
-                service: 'api',
+            logRequest({
+                req,
+                error,
                 status: 400,
-                method: req.method,
-                url: req.originalUrl,
-                ip: req.ip,
-                userId: null,
-                metadata: { error: response.error }
+                message: `Password reset initiation failed: ${response.error}`,
+                level: 'error',
+                metadata: { error: response.error },
+                service: 'auth',
+                defaultRoute: 'auth',
             });
 
             return res.status(400).json(response);
@@ -533,32 +571,33 @@ class AuthController {
 
             const result = await AuthService.verifyPasswordResetOTP(userID, otpCode);
 
-            logger.info('Password reset OTP verified successfully', {
-                traceId: req.traceId,
-                route: 'auth',
-                service: 'api',
+            logRequest({
+                req,
+                res: result,
                 status: 200,
-                method: req.method,
-                url: req.originalUrl,
-                ip: req.ip,
-                userId: userID,
-                metadata: { message: result.message }
+                message: 'Password reset OTP verified successfully',
+                level: 'info',
+                metadata: {
+                    userId: userID,
+                    message: result.message,
+                },
+                service: 'auth',
+                defaultRoute: 'auth',
             });
 
             return res.status(200).json(result);
         } catch (error) {
             const response = AuthController.formatError(error);
 
-            logger.error('Password reset OTP verification failed', {
-                traceId: req.traceId,
-                route: 'auth',
-                service: 'api',
+            logRequest({
+                req,
+                error,
                 status: 400,
-                method: req.method,
-                url: req.originalUrl,
-                ip: req.ip,
-                userId: req.body.userID || null,
-                metadata: { error: response.error }
+                message: `Password reset OTP verification failed: ${response.error}`,
+                level: 'error',
+                metadata: { error: response.error },
+                service: 'auth',
+                defaultRoute: 'auth',
             });
 
             return res.status(400).json(response);
@@ -575,32 +614,33 @@ class AuthController {
 
             const result = await AuthService.resetPassword(userID, newPassword, tempToken);
 
-            logger.info('Password reset completed successfully', {
-                traceId: req.traceId,
-                route: 'auth',
-                service: 'api',
+            logRequest({
+                req,
+                res: result,
                 status: 200,
-                method: req.method,
-                url: req.originalUrl,
-                ip: req.ip,
-                userId: userID,
-                metadata: { message: result.message }
+                message: 'Password reset completed successfully',
+                level: 'info',
+                metadata: {
+                    userId: userID,
+                    message: result.message,
+                },
+                service: 'auth',
+                defaultRoute: 'auth',
             });
 
             return res.status(200).json(result);
         } catch (error) {
             const response = AuthController.formatError(error);
 
-            logger.error('Password reset failed', {
-                traceId: req.traceId,
-                route: 'auth',
-                service: 'api',
+            logRequest({
+                req,
+                error,
                 status: 400,
-                method: req.method,
-                url: req.originalUrl,
-                ip: req.ip,
-                userId: req.body.userID || null,
-                metadata: { error: response.error }
+                message: `Password reset failed: ${response.error}`,
+                level: 'error',
+                metadata: { error: response.error },
+                service: 'auth',
+                defaultRoute: 'auth',
             });
 
             return res.status(400).json(response);

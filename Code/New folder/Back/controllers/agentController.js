@@ -1,899 +1,995 @@
 const AgentService = require('../services/agentService');
 const GoogleMapsService = require('../services/googleMapsService');
-const logger = require('../utils/logger');
+const NotificationService = require('../services/notificationService');
+const { sequelize } = require('../config/db');
+const Sequelize = require('sequelize');
+const { getRedisClient } = require('../config/redis');
+const RedisUtils = require('../utils/redisUtils');
+const cache = require('../utils/cache');
+const { v4: uuidv4 } = require('uuid');
+const { logRequest } = require('../utils/controllerUtils');
+const { User, Agent } = require('../models');
 
 
 /**
  * Controller for managing agent operations with structured logging.
  */
 class AgentController {
-    /**
-     * Create a new agent.
-     * @param {Object} req - Express request object with agent data in body.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with created agent or error.
-     */
     static async createAgent(req, res) {
-        const actorID = req.user?.userID || 'unknown';
+        const transaction = await sequelize.transaction({ isolationLevel: Sequelize.Transaction.ISOLATION_LEVELS.READ_COMMITTED });
         try {
             const { name, lastname, email, phone, supervisorID, delegationID, latitude, longitude, locationAddress } = req.body;
+            const actorID = req.user?.userID || 'unknown';
             if (!name || !lastname || !email || !phone || !supervisorID || !delegationID) {
-                logger.warn('Create agent failed: Missing required fields', { /* logging details */ });
+                await transaction.rollback();
+                logRequest({
+                    req,
+                    status: 400,
+                    message: 'All fields are required',
+                    level: 'info',
+                    service: 'agent',
+                    defaultRoute: 'agents'
+                });
                 return res.status(400).json({ error: 'All fields are required' });
             }
+
             const result = await AgentService.createAgent({
-                name, lastname, email, phone, supervisorID, delegationID, latitude, longitude, locationAddress, actorID,
-            });
+                name, lastname, email, phone, supervisorID, delegationID, latitude, longitude, locationAddress, actorID
+            }, { transaction });
+
             if (!result.success) {
-                logger.error('Create agent failed', { /* logging details */ });
+                await transaction.rollback();
+                logRequest({
+                    req,
+                    status: 400,
+                    message: result.message,
+                    level: 'error',
+                    metadata: { errors: result.errors },
+                    service: 'agent',
+                    defaultRoute: 'agents'
+                });
                 return res.status(400).json({ error: result.message, errors: result.errors });
             }
-            logger.info('Successfully created agent', { /* logging details */ });
+
+            const cacheInstance = await cache();
+            const redis = getRedisClient();
+            await cacheInstance.invalidateByTag('agents');
+            await redis.set('agents:last_updated', Date.now().toString());
+            await RedisUtils.publishEvent('cache:invalidate', 'agents');
+
+            const requestID = uuidv4();
+            await NotificationService.triggerNotification({
+                event: 'agent:created',
+                data: { agentID: result.agent.agentID, name, email },
+                metadata: { createdBy: req.user?.email || 'unknown' },
+                dynamicRecipients: [],
+                triggeredByUserID: actorID,
+                type: 'agent',
+                customMessage: `Agent ${name} ${lastname} created `,
+                requestID,
+            });
+
+            logRequest({
+                req,
+                res: result.agent,
+                status: 201,
+                message: `Created agent ${result.agent.agentID}`,
+                level: 'info',
+                metadata: { agentID: result.agent.agentID, email, requestID },
+                service: 'agent',
+                defaultRoute: 'agents'
+            });
+
+            await transaction.commit();
             return res.status(201).json(result.agent);
         } catch (error) {
-            logger.error('Create agent error', { /* logging details */ });
+            await transaction.rollback();
+            logRequest({
+                req,
+                error,
+                status: 500,
+                message: `Failed to create agent: ${error.message}`,
+                level: 'error',
+                service: 'agent',
+                defaultRoute: 'agents'
+            });
             return res.status(500).json({ error: 'Internal server error' });
         }
     }
 
-    /**
-     * Get all agents.
-     * @param {Object} req - Express request object.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with agents or error.
-     */
     static async getAllAgents(req, res) {
-        const actorID = req.user?.userID || 'unknown';
         try {
-            const agents = await AgentService.getAllAgents();
-            logger.info('Successfully fetched all agents', {
-                route: 'agents',
-                method: req.method,
-                url: req.originalUrl,
+            const cacheInstance = await cache();
+            const agents = await cacheInstance.getOrSet('agents:all', async () => {
+                return await AgentService.getAllAgents();
+            }, 'api');
+
+            logRequest({
+                req,
+                res: { agents },
                 status: 200,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { agentCount: agents.length }
+                message: `Retrieved ${agents.length} agents`,
+                level: 'info',
+                metadata: { agentCount: agents.length },
+                service: 'agent',
+                defaultRoute: 'agents'
             });
+
             return res.status(200).json({ agents });
         } catch (error) {
-            logger.error('Failed to fetch all agents', {
-                route: 'agents',
-                method: req.method,
-                url: req.originalUrl,
+            logRequest({
+                req,
+                error,
                 status: 500,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { error: error.message }
+                message: `Failed to fetch all agents: ${error.message}`,
+                level: 'error',
+                service: 'agent',
+                defaultRoute: 'agents'
             });
             return res.status(500).json({ error: 'Internal server error' });
         }
     }
 
-    /**
-     * Get an agent by ID.
-     * @param {Object} req - Express request object with agent ID in params.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with agent or error.
-     */
     static async getAgentById(req, res) {
-        const actorID = req.user?.userID || 'unknown';
         try {
             const { id } = req.params;
             if (!id) {
-                logger.warn('Get agent failed: Missing agent ID', {
-                    route: 'agents',
-                    method: req.method,
-                    url: req.originalUrl,
+                logRequest({
+                    req,
                     status: 400,
-                    ip: req.ip,
-                    traceId: req.traceId,
-                    userId: actorID,
-                    metadata: {}
+                    message: 'Agent ID is required',
+                    level: 'info',
+                    service: 'agent',
+                    defaultRoute: 'agents'
                 });
                 return res.status(400).json({ error: 'Agent ID is required' });
             }
-            const agent = await AgentService.getAgentById(id);
+
+            const cacheInstance = await cache();
+            const agent = await cacheInstance.getOrSet(`agent:${id}`, async () => {
+                return await AgentService.getAgentById(id);
+            }, 'api');
+
             if (!agent) {
-                logger.warn('Get agent failed: Agent not found', {
-                    route: 'agents',
-                    method: req.method,
-                    url: req.originalUrl,
+                logRequest({
+                    req,
                     status: 404,
-                    ip: req.ip,
-                    traceId: req.traceId,
-                    userId: actorID,
-                    metadata: { agentID: id }
+                    message: `Agent ${id} not found`,
+                    level: 'info',
+                    service: 'agent',
+                    defaultRoute: 'agents'
                 });
                 return res.status(404).json({ error: 'Agent not found' });
             }
-            logger.info('Successfully fetched agent by ID', {
-                route: 'agents',
-                method: req.method,
-                url: req.originalUrl,
+
+            logRequest({
+                req,
+                res: agent,
                 status: 200,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { agentID: id }
+                message: `Retrieved agent ${id}`,
+                level: 'info',
+                metadata: { agentID: id },
+                service: 'agent',
+                defaultRoute: 'agents'
             });
+
             return res.status(200).json(agent);
         } catch (error) {
-            logger.error('Failed to fetch agent by ID', {
-                route: 'agents',
-                method: req.method,
-                url: req.originalUrl,
+            logRequest({
+                req,
+                error,
                 status: 500,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { error: error.message }
+                message: `Failed to fetch agent by ID: ${error.message}`,
+                level: 'error',
+                service: 'agent',
+                defaultRoute: 'agents'
             });
             return res.status(500).json({ error: 'Internal server error' });
         }
     }
 
-    /**
-     * Update an agent.
-     * @param {Object} req - Express request object with agent ID in params and data in body.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with updated agent or error.
-     */
     static async updateAgent(req, res) {
-        const actorID = req.user?.userID || 'unknown';
+        const transaction = await sequelize.transaction({ isolationLevel: Sequelize.Transaction.ISOLATION_LEVELS.READ_COMMITTED });
         try {
             const { id } = req.params;
             const { name, lastname, email, phone, supervisorID, delegationID } = req.body;
+            const actorID = req.user?.userID || 'unknown';
             if (!id) {
-                logger.warn('Update agent failed: Missing agent ID', {
-                    route: 'agents',
-                    method: req.method,
-                    url: req.originalUrl,
+                await transaction.rollback();
+                logRequest({
+                    req,
                     status: 400,
-                    ip: req.ip,
-                    traceId: req.traceId,
-                    userId: actorID,
-                    metadata: {}
+                    message: 'Agent ID is required',
+                    level: 'info',
+                    service: 'agent',
+                    defaultRoute: 'agents'
                 });
                 return res.status(400).json({ error: 'Agent ID is required' });
             }
+
             const result = await AgentService.updateAgent(id, {
-                name,
-                lastname,
-                email,
-                phone,
-                supervisorID,
-                delegationID,
-                actorID,
-            });
+                name, lastname, email, phone, supervisorID, delegationID, actorID
+            }, { transaction });
+
+
             if (!result.success) {
-                logger.error('Update agent failed', {
-                    route: 'agents',
-                    method: req.method,
-                    url: req.originalUrl,
+                await transaction.rollback();
+                logRequest({
+                    req,
                     status: 400,
-                    ip: req.ip,
-                    traceId: req.traceId,
-                    userId: actorID,
-                    metadata: { error: result.message, errors: result.errors }
+                    message: result.message,
+                    level: 'error',
+                    metadata: { errors: result.errors },
+                    service: 'agent',
+                    defaultRoute: 'agents'
                 });
                 return res.status(400).json({ error: result.message, errors: result.errors });
             }
-            logger.info('Successfully updated agent', {
-                route: 'agents',
-                method: req.method,
-                url: req.originalUrl,
-                status: 200,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { agentID: id }
+
+            const cacheInstance = await cache();
+            const redis = getRedisClient();
+            await cacheInstance.invalidateByTag('agents');
+            await cacheInstance.invalidate(`agent:${id}`);
+            await redis.set('agents:last_updated', Date.now().toString());
+            await RedisUtils.publishEvent('cache:invalidate', 'agents');
+
+            const requestID = uuidv4();
+            await NotificationService.triggerNotification({
+                event: 'agent:updated',
+                data: { agentID: id, name, email },
+                metadata: { updatedBy: req.user?.email || 'unknown' },
+                dynamicRecipients: [],
+                triggeredByUserID: actorID,
+                type: 'agent',
+                customMessage: `Agent ${result.agent.name} ${result.agent.lastname} updated `,
+                requestID,
             });
+
+            logRequest({
+                req,
+                res: result.agent,
+                status: 200,
+                message: `Updated agent ${id}`,
+                level: 'info',
+                metadata: { agentID: id, requestID },
+                service: 'agent',
+                defaultRoute: 'agents'
+            });
+
+            await transaction.commit();
             return res.status(200).json(result.agent);
         } catch (error) {
-            logger.error('Failed to update agent', {
-                route: 'agents',
-                method: req.method,
-                url: req.originalUrl,
+            await transaction.rollback();
+            logRequest({
+                req,
+                error,
                 status: 500,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { error: error.message }
+                message: `Failed to update agent: ${error.message}`,
+                level: 'error',
+                service: 'agent',
+                defaultRoute: 'agents'
             });
             return res.status(500).json({ error: 'Internal server error' });
         }
     }
 
-    /**
-     * Delete an agent.
-     * @param {Object} req - Express request object with agent ID in params.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with success message or error.
-     */
     static async deleteAgent(req, res) {
-        const actorID = req.user?.userID || 'unknown';
+        const transaction = await sequelize.transaction({ isolationLevel: Sequelize.Transaction.ISOLATION_LEVELS.READ_COMMITTED });
         try {
             const { id } = req.params;
+            const actorID = req.user?.userID || 'unknown';
             if (!id) {
-                logger.warn('Delete agent failed: Missing agent ID', {
-                    route: 'agents',
-                    method: req.method,
-                    url: req.originalUrl,
+                await transaction.rollback();
+                logRequest({
+                    req,
                     status: 400,
-                    ip: req.ip,
-                    traceId: req.traceId,
-                    userId: actorID,
-                    metadata: {}
+                    message: 'Agent ID is required',
+                    level: 'info',
+                    service: 'agent',
+                    defaultRoute: 'agents'
                 });
                 return res.status(400).json({ error: 'Agent ID is required' });
             }
-            const result = await AgentService.deleteAgent(id, actorID);
+
+            const agent = await Agent.findByPk(id);
+            const result = await AgentService.deleteAgent(id, actorID, { transaction });
+
             if (!result.success) {
-                logger.error('Delete agent failed', {
-                    route: 'agents',
-                    method: req.method,
-                    url: req.originalUrl,
+                await transaction.rollback();
+                logRequest({
+                    req,
                     status: 400,
-                    ip: req.ip,
-                    traceId: req.traceId,
-                    userId: actorID,
-                    metadata: { error: result.message, errors: result.errors }
+                    message: result.message,
+                    level: 'error',
+                    metadata: { errors: result.errors },
+                    service: 'agent',
+                    defaultRoute: 'agents'
                 });
                 return res.status(400).json({ error: result.message, errors: result.errors });
             }
-            logger.info('Successfully deleted agent', {
-                route: 'agents',
-                method: req.method,
-                url: req.originalUrl,
-                status: 200,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { agentID: id }
+
+            const cacheInstance = await cache();
+            const redis = getRedisClient();
+            await cacheInstance.invalidateByTag('agents');
+            await cacheInstance.invalidate(`agent:${id}`);
+            await redis.set('agents:last_updated', Date.now().toString());
+            await RedisUtils.publishEvent('cache:invalidate', 'agents');
+
+            const requestID = uuidv4();
+            await NotificationService.triggerNotification({
+                event: 'agent:deleted',
+                data: { agentID: id },
+                metadata: { deletedBy: req.user?.email || 'unknown' },
+                dynamicRecipients: [],
+                triggeredByUserID: actorID,
+                type: 'agent',
+                customMessage: `Agent ${agent.name} ${agent.lastname} deleted`,
+                requestID,
             });
+
+            logRequest({
+                req,
+                res: { message: 'Agent deleted successfully' },
+                status: 200,
+                message: `Deleted agent ${id}`,
+                level: 'info',
+                metadata: { agentID: id, requestID },
+                service: 'agent',
+                defaultRoute: 'agents'
+            });
+
+            await transaction.commit();
             return res.status(200).json({ message: 'Agent deleted successfully' });
         } catch (error) {
-            logger.error('Failed to delete agent', {
-                route: 'agents',
-                method: req.method,
-                url: req.originalUrl,
+            await transaction.rollback();
+            logRequest({
+                req,
+                error,
                 status: 500,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { error: error.message }
+                message: `Failed to delete agent: ${error.message}`,
+                level: 'error',
+                service: 'agent',
+                defaultRoute: 'agents'
             });
             return res.status(500).json({ error: 'Internal server error' });
         }
     }
 
-    /**
-     * Get an agent by phone number.
-     * @param {Object} req - Express request object with phone in params.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with agent or error.
-     */
     static async getAgentByPhone(req, res) {
-        const actorID = req.user?.userID || 'unknown';
         try {
             const { phone } = req.params;
             if (!phone) {
-                logger.warn('Get agent failed: Missing phone number', {
-                    route: 'agents/phone',
-                    method: req.method,
-                    url: req.originalUrl,
+                logRequest({
+                    req,
                     status: 400,
-                    ip: req.ip,
-                    traceId: req.traceId,
-                    userId: actorID,
-                    metadata: {}
+                    message: 'Phone number is required',
+                    level: 'info',
+                    service: 'agent',
+                    defaultRoute: 'agents'
                 });
                 return res.status(400).json({ error: 'Phone number is required' });
             }
-            const agent = await AgentService.getAgentByPhone(phone);
+
+            const cacheInstance = await cache();
+            const agent = await cacheInstance.getOrSet(`agent:phone:${phone}`, async () => {
+                return await AgentService.getAgentByPhone(phone);
+            }, 'api');
+
             if (!agent) {
-                logger.warn('Get agent failed: Agent not found', {
-                    route: 'agents/phone',
-                    method: req.method,
-                    url: req.originalUrl,
+                logRequest({
+                    req,
                     status: 404,
-                    ip: req.ip,
-                    traceId: req.traceId,
-                    userId: actorID,
-                    metadata: { phone }
+                    message: `Agent with phone ${phone} not found`,
+                    level: 'info',
+                    service: 'agent',
+                    defaultRoute: 'agents'
                 });
                 return res.status(404).json({ error: 'Agent not found' });
             }
-            logger.info('Successfully fetched agent by phone', {
-                route: 'agents/phone',
-                method: req.method,
-                url: req.originalUrl,
+
+            logRequest({
+                req,
+                res: agent,
                 status: 200,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { phone, agentID: agent.agentID }
+                message: `Retrieved agent by phone ${phone}`,
+                level: 'info',
+                metadata: { phone, agentID: agent.agentID },
+                service: 'agent',
+                defaultRoute: 'agents'
             });
+
             return res.status(200).json(agent);
         } catch (error) {
-            logger.error('Failed to fetch agent by phone', {
-                route: 'agents/phone',
-                method: req.method,
-                url: req.originalUrl,
+            logRequest({
+                req,
+                error,
                 status: 500,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { error: error.message }
+                message: `Failed to fetch agent by phone: ${error.message}`,
+                level: 'error',
+                service: 'agent',
+                defaultRoute: 'agents'
             });
             return res.status(500).json({ error: 'Internal server error' });
         }
     }
 
-    /**
-     * Get agents by delegation.
-     * @param {Object} req - Express request object with delegationID in query.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with agents or error.
-     */
     static async getAgentsByDelegation(req, res) {
-        const actorID = req.user?.userID || 'unknown';
         try {
             const { delegationID } = req.query;
             if (!delegationID) {
-                logger.warn('Get agents failed: Missing delegation ID', {
-                    route: 'agents/delegation',
-                    method: req.method,
-                    url: req.originalUrl,
+                logRequest({
+                    req,
                     status: 400,
-                    ip: req.ip,
-                    traceId: req.traceId,
-                    userId: actorID,
-                    metadata: {}
+                    message: 'Delegation ID is required',
+                    level: 'info',
+                    service: 'agent',
+                    defaultRoute: 'agents'
                 });
                 return res.status(400).json({ error: 'Delegation ID is required' });
             }
-            const agents = await AgentService.getAgentsByDelegation(delegationID);
-            logger.info('Successfully fetched agents by delegation', {
-                route: 'agents/delegation',
-                method: req.method,
-                url: req.originalUrl,
+
+            const cacheInstance = await cache();
+            const agents = await cacheInstance.getOrSet(`agents:delegation:${delegationID}`, async () => {
+                return await AgentService.getAgentsByDelegation(delegationID);
+            }, 'api');
+
+            logRequest({
+                req,
+                res: { agents },
                 status: 200,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { delegationID, agentCount: agents.length }
+                message: `Retrieved ${agents.length} agents for delegation ${delegationID}`,
+                level: 'info',
+                metadata: { delegationID, agentCount: agents.length },
+                service: 'agent',
+                defaultRoute: 'agents'
             });
+
             return res.status(200).json({ agents });
         } catch (error) {
-            logger.error('Failed to fetch agents by delegation', {
-                route: 'agents/delegation',
-                method: req.method,
-                url: req.originalUrl,
+            logRequest({
+                req,
+                error,
                 status: 500,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { error: error.message }
+                message: `Failed to fetch agents by delegation: ${error.message}`,
+                level: 'error',
+                service: 'agent',
+                defaultRoute: 'agents'
             });
             return res.status(500).json({ error: 'Internal server error' });
         }
     }
 
-    /**
-     * Get all unique agent locations.
-     * @param {Object} req - Express request object.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with locations or error.
-     */
     static async getAllUniqueLocations(req, res) {
-        const actorID = req.user?.userID || 'unknown';
         try {
-            const locations = await AgentService.getAllUniqueLocations();
-            logger.info('Successfully fetched unique locations', {
-                route: 'agents/locations',
-                method: req.method,
-                url: req.originalUrl,
+            const cacheInstance = await cache();
+            const locations = await cacheInstance.getOrSet('agents:locations', async () => {
+                return await AgentService.getAllUniqueLocations();
+            }, 'api');
+
+            logRequest({
+                req,
+                res: locations,
                 status: 200,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { locationCount: locations.length }
+                message: `Retrieved ${locations.length} unique agent locations`,
+                level: 'info',
+                metadata: { locationCount: locations.length },
+                service: 'agent',
+                defaultRoute: 'agents'
             });
+
             return res.status(200).json(locations);
         } catch (error) {
-            logger.error('Failed to fetch unique locations', {
-                route: 'agents/locations',
-                method: req.method,
-                url: req.originalUrl,
+            logRequest({
+                req,
+                error,
                 status: 500,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { error: error.message }
+                message: `Failed to fetch unique locations: ${error.message}`,
+                level: 'error',
+                service: 'agent',
+                defaultRoute: 'agents'
             });
             return res.status(500).json({ error: 'Internal server error' });
         }
     }
 
-    /**
-     * Get an agent's supervisor.
-     * @param {Object} req - Express request object with agent ID in params.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with supervisor or error.
-     */
     static async getAgentSupervisor(req, res) {
-        const actorID = req.user?.userID || 'unknown';
         try {
             const { id } = req.params;
             if (!id) {
-                logger.warn('Get supervisor failed: Missing agent ID', {
-                    route: 'agents/supervisor',
-                    method: req.method,
-                    url: req.originalUrl,
+                logRequest({
+                    req,
                     status: 400,
-                    ip: req.ip,
-                    traceId: req.traceId,
-                    userId: actorID,
-                    metadata: {}
+                    message: 'Agent ID is required',
+                    level: 'info',
+                    service: 'agent',
+                    defaultRoute: 'agents'
                 });
                 return res.status(400).json({ error: 'Agent ID is required' });
             }
-            const supervisor = await AgentService.getAgentSupervisor(id);
+
+            const cacheInstance = await cache();
+            const supervisor = await cacheInstance.getOrSet(`agent:supervisor:${id}`, async () => {
+                return await AgentService.getAgentSupervisor(id);
+            }, 'api');
+
             if (!supervisor) {
-                logger.warn('Get supervisor failed: Supervisor not found', {
-                    route: 'agents/supervisor',
-                    method: req.method,
-                    url: req.originalUrl,
+                logRequest({
+                    req,
                     status: 404,
-                    ip: req.ip,
-                    traceId: req.traceId,
-                    userId: actorID,
-                    metadata: { agentID: id }
+                    message: `Supervisor for agent ${id} not found`,
+                    level: 'info',
+                    service: 'agent',
+                    defaultRoute: 'agents'
                 });
                 return res.status(404).json({ error: 'Supervisor not found' });
             }
-            logger.info('Successfully fetched agent supervisor', {
-                route: 'agents/supervisor',
-                method: req.method,
-                url: req.originalUrl,
+
+            logRequest({
+                req,
+                res: supervisor,
                 status: 200,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { agentID: id, supervisorID: supervisor.userID }
+                message: `Retrieved supervisor for agent ${id}`,
+                level: 'info',
+                metadata: { agentID: id, supervisorID: supervisor.userID },
+                service: 'agent',
+                defaultRoute: 'agents'
             });
+
             return res.status(200).json(supervisor);
         } catch (error) {
-            logger.error('Failed to fetch agent supervisor', {
-                route: 'agents/supervisor',
-                method: req.method,
-                url: req.originalUrl,
+            logRequest({
+                req,
+                error,
                 status: 500,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { error: error.message }
+                message: `Failed to fetch agent supervisor: ${error.message}`,
+                level: 'error',
+                service: 'agent',
+                defaultRoute: 'agents'
             });
             return res.status(500).json({ error: 'Internal server error' });
         }
     }
 
-    /**
-     * Get all the agents of a supervisor.
-     * @param {Object} req - Express request object with supervisor ID in params.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with agents or error.
-     */
     static async getAgentsBySupervisor(req, res) {
-        const actorID = req.user?.userID || 'unknown';
         try {
             const { id } = req.params;
             if (!id) {
-                logger.warn('Get agents failed: Missing supervisor ID', {
-                    route: 'agents/supervisor-agents',
-                    method: req.method,
-                    url: req.originalUrl,
+                logRequest({
+                    req,
                     status: 400,
-                    ip: req.ip,
-                    traceId: req.traceId,
-                    userId: actorID,
-                    metadata: {}
+                    message: 'Supervisor ID is required',
+                    level: 'info',
+                    service: 'agent',
+                    defaultRoute: 'agents'
                 });
                 return res.status(400).json({ error: 'Supervisor ID is required' });
             }
-            const agents = await AgentService.getAgentsBySupervisor(id);
-            logger.info('Successfully fetched agents by supervisor', {
-                route: 'agents/supervisor-agents',
-                method: req.method,
-                url: req.originalUrl,
+
+            const cacheInstance = await cache();
+            const agents = await cacheInstance.getOrSet(`agents:supervisor:${id}`, async () => {
+                return await AgentService.getAgentsBySupervisor(id);
+            }, 'api');
+
+            logRequest({
+                req,
+                res: { agents },
                 status: 200,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { supervisorID: id, agentCount: agents.length }
+                message: `Retrieved ${agents.length} agents for supervisor ${id}`,
+                level: 'info',
+                metadata: { supervisorID: id, agentCount: agents.length },
+                service: 'agent',
+                defaultRoute: 'agents'
             });
+
             return res.status(200).json({ agents });
         } catch (error) {
-            logger.error('Failed to fetch agents by supervisor', {
-                route: 'agents/supervisor-agents',
-                method: req.method,
-                url: req.originalUrl,
+            logRequest({
+                req,
+                error,
                 status: 500,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { error: error.message }
+                message: `Failed to fetch agents by supervisor: ${error.message}`,
+                level: 'error',
+                service: 'agent',
+                defaultRoute: 'agents'
             });
             return res.status(500).json({ error: 'Internal server error' });
         }
     }
 
-    /**
-     * Get agents by user.
-     * @param {Object} req - Express request object with user ID in params.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with agents or error.
-     */
     static async getAgentsByUser(req, res) {
-        const actorID = req.user?.userID || 'unknown';
         try {
             const { id } = req.params;
             if (!id) {
-                logger.warn('Get agents failed: Missing user ID', {
-                    route: 'agents/user-agents',
-                    method: req.method,
-                    url: req.originalUrl,
+                logRequest({
+                    req,
                     status: 400,
-                    ip: req.ip,
-                    traceId: req.traceId,
-                    userId: actorID,
-                    metadata: {}
+                    message: 'User ID is required',
+                    level: 'info',
+                    service: 'agent',
+                    defaultRoute: 'agents'
                 });
                 return res.status(400).json({ error: 'User ID is required' });
             }
-            const agents = await AgentService.getAgentsByUser(id);
-            logger.info('Successfully fetched agents by user', {
-                route: 'agents/user-agents',
-                method: req.method,
-                url: req.originalUrl,
+
+            const cacheInstance = await cache();
+            const agents = await cacheInstance.getOrSet(`agents:user:${id}`, async () => {
+                return await AgentService.getAgentsByUser(id);
+            }, 'api');
+
+            logRequest({
+                req,
+                res: { agents },
                 status: 200,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { userID: id, agentCount: agents.length }
+                message: `Retrieved ${agents.length} agents for user ${id}`,
+                level: 'info',
+                metadata: { userID: id, agentCount: agents.length },
+                service: 'agent',
+                defaultRoute: 'agents'
             });
+
             return res.status(200).json({ agents });
         } catch (error) {
-            logger.error('Failed to fetch agents by user', {
-                route: 'agents/user-agents',
-                method: req.method,
-                url: req.originalUrl,
+            logRequest({
+                req,
+                error,
                 status: 500,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { error: error.message }
+                message: `Failed to fetch agents by user: ${error.message}`,
+                level: 'error',
+                service: 'agent',
+                defaultRoute: 'agents'
             });
             return res.status(500).json({ error: 'Internal server error' });
         }
     }
 
-    /**
-     * Get supervisor by agent.
-     * @param {Object} req - Express request object with agent ID in params.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with supervisor or error.
-     */
     static async getUserByAgent(req, res) {
-        const actorID = req.user?.userID || 'unknown';
         try {
             const { id } = req.params;
             if (!id) {
-                logger.warn('Get user failed: Missing agent ID', {
-                    route: 'agents/user-by-agent',
-                    method: req.method,
-                    url: req.originalUrl,
+                logRequest({
+                    req,
                     status: 400,
-                    ip: req.ip,
-                    traceId: req.traceId,
-                    userId: actorID,
-                    metadata: {}
+                    message: 'Agent ID is required',
+                    level: 'info',
+                    service: 'agent',
+                    defaultRoute: 'agents'
                 });
                 return res.status(400).json({ error: 'Agent ID is required' });
             }
-            const supervisor = await AgentService.getUserByAgent(id);
+
+            const cacheInstance = await cache();
+            const supervisor = await cacheInstance.getOrSet(`agent:user:${id}`, async () => {
+                return await AgentService.getUserByAgent(id);
+            }, 'api');
+
             if (!supervisor) {
-                logger.warn('Get user failed: Supervisor not found', {
-                    route: 'agents/user-by-agent',
-                    method: req.method,
-                    url: req.originalUrl,
+                logRequest({
+                    req,
                     status: 404,
-                    ip: req.ip,
-                    traceId: req.traceId,
-                    userId: actorID,
-                    metadata: { agentID: id }
+                    message: `Supervisor for agent ${id} not found`,
+                    level: 'info',
+                    service: 'agent',
+                    defaultRoute: 'agents'
                 });
                 return res.status(404).json({ error: 'Supervisor not found' });
             }
-            logger.info('Successfully fetched user by agent', {
-                route: 'agents/user-by-agent',
-                method: req.method,
-                url: req.originalUrl,
+
+            logRequest({
+                req,
+                res: supervisor,
                 status: 200,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { agentID: id, supervisorID: supervisor.userID }
+                message: `Retrieved user for agent ${id}`,
+                level: 'info',
+                metadata: { agentID: id, supervisorID: supervisor.userID },
+                service: 'agent',
+                defaultRoute: 'agents'
             });
+
             return res.status(200).json(supervisor);
         } catch (error) {
-            logger.error('Failed to fetch user by agent', {
-                route: 'agents/user-by-agent',
-                method: req.method,
-                url: req.originalUrl,
+            logRequest({
+                req,
+                error,
                 status: 500,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { error: error.message }
+                message: `Failed to fetch user by agent: ${error.message}`,
+                level: 'error',
+                service: 'agent',
+                defaultRoute: 'agents'
             });
             return res.status(500).json({ error: 'Internal server error' });
         }
     }
 
-    /**
-       * Upload and process agents via CSV file.
-       * @param {Object} req - Express request object with CSV file in body.
-       * @param {Object} res - Express response object.
-       * @returns {Promise<void>} JSON response with processing results or error.
-       */
     static async uploadAgents(req, res) {
-        const actorID = req.user?.userID || "unknown";
+        const transaction = await sequelize.transaction({ isolationLevel: Sequelize.Transaction.ISOLATION_LEVELS.READ_COMMITTED });
         try {
+            const actorID = req.user?.userID || 'unknown';
             if (!req.file) {
-                logger.warn("Upload agents failed: No CSV file uploaded", {
-                    route: "agents/upload",
-                    method: req.method,
-                    url: req.originalUrl,
+                await transaction.rollback();
+                logRequest({
+                    req,
                     status: 400,
-                    ip: req.ip,
-                    traceId: req.traceId,
-                    userId: actorID,
+                    message: 'No CSV file uploaded',
+                    level: 'info',
+                    service: 'agent',
+                    defaultRoute: 'agents'
                 });
-                return res.status(400).json({ error: "No CSV file uploaded" });
+                return res.status(400).json({ error: 'No CSV file uploaded' });
             }
 
-            const results = await AgentService.processAgentCSV(req.file.buffer, actorID);
+            const results = await AgentService.processAgentCSV(req.file.buffer, actorID, { transaction });
+
             if (results.detailedLog.errors.length > 0 && results.summary.totalRecords === 0) {
-                logger.warn("Upload agents failed due to validation errors", {
-                    route: "agents/upload",
-                    method: req.method,
-                    url: req.originalUrl,
+                await transaction.rollback();
+                logRequest({
+                    req,
                     status: 400,
-                    ip: req.ip,
-                    traceId: req.traceId,
-                    userId: actorID,
-                    metadata: { requestBody: req, errors: results.detailedLog.errors.map((e) => e.reason) },
+                    message: 'CSV processing failed due to validation errors',
+                    level: 'info',
+                    metadata: { errors: results.detailedLog.errors.map((e) => e.reason) },
+                    service: 'agent',
+                    defaultRoute: 'agents'
                 });
                 return res.status(400).json({
-                    error: "CSV processing failed",
+                    error: 'CSV processing failed',
                     details: results.detailedLog.errors,
                 });
             }
 
-            logger.info("Successfully processed agent CSV", {
-                route: "agents/upload",
-                method: req.method,
-                url: req.originalUrl,
+            const cacheInstance = await cache();
+            const redis = getRedisClient();
+            await cacheInstance.invalidateByTag('agents');
+            await redis.set('agents:last_updated', Date.now().toString());
+            await RedisUtils.publishEvent('cache:invalidate', 'agents');
+
+            const requestID = uuidv4();
+            await NotificationService.triggerNotification({
+                event: 'agent:csv_uploaded',
+                data: {
+                    totalRecords: results.summary.totalRecords,
+                    agentsCreated: results.summary.agentsCreated,
+                    agentsUpdated: results.summary.agentsUpdated,
+                },
+                metadata: { uploadedBy: req.user?.email || 'unknown' },
+                dynamicRecipients: [],
+                triggeredByUserID: actorID,
+                type: 'agent',
+                customMessage: `CSV with ${results.summary.totalRecords} agent records uploaded`,
+                requestID,
+            });
+
+            logRequest({
+                req,
+                res: results,
                 status: 200,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
+                message: `Processed agent CSV with ${results.summary.totalRecords} records`,
+                level: 'info',
                 metadata: {
                     totalRecords: results.summary.totalRecords,
                     agentsCreated: results.summary.agentsCreated,
                     agentsUpdated: results.summary.agentsUpdated,
                     recordsSkipped: results.summary.recordsSkipped,
                     errorsEncountered: results.summary.errorsEncountered,
+                    requestID,
                 },
+                service: 'agent',
+                defaultRoute: 'agents'
             });
+
+            await transaction.commit();
             return res.status(200).json(results);
         } catch (error) {
-            logger.error("Failed to process agent CSV", {
-                route: "agents/upload",
-                method: req.method,
-                url: req.originalUrl,
+            await transaction.rollback();
+            logRequest({
+                req,
+                error,
                 status: 500,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { req, error: error.message },
+                message: `Failed to process agent CSV: ${error.message}`,
+                level: 'error',
+                service: 'agent',
+                defaultRoute: 'agents'
             });
-            return res.status(500).json({ error: "Internal server error" });
+            return res.status(500).json({ error: 'Internal server error' });
         }
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
     static async getAgentLocations(req, res) {
-        const actorID = req.user?.userID || 'unknown';
         try {
-            const result = await GoogleMapsService.getAgentLocations();
-            logger.info('Successfully fetched agent locations', {
-                route: 'agents/map/locations',
-                method: req.method,
-                url: req.originalUrl,
+            const cacheInstance = await cache();
+            const result = await cacheInstance.getOrSet('agents:map:locations', async () => {
+                return await GoogleMapsService.getAgentLocations();
+            }, 'api');
+
+            logRequest({
+                req,
+                res: result,
                 status: 200,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { agentsCount: result.length }
+                message: `Retrieved ${result.length} agent locations`,
+                level: 'info',
+                metadata: { agentsCount: result.length },
+                service: 'agent',
+                defaultRoute: 'agents'
             });
+
             return res.status(200).json(result);
         } catch (error) {
-            logger.error('Failed to fetch agent locations', {
-                route: 'agents/map/locations',
-                method: req.method,
-                url: req.originalUrl,
+            logRequest({
+                req,
+                error,
                 status: 500,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { error: error.message }
+                message: `Failed to fetch agent locations: ${error.message}`,
+                level: 'error',
+                service: 'agent',
+                defaultRoute: 'agents'
             });
             return res.status(500).json({ error: 'Internal server error' });
         }
     }
 
     static async getNearbyAgents(req, res) {
-        const actorID = req.user?.userID || 'unknown';
         try {
             const { lat, lng, radius } = req.query;
             if (!lat || !lng) {
-                logger.warn('Failed to fetch nearby agents: Missing coordinates', {
-                    route: 'agents/nearby',
-                    method: req.method,
-                    url: req.originalUrl,
+                logRequest({
+                    req,
                     status: 400,
-                    ip: req.ip,
-                    traceId: req.traceId,
-                    userId: actorID,
-                    metadata: {}
+                    message: 'Latitude and longitude are required',
+                    level: 'info',
+                    service: 'agent',
+                    defaultRoute: 'agents'
                 });
                 return res.status(400).json({ error: 'Latitude and longitude are required' });
             }
+
             const userLocation = { lat: parseFloat(lat), lng: parseFloat(lng) };
-            const nearbyAgents = await GoogleMapsService.getNearbyAgents(userLocation, parseFloat(radius) || 5000);
-            logger.info('Successfully fetched nearby agents', {
-                route: 'agents/nearby',
-                method: req.method,
-                url: req.originalUrl,
+            const cacheInstance = await cache();
+            const nearbyAgents = await cacheInstance.getOrSet(`agents:nearby:${lat}:${lng}:${radius || 5000}`, async () => {
+                return await GoogleMapsService.getNearbyAgents(userLocation, parseFloat(radius) || 5000);
+            }, 'api');
+
+            logRequest({
+                req,
+                res: nearbyAgents,
                 status: 200,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { userLocation, radius }
+                message: `Retrieved nearby agents for location ${lat},${lng}`,
+                level: 'info',
+                metadata: { userLocation, radius: parseFloat(radius) || 5000 },
+                service: 'agent',
+                defaultRoute: 'agents'
             });
+
             return res.status(200).json(nearbyAgents);
         } catch (error) {
-            logger.error('Failed to fetch nearby agents', {
-                route: 'agents/nearby',
-                method: req.method,
-                url: req.originalUrl,
+            logRequest({
+                req,
+                error,
                 status: 500,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { error: error.message }
+                message: `Failed to fetch nearby agents: ${error.message}`,
+                level: 'error',
+                service: 'agent',
+                defaultRoute: 'agents'
             });
             return res.status(500).json({ error: 'Internal server error' });
         }
     }
 
     static async getAgentsByBounds(req, res) {
-        const actorID = req.user?.userID || 'unknown';
         try {
             const { southWestLat, southWestLng, northEastLat, northEastLng } = req.query;
             if (!southWestLat || !southWestLng || !northEastLat || !northEastLng) {
-                logger.warn('Failed to fetch agents by bounds: Missing bounds', {
-                    route: 'agents/bounds',
-                    method: req.method,
-                    url: req.originalUrl,
+                logRequest({
+                    req,
                     status: 400,
-                    ip: req.ip,
-                    traceId: req.traceId,
-                    userId: actorID,
-                    metadata: { error: 'All bounds coordinates are required' }
+                    message: 'All bounds coordinates are required',
+                    level: 'info',
+                    service: 'agent',
+                    defaultRoute: 'agents'
                 });
                 return res.status(400).json({ error: 'All bounds coordinates are required' });
             }
-            const agents = await AgentService.getAgentsByBounds({
+
+            const bounds = {
                 southWestLat: parseFloat(southWestLat),
                 southWestLng: parseFloat(southWestLng),
                 northEastLat: parseFloat(northEastLat),
                 northEastLng: parseFloat(northEastLng),
-            });
-            logger.info('Successfully fetched agents by bounds', {
-                route: 'agents/bounds',
-                method: req.method,
-                url: req.originalUrl,
+            };
+
+            const cacheInstance = await cache();
+            const agents = await cacheInstance.getOrSet(`agents:bounds:${southWestLat}:${southWestLng}:${northEastLat}:${northEastLng}`, async () => {
+                return await AgentService.getAgentsByBounds(bounds);
+            }, 'api');
+
+            logRequest({
+                req,
+                res: agents,
                 status: 200,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { southWestLat, southWestLng, northEastLat, northEastLng }
+                message: `Retrieved agents within bounds`,
+                level: 'info',
+                metadata: { southWestLat, southWestLng, northEastLat, northEastLng },
+                service: 'agent',
+                defaultRoute: 'agents'
             });
+
             return res.status(200).json(agents);
         } catch (error) {
-            logger.error('Failed to fetch agents by bounds', {
-                route: 'agents/bounds',
-                method: req.method,
-                url: req.originalUrl,
+            logRequest({
+                req,
+                error,
                 status: 500,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { error: error.message }
+                message: `Failed to fetch agents by bounds: ${error.message}`,
+                level: 'error',
+                service: 'agent',
+                defaultRoute: 'agents'
             });
             return res.status(500).json({ error: 'Internal server error' });
         }
     }
 
-    // In back/controllers/agentController.js
     static async correctAgentLocation(req, res) {
-        const actorID = req.user?.userID || 'unknown';
+        const transaction = await sequelize.transaction({ isolationLevel: Sequelize.Transaction.ISOLATION_LEVELS.READ_COMMITTED });
         try {
             const { agentId, latitude, longitude, address } = req.body;
+            const actorID = req.user?.userID || 'unknown';
             if (!agentId || !latitude || !longitude || !address) {
-                logger.warn('Correct agent location failed: Missing required fields', {
-                    route: 'agents/correct-location',
-                    method: req.method,
-                    url: req.originalUrl,
+                await transaction.rollback();
+                logRequest({
+                    req,
                     status: 400,
-                    ip: req.ip,
-                    traceId: req.traceId,
-                    userId: actorID,
+                    message: 'Agent ID, latitude, longitude, and address are required',
+                    level: 'info',
+                    service: 'agent',
+                    defaultRoute: 'agents'
                 });
                 return res.status(400).json({ error: 'Agent ID, latitude, longitude, and address are required' });
             }
 
-            const result = await GoogleMapsService.updateAgentLocation(agentId, latitude, longitude, address);
+            const result = await GoogleMapsService.updateAgentLocation(agentId, latitude, longitude, address, { transaction });
+            const agent = await Agent.findByPk(agentId);
+            const user = await User.findByPk(actorID);
 
-            logger.info('Successfully corrected agent location', {
-                route: 'agents/correct-location',
-                method: req.method,
-                url: req.originalUrl,
-                status: 200,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { agentId, latitude, longitude, address },
+            const cacheInstance = await cache();
+            const redis = getRedisClient();
+            await cacheInstance.invalidateByTag('agents');
+            await cacheInstance.invalidate(`agent:${agentId}`);
+            await redis.set('agents:last_updated', Date.now().toString());
+            await RedisUtils.publishEvent('cache:invalidate', 'agents');
+
+            const requestID = uuidv4();
+            await NotificationService.triggerNotification({
+                event: 'agent:location_corrected',
+                data: { agentId, latitude, longitude, address },
+                metadata: { updatedBy: req.user?.email || 'unknown' },
+                dynamicRecipients: [],
+                triggeredByUserID: actorID,
+                type: 'agent',
+                customMessage: `Agent ${agent.name} ${agent.lastname} location corrected by ${user.firstname} ${user.lastname}`,
+                requestID,
             });
+
+            logRequest({
+                req,
+                res: result,
+                status: 200,
+                message: `Corrected location for agent ${agentId}`,
+                level: 'info',
+                metadata: { agentId, latitude, longitude, address, requestID },
+                service: 'agent',
+                defaultRoute: 'agents'
+            });
+
+            await transaction.commit();
             return res.status(200).json(result);
         } catch (error) {
-            logger.error('Failed to correct agent location', {
-                route: 'agents/correct-location',
-                method: req.method,
-                url: req.originalUrl,
+            await transaction.rollback();
+            logRequest({
+                req,
+                error,
                 status: 500,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { error: error.message },
+                message: `Failed to correct agent location: ${error.message}`,
+                level: 'error',
+                service: 'agent',
+                defaultRoute: 'agents'
             });
             return res.status(500).json({ error: 'Internal server error' });
         }

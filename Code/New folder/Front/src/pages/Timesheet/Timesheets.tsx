@@ -11,6 +11,8 @@ import Visit from "../../models/Visit";
 import { VisitReason } from "../../models/Reason";
 import User from "../../models/User";
 import { useAuth } from "../../context/AuthContext";
+import { confirmAlert } from 'react-confirm-alert';
+import 'react-confirm-alert/src/react-confirm-alert.css';
 import {
     getTimesheetsBySupervisor,
     getAllTimesheets,
@@ -25,7 +27,7 @@ import VisitStatus from "../../models/Enum/VisitStatus";
 import { useTranslation } from "react-i18next";
 import CalendarSyncButton from "../../components/Google/CalendarSyncButton";
 import TimesheetSuggestionsModal from "../Timesheet/TimesheetSuggestionsModal";
-import { io } from "socket.io-client";
+import { initSocket, onNotification, offNotification, joinRoom, disconnectSocket, isSocketConnected } from "../../lib/socket";
 import MapComponent from '../../components/Google/MapComponent';
 
 const PERMISSIONS = {
@@ -45,7 +47,6 @@ const ROLES = {
     DIRECTOR: import.meta.env.VITE_ROLES_DIRECTOR,
 };
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
 
 const ItemTypes = {
     VISIT: 'visit',
@@ -136,7 +137,7 @@ const CustomMapModal: React.FC<CustomMapModalProps> = ({
 };
 
 
-const TimesheetsSkeleton: React.FC = () => (
+const TimesheetsSkeleton: React.FC<{ viewMode: ViewMode }> = ({ viewMode }) => (
     <div className="timesheets-container">
         <header className="timesheets-header">
             <div className="view-toggle">
@@ -161,10 +162,12 @@ const TimesheetsSkeleton: React.FC = () => (
                     className="custom-skeleton pulsing"
                     style={{ width: "40px", height: "40px" }}
                 />
-                <div
-                    className="custom-skeleton pulsing"
-                    style={{ width: "40px", height: "40px" }}
-                />
+                {(viewMode === "week" || viewMode === "day") && (
+                    <div
+                        className="custom-skeleton pulsing"
+                        style={{ width: "120px", height: "40px", marginLeft: "8px" }}
+                    />
+                )}
             </div>
             <div className="action-buttons">
                 <div
@@ -177,26 +180,175 @@ const TimesheetsSkeleton: React.FC = () => (
                 />
             </div>
         </header>
-        <section className="year-view">
-            {Array.from({ length: 12 }).map((_, i) => (
-                <div className="month-card" key={i}>
+        {(viewMode === "week" || viewMode === "day") && (
+            <div className="filter-controls">
+                {Array.from({ length: 4 }).map((_, i) => (
+                    <div
+                        key={i}
+                        className="custom-skeleton pulsing"
+                        style={{ width: "150px", height: "40px", marginRight: "8px" }}
+                    />
+                ))}
+            </div>
+        )}
+        {viewMode === "year" && (
+            <section className="year-view">
+                {Array.from({ length: 12 }).map((_, i) => (
+                    <div className="month-card" key={i}>
+                        <div
+                            className="custom-skeleton pulsing"
+                            style={{ width: "150px", height: "24px", marginBottom: "16px" }}
+                        />
+                        <div className="weeks-grid">
+                            {Array.from({ length: 4 }).map((_, j) => (
+                                <div className="week-tile" key={j}>
+                                    <div
+                                        className="custom-skeleton pulsing"
+                                        style={{ width: "100%", height: "80px" }}
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                ))}
+            </section>
+        )}
+        {viewMode === "month" && (
+            <section className="month-view">
+                <div className="month-header">
                     <div
                         className="custom-skeleton pulsing"
-                        style={{ width: "150px", height: "24px", marginBottom: "16px" }}
+                        style={{ width: "40px", height: "40px" }}
                     />
-                    <div className="weeks-grid">
-                        {Array.from({ length: 4 }).map((_, j) => (
-                            <div className="week-tile" key={j}>
-                                <div
-                                    className="custom-skeleton pulsing"
-                                    style={{ width: "100%", height: "80px" }}
-                                />
+                    <div
+                        className="custom-skeleton pulsing"
+                        style={{ width: "150px", height: "24px" }}
+                    />
+                    <div
+                        className="custom-skeleton pulsing"
+                        style={{ width: "40px", height: "40px" }}
+                    />
+                </div>
+                <div className="weeks-grid">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                        <div className="week-card" key={i}>
+                            <div
+                                className="custom-skeleton pulsing"
+                                style={{ width: "100px", height: "20px", marginBottom: "8px" }}
+                            />
+                            <div
+                                className="custom-skeleton pulsing"
+                                style={{ width: "150px", height: "16px", marginBottom: "8px" }}
+                            />
+                            <div
+                                className="custom-skeleton pulsing"
+                                style={{ width: "120px", height: "16px" }}
+                            />
+                        </div>
+                    ))}
+                </div>
+            </section>
+        )}
+        {viewMode === "week" && (
+            <section className="week-view">
+                <div className="week-header">
+                    <div
+                        className="custom-skeleton pulsing"
+                        style={{ width: "120px", height: "40px" }}
+                    />
+                    <div className="week-header-middle">
+                        <div
+                            className="custom-skeleton pulsing"
+                            style={{ width: "40px", height: "40px" }}
+                        />
+                        <div
+                            className="custom-skeleton pulsing"
+                            style={{ width: "100px", height: "24px" }}
+                        />
+                        <div
+                            className="custom-skeleton pulsing"
+                            style={{ width: "40px", height: "40px" }}
+                        />
+                    </div>
+                    <div
+                        className="custom-skeleton pulsing"
+                        style={{ width: "120px", height: "40px" }}
+                    />
+                </div>
+                <div className="week-details">
+                    <div className="week-details-header">
+                        <div className="week-details-info">
+                            <div
+                                className="custom-skeleton pulsing"
+                                style={{ width: "150px", height: "16px", marginBottom: "8px" }}
+                            />
+                            <div
+                                className="custom-skeleton pulsing"
+                                style={{ width: "100px", height: "16px" }}
+                            />
+                        </div>
+                        <div
+                            className="custom-skeleton pulsing"
+                            style={{ width: "120px", height: "40px" }}
+                        />
+                    </div>
+                    <div className="days-grid">
+                        {Array.from({ length: 7 }).map((_, i) => (
+                            <div className="day-column" key={i}>
+                                <div className="day-tile">
+                                    <div
+                                        className="custom-skeleton pulsing"
+                                        style={{ width: "60px", height: "16px", marginBottom: "8px" }}
+                                    />
+                                    <div
+                                        className="custom-skeleton pulsing"
+                                        style={{ width: "30px", height: "24px" }}
+                                    />
+                                </div>
+                                <div className="visits-list">
+                                    {Array.from({ length: 2 }).map((_, j) => (
+                                        <div className="visit-card" key={j}>
+                                            <div
+                                                className="custom-skeleton pulsing"
+                                                style={{ width: "100%", height: "100px" }}
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         ))}
                     </div>
                 </div>
-            ))}
-        </section>
+            </section>
+        )}
+        {viewMode === "day" && (
+            <section className="day-view">
+                <div className="day-header">
+                    <div
+                        className="custom-skeleton pulsing"
+                        style={{ width: "40px", height: "40px" }}
+                    />
+                    <div
+                        className="custom-skeleton pulsing"
+                        style={{ width: "200px", height: "24px" }}
+                    />
+                    <div
+                        className="custom-skeleton pulsing"
+                        style={{ width: "40px", height: "40px" }}
+                    />
+                </div>
+                <div className="visits-list">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                        <div className="visit-card" key={i}>
+                            <div
+                                className="custom-skeleton pulsing"
+                                style={{ width: "100%", height: "100px" }}
+                            />
+                        </div>
+                    ))}
+                </div>
+            </section>
+        )}
     </div>
 );
 
@@ -619,6 +771,8 @@ const Timesheets: React.FC = React.memo(() => {
                         newVisitReasons[visit.visitID] = visit.Reasons.map((reason) => ({
                             reasonID: reason.reasonID,
                             item: reason.item,
+                            createdAt: reason.createdAt,
+                            updatedAt: reason.updatedAt,
                         }));
                     }
                 });
@@ -659,24 +813,50 @@ const Timesheets: React.FC = React.memo(() => {
         }
     }, [isSuperAdmin, userPermissions.canReadSupervisors, supervisorID, t]);
 
-    useEffect(() => {
-        if (!user?.userID) return;
-        const socket = io(SOCKET_URL, {
-            auth: { token: localStorage.getItem('accessToken') }
-        });
+    // WebSocket setup for real-time updates
+    const setupWebSocket = useCallback(() => {
+        if (!isSocketConnected()) initSocket();
 
-        socket.on('connect', () => {
-            socket.emit('join', user.userID);
-        });
+        const handleEntityEvent = async (event: string, data: unknown) => {
+            console.log(`Received entity event: ${event}`, { data });
+            const entity = event.split(':')[0];
+            const action = event.split(':')[1];
 
-        socket.on('calendar:update', () => {
-            fetchTimesheets();
-        });
+            // Handle user events
+            if (entity === 'timesheet') {
+                if (action === 'created' || action === 'validated') {
+                    await fetchTimesheets();
+                }
+            }
+            else if (entity === 'visit') {
+                if (action === 'logged' || action === 'updated' || action === 'deleted') {
+                    await fetchTimesheets();
+                }
+            }
+
+        };
+
+        onNotification(handleEntityEvent);
+
+        const joinEntityRooms = () => {
+            joinRoom('timesheet');
+            joinRoom('visit');
+        };
+
+        joinEntityRooms();
 
         return () => {
-            socket.disconnect();
+            offNotification();
+            disconnectSocket();
         };
-    }, [user, fetchTimesheets]);
+    }, [
+        fetchTimesheets,
+    ]);
+
+    useEffect(() => {
+        const cleanup = setupWebSocket();
+        return cleanup;
+    }, [setupWebSocket]);
 
     useEffect(() => {
         const handleBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -789,12 +969,6 @@ const Timesheets: React.FC = React.memo(() => {
         return `${formattedHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} ${period}`;
     };
 
-    const today = new Date();
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-    const todayVisits = useMemo(() => {
-        const allVisits = timesheets.flatMap(ts => ts.Visits || []);
-        return allVisits.filter(v => v.date.split("T")[0] === todayStr);
-    }, [timesheets]);
 
     useEffect(() => {
         const fetchLocations = async () => {
@@ -1200,24 +1374,38 @@ const Timesheets: React.FC = React.memo(() => {
                     return;
                 }
 
-                // Show confirmation dialog
-                const confirmMessage = t("timesheets.confirmValidate", {
-                    count: pendingVisitIds.length,
-                });
-                if (!window.confirm(confirmMessage)) {
-                    console.log('Validation cancelled by user');
-                    return;
-                }
+                // Show confirmation dialog using react-confirm-alert
+                confirmAlert({
+                    title: t('timesheets.confirmValidate.title', { count: pendingVisitIds.length }),
+                    message: t('timesheets.confirmValidate.message', { count: pendingVisitIds.length }),
+                    buttons: [
+                        {
+                            label: t('timesheets.confirmValidate.yes'),
+                            onClick: async () => {
+                                try {
+                                    // Call API to validate
+                                    await validateTimesheet(weekData.timesheetID, {
+                                        visitIDs: pendingVisitIds,
+                                        status: "validated",
+                                    });
+                                    console.log('Timesheet validated successfully:', weekData.timesheetID);
 
-                // Call API to validate
-                await validateTimesheet(weekData.timesheetID, {
-                    visitIDs: pendingVisitIds,
-                    status: "validated",
+                                    // Refresh timesheets
+                                    await fetchTimesheets();
+                                } catch (error) {
+                                    console.error("Failed to validate timesheet:", error);
+                                    setError(t("timesheets.errors.validateTimesheet"));
+                                }
+                            },
+                        },
+                        {
+                            label: t('timesheets.confirmValidate.no'),
+                            onClick: () => {
+                                console.log('Validation cancelled by user');
+                            },
+                        },
+                    ],
                 });
-                console.log('Timesheet validated successfully:', weekData.timesheetID);
-
-                // Refresh timesheets
-                await fetchTimesheets();
             } catch (error) {
                 console.error("Failed to validate timesheet:", error);
                 setError(t("timesheets.errors.validateTimesheet"));
@@ -1347,7 +1535,7 @@ const Timesheets: React.FC = React.memo(() => {
 
 
     if (loading || !permissionsLoaded) {
-        return <TimesheetsSkeleton />;
+        return <TimesheetsSkeleton viewMode={viewMode} />;
     }
 
     return (

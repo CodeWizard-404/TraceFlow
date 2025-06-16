@@ -4,7 +4,7 @@
  * Optimized with dynamic loading state, skeleton loader, fade-in animation, and efficient state management.
  * Includes validation, caching, and accessibility features.
  */
-
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect, useRef } from 'react';
 import { FaSave, FaTrash } from 'react-icons/fa';
 import { motion } from 'framer-motion';
@@ -16,8 +16,10 @@ import { getAllRoles } from '../../../apis/roleAPI';
 import { ViewMode } from '../adminTypes';
 import User from '../../../models/User';
 import Role from '../../../models/Role';
-import { isValidNotificationEvent, getNotificationEntities, getEntityActions, getNotificationTypes } from '../../../lib/notifEvents';
+import { getNotificationEntities, getEntityActions, getNotificationTypes } from '../../../lib/notifEvents';
 import '../AdminDashboard.css';
+import { confirmAlert } from 'react-confirm-alert';
+import 'react-confirm-alert/src/react-confirm-alert.css';
 
 interface NotificationRuleViewProps {
     selectedRule: NotificationRule | null;
@@ -63,6 +65,7 @@ const NotificationRuleView: React.FC<NotificationRuleViewProps> = ({
     setError,
     view,
 }) => {
+    const { t } = useTranslation();
     const [formData, setFormData] = useState<Partial<NotificationRule>>(selectedRule || {
         event: '',
         type: 'general',
@@ -170,11 +173,6 @@ const NotificationRuleView: React.FC<NotificationRuleViewProps> = ({
     const validateEvent = async (entity: string | null, action: string | null): Promise<string> => {
         if (!entity) return 'Entity is required';
         if (!action) return 'Action is required';
-        const event = `${entity}:${action}`;
-        const isValid = await isValidNotificationEvent(event);
-        if (isValid && event !== selectedRule?.event) {
-            return 'Event already exists; it will reuse existing rules';
-        }
         return '';
     };
 
@@ -295,7 +293,7 @@ const NotificationRuleView: React.FC<NotificationRuleViewProps> = ({
 
         if (
             Object.values(errors).some(
-                (error) => error && error !== 'Event already exists; it will reuse existing rules'
+                (error) => error
             )
         ) {
             setError('Please correct the errors in the form');
@@ -328,16 +326,31 @@ const NotificationRuleView: React.FC<NotificationRuleViewProps> = ({
     };
 
     const handleDelete = async () => {
-        if (!formData || !window.confirm('Are you sure you want to delete this notification rule?')) return;
-        try {
-            await deleteNotificationRule(formData.ruleID!);
-            setRules((prev) => prev.filter((r) => r.ruleID !== formData.ruleID));
-            setSelectedRule(null);
-            setView('notifications');
-        } catch (err: unknown) {
-            console.error('Failed to delete notification rule:', err);
-            setError('Failed to delete notification rule');
-        }
+        if (!formData) return;
+        confirmAlert({
+            title: t('notificationRules.deleteConfirmTitle'),
+            message: t('notificationRules.deleteConfirm'),
+            buttons: [
+                {
+                    label: t('notificationRules.yes'),
+                    onClick: async () => {
+                        try {
+                            await deleteNotificationRule(formData.ruleID!);
+                            setRules((prev) => prev.filter((r) => r.ruleID !== formData.ruleID));
+                            setSelectedRule(null);
+                            setView('notifications');
+                        } catch (err: unknown) {
+                            console.error('Failed to delete notification rule:', err);
+                            setError('Failed to delete notification rule');
+                        }
+                    },
+                },
+                {
+                    label: t('notificationRules.no'),
+                    onClick: () => { },
+                },
+            ],
+        });
     };
 
     if (view !== 'notification-rule-details') return null;
@@ -485,7 +498,6 @@ const NotificationRuleView: React.FC<NotificationRuleViewProps> = ({
                     </div>
                     <div className="form-section">
                         <h3 className="form-header">Channels</h3>
-                        <p className="info-text">Real-time notifications are always enabled and cannot be disabled.</p>
                         <div className="channels-grid">
                             {(['email', 'sms', 'inApp'] as Array<keyof typeof formData.channels>).map((channel: string) => (
                                 <label key={channel} className="toggle-switch">

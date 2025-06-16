@@ -364,7 +364,8 @@ export default {
     deleteReceiptBookType,
     uploadReceiptBooks,
     getReceiptBooksByHolder,
-    getReceiptBookHolders
+    getReceiptBookHolders,
+    sendToSupplier
 };
 
 

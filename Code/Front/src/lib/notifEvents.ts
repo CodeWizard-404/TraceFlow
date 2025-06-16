@@ -7,13 +7,20 @@ const DEFAULT_EVENTS: string[] = [
     // User events
     'user:created',
     'user:updated',
-    'user:deleted',
     'user:profile_updated',
-    'user:supervisors_assigned',
-    'user:supervisors_revoked',
-    'user:google_account_assigned',
-    'user:roles_assigned',
-    'user:roles_revoked',
+    'user:deleted',
+    'user:regional_manager_assigned',
+    'user:regional_manager_revoked',
+    'user:director_assigned',
+    'user:director_revoked',
+    'user:supervisor_assigned_to_agent',
+    'user:supervisor_revoked_from_agent',
+    'user:regions_assigned',
+    'user:regions_revoked',
+    'user:governorates_assigned',
+    'user:governorates_revoked',
+    'user:delegations_assigned',
+    'user:delegations_revoked',
     // Role events
     'role:created',
     'role:updated',
@@ -22,8 +29,8 @@ const DEFAULT_EVENTS: string[] = [
     'role:revoked',
     // Permission events
     'permission:updated',
-    'permission:override_added',
-    'permission:override_removed',
+    'permission:assigned',
+    'permission:revoked',
     // Timesheet events
     'timesheet:created',
     'timesheet:validated',
@@ -51,17 +58,38 @@ const DEFAULT_EVENTS: string[] = [
     'receipt_book:deleted',
     'receipt_book:csv_uploaded',
     'receipt_stub:archived',
+    // CSV events
+    'csv-header:updated',
     // Agent events
     'agent:created',
     'agent:updated',
     'agent:deleted',
+    'agent:csv_uploaded',
+    'agent:location_corrected',
+    // report events
+    'report:generated',
+    'report:generated',
+    'report:scheduled',
+    'report_schedule:deleted',
+    'report:deleted',
     // Notification events
-    'notification:created',
-    'notification:read',
-    'notification:updated',
+    'notification_rule:created',
+    'notification-rule:updated',
+    'notification_rule:deleted',
+    'notification_prefrences:updated',
+    'notification:anomaly_triggered',
+    'notification:report_triggered',
     // AI events
+    'ai_config:deleted',
+    'ai_config:updated',
+    'ai_config:created',
     'ai:anomaly_detected',
     'ai:report_generated',
+    // Logs events
+    'logs:deleted',
+    'logs:archived',
+    'logs:cleared',
+
 ];
 
 // Default notification types corresponding to entities and general
@@ -79,8 +107,15 @@ const DEFAULT_TYPES: string[] = [
     'reason',
     'receipt_book',
     'receipt_stub',
+    'csv-heade',
     'agent',
     'notification',
+    'notification_rule',
+    'notification_prefrences',
+    'report',
+    'report_schedule',
+    'logs',
+    'ai_config',
     'ai',
 ];
 

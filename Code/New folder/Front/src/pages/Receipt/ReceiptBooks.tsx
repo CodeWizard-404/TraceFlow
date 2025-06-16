@@ -14,6 +14,8 @@ import {
   FaSyncAlt,
 } from "react-icons/fa";
 import { useAuth } from "../../context/AuthContext";
+import { confirmAlert } from 'react-confirm-alert';
+import 'react-confirm-alert/src/react-confirm-alert.css';
 import {
   getAllReceiptBooks,
   createReceiptBook,
@@ -736,16 +738,31 @@ const ReceiptBooks: React.FC = memo(() => {
 
   const handleDelete = useCallback(
     async (bookID: string) => {
-      if (!userPermissions.canDelete || !window.confirm(t("receiptBooks.actions.deleteConfirm"))) return;
-      try {
-        await deleteReceiptBook(bookID);
-        setReceiptBooksCache((prev) => ({
-          ...prev,
-          data: prev.data.filter((r) => r.bookID !== bookID),
-        }));
-      } catch (error) {
-        setFormError(t("receiptBooks.errors.deleteFailed", { message: error }));
-      }
+      if (!userPermissions.canDelete) return;
+      confirmAlert({
+        title: t('receiptBooks.actions.deleteConfirmTitle'),
+        message: t('receiptBooks.actions.deleteConfirm'),
+        buttons: [
+          {
+            label: t('receiptBooks.actions.yes'),
+            onClick: async () => {
+              try {
+                await deleteReceiptBook(bookID);
+                setReceiptBooksCache((prev) => ({
+                  ...prev,
+                  data: prev.data.filter((r) => r.bookID !== bookID),
+                }));
+              } catch (error) {
+                setFormError(t('receiptBooks.errors.deleteFailed', { message: error }));
+              }
+            },
+          },
+          {
+            label: t('receiptBooks.actions.no'),
+            onClick: () => { },
+          },
+        ],
+      });
     },
     [userPermissions.canDelete, t]
   );
@@ -803,16 +820,31 @@ const ReceiptBooks: React.FC = memo(() => {
 
   const handleDeleteType = useCallback(
     async (typeID: string) => {
-      if (!userPermissions.canManageTypes || !window.confirm(t("receiptBooks.types.actions.deleteConfirm"))) return;
-      try {
-        await deleteReceiptBookType(typeID);
-        setReceiptBookTypesCache((prev) => ({
-          data: prev.data.filter((t) => t.typeID !== typeID),
-          timestamp: prev.timestamp,
-        }));
-      } catch (error) {
-        setFormError(t("receiptBooks.types.errors.deleteFailed", { message: error }));
-      }
+      if (!userPermissions.canManageTypes) return;
+      confirmAlert({
+        title: t('receiptBooks.types.actions.deleteConfirmTitle'),
+        message: t('receiptBooks.types.actions.deleteConfirm'),
+        buttons: [
+          {
+            label: t('receiptBooks.types.actions.yes'),
+            onClick: async () => {
+              try {
+                await deleteReceiptBookType(typeID);
+                setReceiptBookTypesCache((prev) => ({
+                  data: prev.data.filter((t) => t.typeID !== typeID),
+                  timestamp: prev.timestamp,
+                }));
+              } catch (error) {
+                setFormError(t('receiptBooks.types.errors.deleteFailed', { message: error }));
+              }
+            },
+          },
+          {
+            label: t('receiptBooks.types.actions.no'),
+            onClick: () => { },
+          },
+        ],
+      });
     },
     [userPermissions.canManageTypes, t]
   );

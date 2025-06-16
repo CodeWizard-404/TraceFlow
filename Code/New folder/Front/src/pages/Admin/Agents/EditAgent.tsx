@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { updateAgent } from "../../../apis/agentAPI";
 import { getAllRegions, getGovernoratesByRegion, getDelegationsByGovernorate, getRegionsByGovernorate } from "../../../apis/locationApi";
-import { getUsersByDelegation, getUsersByRole } from "../../../apis/userAPI";
+import { getUsersByDelegation } from "../../../apis/userAPI";
 import Agent from "../../../models/Agent";
 import Region from "../../../models/Region";
 import Governorate from "../../../models/Governorate";
@@ -176,13 +176,13 @@ const EditAgent: React.FC<EditAgentProps> = ({
         const fetchSupervisors = async () => {
             if (formData.delegationID) {
                 try {
-                    const response = await getUsersByRole(import.meta.env.VITE_ROLES_SUPERVISOR);
-                    setSupervisors(response);
-                    if (selectedAgent?.supervisorID) {
-                        setFormData((prev) => ({ ...prev, supervisorID: selectedAgent.supervisorID! }));
-                    } else {
-                        setFormData((prev) => ({ ...prev, supervisorID: "" }));
-                    }
+                    const supervisors = await getUsersByDelegation(formData.delegationID);
+                    setSupervisors(supervisors);
+                    // Set supervisorID to the existing one if valid, otherwise reset to ""
+                    const newSupervisorID = selectedAgent?.supervisorID && supervisors.some(sup => sup.userID === selectedAgent.supervisorID)
+                        ? selectedAgent.supervisorID
+                        : "";
+                    setFormData((prev) => ({ ...prev, supervisorID: newSupervisorID }));
                 } catch (err) {
                     setGlobalError(t("adminDashboard.error.fetchSupervisorsFailed"));
                 }
@@ -449,7 +449,14 @@ const EditAgent: React.FC<EditAgentProps> = ({
                 <button
                     className="action-button"
                     onClick={handleSaveAgentEdit}
-                    disabled={loading}
+                    disabled={loading ||
+                        !formData.name ||
+                        !formData.lastname ||
+                        !formData.email ||
+                        !formData.phone ||
+                        !formData.delegationID ||
+                        !formData.supervisorID}
+
                 >
                     {loading ? t("adminDashboard.loading") : t("adminDashboard.actions.save")}
                 </button>

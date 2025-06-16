@@ -436,3 +436,21 @@ body.dark .toggle-btn.active {
         font-size: 0.875rem;
     }
 }
+
+
+.map-container div {
+    border-radius: 0.8rem !important;
+}
+
+.agent-management-container .metric-card {
+    display: block !important;
+}
+
+.agent-management-container ul li {
+    padding: 0 !important;
+}
+
+.ant-table-row-selected td {
+    background-color: #181818 !important;
+
+}

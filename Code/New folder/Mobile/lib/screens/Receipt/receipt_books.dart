@@ -34,8 +34,44 @@ class _ReceiptBooksScreenState extends State<ReceiptBooksScreen> {
     ]);
   }
 
+  Widget _buildSectionCard(BuildContext context, {required String title, required List<Widget> children}) {
+    final theme = Theme.of(context);
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: theme.colorScheme.primary.withOpacity(0.7),
+          width: 1.5,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+            child: Text(
+              title,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ),
+          const Divider(height: 1, thickness: 1, color: Colors.grey),
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(children: children),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: CustomAppBar(title: 'Receipt Books', showBackButton: true),
       drawer: const AppSidebar(),
@@ -46,7 +82,14 @@ class _ReceiptBooksScreenState extends State<ReceiptBooksScreen> {
             return const Center(child: CustomProgressIndicator());
           }
           if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
+            return Center(
+              child: Text(
+                'Error: ${snapshot.error}',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.error,
+                ),
+              ),
+            );
           }
           return Consumer2<ReceiptBookProvider, AuthProvider>(
             builder: (context, receiptBookProvider, authProvider, child) {
@@ -60,34 +103,47 @@ class _ReceiptBooksScreenState extends State<ReceiptBooksScreen> {
                   final filteredBooks = scope.filteredBooks;
                   return RefreshIndicator(
                     onRefresh: _fetchReceiptBooks,
-                    child: Column(
-                      children: [
-                        FilterSortHeader(
-                          searchController: scope.searchController,
-                          onSort: scope.showSortMenu,
-                          onFilter: () {},
-                          typeOptions: receiptBookProvider.receiptBookTypes.map((t) => t.name).toSet(),
-                          initialFilters: scope.filters,
-                          onApplyFilters: (filters) => scope.setFilters(filters),
-                        ),
-                        Expanded(
-                          child: ListView.builder(
-                            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-                            itemCount: filteredBooks.isEmpty ? 1 : filteredBooks.length,
-                            itemBuilder: (context, index) {
-                              if (filteredBooks.isEmpty) {
-                                return const Center(
-                                  child: Padding(
-                                    padding: EdgeInsets.all(16.0),
-                                    child: Text('No receipt books found.'),
-                                  ),
-                                );
-                              }
-                              return ReceiptBookCard(book: filteredBooks[index]);
-                            },
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: ListView(
+                        children: [
+                          _buildSectionCard(
+                            context,
+                            title: 'Filter & Sort',
+                            children: [
+                              FilterSortHeader(
+                                searchController: scope.searchController,
+                                onSort: scope.showSortMenu,
+                                onFilter: () {},
+                                typeOptions: receiptBookProvider.receiptBookTypes.map((t) => t.name).toSet(),
+                                initialFilters: scope.filters,
+                                onApplyFilters: (filters) => scope.setFilters(filters),
+                              ),
+                            ],
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 8),
+                          if (filteredBooks.isEmpty)
+                            Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Text(
+                                'No receipt books found.',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: theme.colorScheme.onSurface.withOpacity(0.6),
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            )
+                          else
+                            ...filteredBooks.asMap().entries.map((entry) {
+                              final index = entry.key;
+                              final book = entry.value;
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 4.0),
+                                child: ReceiptBookCard(book: book, index: index),
+                              );
+                            }).toList(),
+                        ],
+                      ),
                     ),
                   );
                 }),

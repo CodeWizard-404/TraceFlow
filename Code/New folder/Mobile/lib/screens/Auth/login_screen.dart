@@ -56,7 +56,8 @@ class LoginScreenState extends State<LoginScreen> {
   Future<void> _login() async {
     if (!_validateForm()) return;
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    await authProvider.login(_identifierController.text.trim(), _passwordController.text.trim());
+    await authProvider.login(
+        _identifierController.text.trim(), _passwordController.text.trim());
   }
 
   void _resetForm() {
@@ -74,7 +75,7 @@ class LoginScreenState extends State<LoginScreen> {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final theme = themeProvider.currentTheme;
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       if (authProvider.errorMessage != null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -128,26 +129,32 @@ class LoginScreenState extends State<LoginScreen> {
                         controller: _identifierController,
                         decoration: InputDecoration(
                           labelText: 'Email or Phone',
-                          labelStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant),
-                          prefixIcon: Icon(Icons.person, color: theme.colorScheme.primary),
+                          labelStyle:
+                          TextStyle(color: theme.colorScheme.onSurfaceVariant),
+                          prefixIcon:
+                          Icon(Icons.person, color: theme.colorScheme.primary),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: theme.colorScheme.outline),
+                            borderSide:
+                            BorderSide(color: theme.colorScheme.outline),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: theme.colorScheme.outline),
+                            borderSide:
+                            BorderSide(color: theme.colorScheme.outline),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: theme.colorScheme.primary, width: 2),
+                            borderSide: BorderSide(
+                                color: theme.colorScheme.primary, width: 2),
                           ),
                           errorText: _errors['identifier']?.isNotEmpty == true
                               ? _errors['identifier']
                               : null,
                           errorStyle: TextStyle(color: theme.colorScheme.error),
                         ),
-                        enabled: !authProvider.isLoading && authProvider.deviceIdentifier != null,
+                        enabled: !authProvider.isLoading &&
+                            authProvider.deviceIdentifier != null,
                         onChanged: (_) => _validateForm(),
                         keyboardType: TextInputType.emailAddress,
                         autocorrect: false,
@@ -158,67 +165,86 @@ class LoginScreenState extends State<LoginScreen> {
                         controller: _passwordController,
                         decoration: InputDecoration(
                           labelText: 'Password',
-                          labelStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant),
-                          prefixIcon: Icon(Icons.lock, color: theme.colorScheme.primary),
+                          labelStyle:
+                          TextStyle(color: theme.colorScheme.onSurfaceVariant),
+                          prefixIcon:
+                          Icon(Icons.lock, color: theme.colorScheme.primary),
                           suffixIcon: IconButton(
                             icon: Icon(
-                              _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                              _obscurePassword
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
                               color: theme.colorScheme.onSurfaceVariant,
                             ),
-                            onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                            onPressed: () =>
+                                setState(() => _obscurePassword = !_obscurePassword),
                           ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: theme.colorScheme.outline),
+                            borderSide:
+                            BorderSide(color: theme.colorScheme.outline),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: theme.colorScheme.outline),
+                            borderSide:
+                            BorderSide(color: theme.colorScheme.outline),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: theme.colorScheme.primary, width: 2),
+                            borderSide: BorderSide(
+                                color: theme.colorScheme.primary, width: 2),
                           ),
                           errorText: _errors['password']?.isNotEmpty == true
                               ? _errors['password']
                               : null,
                           errorStyle: TextStyle(color: theme.colorScheme.error),
                         ),
-                        enabled: !authProvider.isLoading && authProvider.deviceIdentifier != null,
+                        enabled: !authProvider.isLoading &&
+                            authProvider.deviceIdentifier != null,
                         obscureText: _obscurePassword,
                         onChanged: (_) => _validateForm(),
                         autocorrect: false,
                         style: TextStyle(color: theme.colorScheme.onSurface),
                       ),
-                      const SizedBox(height: 24),
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: authProvider.isLoading || authProvider.deviceIdentifier == null
-                              ? null
-                              : _login,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: theme.colorScheme.primary,
-                            foregroundColor: theme.colorScheme.onPrimary,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              child: ElevatedButton(
+                                onPressed: authProvider.isLoading ||
+                                    authProvider.deviceIdentifier == null
+                                    ? null
+                                    : _login,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: theme.colorScheme.primary,
+                                  foregroundColor: theme.colorScheme.onPrimary,
+                                  padding:
+                                  const EdgeInsets.symmetric(vertical: 16),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  elevation: 2,
+                                ),
+                                child: authProvider.isLoading
+                                    ? SpinKitFadingCircle(
+                                  color: theme.colorScheme.onPrimary,
+                                  size: 24,
+                                )
+                                    : Text(
+                                  'Sign In',
+                                  style: theme.textTheme.labelLarge
+                                      ?.copyWith(
+                                    color: theme.colorScheme.onPrimary,
+                                  ),
+                                ),
+                              ),
                             ),
-                            elevation: 2,
                           ),
-                          child: authProvider.isLoading
-                              ? SpinKitFadingCircle(
-                            color: theme.colorScheme.onPrimary,
-                            size: 24,
-                          )
-                              : Text(
-                            'Sign In',
-                            style: theme.textTheme.labelLarge?.copyWith(
-                              color: theme.colorScheme.onPrimary,
-                            ),
-                          ),
-                        ),
+
+                        ],
                       ),
                       const SizedBox(height: 16),
                       Divider(color: theme.colorScheme.outline),
@@ -226,7 +252,8 @@ class LoginScreenState extends State<LoginScreen> {
                       const GoogleLoginButton(),
                       const SizedBox(height: 16),
                       TextButton(
-                        onPressed: () => Navigator.pushNamed(context, '/forgot-password'),
+                        onPressed: () =>
+                            Navigator.pushNamed(context, '/forgot-password'),
                         child: Text(
                           'Forgot Password?',
                           style: theme.textTheme.bodyMedium?.copyWith(

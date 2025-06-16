@@ -1,3 +1,4 @@
+// user.dart
 import 'package:TraceFlow/models/role.dart';
 
 class User {
@@ -16,7 +17,7 @@ class User {
   final List<String>? governorateIDs;
   final List<String>? delegationIDs;
   final List<String>? supervisorIDs;
-  final List<String>? regionalManagerIDs;
+  final String? regionalManagerID;
   final String? directorID;
 
   User({
@@ -35,7 +36,7 @@ class User {
     this.governorateIDs,
     this.delegationIDs,
     this.supervisorIDs,
-    this.regionalManagerIDs,
+    this.regionalManagerID,
     this.directorID,
   });
 
@@ -43,21 +44,42 @@ class User {
     print('Parsing User from JSON: $json');
     try {
       List<Role> rolesList = (json['roles'] as List<dynamic>? ?? [])
-          .where((r) => r != null)
-          .map((r) => Role.fromJson(r as Map<String, dynamic>))
+          .asMap()
+          .entries
+          .map((entry) {
+        final index = entry.key;
+        final r = entry.value;
+        if (r is String) {
+          // Handle string roles from backend
+          return Role(
+            roleID: 'role_${index + 1}',
+            name: r,
+            description: null,
+            permissions: [],
+          );
+        } else if (r is Map<String, dynamic>) {
+          // Handle map-based roles
+          return Role.fromJson(r);
+        } else {
+          return null;
+        }
+      })
+          .where((role) => role != null)
+          .cast<Role>()
           .toList();
+
       return User(
         userID: json['userID']?.toString() ?? 'unknown',
         email: json['email']?.toString() ?? 'unknown@example.com',
         phone: json['phone']?.toString(),
-        firstName: json['firstname']?.toString(),
-        lastName: json['lastname']?.toString(),
+        firstName: json['firstname']?.toString() ?? json['firstName']?.toString(),
+        lastName: json['lastname']?.toString() ?? json['lastName']?.toString(),
         roles: rolesList,
         keycloakId: json['keycloakId']?.toString(),
         isOnline: json['isOnline'] as bool? ?? false,
         hasGoogleAuth: json['hasGoogleAuth'] as bool? ?? false,
         hasCalendarAccess: json['hasCalendarAccess'] as bool? ?? false,
-        pfp: json['PFP']?.toString(),
+        pfp: json['PFP']?.toString() ?? json['pfp']?.toString(),
         regionIDs: (json['regionIDs'] as List<dynamic>? ?? [])
             .where((e) => e != null)
             .map((e) => e.toString())
@@ -74,10 +96,7 @@ class User {
             .where((e) => e != null)
             .map((e) => e.toString())
             .toList(),
-        regionalManagerIDs: (json['regionalManagerIDs'] as List<dynamic>? ?? [])
-            .where((e) => e != null)
-            .map((e) => e.toString())
-            .toList(),
+        regionalManagerID: json['regionalManagerID']?.toString(),
         directorID: json['directorID']?.toString(),
       );
     } catch (e) {
@@ -85,7 +104,6 @@ class User {
       rethrow;
     }
   }
-
 
   Map<String, dynamic> toJson() => {
     'userID': userID,
@@ -103,7 +121,7 @@ class User {
     'governorateIDs': governorateIDs,
     'delegationIDs': delegationIDs,
     'supervisorIDs': supervisorIDs,
-    'regionalManagerIDs': regionalManagerIDs,
+    'regionalManagerID': regionalManagerID,
     'directorID': directorID,
   };
 }

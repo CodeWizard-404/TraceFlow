@@ -153,22 +153,39 @@ class AgentService {
 
   Future<Agent?> fetchAgentByPhone(String phone) async {
     try {
-      final response = await AuthService.makeAuthenticatedRequest(
-        request: () async {
-          final url = Uri.parse('$baseUrl/agents/phone/$phone');
-          final response = await http.get(
-            url,
-            headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
-          );
-          CookieManager.extractCookies(response);
-          if (kDebugMode) print('AgentService: Fetching agent by phone: $phone');
-          return response;
-        },
-      );
+      Future<http.Response> makeRequest() async {
+        final url = Uri.parse('$baseUrl/agents/phone/$phone');
+        final response = await http.get(
+          url,
+          headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
+        );
+        CookieManager.extractCookies(response);
+        if (kDebugMode) print('AgentService: Fetching agent by phone: $phone');
+        return response;
+      }
+
+      var response = await makeRequest();
+      if (response.statusCode == 401) {
+        final refreshToken = CookieManager.cookies['refreshToken'];
+        if (refreshToken == null || refreshToken.isEmpty) {
+          await CookieManager.clearCookies();
+          throw Exception('Session expired. Please log in again.');
+        }
+        try {
+          final refreshResult = await AuthService.refreshToken(refreshToken);
+          if (kDebugMode) print('Refresh result: $refreshResult');
+          response = await makeRequest(); // Retry the request
+        } catch (e) {
+          await CookieManager.clearCookies();
+          throw Exception('Session expired. Please log in again.');
+        }
+      }
       if (response.statusCode == 200) {
-        final decodedResponse = jsonDecode(response.body);
-        if (kDebugMode) print('Agent fetched: ${decodedResponse['agentID']}');
-        return Agent.fromJson(decodedResponse['agent'] ?? decodedResponse);
+        final decoded = json.decode(response.body);
+        if (kDebugMode) print('Agent fetched: ${decoded['agentID']}');
+        return Agent.fromJson(decoded['agent'] ?? decoded);
+      } else if (response.statusCode == 404) {
+        return null; // Agent not found
       } else {
         throw Exception('Failed to fetch agent by phone: ${response.statusCode}');
       }
@@ -182,22 +199,29 @@ class AgentService {
     try {
       final response = await AuthService.makeAuthenticatedRequest(
         request: () async {
-          final url = Uri.parse('$baseUrl/agents/delegation/$delegationID');
+          final url = Uri.parse('$baseUrl/agents/delegation?delegationID=$delegationID');
+          if (kDebugMode) print('Fetching agents for delegation with URL: $url');
           final response = await http.get(
             url,
             headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
           );
           CookieManager.extractCookies(response);
           if (response.statusCode == 200) return response;
+          if (response.statusCode == 404) {
+            throw Exception('No agents found for this delegation');
+          }
           throw Exception('Failed to fetch agents by delegation: ${response.statusCode}');
         },
       );
-      return (response['agents'] ?? response as List).map((json) => Agent.fromJson(json)).toList();
+      // Response is already a decoded JSON map from makeAuthenticatedRequest
+      final agentList = (response['agents'] as List<dynamic>?) ?? [];
+      return agentList.map((json) => Agent.fromJson(json as Map<String, dynamic>)).toList();
     } catch (e) {
       if (kDebugMode) print('Error fetching agents by delegation: $e');
-      rethrow;
+      return []; // Return an empty list instead of rethrowing
     }
   }
+
 
   Future<List<String>> fetchUniqueLocations() async {
     try {
@@ -241,9 +265,9 @@ class AgentService {
     }
   }
 
-  Future<List<Agent>> getAgentsByUser(String userID) async {
+  static Future<List<Agent>> getAgentsByUser(String userID) async {
     try {
-      final response = await AuthService.makeAuthenticatedRequest(
+      final decodedResponse = await AuthService.makeAuthenticatedRequest(
         request: () async {
           final url = Uri.parse('$baseUrl/agents/user/$userID');
           final response = await http.get(
@@ -252,21 +276,20 @@ class AgentService {
           );
           CookieManager.extractCookies(response);
           if (kDebugMode) print('AgentService: Fetching agents by user ID: $userID');
-          return response; // Return the http.Response object
+          if (response.statusCode != 200) {
+            throw Exception('Failed to fetch agents by user: ${response.statusCode}');
+          }
+          return response;
         },
       );
-      if (response.statusCode == 200) {
-        final decodedResponse = jsonDecode(response.body);
-        final agentList = decodedResponse['agents'] as List<dynamic>? ?? [];
-        final agents = agentList.map((json) => Agent.fromJson(json as Map<String, dynamic>)).toList();
-        if (kDebugMode) print('Agents fetched: ${agents.length}');
-        return agents;
-      } else {
-        throw Exception('Failed to fetch agents by user: ${response.statusCode}');
-      }
+      // decodedResponse is the decoded JSON body from a successful request
+      final agentList = decodedResponse['agents'] as List<dynamic>? ?? [];
+      final agents = agentList.map((json) => Agent.fromJson(json as Map<String, dynamic>)).toList();
+      if (kDebugMode) print('Agents fetched: ${agents.length}');
+      return agents;
     } catch (e) {
       if (kDebugMode) print('Error fetching agents by user: $e');
-      rethrow;
+      throw Exception('Failed to fetch agents by user: $e');
     }
   }
 
@@ -298,25 +321,18 @@ class AgentService {
     }
   }
 
-  Future<List<Agent>> fetchAgentLocations() async {
-    try {
-      final response = await AuthService.makeAuthenticatedRequest(
-        request: () async {
-          final url = Uri.parse('$baseUrl/agents/locations/all');
-          final response = await http.get(
-            url,
-            headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
-          );
-          CookieManager.extractCookies(response);
-          if (response.statusCode == 200) return response;
-          throw Exception('Failed to fetch agent locations: ${response.statusCode}');
-        },
-      );
-      return (response['agents'] ?? response as List).map((json) => Agent.fromJson(json)).toList();
-    } catch (e) {
-      if (kDebugMode) print('Error fetching agent locations: $e');
-      rethrow;
+  static Future<List<dynamic>> fetchAgentLocations() async {
+    final url = Uri.parse('$baseUrl/agents/map/locations');
+    print('Fetching agent locations from: $url');
+    final response = await http.get(
+      url,
+      headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
+    );
+    print('Response status: ${response.statusCode}, body: ${response.body}');
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body)['locations']; // Extract the 'locations' array
     }
+    throw Exception('Failed to fetch agent locations: ${response.statusCode}');
   }
 
   Future<List<Agent>> fetchNearbyAgents({

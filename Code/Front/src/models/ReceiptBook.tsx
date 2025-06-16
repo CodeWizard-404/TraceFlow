@@ -16,6 +16,8 @@ interface ReceiptBook {
     agentID?: string;
     ReceiptStub?: ReceiptStub;
     currentHolderID?: string;
+    createdAt?: string;
+    updatedAt?: string;
 }
 
 export default ReceiptBook;

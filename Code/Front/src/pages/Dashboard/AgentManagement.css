@@ -449,3 +449,8 @@ body.dark .toggle-btn.active {
 .agent-management-container ul li {
     padding: 0 !important;
 }
+
+.ant-table-row-selected td {
+    background-color: #181818 !important;
+
+}

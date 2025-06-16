@@ -6466,3 +6466,22 @@ body.dark .stats-panel {
     margin-bottom: 10px;
     font-size: 1.2em;
 }
+
+
+
+
+body.dark .react-confirm-alert-body {
+    background-color: #333 !important;
+    color: #fff;
+}
+
+body.dark .react-confirm-alert-button-group button {
+    background-color: #fff !important;
+    color: #333;
+    font-weight: bolder;
+    font-size: 0.8rem;
+}
+
+body.dark .react-confirm-alert-overlay {
+    background-color: #00000077 !important;
+}

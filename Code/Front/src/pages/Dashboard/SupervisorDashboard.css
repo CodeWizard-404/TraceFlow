@@ -141,7 +141,7 @@ body.dark .stat-card::before {
 }
 
 body.dark .stat-card {
-    background: #334155;
+    background: transparent;
     border: 1px solid rgba(99, 179, 237, 0.2);
     box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.3);
 }
@@ -302,8 +302,13 @@ body.dark .dashboard-card h2 {
     grid-template-columns: repeat(auto-fit, minmax(30rem, 1fr));
 }
 
-.chart-grid-2 {
-    grid-template-columns: 1fr 1fr;
+
+.chart-grid-3 {
+    grid-template-columns: 0.5fr 1fr !important;
+}
+
+.chart-grid-4 {
+    grid-template-columns: 1fr 1fr !important;
 }
 
 /* Chart Container */
