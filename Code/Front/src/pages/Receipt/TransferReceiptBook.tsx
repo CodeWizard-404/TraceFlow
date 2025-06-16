@@ -85,12 +85,8 @@ const ROLES = {
 const ROLE_TRANSFER_RULES = {
   [ROLES.PURCHASE_TEAM]: {
     transferable: (book: ReceiptBook, userID: string, recipientType: string) =>
-      (book.status === t("common.receiptBookStatuses.inStock") &&
-        book.currentHolderID === userID &&
-        recipientType === "ToSupplier") ||
-      (book.status === t("common.receiptBookStatuses.collectFromSupplier") &&
-        book.currentHolderID === userID &&
-        recipientType === "ToRegionalManager"),
+      (book.status === t("common.receiptBookStatuses.inStock") && recipientType === "ToSupplier") ||
+      (book.status === t("common.receiptBookStatuses.collectFromSupplier") && recipientType === "ToRegionalManager"),
     recipientOptions: ["ToSupplier", "FromSupplier", "ToRegionalManager"],
   },
   [ROLES.REGIONAL_MANAGER]: {
@@ -324,9 +320,8 @@ const TransferReceiptBook: React.FC = () => {
     (book: ReceiptBook) => {
       if (recipientType === "ToSupplier") {
         const isInStock = book.status.toLowerCase() === t("common.receiptBookStatuses.inStock").toLowerCase();
-        const isHolderMatch = book.currentHolderID === currentUserID;
-        console.log(`ToSupplier check for book ${book.number}: isInStock=${isInStock}, isHolderMatch=${isHolderMatch}, isSuperAdmin=${isSuperAdmin}`);
-        return isInStock && (isSuperAdmin || isHolderMatch);
+        console.log(`ToSupplier check for book ${book.number}: isInStock=${isInStock},isSuperAdmin=${isSuperAdmin}`);
+        return isInStock || (isSuperAdmin);
       }
       if (recipientType === "FromSupplier") {
         const isSentToSupplier = book.status.toLowerCase() === t("common.receiptBookStatuses.sentToSupplier").toLowerCase();

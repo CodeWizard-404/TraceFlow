@@ -6,12 +6,14 @@ import '../../providers/timesheet_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../screens/Visit/visit_details.dart';
 import '../commen/empty_state.dart';
+import 'TimesheetSuggestionsModal.dart';
 
 class WeekViewCalendar extends StatelessWidget {
   final DateTime date;
   final Function(DateTime)? onDayTap;
+  final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey;
 
-  const WeekViewCalendar(this.date, {this.onDayTap, super.key});
+  const WeekViewCalendar(this.date, {this.onDayTap, required this.scaffoldMessengerKey, super.key});
 
   List<DateTime> _getWeekDays(DateTime date) {
     final startOfWeek = date.subtract(Duration(days: date.weekday - 1));
@@ -141,10 +143,10 @@ class WeekViewCalendar extends StatelessWidget {
 
             return Column(
               children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      IconButton(
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    /* IconButton(
                         icon: Icon(
                           Icons.calendar_today,
                           color: theme.colorScheme.primary,
@@ -159,23 +161,29 @@ class WeekViewCalendar extends StatelessWidget {
                           );
                         },
                         tooltip: 'Sync to Calendar',
+                      ),*/
+                    TextButton.icon(
+                      icon: Icon(Icons.auto_fix_high, color: theme.colorScheme.primary),
+                      label: Text(
+                        'Generate Suggestions',
+                        style: TextStyle(color: theme.colorScheme.primary),
                       ),
-                      IconButton(
-                        icon: Icon(
-                          Icons.lightbulb,
-                          color: theme.colorScheme.primary,
-                        ),
-                        onPressed: () async {
-                          await provider.suggestTimesheet(
-                            supervisorID: authProvider.user!.userID,
-                            weekNumber: _getWeekNumber(date),
-                            year: date.year,
-                            coordinates: {'lat': 36.8065, 'lng': 10.1815},
-                          );
-                        },
-                        tooltip: 'Generate Timesheet Suggestions',
+                      onPressed: () {
+                        TimesheetSuggestionsModal.show(
+                          context: context,
+                          weekNumber: _getWeekNumber(date),
+                          year: date.year,
+                          supervisorID: authProvider.user!.userID,
+                          scaffoldMessengerKey: scaffoldMessengerKey,
+                        );
+                      },
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        minimumSize: Size(0, 0),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
-                      IconButton(
+                    ),
+                    /* IconButton(
                         icon: Icon(
                           Icons.map,
                           color: theme.colorScheme.primary,
@@ -188,9 +196,9 @@ class WeekViewCalendar extends StatelessWidget {
                           );
                         },
                         tooltip: 'View Visits on Map',
-                      ),
-                    ],
-                  ),
+                      ),*/
+                  ],
+                ),
                 Container(
                   padding: const EdgeInsets.symmetric(vertical: 4),
                   decoration: BoxDecoration(

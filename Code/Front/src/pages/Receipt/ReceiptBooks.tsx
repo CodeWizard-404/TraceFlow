@@ -189,8 +189,10 @@ const ReceiptBooksList: React.FC<{
     prevProps.navigate === nextProps.navigate
 );
 
-// Memoized ReceiptBookForm Component
-const ReceiptBookForm: React.FC<{
+
+
+
+interface ReceiptBookFormProps {
   isEdit: boolean;
   receiptBook: Partial<ReceiptBook>;
   receiptBookTypes: ReceiptBookType[];
@@ -201,7 +203,10 @@ const ReceiptBookForm: React.FC<{
   handleCancel: () => void;
   handleNumberChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleNumberBlur: (e: React.FocusEvent<HTMLInputElement>) => void;
-}> = memo(
+  isCreating?: boolean;
+}
+
+const ReceiptBookForm: React.FC<ReceiptBookFormProps> = memo(
   ({
     isEdit,
     receiptBook,
@@ -213,6 +218,7 @@ const ReceiptBookForm: React.FC<{
     handleCancel,
     handleNumberChange,
     handleNumberBlur,
+    isCreating = false, // Default to false
   }) => (
     <div className="form-card form-card-0">
       <h3>
@@ -262,13 +268,15 @@ const ReceiptBookForm: React.FC<{
         <button
           className="action-button"
           onClick={handleSubmit}
+          disabled={isEdit ? false : isCreating} // Disable only for create
           aria-label={t(isEdit ? "receiptBooks.actions.aria.save" : "receiptBooks.actions.aria.create")}
         >
-          {t(isEdit ? "receiptBooks.actions.save" : "receiptBooks.actions.create")}
+          {isEdit ? t("receiptBooks.actions.save") : isCreating ? t("receiptBooks.actions.creating") : t("receiptBooks.actions.create")}
         </button>
         <button
           className="back-button"
           onClick={handleCancel}
+          disabled={isCreating} // Disable cancel during create
           aria-label={t("receiptBooks.actions.aria.cancel")}
         >
           {t("receiptBooks.actions.cancel")}
@@ -284,9 +292,9 @@ const ReceiptBookForm: React.FC<{
     prevProps.handleSubmit === nextProps.handleSubmit &&
     prevProps.handleCancel === nextProps.handleCancel &&
     prevProps.handleNumberChange === nextProps.handleNumberChange &&
-    prevProps.handleNumberBlur === nextProps.handleNumberBlur
+    prevProps.handleNumberBlur === nextProps.handleNumberBlur &&
+    prevProps.isCreating === nextProps.isCreating
 );
-
 // Memoized ReceiptBookTypesList Component
 const ReceiptBookTypesList: React.FC<{
   receiptBookTypes: ReceiptBookType[];
@@ -491,6 +499,7 @@ const ReceiptBooks: React.FC = memo(() => {
     totalPages: 0,
     timestamp: 0,
   });
+  const [isCreating, setIsCreating] = useState(false);
   const [receiptBookTypesCache, setReceiptBookTypesCache] = useState<ReceiptBookTypesCache>({
     data: [],
     timestamp: 0,
@@ -693,8 +702,10 @@ const ReceiptBooks: React.FC = memo(() => {
     if (!userPermissions.canCreate) return;
     const paddedNumber = padNumber(newReceiptBook.number || "");
     try {
+      setIsCreating(true); // Set loading state
       if (!paddedNumber || !newReceiptBook.typeID || paddedNumber.length !== 6) {
         setFormError(t("receiptBooks.errors.requiredFields"));
+        setIsCreating(false); // Reset loading state on error
         return;
       }
       const createdReceipt = await createReceiptBook({ number: paddedNumber, typeID: newReceiptBook.typeID });
@@ -706,6 +717,8 @@ const ReceiptBooks: React.FC = memo(() => {
       setView("list");
     } catch (error) {
       setFormError(t("receiptBooks.errors.createFailed", { message: error }));
+    } finally {
+      setIsCreating(false); // Reset loading state
     }
   }, [newReceiptBook, userPermissions.canCreate, t]);
 
@@ -1103,6 +1116,7 @@ const ReceiptBooks: React.FC = memo(() => {
                 setNewReceiptBook({ ...newReceiptBook, number: e.target.value.replace(/\D/g, "").slice(0, 6) })
               }
               handleNumberBlur={(e) => setNewReceiptBook({ ...newReceiptBook, number: padNumber(e.target.value) })}
+              isCreating={isCreating} // Pass the isCreating state
             />
           )}
           {view === "edit" && editReceiptBook && userPermissions.canUpdate && (

@@ -44,9 +44,13 @@ body.dark .dashboard-header-1 {
 }
 
 .dashboard-grid-1 {
-    grid-template-columns: repeat(auto-fit, minmax(17.5rem, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(17.5.5rem, 1fr));
     gap: 1rem;
     flex: 1;
+}
+
+.dashboard-grid-01 {
+    grid-template-columns: repeat(auto-fit, minmax(17.5rem, 1fr)) !important;
 }
 
 .chart-container {
@@ -508,6 +512,15 @@ body.dark .notifications-card .unread-count {
     margin-bottom: 0.5rem;
 }
 
+.notification-panel-header button {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 0.875rem;
+    color: #4cb1c7;
+    transition: all 0.3s ease;
+}
+
 
 
 .spinning {
@@ -701,4 +714,28 @@ body.dark .custom-skeleton {
 
 .action-btn span {
     color: #fff;
+}
+
+
+.custom-skeleton {
+    background: #e0e0e0;
+    border-radius: 4px;
+}
+
+.pulsing {
+    animation: pulse 1.5s infinite ease-in-out;
+}
+
+@keyframes pulse {
+    0% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+
+    100% {
+        opacity: 1;
+    }
 }

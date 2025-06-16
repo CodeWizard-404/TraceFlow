@@ -14,6 +14,7 @@ import User from '../../models/User';
 import Governorate from '../../models/Governorate';
 import Region from '../../models/Region';
 import './StockManagerDashboard.css';
+import { fetchUserProfile } from '../../apis/userAPI';
 
 // Error Boundary Component
 interface ErrorBoundaryProps {
@@ -45,13 +46,18 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
 }
 
 // Constants
-const COLORS = ['#4cb1c7', '#f5a800', '#036318', '#930744', '#8b8b8b', '#ff6b6b', '#4b0082'];
+const COLORS = ['#63b3ed', '#f5a800', '#036318', '#930744', '#8b8b8b', '#ff6b6b', '#4b0082'];
+const ITEMS_PER_PAGE = 50; // Limit number of books fetched per page
+const CACHE_KEY = 'stockManagerDashboardData';
+const CACHE_EXPIRY = 1000 * 60 * 60; // Cache for 1 hour
 
 const StockManagerDashboard: React.FC = () => {
     const { user, effectivePermissions } = useAuth();
+    const [profile, setProfile] = useState<User | null>(null);
     const navigate = useNavigate();
     const { t } = useTranslation();
-    const isFetching = useRef(false); // Track fetch status
+    const isFetching = useRef(false);
+    const [currentPage, setCurrentPage] = useState(1);
 
     // State
     const [receiptBooks, setReceiptBooks] = useState<ReceiptBook[]>([]);
@@ -62,6 +68,7 @@ const StockManagerDashboard: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [governorates, setGovernorates] = useState<Governorate[]>([]);
     const [regions, setRegions] = useState<Region[]>([]);
+    const [selectedBookId, setSelectedBookId] = useState<string | null>(null);
 
     // Permissions
     const permissions = useMemo(() => ({
@@ -69,7 +76,46 @@ const StockManagerDashboard: React.FC = () => {
         canViewHistory: effectivePermissions?.some(p => p.name === import.meta.env.VITE_PERMISSIONS_ACCESS_RECEIPT_BOOK_HISTORY),
     }), [effectivePermissions]);
 
-    // Fetch Data
+    // Local Storage Caching
+    const getCachedData = useCallback(() => {
+        const cached = localStorage.getItem(CACHE_KEY);
+        if (cached) {
+            const parsed = JSON.parse(cached);
+            const now = Date.now();
+            if (parsed.expiry > now - CACHE_EXPIRY) {
+                return parsed;
+            }
+        }
+        return null;
+    }, []);
+
+    const setCachedData = useCallback((data: any) => {
+        localStorage.setItem(CACHE_KEY, JSON.stringify({ ...data, expiry: Date.now() + CACHE_EXPIRY }));
+    }, []);
+
+
+    useEffect(() => {
+        const fecthUserProfile = async () => {
+            try {
+                const userProfile = await fetchUserProfile();
+                setProfile(userProfile);
+            } catch (error) {
+                console.error('Failed to fetch user profile:', error);
+            }
+        };
+        fecthUserProfile();
+    }, []);
+
+    // Debounce function
+    const debounce = <T extends (...args: any[]) => any>(func: T, wait: number): T => {
+        let timeout: NodeJS.Timeout;
+        return ((...args: any[]) => {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func(...args), wait);
+        }) as T;
+    };
+
+    // Fetch Data with Pagination and Caching
     const fetchData = useCallback(async () => {
         if (!user || !permissions.canView || isFetching.current) return;
         isFetching.current = true;
@@ -77,14 +123,26 @@ const StockManagerDashboard: React.FC = () => {
         setError(null);
 
         try {
-            // Fetch receipt books
-            const booksResponse = await receiptBookAPI.getAllReceiptBooks(1, 1000, 'number', 'ASC', '', 'all', 'all').catch(err => {
+            // Check cache
+            const cachedData = getCachedData();
+            if (cachedData) {
+                setReceiptBooks(cachedData.receiptBooks || []);
+                setBookTypes(cachedData.bookTypes || []);
+                setHolders(cachedData.holders || []);
+                setGovernorates(cachedData.governorates || []);
+                setRegions(cachedData.regions || []);
+                setIsLoading(false);
+                isFetching.current = false;
+                return;
+            }
+
+            // Fetch receipt books with pagination
+            const booksResponse = await receiptBookAPI.getAllReceiptBooks(currentPage, ITEMS_PER_PAGE, 'number', 'ASC', '', 'all', 'all').catch(err => {
                 console.error('Failed to fetch receipt books:', err);
                 return { books: [] };
             });
             const books = booksResponse.books || [];
             setReceiptBooks(books);
-            console.log('Receipt Books:', books);
 
             // Fetch book types
             const types = await receiptBookAPI.getAllReceiptBookTypes().catch(err => {
@@ -92,7 +150,6 @@ const StockManagerDashboard: React.FC = () => {
                 return [];
             });
             setBookTypes(types);
-            console.log('Book Types:', types);
 
             // Fetch holders
             const holders = await receiptBookAPI.getReceiptBookHolders().catch(err => {
@@ -100,19 +157,6 @@ const StockManagerDashboard: React.FC = () => {
                 return [];
             });
             setHolders(holders);
-            console.log('Holders:', holders);
-
-            // Fetch transfer history (batch if possible)
-            const transferPromises = books.map((book: ReceiptBook) =>
-                receiptBookAPI.getTransferHistory(book.bookID).catch(err => {
-                    console.error(`Failed to fetch transfer history for book ${book.bookID}:`, err);
-                    return [];
-                })
-            );
-            const transferResults = await Promise.all(transferPromises);
-            const transfers = transferResults.flat();
-            setTransfers(transfers);
-            console.log('Transfers:', transfers);
 
             // Fetch governorates
             const govResponse = await locationAPI.getAllGovernorates().catch(err => {
@@ -120,7 +164,6 @@ const StockManagerDashboard: React.FC = () => {
                 return [];
             });
             setGovernorates(govResponse || []);
-            console.log('Governorates:', govResponse);
 
             // Fetch regions
             const regionResponse = await locationAPI.getAllRegions().catch(err => {
@@ -128,7 +171,16 @@ const StockManagerDashboard: React.FC = () => {
                 return [];
             });
             setRegions(regionResponse || []);
-            console.log('Regions:', regionResponse);
+
+            // Cache the fetched data
+            setCachedData({
+                receiptBooks: books,
+                bookTypes: types,
+                holders: holders,
+                governorates: govResponse,
+                regions: regionResponse,
+                expiry: Date.now() + CACHE_EXPIRY,
+            });
 
         } catch (err) {
             console.error('fetchData error:', err);
@@ -137,7 +189,21 @@ const StockManagerDashboard: React.FC = () => {
             setIsLoading(false);
             isFetching.current = false;
         }
-    }, [user, permissions.canView, t]);
+    }, [user, permissions.canView, t, currentPage]);
+
+    // Fetch Transfer History for a Specific Book
+    const fetchTransferHistory = useCallback(async (bookID: string) => {
+        try {
+            const history = await receiptBookAPI.getTransferHistory(bookID).catch(err => {
+                console.error(`Failed to fetch transfer history for book ${bookID}:`, err);
+                return [];
+            });
+            setTransfers(prev => [...prev, ...history]);
+            return history;
+        } catch (err) {
+            return [];
+        }
+    }, []);
 
     useEffect(() => {
         fetchData();
@@ -241,6 +307,20 @@ const StockManagerDashboard: React.FC = () => {
         return recentTransfers;
     }, [transfers, receiptBooks]);
 
+    // Handle Book Selection for Transfer History
+    const handleBookClick = useCallback(async (bookID: string) => {
+        if (!transfers.some(t => t.bookID === bookID)) {
+            await fetchTransferHistory(bookID);
+        }
+        setSelectedBookId(bookID);
+    }, [transfers, fetchTransferHistory]);
+
+    // Pagination Controls
+    const handlePageChange = (newPage: number) => {
+        setCurrentPage(newPage);
+        setTransfers([]); // Reset transfers when changing pages
+    };
+
     // Skeleton Loader
     if (isLoading) {
         return (
@@ -329,7 +409,7 @@ const StockManagerDashboard: React.FC = () => {
                     </div>
                     <div className="user-profile">
                         <FaUser className="user-icon" />
-                        <span>{`${user?.firstname} ${user?.lastname}`}</span>
+                        <span>{`${profile?.firstname} ${profile?.lastname}`}</span>
                     </div>
                 </div>
                 <div className="header-stats">
@@ -367,7 +447,7 @@ const StockManagerDashboard: React.FC = () => {
                     </div>
                     <div className="stat-card">
                         <FaMapMarkerAlt className="card-icon" />
-                        <div className="stat-content">
+                        <div className="stat-content poverty">
                             <h3>{t('stockManagerDashboard.booksByRegion')}</h3>
                             <p className="stat-value">{stats.booksByRegion}</p>
                             <p className="stat-description">{t('stockManagerDashboard.booksByRegionDesc')}</p>
@@ -461,8 +541,8 @@ const StockManagerDashboard: React.FC = () => {
                                 {bookStatusData.length > 0 ? (
                                     <div className="chart-container">
                                         <h3>{t('stockManagerDashboard.bookStatus')}</h3>
-                                        <PieChart width={250} height={300}>
-                                            <Pie data={bookStatusData} cx={120} cy={120} labelLine={false} outerRadius={80} dataKey="value">
+                                        <PieChart width={600} height={300}>
+                                            <Pie data={bookStatusData} cx={300} cy={120} labelLine={false} outerRadius={80} dataKey="value">
                                                 {bookStatusData.map((_, index) => (
                                                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                                 ))}
@@ -480,13 +560,13 @@ const StockManagerDashboard: React.FC = () => {
                                 {bookTypeData.length > 0 ? (
                                     <div className="chart-container">
                                         <h3>{t('stockManagerDashboard.bookTypes')}</h3>
-                                        <BarChart width={500} height={300} data={bookTypeData}>
+                                        <BarChart width={600} height={300} data={bookTypeData}>
                                             <CartesianGrid strokeDasharray="3 3" />
                                             <XAxis dataKey="name" />
                                             <YAxis />
                                             <Tooltip />
                                             <Legend />
-                                            <Bar dataKey="count" fill="#4cb1c7" />
+                                            <Bar dataKey="count" fill="#63b3ed" />
                                         </BarChart>
                                     </div>
                                 ) : (
@@ -498,8 +578,8 @@ const StockManagerDashboard: React.FC = () => {
                                 {holderRoleData.length > 0 ? (
                                     <div className="chart-container">
                                         <h3>{t('stockManagerDashboard.holderRoles')}</h3>
-                                        <PieChart width={250} height={300}>
-                                            <Pie data={holderRoleData} cx={120} cy={120} innerRadius={60} outerRadius={80} dataKey="value">
+                                        <PieChart width={600} height={300}>
+                                            <Pie data={holderRoleData} cx={300} cy={120} innerRadius={60} outerRadius={80} dataKey="value">
                                                 {holderRoleData.map((_, index) => (
                                                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                                 ))}
@@ -517,13 +597,13 @@ const StockManagerDashboard: React.FC = () => {
                                 {regionData.length > 0 ? (
                                     <div className="chart-container">
                                         <h3>{t('stockManagerDashboard.booksByRegion')}</h3>
-                                        <BarChart width={500} height={300} data={regionData}>
+                                        <BarChart width={600} height={300} data={regionData}>
                                             <CartesianGrid strokeDasharray="3 3" />
                                             <XAxis dataKey="name" />
                                             <YAxis />
                                             <Tooltip />
                                             <Legend />
-                                            <Bar dataKey="count" fill="#036318" />
+                                            <Bar dataKey="count" fill="#63b3ed" />
                                         </BarChart>
                                     </div>
                                 ) : (
@@ -546,13 +626,13 @@ const StockManagerDashboard: React.FC = () => {
                                 {transferActivityData.length > 0 ? (
                                     <div className="chart-container">
                                         <h3>{t('stockManagerDashboard.transferActivity')}</h3>
-                                        <LineChart width={500} height={300} data={transferActivityData}>
+                                        <LineChart width={600} height={300} data={transferActivityData}>
                                             <CartesianGrid strokeDasharray="3 3" />
                                             <XAxis dataKey="date" />
                                             <YAxis />
                                             <Tooltip />
                                             <Legend />
-                                            <Line type="monotone" dataKey="transfers" stroke="#4cb1c7" />
+                                            <Line type="monotone" dataKey="transfers" stroke="#63b3ed" />
                                         </LineChart>
                                     </div>
                                 ) : (
@@ -564,8 +644,8 @@ const StockManagerDashboard: React.FC = () => {
                                 {transferStatusData.length > 0 ? (
                                     <div className="chart-container">
                                         <h3>{t('stockManagerDashboard.transferStatus')}</h3>
-                                        <PieChart width={250} height={300}>
-                                            <Pie data={transferStatusData} cx={120} cy={120} labelLine={false} outerRadius={80} dataKey="value">
+                                        <PieChart width={600} height={300}>
+                                            <Pie data={transferStatusData} cx={300} cy={120} labelLine={false} outerRadius={80} dataKey="value">
                                                 {transferStatusData.map((_, index) => (
                                                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                                 ))}
@@ -583,7 +663,7 @@ const StockManagerDashboard: React.FC = () => {
                                 {holderActivityData.length > 0 ? (
                                     <div className="chart-container">
                                         <h3>{t('stockManagerDashboard.holderActivity')}</h3>
-                                        <BarChart width={500} height={300} data={holderActivityData}>
+                                        <BarChart width={600} height={300} data={holderActivityData}>
                                             <CartesianGrid strokeDasharray="3 3" />
                                             <XAxis dataKey="name" />
                                             <YAxis />
@@ -622,6 +702,7 @@ const StockManagerDashboard: React.FC = () => {
                         </div>
                     </section>
                 </ErrorBoundary>
+
             </div>
 
             {error && <p className="error-text">{error}</p>}

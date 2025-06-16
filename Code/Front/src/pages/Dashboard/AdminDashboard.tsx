@@ -4,9 +4,7 @@ import { motion } from 'framer-motion';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
     PieChart, Pie, Cell, LineChart, Line, ScatterChart, Scatter,
-    AreaChart, Area,
-    FunnelChart,
-    Funnel
+    AreaChart, Area
 } from 'recharts';
 import {
     FaUsers, FaUserShield, FaLock, FaList, FaQuestion,

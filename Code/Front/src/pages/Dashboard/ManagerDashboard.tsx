@@ -278,7 +278,187 @@ const RegionalManagerDashboard: React.FC = () => {
     );
 
     if (isLoading) {
-        return <div>Loading...</div>;
+        return (
+            <div className="dashboard-container">
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.3 }}
+                    className="dashboard-container regional-manager-container"
+                >
+                    {/* Skeleton for Header */}
+                    <header className="dashboard-header dashboard-header-1">
+                        <div className="header-top">
+                            <div className="custom-skeleton pulsing" style={{ width: '200px', height: '30px' }} />
+                            <div className="user-profile">
+                                <div className="custom-skeleton pulsing" style={{ width: '24px', height: '24px', borderRadius: '50%' }} />
+                                <div className="custom-skeleton pulsing" style={{ width: '100px', height: '20px', marginLeft: '10px' }} />
+                            </div>
+                        </div>
+                        <div className="header-stats">
+                            {[...Array(10)].map((_, i) => (
+                                <div key={i} className="stat-card stat-card-1">
+                                    <div className="custom-skeleton pulsing" style={{ width: '40px', height: '40px', margin: '10px' }} />
+                                    <div>
+                                        <div className="custom-skeleton pulsing" style={{ width: '100px', height: '20px', margin: '5px 0' }} />
+                                        <div className="custom-skeleton pulsing" style={{ width: '60px', height: '30px', margin: '5px 0' }} />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </header>
+
+                    {/* Skeleton for Dashboard Grid */}
+                    <div className="dashboard-grid dashboard-grid-01">
+                        {/* Skeleton for Quick Actions Card */}
+                        <section className="dashboard-card quick-actions-card">
+                            <div className="custom-skeleton pulsing" style={{ width: '150px', height: '25px', margin: '10px 0' }} />
+                            <hr />
+                            <div className="action-grid">
+                                {[...Array(6)].map((_, i) => (
+                                    <div key={i} className="custom-skeleton pulsing" style={{ width: '100%', height: '40px', margin: '5px' }} />
+                                ))}
+                            </div>
+                        </section>
+
+                        {/* Skeleton for Hierarchy Card */}
+                        <section className="dashboard-card medium-card">
+                            <div className="custom-skeleton pulsing" style={{ width: '150px', height: '25px', margin: '10px 0' }} />
+                            <hr />
+                            <div className="card-content">
+                                {[...Array(2)].map((_, i) => (
+                                    <div key={i} className="hierarchy-level">
+                                        <div className="custom-skeleton pulsing" style={{ width: '100px', height: '20px', margin: '5px 0' }} />
+                                        <div className="custom-skeleton pulsing" style={{ width: '150px', height: '15px', margin: '5px 0' }} />
+                                        <div className="custom-skeleton pulsing" style={{ width: '150px', height: '15px', margin: '5px 0' }} />
+                                    </div>
+                                ))}
+                            </div>
+                        </section>
+
+                        {/* Skeleton for Supervisors Summary Card */}
+                        <section className="dashboard-card medium-card sup-summary">
+                            <div className="custom-skeleton pulsing" style={{ width: '150px', height: '25px', margin: '10px 0' }} />
+                            <hr />
+                            <div className="supervisor-grid">
+                                {[...Array(3)].map((_, i) => (
+                                    <div key={i} className="supervisor-card">
+                                        <div className="custom-skeleton pulsing" style={{ width: '100px', height: '20px', margin: '5px 0' }} />
+                                        <div className="custom-skeleton pulsing" style={{ width: '80px', height: '15px', margin: '5px 0' }} />
+                                        <div className="custom-skeleton pulsing" style={{ width: '80px', height: '15px', margin: '5px 0' }} />
+                                        <div className="custom-skeleton pulsing" style={{ width: '80px', height: '15px', margin: '5px 0' }} />
+                                    </div>
+                                ))}
+                            </div>
+                        </section>
+
+                        {/* Skeleton for Notifications Card */}
+                        <section className="dashboard-card medium-card notifications-card">
+                            <div className="custom-skeleton pulsing" style={{ width: '150px', height: '25px', margin: '10px 0' }} />
+                            <hr />
+                            <div>
+                                <div className="notification-panel-header">
+                                    <div className="notification-panel-controls">
+                                        <div className="custom-skeleton pulsing" style={{ width: '30px', height: '30px', margin: '5px' }} />
+                                        <div className="custom-skeleton pulsing" style={{ width: '60px', height: '30px', margin: '5px' }} />
+                                    </div>
+                                </div>
+                                <div className="notification-skeleton">
+                                    {[...Array(3)].map((_, i) => (
+                                        <div key={i} className="custom-skeleton pulsing" style={{ width: '100%', height: '50px', margin: '5px 0' }} />
+                                    ))}
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* Skeleton for Visit Summary Card */}
+                        <section className="dashboard-card xlarge-card">
+                            <div className="custom-skeleton pulsing" style={{ width: '150px', height: '25px', margin: '10px 0' }} />
+                            <hr />
+                            <div className="card-content">
+                                <div className="filter-bar">
+                                    {[...Array(4)].map((_, i) => (
+                                        <div key={i} className="custom-skeleton pulsing" style={{ width: '150px', height: '30px', margin: '5px' }} />
+                                    ))}
+                                </div>
+                                <div className="custom-skeleton pulsing" style={{ width: '100px', height: '20px', margin: '10px 0' }} />
+                                <div className="chart-grid chart-grid-2">
+                                    {[...Array(4)].map((_, i) => (
+                                        <div key={i} className="chart-container">
+                                            <div className="custom-skeleton pulsing" style={{ width: '400px', height: '300px', margin: '10px 0' }} />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* Skeleton for Geographical Assignments Card */}
+                        <section className="dashboard-card medium-card">
+                            <div className="custom-skeleton pulsing" style={{ width: '150px', height: '25px', margin: '10px 0' }} />
+                            <hr />
+                            <div className="card-content">
+                                <div className="custom-skeleton pulsing" style={{ width: '100px', height: '20px', margin: '5px 0' }} />
+                                <div className="custom-skeleton pulsing" style={{ width: '150px', height: '15px', margin: '5px 0' }} />
+                                <div className="custom-skeleton pulsing" style={{ width: '100px', height: '20px', margin: '5px 0' }} />
+                                <div className="custom-skeleton pulsing" style={{ width: '150px', height: '15px', margin: '5px 0' }} />
+                            </div>
+                        </section>
+
+                        {/* Skeleton for Report Summary Card */}
+                        <section className="dashboard-card medium-card">
+                            <div className="custom-skeleton pulsing" style={{ width: '150px', height: '25px', margin: '10px 0' }} />
+                            <hr />
+                            <div className="card-content">
+                                <div className="custom-skeleton pulsing" style={{ width: '100px', height: '20px', margin: '5px 0' }} />
+                                <div className="custom-skeleton pulsing" style={{ width: '150px', height: '15px', margin: '5px 0' }} />
+                                <div className="custom-skeleton pulsing" style={{ width: '100px', height: '20px', margin: '5px 0' }} />
+                                <div className="custom-skeleton pulsing" style={{ width: '150px', height: '15px', margin: '5px 0' }} />
+                            </div>
+                        </section>
+
+                        {/* Skeleton for Receipt Book Summary Card */}
+                        <section className="dashboard-card xlarge-card">
+                            <div className="custom-skeleton pulsing" style={{ width: '150px', height: '25px', margin: '10px 0' }} />
+                            <hr />
+                            <div className="card-content">
+                                <div className="custom-skeleton pulsing" style={{ width: '100px', height: '20px', margin: '10px 0' }} />
+                                <div className="chart-grid">
+                                    {[...Array(3)].map((_, i) => (
+                                        <div key={i} className="chart-container">
+                                            <div className="custom-skeleton pulsing" style={{ width: '400px', height: '300px', margin: '10px 0' }} />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* Skeleton for Map Card */}
+                        <section className="dashboard-card full-width-card">
+                            <div className="custom-skeleton pulsing" style={{ width: '150px', height: '25px', margin: '10px 0' }} />
+                            <hr />
+                            <div className="card-content">
+                                <div className="custom-skeleton pulsing" style={{ width: '100%', height: '400px', margin: '10px 0' }} />
+                            </div>
+                        </section>
+
+                        {/* Skeleton for Additional KPIs Card */}
+                        <section className="dashboard-card full-width-card">
+                            <div className="custom-skeleton pulsing" style={{ width: '150px', height: '25px', margin: '10px 0' }} />
+                            <hr />
+                            <div className="card-content">
+                                <div className="chart-grid chart-grid-1">
+                                    {[...Array(3)].map((_, i) => (
+                                        <div key={i} className="chart-container">
+                                            <div className="custom-skeleton pulsing" style={{ width: '400px', height: '300px', margin: '10px 0' }} />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                </motion.div>
+            </div>
+        );
     }
 
 
@@ -308,7 +488,7 @@ const RegionalManagerDashboard: React.FC = () => {
                 </div>
             </header>
 
-            <div className="dashboard-grid dashboard-grid-1">
+            <div className="dashboard-grid dashboard-grid-01">
                 {/* Quick Actions */}
                 <section className="dashboard-card quick-actions-card">
                     <h2>{t('dashboard.quickActions')}</h2>
@@ -344,7 +524,6 @@ const RegionalManagerDashboard: React.FC = () => {
                                 {supervisors.map(sup => (
                                     <li key={sup.userID}>
                                         {`${sup.firstname} ${sup.lastname}`} -
-                                        Visits: {allVisits.filter(v => timesheets.find(ts => ts.timesheetID === v.timesheetID)?.supervisorID === sup.userID).length} -
                                         Agents: {agents.filter(a => a.supervisorID === sup.userID).length}
                                     </li>
                                 ))}

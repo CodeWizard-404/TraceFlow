@@ -498,7 +498,11 @@ body.dark :where(.css-dev-only-do-not-override-mc1tut).ant-select-dropdown {
 }
 
 :where(.css-dev-only-do-not-override-mc1tut).ant-tag {
-    background-color: transparent !important;
+    background-color: #fff !important;
+}
+
+body.dark :where(.css-dev-only-do-not-override-mc1tut).ant-tag {
+    background-color: #333 !important;
 }
 
 body.dark .hr-dashboard .ant-table-thead>tr>th {

@@ -58,7 +58,7 @@ class TimesheetSuggestionsModalState extends State<TimesheetSuggestionsModal> {
   String? _locationError;
   Position? _userLocation;
 
-// Form data
+  // Form data
   String _startTime = '08:00';
   String _endTime = '17:00';
   int _maxVisitsPerAgentPerWeek = 2;
@@ -70,14 +70,14 @@ class TimesheetSuggestionsModalState extends State<TimesheetSuggestionsModal> {
   String? _selectedGovernorate;
   String? _selectedRecruitmentDelegation;
 
-// Data for dropdowns
+  // Data for dropdowns
   List<Agent> _agents = [];
   List<Delegation> _delegations = [];
   List<Region> _regions = [];
   List<Governorate> _governorates = [];
   List<Delegation> _recruitmentDelegations = [];
 
-// Loading states
+  // Loading states
   bool _isAgentsLoading = false;
   bool _isDelegationsLoading = false;
   bool _isRegionsLoading = false;
@@ -90,7 +90,6 @@ class TimesheetSuggestionsModalState extends State<TimesheetSuggestionsModal> {
     _startTime = '08:00';
     _endTime = '17:00';
     _fetchUserLocation();
-// Pre-fetch agents and delegations to ensure they're available
     _fetchAgents();
     _fetchDelegations();
   }
@@ -157,7 +156,6 @@ class TimesheetSuggestionsModalState extends State<TimesheetSuggestionsModal> {
       setState(() => _isAgentsLoading = false);
     }
   }
-
 
   Future<void> _fetchDelegations() async {
     if (_isDelegationsLoading || _delegations.isNotEmpty) return;
@@ -273,51 +271,334 @@ class TimesheetSuggestionsModalState extends State<TimesheetSuggestionsModal> {
     });
   }
 
-  Widget _buildMultiSelectField({
-    required String label,
+  Future<void> _showMultiSelectDialog({
+    required String title,
     required List<String> items,
     required List<String> selectedItems,
-    required String Function(String) formatter,
-    required VoidCallback onTap,
-    bool isLoading = false,
-  }) {
-    if (kDebugMode) print('Building $label field with ${items.length} items');
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: Theme.of(context).textTheme.labelLarge),
-        const SizedBox(height: 8),
-        isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : items.isEmpty
-            ? Text(
-          'No $label available',
-          style: TextStyle(color: Theme.of(context).colorScheme.error),
-        )
-            : Wrap(
-          spacing: 8,
-          children: items.map((item) {
-            final isSelected = selectedItems.contains(item);
-            return ChoiceChip(
-              label: Text(formatter(item)),
-              selected: isSelected,
-              onSelected: (selected) {
-                if (kDebugMode) print('Selected $label: $item, selected: $selected');
-                onTap();
-                setState(() {
-                  if (selected) {
-                    selectedItems.add(item);
-                  } else {
-                    selectedItems.remove(item);
-                  }
-                });
+    required String Function(String) displayFormatter,
+    required Function(List<String>) onSelectionChanged,
+  }) async {
+    final TextEditingController searchController = TextEditingController();
+    List<String> filteredItems = List.from(items);
+    List<String> tempSelected = List.from(selectedItems);
+
+    await showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: Theme.of(context).cardTheme.color,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          title: Text(
+            title,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Search...',
+                    prefixIcon: Icon(
+                      Icons.search,
+                      color: Theme.of(context).colorScheme.primary,
+                      size: 18,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(
+                        color: Theme.of(context).colorScheme.primary,
+                        width: 1.5,
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(
+                        color: Theme.of(context).colorScheme.primary.withOpacity(0.7),
+                        width: 1.5,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(
+                        color: Theme.of(context).colorScheme.primary,
+                        width: 2,
+                      ),
+                    ),
+                  ),
+                  onChanged: (value) {
+                    setDialogState(() {
+                      filteredItems = items.where((item) =>
+                          displayFormatter(item).toLowerCase().contains(value.toLowerCase())).toList();
+                    });
+                  },
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  height: 300,
+                  child: ListView.builder(
+                    itemCount: filteredItems.length,
+                    itemBuilder: (context, index) {
+                      final item = filteredItems[index];
+                      final isSelected = tempSelected.contains(item);
+                      return ListTile(
+                        leading: Icon(
+                          Icons.list,
+                          color: Theme.of(context).colorScheme.primary,
+                          size: 18,
+                        ),
+                        title: Text(
+                          displayFormatter(item),
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
+                        trailing: Checkbox(
+                          value: isSelected,
+                          onChanged: (bool? value) {
+                            setDialogState(() {
+                              if (value == true) {
+                                tempSelected.add(item);
+                              } else {
+                                tempSelected.remove(item);
+                              }
+                            });
+                          },
+                          activeColor: Theme.of(context).colorScheme.primary,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                'Cancel',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                onSelectionChanged(tempSelected);
+                Navigator.pop(context);
               },
-            );
-          }).toList(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              child: const Text('Apply'),
+            ),
+          ],
         ),
-        const SizedBox(height: 8),
-      ],
+      ),
     );
+  }
+
+  Widget _buildMultiSelector({
+    required String label,
+    required String value,
+    required VoidCallback onTap,
+    required bool isLoading,
+    required bool isEmpty,
+  }) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: InkWell(
+        onTap: isLoading || isEmpty ? null : onTap,
+        borderRadius: BorderRadius.circular(8),
+        splashColor: theme.colorScheme.primary.withOpacity(0.2),
+        highlightColor: theme.colorScheme.primary.withOpacity(0.1),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: isLoading || isEmpty
+                  ? theme.colorScheme.onSurface.withOpacity(0.3)
+                  : theme.colorScheme.primary.withOpacity(0.7),
+              width: 1.5,
+            ),
+            borderRadius: BorderRadius.circular(8),
+            color: isLoading || isEmpty
+                ? theme.colorScheme.background.withOpacity(0.5)
+                : theme.colorScheme.background,
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.list,
+                color: isLoading || isEmpty
+                    ? theme.colorScheme.onSurface.withOpacity(0.5)
+                    : theme.colorScheme.primary,
+                size: 18,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: isLoading || isEmpty
+                            ? theme.colorScheme.onSurface.withOpacity(0.5)
+                            : theme.colorScheme.onSurface.withOpacity(0.7),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      isLoading
+                          ? 'Loading...'
+                          : isEmpty
+                          ? 'No $label available'
+                          : value,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: isLoading || isEmpty
+                            ? theme.colorScheme.onSurface.withOpacity(0.5)
+                            : theme.colorScheme.onSurface,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.arrow_drop_down,
+                color: isLoading || isEmpty
+                    ? theme.colorScheme.onSurface.withOpacity(0.5)
+                    : theme.colorScheme.primary,
+                size: 24,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSelector({
+    required String label,
+    required String value,
+    required VoidCallback onTap,
+  }) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        splashColor: theme.colorScheme.primary.withOpacity(0.2),
+        highlightColor: theme.colorScheme.primary.withOpacity(0.1),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: theme.colorScheme.primary.withOpacity(0.7),
+              width: 1.5,
+            ),
+            borderRadius: BorderRadius.circular(8),
+            color: theme.colorScheme.background,
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.arrow_drop_down,
+                color: theme.colorScheme.primary,
+                size: 18,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurface.withOpacity(0.7),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      value,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurface,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.arrow_drop_down,
+                color: theme.colorScheme.primary,
+                size: 24,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionCard({required String title, required List<Widget> children}) {
+    final theme = Theme.of(context);
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: theme.colorScheme.primary.withOpacity(0.7),
+          width: 1.5,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+            child: Text(
+              title,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ),
+          const Divider(height: 1, thickness: 1, color: Colors.grey),
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(children: children),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatSelectedDays(List<String> days) {
+    return days.isEmpty ? 'Select days' : '${days.length} days selected';
+  }
+
+  String _formatSelectedDelegations(List<String> delegations) {
+    return delegations.isEmpty ? 'Select delegations' : '${delegations.length} delegations selected';
+  }
+
+  String _formatSelectedAgents(List<String> agents) {
+    return agents.isEmpty ? 'Select agents' : '${agents.length} agents selected';
   }
 
   @override
@@ -330,18 +611,21 @@ class TimesheetSuggestionsModalState extends State<TimesheetSuggestionsModal> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Container(
         constraints: const BoxConstraints(maxWidth: 400, maxHeight: 600),
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(8),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Timesheet Suggestions',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.primary,
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Text(
+                    'Timesheet Suggestions',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.primary,
+                    ),
                   ),
                 ),
                 IconButton(
@@ -382,496 +666,611 @@ class TimesheetSuggestionsModalState extends State<TimesheetSuggestionsModal> {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
             if (_locationError != null)
               Padding(
-                padding: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.all(8),
                 child: Text(
                   _locationError!,
                   style: TextStyle(color: theme.colorScheme.error),
                 ),
               ),
-            if (!_showSuggestions) ...[
-              Expanded(
-                child: Form(
-                  key: _formKey,
-                  child: ListView(
-                    children: [
-// Preferred Days
-                      _buildMultiSelectField(
-                        label: 'Preferred Days',
-                        items: weekDates,
-                        selectedItems: _preferredDays,
-                        formatter: (date) => DateFormat('EEE, d MMM').format(DateTime.parse(date)),
-                        onTap: () {
-                          if (kDebugMode) print('Preferred days tapped');
-                        },
-                        isLoading: false,
-                      ),
-                      const Divider(height: 16),
-// Delegations
-                      _buildMultiSelectField(
-                        label: 'Delegations',
-                        items: _delegations.map((d) => d.delegationID).toList(),
-                        selectedItems: _delegationIds,
-                        formatter: (id) => _delegations.firstWhere((d) => d.delegationID == id).name,
-                        onTap: _fetchDelegations,
-                        isLoading: _isDelegationsLoading,
-                      ),
-// Agents
-                      _buildMultiSelectField(
-                        label: 'Agents',
-                        items: _agents.map((a) => a.agentID).toList(),
-                        selectedItems: _agentIds,
-                        formatter: (id) {
-                          final agent = _agents.firstWhere((a) => a.agentID == id);
-                          return '${agent.name} ${agent.lastname}';
-                        },
-                        onTap: _fetchAgents,
-                        isLoading: _isAgentsLoading,
-                      ),
-                      const Divider(height: 16),
-// Include Recruitment Visits
-                      SwitchListTile(
-                        title: const Text('Include Recruitment Visits'),
-                        value: _includeRecruitmentVisits,
-                        onChanged: (value) {
-                          setState(() {
-                            _includeRecruitmentVisits = value;
-                            if (!value) {
-                              _selectedRegion = null;
-                              _selectedGovernorate = null;
-                              _selectedRecruitmentDelegation = null;
-                            } else {
-                              _fetchRegions();
-                            }
-                          });
-                        },
-                      ),
-// Recruitment Areas
-                      if (_includeRecruitmentVisits) ...[
-                        _isRegionsLoading
-                            ? const Center(child: CircularProgressIndicator())
-                            : DropdownButtonFormField<String>(
-                          decoration: const InputDecoration(
-                            labelText: 'Region',
-                            border: OutlineInputBorder(),
-                          ),
-                          isExpanded: true,
-                          items: _regions.map((region) {
-                            return DropdownMenuItem<String>(
-                              value: region.regionID,
-                              child: Text(region.name),
-                            );
-                          }).toList(),
-                          value: _selectedRegion,
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedRegion = value;
-                              _selectedGovernorate = null;
-                              _selectedRecruitmentDelegation = null;
-                              if (value != null) {
-                                _fetchGovernorates(value);
-                              }
-                            });
-                          },
-                          hint: const Text('Select Region'),
-                        ),
-                        const SizedBox(height: 8),
-                        _isGovernoratesLoading
-                            ? const Center(child: CircularProgressIndicator())
-                            : DropdownButtonFormField<String>(
-                          decoration: const InputDecoration(
-                            labelText: 'Governorate',
-                            border: OutlineInputBorder(),
-                          ),
-                          isExpanded: true,
-                          items: _governorates.map((governorate) {
-                            return DropdownMenuItem<String>(
-                              value: governorate.governorateID,
-                              child: Text(governorate.name),
-                            );
-                          }).toList(),
-                          value: _selectedGovernorate,
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedGovernorate = value;
-                              _selectedRecruitmentDelegation = null;
-                              if (value != null) {
-                                _fetchRecruitmentDelegations(value);
-                              }
-                            });
-                          },
-                          hint: const Text('Select Governorate'),
-                          disabledHint: const Text('Select a Region first'),
-                          validator: (value) =>
-                          _selectedRegion != null && value == null ? 'Please select a Governorate' : null,
-                        ),
-                        const SizedBox(height: 8),
-                        _isRecruitmentDelegationsLoading
-                            ? const Center(child: CircularProgressIndicator())
-                            : DropdownButtonFormField<String>(
-                          decoration: const InputDecoration(
-                            labelText: 'Recruitment Delegation',
-                            border: OutlineInputBorder(),
-                          ),
-                          isExpanded: true,
-                          items: _recruitmentDelegations.map((delegation) {
-                            return DropdownMenuItem<String>(
-                              value: delegation.delegationID,
-                              child: Text(delegation.name),
-                            );
-                          }).toList(),
-                          value: _selectedRecruitmentDelegation,
-                          onChanged: (value) {
-                            setState(() => _selectedRecruitmentDelegation = value);
-                          },
-                          hint: const Text('Select Delegation'),
-                          disabledHint: const Text('Select a Governorate first'),
-                          validator: (value) => _selectedGovernorate != null && value == null
-                              ? 'Please select a Delegation'
-                              : null,
-                        ),
-                      ],
-                      const Divider(height: 16),
-// Time Interval
-                      Row(
-                        children: [
-                          Expanded(
-                            child: GestureDetector(
-                              onTap: () async {
-                                if (kDebugMode) print('Start time tapped');
-                                final time = await showTimePicker(
-                                  context: context,
-                                  initialTime: TimeOfDay(
-                                    hour: int.tryParse(_startTime.split(':')[0]) ?? 8,
-                                    minute: int.tryParse(_startTime.split(':')[1]) ?? 0,
-                                  ),
-                                );
-                                if (time != null) {
-                                  setState(() {
-                                    _startTime = '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
-                                    if (kDebugMode) print('Start time set to: $_startTime');
-                                  });
-                                }
-                              },
-                              child: AbsorbPointer(
-                                child: TextFormField(
-                                  decoration: const InputDecoration(
-                                    labelText: 'Start Time (HH:mm)',
-                                    border: OutlineInputBorder(),
-                                  ),
-                                  controller: TextEditingController(text: _startTime),
-                                  validator: (value) {
-                                    if (value == null || !RegExp(r'^(?:[01]\d|2[0-3]):[0-5]\d$').hasMatch(value)) {
-                                      return 'Invalid time (HH:mm, 00:00-23:59)';
-                                    }
-                                    return null;
-                                  },
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: GestureDetector(
-                              onTap: () async {
-                                if (kDebugMode) print('End time tapped');
-                                final time = await showTimePicker(
-                                  context: context,
-                                  initialTime: TimeOfDay(
-                                    hour: int.tryParse(_endTime.split(':')[0]) ?? 17,
-                                    minute: int.tryParse(_endTime.split(':')[1]) ?? 0,
-                                  ),
-                                );
-                                if (time != null) {
-                                  setState(() {
-                                    _endTime = '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
-                                    if (kDebugMode) print('End time set to: $_endTime');
-                                  });
-                                }
-                              },
-                              child: AbsorbPointer(
-                                child: TextFormField(
-                                  decoration: const InputDecoration(
-                                    labelText: 'End Time (HH:mm)',
-                                    border: OutlineInputBorder(),
-                                  ),
-                                  controller: TextEditingController(text: _endTime),
-                                  validator: (value) {
-                                    if (value == null || !RegExp(r'^(?:[01]\d|2[0-3]):[0-5]\d$').hasMatch(value)) {
-                                      return 'Invalid time (HH:mm, 00:00-23:59)';
-                                    }
-                                    try {
-                                      final start = DateTime.parse('2000-01-01 $_startTime:00');
-                                      final end = DateTime.parse('2000-01-01 $value:00');
-                                      if (end.isBefore(start) || end.isAtSameMomentAs(start)) {
-                                        return 'End time must be after start';
-                                      }
-                                    } catch (e) {
-                                      return 'Invalid time format';
-                                    }
-                                    return null;
-                                  },
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-// Max Visits Per Agent
-                      TextFormField(
-                        initialValue: _maxVisitsPerAgentPerWeek.toString(),
-                        decoration: const InputDecoration(
-                          labelText: 'Max Visits Per Agent Per Week',
-                          border: OutlineInputBorder(),
-                        ),
-                        keyboardType: TextInputType.number,
-                        validator: (value) {
-                          final num = int.tryParse(value ?? '');
-                          if (num == null || num < 1) {
-                            return 'Enter a valid number (≥1)';
-                          }
-                          return null;
-                        },
-                        onSaved: (value) => _maxVisitsPerAgentPerWeek = int.parse(value!),
-                      ),
-                      const Divider(height: 16),
-// Description
-                      TextFormField(
-                        initialValue: _description,
-                        decoration: const InputDecoration(
-                          labelText: 'Description',
-                          border: OutlineInputBorder(),
-                        ),
-                        maxLines: 3,
-                        onSaved: (value) => _description = value ?? '',
-                      ),
-                      const SizedBox(height: 16),
-                      _isLoading
-                          ? const Center(child: CircularProgressIndicator())
-                          : ElevatedButton(
-                        onPressed: () async {
-                          if (kDebugMode) print('Generate button pressed');
-                          if (!_formKey.currentState!.validate()) {
-                            if (kDebugMode) print('Form validation failed');
-                            widget.scaffoldMessengerKey.currentState?.showSnackBar(
-                              const SnackBar(content: Text('Please correct the form errors')),
-                            );
-                            return;
-                          }
-                          if (kDebugMode) print('Form validated, saving form');
-                          _formKey.currentState!.save();
-                          setState(() => _isLoading = true);
-                          final timesheetProvider =
-                          Provider.of<TimesheetProvider>(context, listen: false);
-                          try {
-                            if (kDebugMode) print('Parsing startHour and endHour');
-                            final startHour = int.tryParse(_startTime.split(':')[0]) ?? 8;
-                            final endHour = int.tryParse(_endTime.split(':')[0]) ?? 17;
-                            if (kDebugMode) print('Building criteria');
-                            final recruitmentAreas = _includeRecruitmentVisits
-                                ? [
-                              if (_selectedRegion != null)
-                                _regions
-                                    .firstWhere((r) => r.regionID == _selectedRegion)
-                                    .name,
-                              if (_selectedGovernorate != null)
-                                _governorates
-                                    .firstWhere(
-                                        (g) => g.governorateID == _selectedGovernorate)
-                                    .name,
-                              if (_selectedRecruitmentDelegation != null)
-                                _recruitmentDelegations
-                                    .firstWhere((d) =>
-                                d.delegationID == _selectedRecruitmentDelegation)
-                                    .name,
-                            ].where((name) => name.isNotEmpty).toList()
-                                : [];
-                            final criteria = {
-                              'delegationIds': _delegationIds,
-                              'agentIds': _agentIds,
-                              'preferredDays': _preferredDays,
-                              'timeInterval': {
-                                'startHour': startHour,
-                                'endHour': endHour,
-                              },
-                              'maxVisitsPerAgentPerWeek': _maxVisitsPerAgentPerWeek,
-                              'includeRecruitmentVisits': _includeRecruitmentVisits,
-                              'recruitmentAreas': recruitmentAreas,
-                              'description': _description,
-                              'filters': {},
-                            };
-                            final Map<String, dynamic> coordinates = _userLocation != null
-                                ? {
-                              'lat': _userLocation!.latitude,
-                              'lng': _userLocation!.longitude,
-                            }
-                                : {};
-                            if (kDebugMode) {
-                              print('Calling suggestTimesheet with:');
-                              print('SupervisorID: ${widget.supervisorID}');
-                              print('WeekNumber: ${widget.weekNumber}');
-                              print('Year: ${widget.year}');
-                              print('Coordinates: $coordinates');
-                              print('Criteria: $criteria');
-                            }
-                            final result = await timesheetProvider.suggestTimesheet(
-                              supervisorID: widget.supervisorID,
-                              weekNumber: widget.weekNumber,
-                              year: widget.year,
-                              coordinates: coordinates,
-                              criteria: criteria,
-                            );
-                            if (kDebugMode) print('Received result: $result');
-                            final suggestedVisits = (result['suggestions'] as List)
-                                .map((v) => Visit.fromJson(v as Map<String, dynamic>))
-                                .toList();
-                            if (kDebugMode) print('Parsed ${suggestedVisits.length} suggested visits');
-                            timesheetProvider.setSuggestedVisits(suggestedVisits);
-                            setState(() {
-                              _showSuggestions = true;
-                              _isLoading = false;
-                            });
-                            if (kDebugMode) print('Suggestions displayed');
-                          } catch (e) {
-                            if (kDebugMode) print('Error in suggestTimesheet: $e');
-                            setState(() => _isLoading = false);
-                            widget.scaffoldMessengerKey.currentState?.showSnackBar(
-                              SnackBar(content: Text('Failed to generate suggestions: $e')),
-                            );
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: theme.colorScheme.primary,
-                          foregroundColor: theme.colorScheme.onPrimary,
-                        ),
-                        child: const Text('Generate Suggestions'),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ] else if (timesheetProvider.isLoading)
-              const Center(child: CircularProgressIndicator())
-            else if (timesheetProvider.suggestedVisits.isEmpty)
-                const Text('No suggestions available')
-              else
-                Expanded(
-                  child: Column(
-                    children: [
-                      Expanded(
-                        child: DragTarget<Visit>(
-                          onWillAccept: (data) => true,
-                          onAcceptWithDetails: (details) {
-                            final droppedVisit = details.data;
-                            final currentVisits = List<Visit>.from(timesheetProvider.suggestedVisits);
-                            final newIndex = currentVisits.indexWhere((v) => v.visitID == droppedVisit.visitID);
-                            currentVisits.removeWhere((v) => v.visitID == droppedVisit.visitID);
-                            currentVisits.insert(newIndex >= 0 ? newIndex : currentVisits.length, droppedVisit);
-                            timesheetProvider.setSuggestedVisits(currentVisits);
-                          },
-                          builder: (context, candidateData, rejectedData) {
-                            return ListView.builder(
-                              shrinkWrap: true,
-                              itemCount: timesheetProvider.suggestedVisits.length,
-                              itemBuilder: (context, index) {
-                                final visit = timesheetProvider.suggestedVisits[index];
-                                return LongPressDraggable<Visit>(
-                                  data: visit,
-                                  feedback: Material(
-                                    elevation: 4,
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: Opacity(
-                                      opacity: 0.8,
-                                      child: VisitItem(
-                                        visit: visit,
-                                        isSuggested: true,
-                                        isDraggable: false,
-                                        onToggleSelection: (visitID) {
-                                          timesheetProvider.toggleSuggestedVisitSelection(visitID);
-                                        },
-                                      ),
-                                    ),
-                                  ),
-                                  childWhenDragging: Opacity(
-                                    opacity: 0.3,
-                                    child: VisitItem(
-                                      visit: visit,
-                                      isSuggested: true,
-                                      isDraggable: false,
-                                      onToggleSelection: (visitID) {
-                                        timesheetProvider.toggleSuggestedVisitSelection(visitID);
-                                      },
-                                    ),
-                                  ),
-                                  child: VisitItem(
-                                    visit: visit,
-                                    isSuggested: true,
-                                    isDraggable: true,
-                                    onToggleSelection: (visitID) {
-                                      timesheetProvider.toggleSuggestedVisitSelection(visitID);
-                                    },
-                                  ),
-                                );
-                              },
-                            );
-                          },
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      if (timesheetProvider.suggestedVisits.isNotEmpty)
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            TextButton(
-                              onPressed: () {
-                                timesheetProvider.selectAllSuggestedVisits();
-                              },
-                              child: Text(
-                                'Select All',
-                                style: TextStyle(color: theme.colorScheme.primary),
-                              ),
-                            ),
-                            TextButton(
-                              onPressed: () {
-                                timesheetProvider.clearSuggestedVisits();
-                                Navigator.pop(context);
-                              },
-                              child: Text(
-                                'Cancel',
-                                style: TextStyle(color: theme.colorScheme.error),
-                              ),
-                            ),
-                            ElevatedButton(
-                              onPressed: () async {
-                                try {
-                                  await timesheetProvider.saveSuggestedVisits(widget.supervisorID);
-                                  Navigator.pop(context);
-                                  widget.scaffoldMessengerKey.currentState?.showSnackBar(
-                                    const SnackBar(content: Text('Suggestions saved successfully')),
-                                  );
-                                } catch (e) {
-                                  widget.scaffoldMessengerKey.currentState?.showSnackBar(
-                                    SnackBar(content: Text('Failed to save suggestions: $e')),
-                                  );
-                                }
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: theme.colorScheme.primary,
-                                foregroundColor: theme.colorScheme.onPrimary,
-                              ),
-                              child: const Text('Save'),
-                            ),
-                          ],
-                        ),
-                    ],
-                  ),
-                ),
+            Expanded(
+              child: _showSuggestions
+                  ? _buildSuggestionsView(timesheetProvider)
+                  : _buildFormView(weekDates),
+            ),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildFormView(List<String> weekDates) {
+    return Form(
+      key: _formKey,
+      child: ListView(
+        children: [
+          _buildSectionCard(
+            title: 'Selections',
+            children: [
+              _buildMultiSelector(
+                label: 'Preferred Days',
+                value: _formatSelectedDays(_preferredDays),
+                onTap: () {
+                  _showMultiSelectDialog(
+                    title: 'Select Preferred Days',
+                    items: weekDates,
+                    selectedItems: _preferredDays,
+                    displayFormatter: (date) => DateFormat('EEE, d MMM').format(DateTime.parse(date)),
+                    onSelectionChanged: (selected) {
+                      setState(() {
+                        _preferredDays = selected;
+                      });
+                    },
+                  );
+                },
+                isLoading: false,
+                isEmpty: weekDates.isEmpty,
+              ),
+              _buildMultiSelector(
+                label: 'Delegations',
+                value: _formatSelectedDelegations(_delegationIds),
+                onTap: () {
+                  _showMultiSelectDialog(
+                    title: 'Select Delegations',
+                    items: _delegations.map((d) => d.delegationID).toList(),
+                    selectedItems: _delegationIds,
+                    displayFormatter: (id) => _delegations.firstWhere((d) => d.delegationID == id).name,
+                    onSelectionChanged: (selected) {
+                      setState(() {
+                        _delegationIds = selected;
+                      });
+                    },
+                  );
+                },
+                isLoading: _isDelegationsLoading,
+                isEmpty: _delegations.isEmpty,
+              ),
+              _buildMultiSelector(
+                label: 'Agents',
+                value: _formatSelectedAgents(_agentIds),
+                onTap: () {
+                  _showMultiSelectDialog(
+                    title: 'Select Agents',
+                    items: _agents.map((a) => a.agentID).toList(),
+                    selectedItems: _agentIds,
+                    displayFormatter: (id) {
+                      final agent = _agents.firstWhere((a) => a.agentID == id);
+                      return '${agent.name} ${agent.lastname}';
+                    },
+                    onSelectionChanged: (selected) {
+                      setState(() {
+                        _agentIds = selected;
+                      });
+                    },
+                  );
+                },
+                isLoading: _isAgentsLoading,
+                isEmpty: _agents.isEmpty,
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          _buildSectionCard(
+            title: 'Options',
+            children: [
+              CheckboxListTile(
+                title: Text(
+                  'Include Recruitment Visits',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+                value: _includeRecruitmentVisits,
+                onChanged: (value) {
+                  setState(() {
+                    _includeRecruitmentVisits = value!;
+                    if (!value) {
+                      _selectedRegion = null;
+                      _selectedGovernorate = null;
+                      _selectedRecruitmentDelegation = null;
+                    } else {
+                      _fetchRegions();
+                    }
+                  });
+                },
+                activeColor: Theme.of(context).colorScheme.primary,
+              ),
+              if (_includeRecruitmentVisits) ...[
+                _isRegionsLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : _buildSelector(
+                  label: 'Region',
+                  value: _selectedRegion == null
+                      ? 'Select Region'
+                      : _regions.firstWhere((r) => r.regionID == _selectedRegion).name,
+                  onTap: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        backgroundColor: Theme.of(context).cardTheme.color,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        title: Text(
+                          'Select Region',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                        content: SizedBox(
+                          width: double.maxFinite,
+                          child: ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: _regions.length,
+                            itemBuilder: (context, index) {
+                              final region = _regions[index];
+                              return ListTile(
+                                title: Text(region.name),
+                                onTap: () {
+                                  setState(() {
+                                    _selectedRegion = region.regionID;
+                                    _selectedGovernorate = null;
+                                    _selectedRecruitmentDelegation = null;
+                                    _fetchGovernorates(region.regionID);
+                                  });
+                                  Navigator.pop(context);
+                                },
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 8),
+                _isGovernoratesLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : _buildSelector(
+                  label: 'Governorate',
+                  value: _selectedGovernorate == null
+                      ? 'Select Governorate'
+                      : _governorates.firstWhere((g) => g.governorateID == _selectedGovernorate).name,
+                  onTap: _selectedRegion == null
+                      ? () {}
+                      : () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        backgroundColor: Theme.of(context).cardTheme.color,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        title: Text(
+                          'Select Governorate',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                        content: SizedBox(
+                          width: double.maxFinite,
+                          child: ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: _governorates.length,
+                            itemBuilder: (context, index) {
+                              final governorate = _governorates[index];
+                              return ListTile(
+                                title: Text(governorate.name),
+                                onTap: () {
+                                  setState(() {
+                                    _selectedGovernorate = governorate.governorateID;
+                                    _selectedRecruitmentDelegation = null;
+                                    _fetchRecruitmentDelegations(governorate.governorateID);
+                                  });
+                                  Navigator.pop(context);
+                                },
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 8),
+                _isRecruitmentDelegationsLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : _buildSelector(
+                  label: 'Recruitment Delegation',
+                  value: _selectedRecruitmentDelegation == null
+                      ? 'Select Delegation'
+                      : _recruitmentDelegations.firstWhere((d) => d.delegationID == _selectedRecruitmentDelegation).name,
+                  onTap: _selectedGovernorate == null
+                      ? () {}
+                      : () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        backgroundColor: Theme.of(context).cardTheme.color,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        title: Text(
+                          'Select Delegation',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                        content: SizedBox(
+                          width: double.maxFinite,
+                          child: ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: _recruitmentDelegations.length,
+                            itemBuilder: (context, index) {
+                              final delegation = _recruitmentDelegations[index];
+                              return ListTile(
+                                title: Text(delegation.name),
+                                onTap: () {
+                                  setState(() {
+                                    _selectedRecruitmentDelegation = delegation.delegationID;
+                                  });
+                                  Navigator.pop(context);
+                                },
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 8),
+          _buildSectionCard(
+            title: 'Time Interval',
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () async {
+                        if (kDebugMode) print('Start time tapped');
+                        final time = await showTimePicker(
+                          context: context,
+                          initialTime: TimeOfDay(
+                            hour: int.tryParse(_startTime.split(':')[0]) ?? 8,
+                            minute: int.tryParse(_startTime.split(':')[1]) ?? 0,
+                          ),
+                        );
+                        if (time != null) {
+                          setState(() {
+                            _startTime = '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+                            if (kDebugMode) print('Start time set to: $_startTime');
+                          });
+                        }
+                      },
+                      child: AbsorbPointer(
+                        child: TextFormField(
+                          decoration: InputDecoration(
+                            labelText: 'Start Time (HH:mm)',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          controller: TextEditingController(text: _startTime),
+                          validator: (value) {
+                            if (value == null || !RegExp(r'^(?:[01]\d|2[0-3]):[0-5]\d$').hasMatch(value)) {
+                              return 'Invalid time (HH:mm, 00:00-23:59)';
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () async {
+                        if (kDebugMode) print('End time tapped');
+                        final time = await showTimePicker(
+                          context: context,
+                          initialTime: TimeOfDay(
+                            hour: int.tryParse(_endTime.split(':')[0]) ?? 17,
+                            minute: int.tryParse(_endTime.split(':')[1]) ?? 0,
+                          ),
+                        );
+                        if (time != null) {
+                          setState(() {
+                            _endTime = '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+                            if (kDebugMode) print('End time set to: $_endTime');
+                          });
+                        }
+                      },
+                      child: AbsorbPointer(
+                        child: TextFormField(
+                          decoration: InputDecoration(
+                            labelText: 'End Time (HH:mm)',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          controller: TextEditingController(text: _endTime),
+                          validator: (value) {
+                            if (value == null || !RegExp(r'^(?:[01]\d|2[0-3]):[0-5]\d$').hasMatch(value)) {
+                              return 'Invalid time (HH:mm, 00:00-23:59)';
+                            }
+                            try {
+                              final start = DateTime.parse('2000-01-01 $_startTime:00');
+                              final end = DateTime.parse('2000-01-01 $value:00');
+                              if (end.isBefore(start) || end.isAtSameMomentAs(start)) {
+                                return 'End time must be after start';
+                              }
+                            } catch (e) {
+                              return 'Invalid time format';
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          _buildSectionCard(
+            title: 'Additional Settings',
+            children: [
+              TextFormField(
+                initialValue: _maxVisitsPerAgentPerWeek.toString(),
+                decoration: InputDecoration(
+                  labelText: 'Max Visits Per Agent Per Week',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                keyboardType: TextInputType.number,
+                validator: (value) {
+                  final num = int.tryParse(value ?? '');
+                  if (num == null || num < 1) {
+                    return 'Enter a valid number (≥1)';
+                  }
+                  return null;
+                },
+                onSaved: (value) => _maxVisitsPerAgentPerWeek = int.parse(value!),
+              ),
+              const SizedBox(height: 8),
+              TextFormField(
+                initialValue: _description,
+                decoration: InputDecoration(
+                  labelText: 'Description',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                maxLines: 3,
+                onSaved: (value) => _description = value ?? '',
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : ElevatedButton(
+            onPressed: () async {
+              if (kDebugMode) print('Generate button pressed');
+              if (!_formKey.currentState!.validate()) {
+                if (kDebugMode) print('Form validation failed');
+                widget.scaffoldMessengerKey.currentState?.showSnackBar(
+                  const SnackBar(content: Text('Please correct the form errors')),
+                );
+                return;
+              }
+              if (kDebugMode) print('Form validated, saving form');
+              _formKey.currentState!.save();
+              setState(() => _isLoading = true);
+              final timesheetProvider = Provider.of<TimesheetProvider>(context, listen: false);
+              try {
+                if (kDebugMode) print('Parsing startHour and endHour');
+                final startHour = int.tryParse(_startTime.split(':')[0]) ?? 8;
+                final endHour = int.tryParse(_endTime.split(':')[0]) ?? 17;
+                if (kDebugMode) print('Building criteria');
+                final recruitmentAreas = _includeRecruitmentVisits
+                    ? [
+                  if (_selectedRegion != null)
+                    _regions.firstWhere((r) => r.regionID == _selectedRegion).name,
+                  if (_selectedGovernorate != null)
+                    _governorates.firstWhere((g) => g.governorateID == _selectedGovernorate).name,
+                  if (_selectedRecruitmentDelegation != null)
+                    _recruitmentDelegations.firstWhere((d) => d.delegationID == _selectedRecruitmentDelegation).name,
+                ].where((name) => name.isNotEmpty).toList()
+                    : [];
+                final criteria = {
+                  'delegationIds': _delegationIds,
+                  'agentIds': _agentIds,
+                  'preferredDays': _preferredDays,
+                  'timeInterval': {
+                    'startHour': startHour,
+                    'endHour': endHour,
+                  },
+                  'maxVisitsPerAgentPerWeek': _maxVisitsPerAgentPerWeek,
+                  'includeRecruitmentVisits': _includeRecruitmentVisits,
+                  'recruitmentAreas': recruitmentAreas,
+                  'description': _description,
+                  'filters': {},
+                };
+                final Map<String, dynamic> coordinates = _userLocation != null
+                    ? {
+                  'lat': _userLocation!.latitude,
+                  'lng': _userLocation!.longitude,
+                }
+                    : {};
+                if (kDebugMode) {
+                  print('Calling suggestTimesheet with:');
+                  print('SupervisorID: ${widget.supervisorID}');
+                  print('WeekNumber: ${widget.weekNumber}');
+                  print('Year: ${widget.year}');
+                  print('Coordinates: $coordinates');
+                  print('Criteria: $criteria');
+                }
+                final result = await timesheetProvider.suggestTimesheet(
+                  supervisorID: widget.supervisorID,
+                  weekNumber: widget.weekNumber,
+                  year: widget.year,
+                  coordinates: coordinates,
+                  criteria: criteria,
+                );
+                if (kDebugMode) print('Received result: $result');
+                final suggestedVisits = (result['suggestions'] as List)
+                    .map((v) => Visit.fromJson(v as Map<String, dynamic>))
+                    .toList();
+                if (kDebugMode) print('Parsed ${suggestedVisits.length} suggested visits');
+                timesheetProvider.setSuggestedVisits(suggestedVisits);
+                setState(() {
+                  _showSuggestions = true;
+                  _isLoading = false;
+                });
+                if (kDebugMode) print('Suggestions displayed');
+              } catch (e) {
+                if (kDebugMode) print('Error in suggestTimesheet: $e');
+                setState(() => _isLoading = false);
+                widget.scaffoldMessengerKey.currentState?.showSnackBar(
+                  SnackBar(content: Text('Failed to generate suggestions: $e')),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.8),
+              foregroundColor: Theme.of(context).colorScheme.onPrimary,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: const Text('Generate Suggestions'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSuggestionsView(TimesheetProvider timesheetProvider) {
+    final theme = Theme.of(context);
+    if (timesheetProvider.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    } else if (timesheetProvider.suggestedVisits.isEmpty) {
+      return const Center(child: Text('No suggestions available'));
+    } else {
+      return Column(
+        children: [
+          Expanded(
+            child: DragTarget<Visit>(
+              onWillAccept: (data) => true,
+              onAcceptWithDetails: (details) {
+                final droppedVisit = details.data;
+                final currentVisits = List<Visit>.from(timesheetProvider.suggestedVisits);
+                final newIndex = currentVisits.indexWhere((v) => v.visitID == droppedVisit.visitID);
+                currentVisits.removeWhere((v) => v.visitID == droppedVisit.visitID);
+                currentVisits.insert(newIndex >= 0 ? newIndex : currentVisits.length, droppedVisit);
+                timesheetProvider.setSuggestedVisits(currentVisits);
+              },
+              builder: (context, candidateData, rejectedData) {
+                return ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: timesheetProvider.suggestedVisits.length,
+                  itemBuilder: (context, index) {
+                    final visit = timesheetProvider.suggestedVisits[index];
+                    return LongPressDraggable<Visit>(
+                      data: visit,
+                      feedback: Material(
+                        elevation: 4,
+                        borderRadius: BorderRadius.circular(8),
+                        child: Opacity(
+                          opacity: 0.8,
+                          child: VisitItem(
+                            visit: visit,
+                            isSuggested: true,
+                            isDraggable: false,
+                            onToggleSelection: (visitID) {
+                              timesheetProvider.toggleSuggestedVisitSelection(visitID);
+                            },
+                          ),
+                        ),
+                      ),
+                      childWhenDragging: Opacity(
+                        opacity: 0.3,
+                        child: VisitItem(
+                          visit: visit,
+                          isSuggested: true,
+                          isDraggable: false,
+                          onToggleSelection: (visitID) {
+                            timesheetProvider.toggleSuggestedVisitSelection(visitID);
+                          },
+                        ),
+                      ),
+                      child: VisitItem(
+                        visit: visit,
+                        isSuggested: true,
+                        isDraggable: true,
+                        onToggleSelection: (visitID) {
+                          timesheetProvider.toggleSuggestedVisitSelection(visitID);
+                        },
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 16),
+          if (timesheetProvider.suggestedVisits.isNotEmpty)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () {
+                    timesheetProvider.selectAllSuggestedVisits();
+                  },
+                  child: Text(
+                    'Select All',
+                    style: TextStyle(color: theme.colorScheme.primary),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () {
+                    timesheetProvider.clearSuggestedVisits();
+                    Navigator.pop(context);
+                  },
+                  child: Text(
+                    'Cancel',
+                    style: TextStyle(color: theme.colorScheme.error),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    try {
+                      await timesheetProvider.saveSuggestedVisits(widget.supervisorID);
+                      Navigator.pop(context);
+                      widget.scaffoldMessengerKey.currentState?.showSnackBar(
+                        const SnackBar(content: Text('Suggestions saved successfully')),
+                      );
+                    } catch (e) {
+                      widget.scaffoldMessengerKey.currentState?.showSnackBar(
+                        SnackBar(content: Text('Failed to save suggestions: $e')),
+                      );
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: theme.colorScheme.primary,
+                    foregroundColor: theme.colorScheme.onPrimary,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  child: const Text('Save'),
+                ),
+              ],
+            ),
+        ],
+      );
+    }
   }
 }

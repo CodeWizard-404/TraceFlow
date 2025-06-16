@@ -472,8 +472,8 @@ class ReceiptBookService {
         try {
             // Fetch book details for validation using getReceiptBookById
             const bookData = await this.getReceiptBookById(bookID);
-            if (!['In Stock', 'With Stock Manager'].includes(bookData.status)) {
-                const error = new Error('Receipt book can only be deleted if In Stock or With Stock Manager');
+            if (!['In Stock', 'With Stock Manager', 'Archived', 'Sent to Supplier', 'Collect from Supplier'].includes(bookData.status)) {
+                const error = new Error('Receipt book can only be deleted if In Stock or With Stock Manager or Archived or Sent to Supplier or Collect from Supplier');
                 error.status = 400;
                 throw error;
             }
@@ -588,9 +588,7 @@ class ReceiptBookService {
                     bookID: bookIDs,
                     status: 'In Stock',
                 };
-                if (!isSuperAdmin) {
-                    whereClause.currentHolderID = userID;
-                }
+
 
                 const books = await ReceiptBook.findAll({
                     where: whereClause,

@@ -191,7 +191,7 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> with SingleTi
       );
     }
 
-    final allVisits = timesheets.expand((ts) => ts.visits ?? <Visit>[]).toList() as List<Visit>;
+    final allVisits = timesheets.expand((ts) => ts.visits ?? <Visit>[]).toList();
     final numAgents = agents.length;
     final numReceiptBooks = receiptBooks.length;
     final numVisits = allVisits.length;
@@ -648,7 +648,7 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> with SingleTi
             itemCount: sentNotifications.length,
             itemBuilder: (context, index) {
               final notification = sentNotifications[index];
-              final icon = notificationIcons[notification.type ?? 'info'] ?? Icons.info;
+              final icon = notificationIcons[notification.type] ?? Icons.info;
               return Card(
                 elevation: 2,
                 margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 0),
@@ -754,7 +754,7 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> with SingleTi
                     name: '${_director!.firstName} ${_director!.lastName}',
                     phone: _director!.phone ?? 'N/A',
                     email: _director!.email ?? 'N/A',
-                    icon: Icons.star,
+                    icon: Icons.manage_accounts_rounded,
                   ),
                   if (_regionalManager != null)
                     const CustomSpacer(height: 8),

@@ -46,7 +46,7 @@ class WeekViewList extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                IconButton(
+              /*  IconButton(
                   icon: Icon(Icons.calendar_today, color: theme.colorScheme.primary),
                   onPressed: () async {
                     final timesheet = provider.timesheets.firstWhere(
@@ -56,11 +56,14 @@ class WeekViewList extends StatelessWidget {
                     await provider.syncTimesheetToCalendar(timesheet.timesheetID);
                   },
                   tooltip: 'Sync to Calendar',
-                ),
+                ),*/
 
-                IconButton(
-                  icon: Icon(Icons.lightbulb, color:Colors.red),
-
+                TextButton.icon(
+                  icon: Icon(Icons.auto_fix_high, color: theme.colorScheme.primary),
+                  label: Text(
+                    'Generate Suggestions',
+                    style: TextStyle(color: theme.colorScheme.primary),
+                  ),
                   onPressed: () {
                     TimesheetSuggestionsModal.show(
                       context: context,
@@ -70,9 +73,13 @@ class WeekViewList extends StatelessWidget {
                       scaffoldMessengerKey: scaffoldMessengerKey,
                     );
                   },
-                  tooltip: 'Generate Timesheet Suggestions',
-                ),
-                IconButton(
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    minimumSize: Size(0, 0),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                )
+               /* IconButton(
                   icon: Icon(Icons.map, color: theme.colorScheme.primary),
                   onPressed: () {
                     Navigator.pushNamed(context, '/visits_map', arguments: {
@@ -83,7 +90,7 @@ class WeekViewList extends StatelessWidget {
                     });
                   },
                   tooltip: 'View Visits on Map',
-                ),
+                ),*/
               ],
             ),
             ListView.builder(

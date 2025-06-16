@@ -248,11 +248,13 @@ class LoginScreenState extends State<LoginScreen> {
                       const SizedBox(height: 16),
                       Divider(color: theme.colorScheme.outline),
                       const SizedBox(height: 16),
-                      const GoogleLoginButton(),
+                      Visibility(
+                        visible: false,
+                        child: const GoogleLoginButton(),
+                      ),
                       const SizedBox(height: 16),
                       TextButton(
-                        onPressed: () =>
-                            Navigator.pushNamed(context, '/forgot-password'),
+                        onPressed: () => Navigator.pushNamed(context, '/forgot-password'),
                         child: Text(
                           'Forgot Password?',
                           style: theme.textTheme.bodyMedium?.copyWith(
