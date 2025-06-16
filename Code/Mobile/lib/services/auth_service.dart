@@ -13,45 +13,90 @@ class AuthService {
     return initiateGoogleLogin();
   }
 
-  static Future<Map<String, dynamic>> initiateGoogleLogin() async {
+  static Future<void> testGoogleSignInConfig() async {
     try {
       final googleSignIn = GoogleSignIn(
-        serverClientId: googleClientIdWeb,
+        clientId: googleClientIdAndroid,
+        serverClientId: null,
+        scopes: ['email'],
+      );
+      print('Testing GoogleSignIn with clientId=$googleClientIdAndroid');
+      final account = await googleSignIn.signInSilently();
+      if (account != null) {
+        print('Silent sign-in succeeded: ${account.email}');
+        final auth = await account.authentication;
+        print('ID token: ${auth.idToken}');
+        if (auth.idToken != null) {
+          final decoded = JwtDecoder.decode(auth.idToken!);
+          print('Token audience: ${decoded['aud']}');
+        }
+      } else {
+        print('Silent sign-in returned null');
+      }
+    } catch (e) {
+      print('Test Google SignIn config error: $e');
+    }
+  }
+
+  static Future<Map<String, dynamic>> initiateGoogleLogin() async {
+    try {
+      if (kDebugMode) print('GoogleSignIn configuration: clientId=$googleClientIdAndroid, serverClientId=${kIsWeb ? googleClientIdWeb : null}');
+      final googleSignIn = GoogleSignIn(
+        clientId: kIsWeb ? null : googleClientIdAndroid,
+        serverClientId: kIsWeb ? googleClientIdWeb : null,
         scopes: ['email', 'profile', 'openid'],
       );
 
+      if (kDebugMode) {
+        try {
+          final pingResponse = await http.get(Uri.parse('$baseUrl/health'));
+          print('Ping to backend: ${pingResponse.statusCode}');
+        } catch (e) {
+          print('Ping to backend failed: $e');
+        }
+      }
+
+      if (kDebugMode) print('Attempting Google Sign-In...');
       final googleUser = await googleSignIn.signIn();
       if (googleUser == null) {
+        if (kDebugMode) print('Google Sign-In cancelled by user');
         throw Exception('Google Sign-In cancelled');
       }
 
+      if (kDebugMode) print('Google User: ${googleUser.email}');
       final googleAuth = await googleUser.authentication;
       final idToken = googleAuth.idToken;
       if (idToken == null) {
+        if (kDebugMode) print('ID token is null');
         throw Exception('Failed to retrieve ID token from Google');
       }
-      if (kDebugMode) {
-        print('Google ID Token: $idToken');
+      if (kDebugMode) print('Google ID Token retrieved successfully');
+
+      final decodedToken = JwtDecoder.decode(idToken);
+      if (kDebugMode) print('ID Token audience: ${decodedToken['aud']}');
+      if (decodedToken['aud'] != googleClientIdAndroid && !kIsWeb) {
+        if (kDebugMode) print('Audience mismatch: expected $googleClientIdAndroid, got ${decodedToken['aud']}');
+        throw Exception('Invalid ID token audience');
       }
 
+      if (kDebugMode) print('Sending ID token to backend: $baseUrl/auth/google');
       final tokenResponse = await http.post(
         Uri.parse('$baseUrl/auth/google'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'id_token': idToken}),
       );
 
+      if (kDebugMode) {
+        print('Backend response status: ${tokenResponse.statusCode}');
+        print('Backend response body: ${tokenResponse.body}');
+      }
+
       if (tokenResponse.statusCode != 200) {
-        if (kDebugMode) {
-          print('Login failed: ${tokenResponse.body}');
-        }
         throw Exception(
             'Failed to log in: ${jsonDecode(tokenResponse.body)['error'] ?? tokenResponse.body}');
       }
 
       final tokens = jsonDecode(tokenResponse.body);
-      if (kDebugMode) {
-        print('Backend response: ${jsonEncode(tokens)}');
-      }
       final accessToken = tokens['accessToken'] as String;
       final refreshToken = tokens['refreshToken'] as String;
       await CookieManager.saveCookies({
@@ -64,6 +109,7 @@ class AuthService {
       final userResponse = await CustomHttpClient.get(
         Uri.parse('$baseUrl/users/profile'),
       );
+      if (kDebugMode) print('User profile response: ${userResponse.body}');
       if (userResponse.statusCode != 200) {
         throw Exception('Failed to fetch user data: ${userResponse.body}');
       }
@@ -90,12 +136,15 @@ class AuthService {
         'user': userData['user'],
       };
     } catch (e) {
-      if (kDebugMode) {
-        print('Google login error: $e');
-      }
+      if (kDebugMode) print('Google login error: $e');
       throw Exception(_parseError(e));
     }
   }
+
+
+
+
+
 
   static Future<bool> _check2FARequired() async {
     try {

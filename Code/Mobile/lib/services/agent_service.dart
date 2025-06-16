@@ -277,14 +277,25 @@ class AgentService {
           CookieManager.extractCookies(response);
           if (kDebugMode) print('AgentService: Fetching agents by user ID: $userID');
           if (response.statusCode != 200) {
+            if (kDebugMode) print('Response status: ${response.statusCode}, body: ${response.body}');
             throw Exception('Failed to fetch agents by user: ${response.statusCode}');
           }
           return response;
         },
       );
-      // decodedResponse is the decoded JSON body from a successful request
+      // Log the raw response for debugging
+      if (kDebugMode) print('AgentService: Raw response: $decodedResponse');
       final agentList = decodedResponse['agents'] as List<dynamic>? ?? [];
-      final agents = agentList.map((json) => Agent.fromJson(json as Map<String, dynamic>)).toList();
+      final agents = agentList.asMap().entries.map((entry) {
+        final index = entry.key;
+        final json = entry.value as Map<String, dynamic>;
+        try {
+          return Agent.fromJson(json);
+        } catch (e) {
+          if (kDebugMode) print('Error parsing agent at index $index: $json\nError: $e');
+          rethrow;
+        }
+      }).toList();
       if (kDebugMode) print('Agents fetched: ${agents.length}');
       return agents;
     } catch (e) {
@@ -292,6 +303,7 @@ class AgentService {
       throw Exception('Failed to fetch agents by user: $e');
     }
   }
+
 
   Future<Map<String, dynamic>> uploadAgents(Uint8List fileBytes) async {
     try {

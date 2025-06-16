@@ -19,6 +19,7 @@ import {
     getGovernoratesByUser,
     getDelegationsByUser,
 } from '../../apis/locationApi';
+import AgentBulkUploadModal from '../Admin/Agents/AgentBulkUploadModal';
 import { useAuth } from '../../context/AuthContext';
 import {
     Table,
@@ -184,6 +185,7 @@ const AgentManagement: React.FC = () => {
     const [regions, setRegions] = useState<Region[]>([]);
     const [governorates, setGovernorates] = useState<Governorate[]>([]);
     const [delegations, setDelegations] = useState<Delegation[]>([]);
+    const [isBulkUploadModalOpen, setIsBulkUploadModalOpen] = useState(false);
     const [metrics, setMetrics] = useState<Metrics>({
         totalAgents: 0,
         withLocations: 0,
@@ -226,18 +228,42 @@ const AgentManagement: React.FC = () => {
 
     const userPermissions = useMemo(
         () => ({
-            readAgentsLocations: effectivePermissions?.includes(PERMSSIONS.READ_AGENTS_LOCATIONS),
-            readAgentsByLocation: effectivePermissions?.includes(PERMSSIONS.READ_AGENTS_BY_LOCATION),
-            readAgentsById: effectivePermissions?.includes(PERMSSIONS.READ_AGENTS_BY_ID),
-            readAgentsByPhone: effectivePermissions?.includes(PERMSSIONS.READ_AGENTS_BY_PHONE),
-            readAgentsByDelegation: effectivePermissions?.includes(PERMSSIONS.READ_AGENTS_BY_DELEGATION),
-            readAgentSupervisor: effectivePermissions?.includes(PERMSSIONS.READ_AGENT_SUPERVISOR),
-            readAgentsByUser: effectivePermissions?.includes(PERMSSIONS.READ_AGENTS_BY_USER),
-            createAgents: effectivePermissions?.includes(PERMSSIONS.CREATE_AGENTS),
-            readAllAgents: effectivePermissions?.includes(PERMSSIONS.READ_ALL_AGENTS),
-            updateAgents: effectivePermissions?.includes(PERMSSIONS.UPDATE_AGENTS),
-            updateAgentsLocation: effectivePermissions?.includes(PERMSSIONS.UPDATE_AGENTS_LOCATION),
-            deleteAgents: effectivePermissions?.includes(PERMSSIONS.DELETE_AGENTS),
+            readAgentsLocations: effectivePermissions?.some(
+                (p) => p.name === PERMSSIONS.READ_AGENTS_LOCATIONS
+            ),
+            readAgentsByLocation: effectivePermissions?.some(
+                (p) => p.name === PERMSSIONS.READ_AGENTS_BY_LOCATION
+            ),
+            readAgentsById: effectivePermissions?.some(
+                (p) => p.name === PERMSSIONS.READ_AGENTS_BY_ID
+            ),
+            readAgentsByPhone: effectivePermissions?.some(
+                (p) => p.name === PERMSSIONS.READ_AGENTS_BY_PHONE
+            ),
+            readAgentsByDelegation: effectivePermissions?.some(
+                (p) => p.name === PERMSSIONS.READ_AGENTS_BY_DELEGATION
+            ),
+            readAgentSupervisor: effectivePermissions?.some(
+                (p) => p.name === PERMSSIONS.READ_AGENT_SUPERVISOR
+            ),
+            readAgentsByUser: effectivePermissions?.some(
+                (p) => p.name === PERMSSIONS.READ_AGENTS_BY_USER
+            ),
+            createAgents: effectivePermissions?.some(
+                (p) => p.name === PERMSSIONS.CREATE_AGENTS
+            ),
+            readAllAgents: effectivePermissions?.some(
+                (p) => p.name === PERMSSIONS.READ_ALL_AGENTS
+            ),
+            updateAgents: effectivePermissions?.some(
+                (p) => p.name === PERMSSIONS.UPDATE_AGENTS
+            ),
+            updateAgentsLocation: effectivePermissions?.some(
+                (p) => p.name === PERMSSIONS.UPDATE_AGENTS_LOCATION
+            ),
+            deleteAgents: effectivePermissions?.some(
+                (p) => p.name === PERMSSIONS.DELETE_AGENTS
+            ),
         }),
         [effectivePermissions]
     );
@@ -257,6 +283,13 @@ const AgentManagement: React.FC = () => {
         { label: 'With Location', value: 'with' },
         { label: 'Without Location', value: 'without' },
     ];
+
+
+    const setError = (errorMessage: string | null) => {
+        if (errorMessage) {
+            message.error(errorMessage);
+        }
+    };
 
     // Filter Agents by Chart Filters
     const FilteredChartAgents = useMemo(() => {
@@ -1011,10 +1044,16 @@ const AgentManagement: React.FC = () => {
                                 style={{ width: 200 }}
                             />
                             <Select
+                                showSearch
                                 placeholder="Filter by Region"
                                 value={filters.region}
                                 onChange={handleRegionChange}
                                 style={{ width: 150 }}
+                                filterOption={(input: string, option?: { children?: React.ReactNode }) =>
+                                    typeof option?.children === 'string'
+                                        ? option.children.toLowerCase().includes(input.toLowerCase())
+                                        : false
+                                }
                             >
                                 <Select.Option value="">All Regions</Select.Option>
                                 {regions.map(r => (
@@ -1022,10 +1061,16 @@ const AgentManagement: React.FC = () => {
                                 ))}
                             </Select>
                             <Select
+                                showSearch
                                 placeholder="Filter by Governorate"
                                 value={filters.governorate}
                                 onChange={handleGovernorateChange}
                                 style={{ width: 150 }}
+                                filterOption={(input: string, option?: { children?: React.ReactNode }) =>
+                                    typeof option?.children === 'string'
+                                        ? option.children.toLowerCase().includes(input.toLowerCase())
+                                        : false
+                                }
                             >
                                 <Select.Option value="">All Governorates</Select.Option>
                                 {filteredGovernorates.map(g => (
@@ -1033,10 +1078,16 @@ const AgentManagement: React.FC = () => {
                                 ))}
                             </Select>
                             <Select
+                                showSearch
                                 placeholder="Filter by Delegation"
                                 value={filters.delegation}
                                 onChange={(value) => setFilters({ ...filters, delegation: value })}
                                 style={{ width: 150 }}
+                                filterOption={(input: string, option?: { children?: React.ReactNode }) =>
+                                    typeof option?.children === 'string'
+                                        ? option.children.toLowerCase().includes(input.toLowerCase())
+                                        : false
+                                }
                             >
                                 <Select.Option value="">All Delegations</Select.Option>
                                 {filteredDelegations.map(d => (
@@ -1044,10 +1095,16 @@ const AgentManagement: React.FC = () => {
                                 ))}
                             </Select>
                             <Select
+                                showSearch
                                 placeholder="Filter by Supervisor"
                                 value={filters.supervisor}
                                 onChange={handleSupervisorChange}
                                 style={{ width: 150 }}
+                                filterOption={(input: string, option?: { children?: React.ReactNode }) =>
+                                    typeof option?.children === 'string'
+                                        ? option.children.toLowerCase().includes(input.toLowerCase())
+                                        : false
+                                }
                             >
                                 <Select.Option value="">All Supervisors</Select.Option>
                                 {filteredSupervisors.map(s => (
@@ -1065,16 +1122,17 @@ const AgentManagement: React.FC = () => {
                                 >
                                     Bulk Assign Supervisor
                                 </Button>
-                                <Upload beforeUpload={handleCSVUpload} showUploadList={false}>
-                                    <Button icon={<UploadOutlined />}>Import CSV</Button>
-                                </Upload>
+                                <Button
+                                    icon={<UploadOutlined />}
+                                    onClick={() => setIsBulkUploadModalOpen(true)}
+                                >
+                                    Import CSV
+                                </Button>
                                 <Button icon={<DownloadOutlined />} onClick={handleExportCSV}>
                                     Export CSV
                                 </Button>
                             </Space>
-
                         )}
-
                     </Space>
                     <Table
                         rowSelection={rowSelection}
@@ -1084,6 +1142,16 @@ const AgentManagement: React.FC = () => {
                         pagination={{ pageSize: 10 }}
                         loading={loading}
                     />
+                    {isBulkUploadModalOpen && (
+                        <AgentBulkUploadModal
+                            isOpen={isBulkUploadModalOpen}
+                            onClose={() => {
+                                setIsBulkUploadModalOpen(false);
+                                fetchData();
+                            }}
+                            setError={setError}
+                        />
+                    )}
                 </div>
             )}
 

@@ -42,7 +42,7 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
   String? _editingField;
   bool _hasChanges = false;
   Map<String, String> _formErrors = {};
-  String _notificationView = 'list'; // 'list' or 'preferences'
+  String _notificationView = 'list';
 
   @override
   void initState() {

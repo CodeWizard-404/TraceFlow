@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
-
 import '../../providers/auth_provider.dart';
+import '../../providers/theme_provider.dart';
+import '../../widgets/commen/title_text.dart';
+import 'package:flutter/foundation.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -16,7 +18,6 @@ class ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final _identifierController = TextEditingController();
   Map<String, String> _errors = {};
   String? _successMessage;
-  bool _hasNavigated = false;
 
   @override
   void dispose() {
@@ -46,11 +47,19 @@ class ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     if (!_validateForm()) return;
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     await authProvider.initiatePasswordReset(_identifierController.text.trim());
+    if (authProvider.userID != null && authProvider.errorMessage == null) {
+      if (kDebugMode) print('Navigating to /reset-password with userID: ${authProvider.userID}');
+      Navigator.pushNamed(context, '/reset-password');
+    } else if (authProvider.errorMessage != null) {
+      setState(() => _successMessage = null);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final authProvider = Provider.of<AuthProvider>(context);
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final theme = themeProvider.currentTheme;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -58,22 +67,16 @@ class ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(authProvider.errorMessage!),
-            backgroundColor: Theme.of(context).colorScheme.error,
+            backgroundColor: theme.colorScheme.error,
             duration: const Duration(seconds: 5),
           ),
         );
         authProvider.clearError();
-      } else if (authProvider.userID != null && !_hasNavigated) {
-        final currentRoute = ModalRoute.of(context)?.settings.name;
-        if (currentRoute != '/reset-password') {
-          _hasNavigated = true;
-          Navigator.pushNamed(context, '/reset-password');
-        }
       } else if (_successMessage != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(_successMessage!),
-            backgroundColor: Colors.green,
+            backgroundColor: theme.colorScheme.primary,
             duration: const Duration(seconds: 5),
           ),
         );
@@ -82,9 +85,10 @@ class ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     });
 
     return Scaffold(
+      backgroundColor: theme.colorScheme.background,
       body: Stack(
         children: [
-          _buildBackgroundOverlay(),
+          _buildBackgroundOverlay(context),
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
@@ -94,12 +98,12 @@ class ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text(
-                        'Forgot Password',
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
+                      const CustomTitleText(text: 'Forgot Password'),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Reset your password securely.',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onBackground.withOpacity(0.6),
                         ),
                       ),
                       const SizedBox(height: 48),
@@ -107,18 +111,30 @@ class ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         controller: _identifierController,
                         decoration: InputDecoration(
                           labelText: 'Email or Phone',
-                          prefixIcon: const Icon(Icons.person),
+                          labelStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+                          prefixIcon: Icon(Icons.person, color: theme.colorScheme.primary),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(color: theme.colorScheme.outline),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(color: theme.colorScheme.outline),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(color: theme.colorScheme.primary, width: 2),
                           ),
                           errorText: _errors['identifier']?.isNotEmpty == true
                               ? _errors['identifier']
                               : null,
+                          errorStyle: TextStyle(color: theme.colorScheme.error),
                         ),
                         enabled: !authProvider.isLoading,
                         onChanged: (_) => _validateForm(),
                         keyboardType: TextInputType.emailAddress,
                         autocorrect: false,
+                        style: TextStyle(color: theme.colorScheme.onSurface),
                       ),
                       const SizedBox(height: 24),
                       AnimatedContainer(
@@ -127,30 +143,55 @@ class ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         child: ElevatedButton(
                           onPressed: authProvider.isLoading ? null : _initiatePasswordReset,
                           style: ElevatedButton.styleFrom(
+                            backgroundColor: theme.colorScheme.primary,
+                            foregroundColor: theme.colorScheme.onPrimary,
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
+                            elevation: 2,
                           ),
                           child: authProvider.isLoading
-                              ? const SpinKitCircle(
-                            color: Colors.white,
+                              ? SpinKitFadingCircle(
+                            color: theme.colorScheme.onPrimary,
                             size: 24,
                           )
-                              : const Text(
+                              : Text(
                             'Send Reset OTP',
-                            style: TextStyle(fontSize: 16),
+                            style: theme.textTheme.labelLarge?.copyWith(
+                              color: theme.colorScheme.onPrimary,
+                            ),
                           ),
                         ),
                       ),
                       const SizedBox(height: 16),
                       TextButton(
                         onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
-                        child: const Text('Back to Sign In'),
+                        child: Text(
+                          'Back to Sign In',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
                       ),
                     ],
                   ),
                 ),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: 16,
+            left: 16,
+            child: Consumer<ThemeProvider>(
+              builder: (context, themeProvider, _) => _buildIconButton(
+                context,
+                icon: _getThemeIcon(themeProvider.themeMode),
+                tooltip: 'Toggle Theme',
+                onTap: () {
+                  final nextMode = _getNextThemeMode(themeProvider.themeMode);
+                  themeProvider.setTheme(nextMode);
+                },
               ),
             ),
           ),
@@ -159,26 +200,39 @@ class ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     );
   }
 
-  Widget _buildBackgroundOverlay() {
+  Widget _buildBackgroundOverlay(BuildContext context) {
+    final theme = Provider.of<ThemeProvider>(context).currentTheme;
     return Stack(
       children: [
         Container(
-          color: Colors.grey[100],
+          color: theme.colorScheme.background.withOpacity(0.9),
         ),
         Positioned(
           top: 50,
           left: 20,
-          child: Icon(Icons.location_pin, size: 40, color: Colors.blue.withOpacity(0.2)),
+          child: Icon(
+            Icons.location_pin,
+            size: 40,
+            color: theme.colorScheme.primary.withOpacity(0.2),
+          ),
         ),
         Positioned(
           bottom: 100,
           right: 30,
-          child: Icon(Icons.access_time, size: 50, color: Colors.green.withOpacity(0.2)),
+          child: Icon(
+            Icons.access_time,
+            size: 50,
+            color: theme.colorScheme.secondary.withOpacity(0.2),
+          ),
         ),
         Positioned(
           top: 200,
           right: 50,
-          child: Icon(Icons.qr_code, size: 45, color: Colors.purple.withOpacity(0.2)),
+          child: Icon(
+            Icons.qr_code,
+            size: 45,
+            color: theme.colorScheme.tertiary.withOpacity(0.2),
+          ),
         ),
         Positioned(
           top: 100,
@@ -188,12 +242,74 @@ class ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             width: 10,
             height: 10,
             decoration: BoxDecoration(
-              color: Colors.blue.withOpacity(0.3),
+              color: theme.colorScheme.primary.withOpacity(0.3),
+              shape: BoxShape.circle,
+            ),
+          ),
+        ),
+        Positioned(
+          bottom: 150,
+          left: 50,
+          child: AnimatedContainer(
+            duration: const Duration(seconds: 4),
+            width: 12,
+            height: 12,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.secondary.withOpacity(0.3),
               shape: BoxShape.circle,
             ),
           ),
         ),
       ],
     );
+  }
+
+  Widget _buildIconButton(
+      BuildContext context, {
+        required IconData icon,
+        required String tooltip,
+        VoidCallback? onTap,
+        Color? color,
+      }) {
+    final theme = Theme.of(context);
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        splashColor: (color ?? theme.colorScheme.primary).withOpacity(0.2),
+        highlightColor: (color ?? theme.colorScheme.primary).withOpacity(0.1),
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Icon(
+            icon,
+            color: color ?? theme.colorScheme.primary,
+            size: 18,
+          ),
+        ),
+      ),
+    );
+  }
+
+  IconData _getThemeIcon(ThemeMode mode) {
+    switch (mode) {
+      case ThemeMode.system:
+        return Icons.hdr_auto;
+      case ThemeMode.light:
+        return Icons.light_mode_rounded;
+      case ThemeMode.dark:
+        return Icons.brightness_2;
+    }
+  }
+
+  ThemeMode _getNextThemeMode(ThemeMode current) {
+    switch (current) {
+      case ThemeMode.system:
+        return ThemeMode.light;
+      case ThemeMode.light:
+        return ThemeMode.dark;
+      case ThemeMode.dark:
+        return ThemeMode.system;
+    }
   }
 }

@@ -213,7 +213,7 @@ class TimesheetSuggestionsModalState extends State<TimesheetSuggestionsModal> {
   }
 
   Future<void> _fetchGovernorates(String regionID) async {
-    if (_isGovernoratesLoading || _governorates.any((g) => g.regionID == regionID)) return;
+    if (_isGovernoratesLoading || _governorates.any((g) => g.regionID! == regionID)) return;
     if (kDebugMode) print('Fetching governorates for region: $regionID');
     setState(() => _isGovernoratesLoading = true);
     try {
