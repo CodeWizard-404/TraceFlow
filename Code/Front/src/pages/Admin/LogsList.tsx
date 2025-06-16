@@ -4,8 +4,6 @@ import 'react-confirm-alert/src/react-confirm-alert.css';
 import { useTranslation } from 'react-i18next';
 import { Log } from '../../models/log';
 import {
-    getLogs,
-    getLogsByCategory,
     deleteLogs,
     archiveLogs,
     getLogStatistics,
@@ -14,7 +12,7 @@ import {
     getUniqueValues,
     getLoggerHealth,
 } from '../../apis/logAPI';
-import { FaTrash, FaArchive, FaChartBar, FaDownload, FaRedo, FaCog, FaTimes, FaInfoCircle } from 'react-icons/fa';
+import { FaTrash, FaArchive, FaChartBar, FaDownload, FaCog, FaTimes, FaInfoCircle } from 'react-icons/fa';
 import Select from 'react-select';
 import {
     Chart as ChartJS,
@@ -585,11 +583,10 @@ const LogsList: React.FC<LogsListProps> = ({
                             const filters = Object.fromEntries(
                                 Object.entries(logFilters).filter(([_, value]) => value !== undefined && value !== '')
                             );
-                            const response = await deleteLogs({
+                            await deleteLogs({
                                 ...filters,
                                 status: logFilters.status ? Number(logFilters.status) : undefined,
                             });
-                            alert(t('logs.deleteSuccess', { count: response.deletedCount }));
                             refreshLogs();
                         } catch (error: any) {
                             alert(t('logs.error.delete', { message: error.message }));
@@ -606,11 +603,10 @@ const LogsList: React.FC<LogsListProps> = ({
                             const filters = Object.fromEntries(
                                 Object.entries(logFilters).filter(([_, value]) => value !== undefined && value !== '')
                             );
-                            const response = await deleteLogs({
+                            await deleteLogs({
                                 ...filters,
                                 status: logFilters.status ? Number(logFilters.status) : undefined,
                             });
-                            alert(t('logs.deleteSuccess', { count: response.deletedCount }));
                             refreshLogs();
                         } catch (error: any) {
                             alert(t('logs.error.delete', { message: error.message }));

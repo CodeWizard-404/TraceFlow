@@ -107,9 +107,9 @@ ensureRedisInitialized().then(() => {
     });
 
     // Setup Redoc
-    app.use('/api/docs', redoc({
+    app.use('/api-docs', redoc({
         title: 'TraceFlow API Documentation',
-        specUrl: '/api/docs/swagger.json',
+        specUrl: '/api-docs/swagger.json',
         nonce: (req, res) => res.locals.nonce, // Use res.locals.nonce
     }));
 

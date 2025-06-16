@@ -47,6 +47,7 @@ const AIConfigsList: React.FC<AIConfigsListProps> = ({
     const [supervisorNames, setSupervisorNames] = useState<{ [key: string]: string }>({});
     const [isFetching, setIsFetching] = useState(false);
     const [fetchController, setFetchController] = useState<AbortController | null>(null);
+    const [testingConfigId, setTestingConfigId] = useState<string | null>(null);
 
     const fetchSupervisorName = useCallback(async (supervisorId: string, controller: AbortController) => {
         if (!supervisorId) {
@@ -75,7 +76,6 @@ const AIConfigsList: React.FC<AIConfigsListProps> = ({
         setIsFetching(true);
 
         const fetchSupervisors = async () => {
-            // Always set 'global' for null/empty supervisorId
             setSupervisorNames((prev) => ({ ...prev, ['global']: 'gloable' }));
 
             const uniqueSupervisorIds = [
@@ -173,17 +173,36 @@ const AIConfigsList: React.FC<AIConfigsListProps> = ({
             ],
         });
     };
+
     const handleTest = async (configID: string) => {
+        setTestingConfigId(configID);
         try {
             const testResult = await testAIConfig(configID);
-            alert(
-                t('adminDashboard.actions.testResult', {
-                    result: typeof testResult === 'string' ? testResult : JSON.stringify(testResult, null, 2),
-                })
-            );
+            confirmAlert({
+                customUI: ({ onClose }) => (
+                    <div className="custom-confirm-alert">
+                        <h2>{t('adminDashboard.actions.testResultTitle')}</h2>
+                        <p>{t('adminDashboard.actions.testResult')}</p>
+                        <pre className="test-result">
+                            {typeof testResult === 'string'
+                                ? testResult
+                                : JSON.stringify(testResult, null, 2)}
+                        </pre>
+                        <div className="button-container">
+                            <button onClick={onClose} className="action-button-0 action-button-55">
+                                {t('adminDashboard.actions.ok')}
+                            </button>
+                        </div>
+                    </div>
+                ),
+                closeOnClickOutside: false,
+                closeOnEscape: true,
+            });
             setError(null);
         } catch (err: any) {
             setError(t('adminDashboard.error.testAIConfigFailed') || err.message);
+        } finally {
+            setTestingConfigId(null);
         }
     };
 
@@ -290,9 +309,13 @@ const AIConfigsList: React.FC<AIConfigsListProps> = ({
                                         <button
                                             onClick={() => handleTest(config.configID)}
                                             className="action-button-0 action-button-55"
+                                            disabled={testingConfigId === config.configID}
                                             aria-label={t('adminDashboard.actions.aria.test', { name: config.modelName })}
                                         >
-                                            <FaPlay aria-hidden="true" /> {t('adminDashboard.actions.test')}
+                                            <FaPlay aria-hidden="true" />
+                                            {testingConfigId === config.configID
+                                                ? t('adminDashboard.actions.testing')
+                                                : t('adminDashboard.actions.test')}
                                         </button>
                                         <button
                                             onClick={() => handleDelete(config.configID)}

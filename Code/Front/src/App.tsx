@@ -228,7 +228,9 @@ const AppContent: React.FC = React.memo(() => {
               }
             />
             <Route path="/stock-dashboard" element={
-              <StockManagerDashboard />
+              <RoleProtectedRoute requiredRoles={[ROLES.STOCK_MANAGER, ROLES.PURCHASE_TEAM, ROLES.SUPER_ADMIN]}>
+                <StockManagerDashboard />
+              </RoleProtectedRoute>
             } />
             <Route path="/admin-dashboard"
               element={

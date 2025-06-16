@@ -40,7 +40,7 @@ const isEncryptedData = (value) => {
 };
 
 /**
- * Sanitizes an object by replacing encrypted fields with 'encrypted' and sensitive fields with 'encrypted'.
+ * Sanitizes an object by replacing encrypted fields with 'encrypted' and sensitive fields with 'encrypt' for specific fields.
  * @param {Object} obj - The object to sanitize.
  * @param {string[]} sensitiveFields - Fields to mark as 'encrypted'.
  * @param {string} service - The service name (e.g., 'auth', 'role').
@@ -52,14 +52,17 @@ const sanitizeObject = (obj, sensitiveFields = ['password'], service = 'api') =>
         return obj.map(item => sanitizeObject(item, sensitiveFields, service));
     }
 
-    // Hardcode: always treat accessToken, refreshToken, and password as encrypted
-    const authSensitiveFields = [...new Set([...sensitiveFields, 'accessToken', 'refreshToken', 'tempToken', 'password'])];
+    // Hardcode: always treat accessToken, refreshToken, tempToken, and password appropriately
+    const authSensitiveFields = [...new Set([...sensitiveFields, 'accessToken', 'refreshToken', 'password'])];
 
     return Object.fromEntries(
         Object.entries(obj).map(([key, value]) => {
-            // Hardcode: explicitly check for accessToken, refreshToken, and password (case-insensitive)
+            // Hardcode: explicitly check for accessToken, refreshToken, password, and tempToken (case-insensitive)
             if (['accesstoken', 'refreshtoken', 'password'].includes(key.toLowerCase())) {
                 return [key, 'encrypted'];
+            }
+            if (key.toLowerCase() === 'temptoken') {
+                return [key, 'encrypt'];
             }
             // Hardcode: if key is qrCode (any case), force to 'encrypted'
             if (key.toLowerCase() === 'qrcode') {
@@ -92,12 +95,6 @@ const processResponse = (res, depth = 0, service = 'api') => {
     if (!res || typeof res !== 'object') return res;
 
     if (Array.isArray(res)) {
-        if (service === 'role') {
-            return res.map(role => processResponse(role, depth + 1, service));
-        }
-        if (service === 'timesheet') {
-            return res.map(timesheet => processResponse(timesheet, depth + 1, service));
-        }
         if (res.length > 1) {
             return {
                 data: sanitizeObject(res[0], ['password'], service),
@@ -202,6 +199,19 @@ const logRequest = ({
     const sanitizedResponse = res ? JSON.parse(JSON.stringify(res, (key, value) => {
         if (['accesstoken', 'refreshtoken', 'qrcode', 'password', 'PFP'].includes(key.toLowerCase())) {
             return 'encrypted';
+        }
+        if (key.toLowerCase() === 'temptoken') {
+            return 'encrypt';
+        }
+        // Hardcode: limit response arrays to first object with count of remaining
+        if (Array.isArray(value) && value.length > 1) {
+            return {
+                data: value[0], // Avoid recursive sanitizeObject to prevent stack overflow
+                additionalCount: `... ${value.length - 1} more objects`
+            };
+        }
+        if (Array.isArray(value) && value.length === 1) {
+            return [value[0]]; // Return single item as array
         }
         return value;
     })) : res;

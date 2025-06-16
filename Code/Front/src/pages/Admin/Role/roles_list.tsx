@@ -2,6 +2,8 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { FaAngleDown, FaInfoCircle } from "react-icons/fa";
 import { AnimatePresence, motion } from "framer-motion";
 import { debounce } from "lodash";
+import { confirmAlert } from 'react-confirm-alert';
+import 'react-confirm-alert/src/react-confirm-alert.css';
 
 // Context
 import { useAuth } from "../../../context/AuthContext";
@@ -29,12 +31,6 @@ interface RolesListProps {
   setSelectedRole: (role: Role | null) => void;
   setError: (error: string | null) => void;
   searchQuery: string;
-  setConfirmation: (confirmation: {
-    isOpen: boolean;
-    message: string;
-    onConfirm: () => void;
-    onCancel: () => void;
-  } | null) => void;
 }
 
 // Constants
@@ -61,7 +57,7 @@ const viewVariants = {
 };
 
 const RolesList: React.FC<RolesListProps> = React.memo(
-  ({ roles, setRoles, userRoles, view, setSelectedRole, setError, searchQuery, setConfirmation }) => {
+  ({ roles, setRoles, userRoles, view, setSelectedRole, setError, searchQuery }) => {
     const { effectivePermissions } = useAuth();
     const { t } = useTranslation();
     const [activeRolePopup, setActiveRolePopup] = useState<string | null>(null);
@@ -133,22 +129,29 @@ const RolesList: React.FC<RolesListProps> = React.memo(
           ROLES.STOCK_MANAGER,
         ];
         if (fixedRoles.includes(role.name)) {
-          setConfirmation({
-            isOpen: true,
-            message: t("adminDashboard.actions.modifyPreMadeRolesWarning"),
-            onConfirm: () => {
-              setSelectedRoleId((prev) => (prev === role.roleID ? null : role.roleID));
-              setSelectedRole(role);
-              setConfirmation(null);
-            },
-            onCancel: () => setConfirmation(null),
+          confirmAlert({
+            title: t('adminDashboard.actions.modifyPreMadeRolesTitle'),
+            message: t('adminDashboard.actions.modifyPreMadeRolesWarning'),
+            buttons: [
+              {
+                label: t('adminDashboard.actions.confirm'),
+                onClick: () => {
+                  setSelectedRoleId((prev) => (prev === role.roleID ? null : role.roleID));
+                  setSelectedRole(role);
+                },
+              },
+              {
+                label: t('adminDashboard.actions.cancel'),
+                onClick: () => { },
+              },
+            ],
           });
           return;
         }
         setSelectedRoleId((prev) => (prev === role.roleID ? null : role.roleID));
         setSelectedRole(role);
       },
-      [isSuperAdmin, userPermissions.canUpdateRoles, setError, setSelectedRole, setConfirmation, t]
+      [isSuperAdmin, userPermissions.canUpdateRoles, setError, setSelectedRole, t]
     );
 
     const toggleClassExpansion = useCallback((className: string) => {

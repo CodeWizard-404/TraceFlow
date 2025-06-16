@@ -278,15 +278,8 @@ const AdminDashboardSummary: React.FC = () => {
 
     // Checklist Metrics
     const totalChecklists = checklists.length;
-    const checklistsByDate = checklists.reduce((acc, c) => {
-        const date = new Date(c.createdAt).toISOString().slice(0, 10);
-        acc[date] = (acc[date] || 0) + 1;
-        return acc;
-    }, {} as Record<string, number>);
-    const checklistsByDateData = Object.keys(checklistsByDate).sort().map(date => ({
-        date,
-        count: checklistsByDate[date],
-    }));
+
+
 
     // Reason Metrics
     const totalReasons = reasons.length;
@@ -416,21 +409,16 @@ const AdminDashboardSummary: React.FC = () => {
                 <div className="chart-grid">
                     <div className="chart-container">
                         <h3>{t('dashboardAdmin.usersPerRole')}</h3>
-                        <BarChart width={600} height={300} data={usersPerRole}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="role" />
-                            <YAxis />
+                        <BarChart width={600} height={350} data={usersPerRole} margin={{ bottom: 80 }}>                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="role" angle={45} textAnchor="start" />
                             <Tooltip />
                             <Bar dataKey="count" fill="#63b3ed" />
                         </BarChart>
                     </div>
                     <div className="chart-container">
                         <h3>{t('dashboardAdmin.userGrowth')}</h3>
-                        <AreaChart width={600} height={300} data={userGrowthChartData}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="month" />
-                            <YAxis />
-                            <Tooltip />
+                        <AreaChart width={600} height={350} data={userGrowthChartData} margin={{ bottom: 80 }}>                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="month" angle={45} textAnchor="start" />                            <Tooltip />
                             <Area type="monotone" dataKey="users" fill="#63b3ed" stroke="#63b3ed" />
                         </AreaChart>
                     </div>
@@ -444,9 +432,8 @@ const AdminDashboardSummary: React.FC = () => {
                 <div className="chart-grid">
                     <div className="chart-container">
                         <h3>{t('dashboardAdmin.permissionsPerRole')}</h3>
-                        <BarChart width={600} height={400} data={permissionsPerRole}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="role" />
+                        <BarChart width={600} height={450} data={permissionsPerRole} margin={{ bottom: 80 }}>                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="role" angle={45} textAnchor="start" />
                             <YAxis />
                             <Tooltip />
                             <Bar dataKey="count" fill="#63b3ed" />
@@ -454,7 +441,7 @@ const AdminDashboardSummary: React.FC = () => {
                     </div>
                     <div className="chart-container">
                         <h3>{t('dashboardAdmin.permissionsByClass')}</h3>
-                        <PieChart width={600} height={400}>
+                        <PieChart width={600} height={450}>
                             <Pie data={permissionsByClassData} dataKey="count" nameKey="class" cx="50%" cy="50%" outerRadius={80} label>
                                 {permissionsByClassData.map((_, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
                             </Pie>
@@ -471,7 +458,7 @@ const AdminDashboardSummary: React.FC = () => {
                 <hr />
                 <div className="chart-container">
                     <h3>{t('dashboardAdmin.agentsPerSupervisor')}</h3>
-                    <BarChart width={1300} height={300} data={agentsPerSupervisor}>
+                    <BarChart width={1300} height={350} data={agentsPerSupervisor}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="name" />
                         <YAxis />
@@ -489,14 +476,14 @@ const AdminDashboardSummary: React.FC = () => {
                             <option value="count">{t('dashboardAdmin.sortByCount')}</option>
                         </select>
                     </div>
-                    <AreaChart width={2000} height={300} data={sortedAgentsPerGovernorateData}>
+                    <AreaChart width={2000} height={350} data={sortedAgentsPerGovernorateData} margin={{ bottom: 80 }}>
                         <defs>
                             <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
                                 <stop offset="5%" stopColor="#63b3ed" stopOpacity={0.8} />
                                 <stop offset="95%" stopColor="#63b3ed" stopOpacity={0} />
                             </linearGradient>
                         </defs>
-                        <XAxis dataKey="name" />
+                        <XAxis dataKey="name" angle={45} textAnchor="start" />
                         <YAxis />
                         <CartesianGrid strokeDasharray="3 3" />
                         <Tooltip />
@@ -512,7 +499,7 @@ const AdminDashboardSummary: React.FC = () => {
                 <div className="chart-grid">
                     <div className="chart-container">
                         <h3>{t('dashboardAdmin.aiConfigsPerModel')}</h3>
-                        <PieChart width={600} height={300}>
+                        <PieChart width={600} height={350}>
                             <Pie data={aiConfigsPerModelData} dataKey="count" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
                                 {aiConfigsPerModelData.map((_, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
                             </Pie>
@@ -522,12 +509,27 @@ const AdminDashboardSummary: React.FC = () => {
                     </div>
                     <div className="chart-container">
                         <h3>{t('dashboardAdmin.maxOptimizeRouteDistribution')}</h3>
-                        <ScatterChart width={600} height={300}>
+                        <ScatterChart width={600} height={350} data={aiConfigs} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
                             <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="maxOptimizeRoute" name="Max Optimize Route" />
-                            <YAxis dataKey="timesheetMaxSuggestions" name="Timesheet Max Suggestions" />
-                            <Tooltip cursor={{ strokeDasharray: '3 3' }} />
-                            <Scatter name="AI Configs" data={aiConfigs} fill="#63b3ed" />
+                            <XAxis
+                                dataKey="maxOptimizeRoute"
+                                name={t('dashboardAdmin.maxOptimizeRoute')}
+                                type="number"
+                                label={{ value: t('dashboardAdmin.maxOptimizeRoute'), position: 'insideBottom', offset: -10 }}
+                            />
+                            <YAxis
+                                dataKey="timesheetMaxSuggestions"
+                                name={t('dashboardAdmin.timesheetMaxSuggestions')}
+                                type="number"
+                                label={{ value: t('dashboardAdmin.timesheetMaxSuggestions'), angle: -90, position: 'insideLeft', offset: 10 }}
+                            />
+                            <Tooltip
+                                formatter={(value, name) => [
+                                    value,
+                                    name === 'maxOptimizeRoute' ? t('dashboardAdmin.maxOptimizeRoute') : t('dashboardAdmin.timesheetMaxSuggestions'),
+                                ]}
+                            />
+                            <Scatter name={t('dashboardAdmin.aiConfigs')} data={aiConfigs} fill="#63b3ed" shape="circle" />
                         </ScatterChart>
                     </div>
                 </div>
@@ -559,7 +561,7 @@ const AdminDashboardSummary: React.FC = () => {
                 <div className="chart-grid">
                     <div className="chart-container">
                         <h3>{t('dashboardAdmin.logsByLevel')}</h3>
-                        <PieChart width={600} height={300}>
+                        <PieChart width={600} height={350}>
                             <Pie data={logsByLevel} dataKey="count" nameKey="level" cx="50%" cy="50%" outerRadius={80} label>
                                 {logsByLevel.map((_, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
                             </Pie>
@@ -569,9 +571,9 @@ const AdminDashboardSummary: React.FC = () => {
                     </div>
                     <div className="chart-container">
                         <h3>{t('dashboardAdmin.logsByService')}</h3>
-                        <BarChart width={600} height={300} data={logsByServiceData}>
+                        <BarChart width={600} height={350} data={logsByServiceData} margin={{ bottom: 80 }}>
                             <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="service" />
+                            <XAxis dataKey="service" angle={45} textAnchor="start" />
                             <YAxis />
                             <Tooltip />
                             <Bar dataKey="count" fill="#63b3ed" />
@@ -582,9 +584,9 @@ const AdminDashboardSummary: React.FC = () => {
                 <div className="chart-grid">
                     <div className="chart-container">
                         <h3>{t('dashboardAdmin.logsOverTime')}</h3>
-                        <LineChart width={600} height={300} data={logsByDateData}>
+                        <LineChart width={600} height={350} data={logsByDateData} margin={{ bottom: 80 }}>
                             <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="date" />
+                            <XAxis dataKey="date" angle={45} textAnchor="start" />
                             <YAxis />
                             <Tooltip />
                             <Line type="monotone" dataKey="count" stroke="#63b3ed" />
@@ -629,9 +631,9 @@ const AdminDashboardSummary: React.FC = () => {
                 <div className="chart-grid">
                     <div className="chart-container">
                         <h3>{t('dashboardAdmin.notificationRulesByEvent')}</h3>
-                        <BarChart width={600} height={300} data={notificationRulesByEventData}>
+                        <BarChart width={600} height={350} data={notificationRulesByEventData} margin={{ bottom: 100 }}>
                             <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="event" />
+                            <XAxis dataKey="event" angle={80} textAnchor="start" />
                             <YAxis />
                             <Tooltip />
                             <Bar dataKey="count" fill="#63b3ed" />
@@ -639,7 +641,7 @@ const AdminDashboardSummary: React.FC = () => {
                     </div>
                     <div className="chart-container">
                         <h3>{t('dashboardAdmin.notificationRulesByChannel')}</h3>
-                        <PieChart width={600} height={300}>
+                        <PieChart width={600} height={350}>
                             <Pie data={notificationRulesByChannel} dataKey="count" nameKey="channel" cx="50%" cy="50%" outerRadius={80} label>
                                 {notificationRulesByChannel.map((_, index) => <Cell key={`cell-${index + 3}`} fill={COLORS[index + 3 % COLORS.length]} />)}
                             </Pie>
@@ -657,9 +659,9 @@ const AdminDashboardSummary: React.FC = () => {
                 <div className="chart-grid">
                     <div className="chart-container">
                         <h3>{t('dashboardAdmin.checklistsOverTime')}</h3>
-                        <AreaChart width={600} height={300} data={checklistsByDateData}>
+                        <AreaChart width={600} height={350} data={reasonsByDateData} margin={{ bottom: 80 }}>
                             <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="date" />
+                            <XAxis dataKey="date" angle={45} textAnchor="start" />
                             <YAxis />
                             <Tooltip />
                             <Area type="monotone" dataKey="count" fill="#63b3ed" stroke="#63b3ed" />
@@ -667,9 +669,9 @@ const AdminDashboardSummary: React.FC = () => {
                     </div>
                     <div className="chart-container">
                         <h3>{t('dashboardAdmin.reasonsOverTime')}</h3>
-                        <AreaChart width={600} height={300} data={reasonsByDateData}>
+                        <AreaChart width={600} height={350} data={reasonsByDateData} margin={{ bottom: 80 }}>
                             <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="date" />
+                            <XAxis dataKey="date" angle={45} textAnchor="start" />
                             <YAxis />
                             <Tooltip />
                             <Area type="monotone" dataKey="count" fill="#63b3ed" stroke="#63b3ed" />

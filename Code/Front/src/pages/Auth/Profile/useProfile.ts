@@ -297,7 +297,7 @@ export const useProfile = () => {
         joinRoom(user.userID);
 
         const handleNotification = (event: string) => {
-            if (event === "user:profile_updated" || event === "otp:generated:user") {
+            if (event === "user:profile_updated") {
                 if (event === "user:profile_updated") {
                     fetchProfileWithRetry()
                         .then((updatedUser) => {

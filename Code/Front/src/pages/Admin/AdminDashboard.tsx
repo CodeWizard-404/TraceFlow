@@ -16,6 +16,8 @@ import {
     FaUserPlus,
     FaUpload,
 } from "react-icons/fa";
+import { confirmAlert } from 'react-confirm-alert';
+import 'react-confirm-alert/src/react-confirm-alert.css';
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { debounce } from "lodash";
@@ -113,12 +115,7 @@ interface CacheData {
     timestamp: number;
 }
 
-interface ConfirmationState {
-    isOpen: boolean;
-    message: string;
-    onConfirm: () => void;
-    onCancel: () => void;
-}
+
 const cache = new Map<string, CacheData>();
 
 const AdminDashboard: React.FC = React.memo(() => {
@@ -169,7 +166,6 @@ const AdminDashboard: React.FC = React.memo(() => {
     const [notificationStatusFilter, setNotificationStatusFilter] = useState<string>("all");
     const [notificationSortField, setNotificationSortField] = useState<string>("type");
     const [notificationSortOrder, setNotificationSortOrder] = useState<string>("asc");
-    const [confirmation, setConfirmation] = useState<ConfirmationState | null>(null);
     const [isBulkUploadModalOpen, setIsBulkUploadModalOpen] = useState(false);
     const [governorateFilter, setGovernorateFilter] = useState<string>("all");
     const [delegationFilter, setDelegationFilter] = useState<string>("all");
@@ -510,24 +506,30 @@ const AdminDashboard: React.FC = React.memo(() => {
         } finally {
             setResetLoading(false);
             setIsResetting(false);
-            setConfirmation(null);
         }
     };
 
     const debouncedShowResetConfirmation = useCallback(
         debounce(() => {
             if (isResetting || resetLoading) return; // Prevent modal if resetting
-            setConfirmation({
-                isOpen: true,
-                message: t("adminDashboard.actions.resetRolesConfirm"),
-                onConfirm: () => {
-                    debouncedShowResetConfirmation.cancel();
-                    handleResetConfirm();
-                },
-                onCancel: () => {
-                    debouncedShowResetConfirmation.cancel();
-                    setConfirmation(null);
-                },
+            confirmAlert({
+                title: t('adminDashboard.actions.resetRolesConfirmTitle'),
+                message: t('adminDashboard.actions.resetRolesConfirm'),
+                buttons: [
+                    {
+                        label: t('adminDashboard.actions.confirm'),
+                        onClick: async () => {
+                            debouncedShowResetConfirmation.cancel();
+                            await handleResetConfirm();
+                        },
+                    },
+                    {
+                        label: t('adminDashboard.actions.cancel'),
+                        onClick: () => {
+                            debouncedShowResetConfirmation.cancel();
+                        },
+                    },
+                ],
             });
         }, 300),
         [handleResetConfirm, t, isResetting, resetLoading]
@@ -949,62 +951,9 @@ const AdminDashboard: React.FC = React.memo(() => {
         ];
     }, [agents, governorateFilter, t]);
 
-    const ConfirmationModal: React.FC<{
-        message: string;
-        onConfirm: () => void;
-        onCancel: () => void;
-    }> = ({ message, onConfirm, onCancel }) => {
-        const { t } = useTranslation();
-        const [isFadingOut, setIsFadingOut] = useState(false);
-
-        const handleConfirm = () => {
-            setIsFadingOut(true);
-            setTimeout(() => {
-                setIsFadingOut(false);
-                onConfirm();
-            }, 300); // Match animation duration
-        };
-
-        const handleCancel = () => {
-            setIsFadingOut(true);
-            setTimeout(() => {
-                setIsFadingOut(false);
-                onCancel();
-            }, 300);
-        };
-
-        return (
-            <motion.div
-                className={`confirmation-modal-overlay ${isFadingOut ? "fade-out" : "fade-in"}`}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: isFadingOut ? 0 : 1 }}
-                transition={{ duration: 0.3 }}
-            >
-                <div className="confirmation-modal">
-                    <p>{message}</p>
-                    <div className="confirmation-actions">
-                        <button className="confirm-button" onClick={handleConfirm}>
-                            {t("adminDashboard.actions.confirm")}
-                        </button>
-                        <button className="cancel-button" onClick={handleCancel}>
-                            {t("adminDashboard.actions.cancel")}
-                        </button>
-                    </div>
-                </div>
-            </motion.div>
-        );
-    };
 
     return (
         <div className="admin-dashboard" role="main">
-            {confirmation && (
-                <ConfirmationModal
-                    key="central-confirmation"
-                    message={confirmation.message}
-                    onConfirm={confirmation.onConfirm}
-                    onCancel={confirmation.onCancel}
-                />
-            )}
             <header className="dashboard-header">
                 <h1 id="dashboard-title">
                     {view === "users" && t("adminDashboard.header.users")}
@@ -1702,7 +1651,6 @@ const AdminDashboard: React.FC = React.memo(() => {
                                 setError={setLocalError}
                                 userRoles={userRoles || []}
                                 searchQuery={searchQuery}
-                                setConfirmation={setConfirmation}
                             />
                         )}
                         {view === "add-role" && (

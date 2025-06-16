@@ -15,12 +15,7 @@ class OTPService {
             // Store in local database
             const otp = await OTP.create(otpData);
 
-            // Trigger notification for OTP
-            await NotificationService.triggerNotification({
-                event: `otp:generated:${type}`,
-                data: { code, entityID, type },
-                metadata: { expiresAt: expiresAt.toISOString() },
-            });
+
 
             return otp;
         } catch (error) {

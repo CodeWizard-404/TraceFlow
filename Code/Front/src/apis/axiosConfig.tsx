@@ -41,7 +41,7 @@ export const setupAxiosInterceptors = () => {
         config.headers['Content-Type'] = 'application/json';
       }
       config.headers['If-Modified-Since'] = '0';
-      const noTimeoutEndpoints = ['/timesheets/suggest', '/ai', '/receipt-books/upload-csv', '/agents/upload', '/receipt-books/send'];
+      const noTimeoutEndpoints = ['/timesheets/suggest', '/ai', '/receipt-books/upload-csv', '/agents/upload', '/receipt-books/send', '/reports/generate'];
       if (config.url && noTimeoutEndpoints.some((endpoint) => config.url!.includes(endpoint))) {
         config.timeout = 0;
       }

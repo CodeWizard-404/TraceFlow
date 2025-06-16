@@ -1344,7 +1344,11 @@
       "detect": "Detect Anomalies",
       "submitting": "Submitting...",
       "refreshAIConfigs": "Refresh AI Configurations",
-      "testResult": "Test Result: {{result}}"
+      "resetRolesConfirmTitle": "Confirm Reset Roles",
+      "testing": "Testing...",
+      "testResultTitle": "Test Result",
+      "testResult": "The AI configuration test completed with the following result:",
+      "ok": "OK"
     },
     "agents": {
       "viewAgent": "View Agent",
@@ -2520,7 +2524,7 @@
     "agentsPerGovernorate": "Agents per Governorate",
     "aiConfigStatistics": "AI Configuration Statistics",
     "aiConfigsPerModel": "AI Configs per Model",
-    "maxOptimizeRouteDistribution": "Max Optimize Route Distribution",
+    "maxOptimizeRouteDistribution": "Max AI Distribution",
     "logStatistics": "Log Statistics",
     "logsByLevel": "Logs by Level",
     "logsByService": "Logs by Service",
@@ -2535,7 +2539,10 @@
     "allLevels": "All Levels",
     "allUsers": "All Users",
     "allEvents": "All Events",
-    "allPriorities": "All Priorities"
+    "allPriorities": "All Priorities",
+    "maxOptimizeRoute": "Max Optimize Route",
+    "timesheetMaxSuggestions": "Timesheet Max Suggestions",
+    "aiConfigs": "AI Configurations"
   },
   "notificationRules": {
     "deleteConfirmTitle": "Confirm Deletion",

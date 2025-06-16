@@ -80,7 +80,7 @@ function Header() {
   // Map roles to their respective dashboard paths and labels
   const roleDashboards = [
     { role: ROLES.REGIONAL_MANAGER, path: '/regional-dashboard', label: t('header.navbar.regionalDashboard') },
-    { role: ROLES.PURCHASE_TEAM, path: '/purchase-dashboard', label: t('header.navbar.purchaseDashboard') },
+    { role: ROLES.PURCHASE_TEAM, path: '/stock-dashboard', label: t('header.navbar.purchaseDashboard') },
     { role: ROLES.DIRECTOR, path: '/director-dashboard', label: t('header.navbar.directorDashboard') },
     { role: ROLES.SUPERVISOR, path: '/supervisor-dashboard', label: t('header.navbar.supervisorDashboard') },
     { role: ROLES.ADMIN, path: '/admin-dashboard', label: t('header.navbar.adminDashboard') },

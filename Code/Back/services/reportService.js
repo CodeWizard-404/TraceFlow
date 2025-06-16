@@ -752,10 +752,8 @@ class ReportService {
                 logger.error('Log.findAll did not return an array', { logs });
                 throw new Error('Invalid log data returned from database');
             }
-            logger.debug('Logs retrieved for Anomaly report', { count: logs.length, filters });
 
             const userIds = [...new Set(logs.map(l => l.userId).filter(id => id))];
-            logger.debug('Unique user IDs', { userIds });
 
             const users = await User.findAll({
                 where: { userID: { [Op.in]: userIds }, ...userWhere },
@@ -770,7 +768,6 @@ class ReportService {
                 logger.error('User.findAll did not return an array', { users });
                 throw new Error('Invalid user data returned from database');
             }
-            logger.debug('Users retrieved for Anomaly report', { count: users.length });
 
             const userMap = users.reduce((map, user) => {
                 map[user.userID] = {
@@ -810,7 +807,6 @@ class ReportService {
                     'json',
                     new AbortController()
                 );
-                logger.debug('AI summary response', { aiSummary });
                 reportData.aiSummary = typeof aiSummary?.summary === 'string'
                     ? aiSummary.summary
                     : 'No AI summary available';

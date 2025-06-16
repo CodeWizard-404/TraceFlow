@@ -448,9 +448,7 @@ class RoleService {
                         'delete_users',
                         // Class: Permission
                         'access_all_permissions',
-                        'create_permissions',
                         'update_permissions',
-                        'delete_permissions',
                         'access_permission_details',
                         'assign_permissions',
                         'revoke_permissions',
@@ -575,9 +573,7 @@ class RoleService {
                         'access_regions_by_user',
                         // Class: Permission
                         'access_all_permissions',
-                        'create_permissions',
                         'update_permissions',
-                        'delete_permissions',
                         'access_permission_details',
                         'assign_permissions',
                         'revoke_permissions',
