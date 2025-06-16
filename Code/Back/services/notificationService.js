@@ -1,8 +1,8 @@
 const io = require('../utils/socket'); // Socket.io for real-time WebSocket notifications
 const { sendSMS } = require('../config/sms'); // SMS sending utility
 const { sendEmail } = require('../config/smtp'); // Email sending utility
-const { Notification, NotificationPreference, NotificationRule, User, Role } = require('../models'); // Sequelize models
-const { Op } = require('sequelize'); // Sequelize operators for queries
+const { Notification, NotificationPreference, NotificationRule, User, Role, Sequelize } = require('../models'); // Sequelize models
+const { Op, sequelize } = require('sequelize'); // Sequelize operators for queries
 const { getRedisClient, getRedisSubClient } = require('../config/redis'); // Redis client utilities
 const RedisUtils = require('../utils/redisUtils'); // Redis helper utilities
 const logger = require('../utils/logger'); // Logger import
@@ -442,24 +442,30 @@ class NotificationService {
     async handlePriorityChange(rule) {
         if (rule.priority !== 'high') return;
 
-        const preferences = await NotificationPreference.findAll({
-            where: {
-                preferences: {
-                    [Op.contains]: { [rule.event]: {} }
+        try {
+            // Use raw query to find preferences with the event key
+            const preferences = await sequelize.query(
+                `SELECT * FROM notification_preferences WHERE preferences ? :event`,
+                {
+                    replacements: { event: rule.event },
+                    type: sequelize.QueryTypes.SELECT,
+                }
+            );
+
+            for (const pref of preferences) {
+                const userPrefs = pref.preferences || {};
+                if (rule.event in userPrefs) {
+                    delete userPrefs[rule.event];
+                    await NotificationPreference.update(
+                        { preferences: userPrefs },
+                        { where: { userID: pref.userID } }
+                    );
+                    await RedisUtils.invalidateUserPreferences(pref.userID);
                 }
             }
-        });
-
-        for (const pref of preferences) {
-            const userPrefs = pref.preferences || {};
-            if (userPrefs[rule.event]) {
-                delete userPrefs[rule.event];
-                await NotificationPreference.update(
-                    { preferences: userPrefs },
-                    { where: { userID: pref.userID } }
-                );
-                await RedisUtils.invalidateUserPreferences(pref.userID);
-            }
+        } catch (error) {
+            logger.error(`Failed to handle priority change for rule ${rule.ruleID}:`, error.message);
+            throw error;
         }
     }
 
@@ -770,6 +776,43 @@ class NotificationService {
             return { preferences: { email: false, sms: false, inApp: true } };
         }
     }
+
+    // Update user notification preferences
+    async updatePreferences(userID, preferences, logInfo = {}) {
+        try {
+            // Validate preferences
+            if (!preferences || typeof preferences !== 'object') {
+                throw Object.assign(new Error(ERROR_MESSAGES.INVALID_PREFERENCES), { status: 400 });
+            }
+
+            // Validate each event's channels
+            for (const [event, channels] of Object.entries(preferences)) {
+                if (!['email', 'sms', 'inApp'].every(c => typeof channels[c] === 'boolean')) {
+                    throw Object.assign(new Error(ERROR_MESSAGES.INVALID_CHANNELS), { status: 400 });
+                }
+            }
+
+            // Find existing preference or create a new one
+            let preference = await NotificationPreference.findOne({ where: { userID } });
+            if (preference) {
+                await preference.update({ preferences });
+            } else {
+                preference = await NotificationPreference.create({
+                    userID,
+                    preferences,
+                });
+            }
+
+            // Invalidate cache
+            await RedisUtils.invalidateUserPreferences(userID);
+
+            return preference;
+        } catch (error) {
+            logger.error(`Failed to update preferences for user ${userID}:`, error.message);
+            throw Object.assign(error, { status: error.status || 500 });
+        }
+    }
+
 }
 
 module.exports = new NotificationService();
