@@ -21,9 +21,10 @@ class AuthProvider with ChangeNotifier {
   bool _requires2FA = false;
   String? _errorMessage;
   ValueNotifier<int> _otpTimer = ValueNotifier<int>(600);
-  ValueNotifier<int> _resendCooldown = ValueNotifier<int>(0);
+  ValueNotifier<int> _resendTimer = ValueNotifier<int>(60);
   String _otpMethod = 'phone';
   Timer? _otpTimerInstance;
+  Timer? _resendTimerInstance;
   String? _tempToken;
   String? _authTempToken;
   String? _refreshToken;
@@ -32,6 +33,7 @@ class AuthProvider with ChangeNotifier {
   String? _deviceIdentifier;
   DateTime? _lastRefreshTime;
   bool _otpVerified = false;
+  bool _isPasswordResetFlow = false;
 
   String? get deviceIdentifier => _deviceIdentifier;
   User? get user => _user;
@@ -40,7 +42,7 @@ class AuthProvider with ChangeNotifier {
   bool get permissionsLoaded => _permissionsLoaded;
   String? get errorMessage => _errorMessage;
   ValueNotifier<int> get otpTimer => _otpTimer;
-  ValueNotifier<int> get resendCooldown => _resendCooldown;
+  ValueNotifier<int> get resendTimer => _resendTimer;
   String get otpMethod => _otpMethod;
   String? get userID => _userID;
   bool get requires2FA => _requires2FA;
@@ -231,11 +233,14 @@ class AuthProvider with ChangeNotifier {
       if (kDebugMode) print('Login result: ${jsonEncode(result)}');
       if (result['requires2FA'] == true) {
         _requires2FA = true;
+        _isPasswordResetFlow = false;
         _userID = result['userID'];
         _authTempToken = result['tempToken'];
         _otpTimer.value = 600;
+        _resendTimer.value = 60;
         _otpMethod = result['otpMethod'] ?? 'phone';
-        _startotpTimer();
+        startOtpTimer();
+        startResendTimer();
       } else {
         await _handleSuccessfulLogin(result);
         if (kDebugMode) print('After login, isSupervisor: $isSupervisor');
@@ -265,11 +270,14 @@ class AuthProvider with ChangeNotifier {
       _refreshToken = result['refreshToken'] ?? '';
       if (result['requires2FA'] == true) {
         _requires2FA = true;
+        _isPasswordResetFlow = false;
         _userID = result['userID'];
         _authTempToken = result['tempToken'];
         _otpTimer.value = 600;
+        _resendTimer.value = 60;
         _otpMethod = result['otpMethod'] ?? 'phone';
-        _startotpTimer();
+        startOtpTimer();
+        startResendTimer();
       } else {
         await _handleSuccessfulLogin(result);
         if (!isSupervisor) {
@@ -296,11 +304,14 @@ class AuthProvider with ChangeNotifier {
       _refreshToken = result['refreshToken'] ?? '';
       if (result['requires2FA'] == true) {
         _requires2FA = true;
+        _isPasswordResetFlow = false;
         _userID = result['userID'];
         _authTempToken = result['tempToken'];
         _otpTimer.value = 600;
+        _resendTimer.value = 60;
         _otpMethod = result['otpMethod'] ?? 'phone';
-        _startotpTimer();
+        startOtpTimer();
+        startResendTimer();
       } else {
         await _handleSuccessfulLogin(result);
         if (!isSupervisor) {
@@ -341,6 +352,7 @@ class AuthProvider with ChangeNotifier {
       _refreshToken = result['refreshToken'] ?? '';
       await _handleSuccessfulLogin(result);
       _requires2FA = false;
+      _isPasswordResetFlow = false;
       if (!isSupervisor) {
         await logout();
         throw Exception('Access denied: Supervisor role required');
@@ -354,7 +366,13 @@ class AuthProvider with ChangeNotifier {
   }
 
   Future<void> resend2FA(String method) async {
-    if (_userID == null || _resendCooldown.value > 0) return;
+    if (_userID == null || _resendTimer.value > 0 || _isPasswordResetFlow) {
+      if (_isPasswordResetFlow) {
+        _errorMessage = 'Resend not available for password reset.';
+      }
+      notifyListeners();
+      return;
+    }
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -362,9 +380,11 @@ class AuthProvider with ChangeNotifier {
       final result = await AuthService.resend2FA(_userID!, method);
       _otpMethod = method;
       _otpTimer.value = 600;
-      _resendCooldown.value = 60;
+      _resendTimer.value = 60;
       _errorMessage = result['message'] ?? 'OTP resent successfully';
-      _startotpTimer();
+      startOtpTimer();
+      startResendTimer();
+      if (kDebugMode) print('OTP resent, timers reset: OTP=600s, Resend=60s');
     } catch (e) {
       _errorMessage = _parseError(e);
     } finally {
@@ -377,14 +397,15 @@ class AuthProvider with ChangeNotifier {
     _isLoading = true;
     _errorMessage = null;
     _otpVerified = false;
+    _isPasswordResetFlow = true;
     notifyListeners();
     try {
       final result = await AuthService.initiatePasswordReset(identifier);
       _userID = result['userID'];
       _otpTimer.value = 600;
       _otpMethod = result['message']?.contains('email') ?? false ? 'email' : 'phone';
-      _startotpTimer();
-      if (kDebugMode) print('Password reset initiated, userID: $_userID, otpMethod: $_otpMethod');
+      startOtpTimer();
+      if (kDebugMode) print('Password reset initiated, userID: $_userID, otpMethod: $_otpMethod, OTP timer started');
     } catch (e) {
       _errorMessage = _parseError(e);
       if (kDebugMode) print('Password reset initiation error: $_errorMessage');
@@ -429,6 +450,7 @@ class AuthProvider with ChangeNotifier {
     try {
       await AuthService.resetPassword(_userID!, newPassword, _tempToken!);
       _otpVerified = false;
+      _isPasswordResetFlow = false;
       _errorMessage = 'Password reset successfully! Please log in.';
       _userID = null;
       _tempToken = null;
@@ -445,6 +467,7 @@ class AuthProvider with ChangeNotifier {
   Future<void> logout() async {
     if (kDebugMode) print('Logout triggered, current user: ${_user?.userID}, isSupervisor: $isSupervisor');
     _otpTimerInstance?.cancel();
+    _resendTimerInstance?.cancel();
     _refreshTimer?.cancel();
     _isLoading = true;
     notifyListeners();
@@ -465,6 +488,7 @@ class AuthProvider with ChangeNotifier {
       _tokenExpiry = null;
       _lastRefreshTime = null;
       _otpVerified = false;
+      _isPasswordResetFlow = false;
       await CookieManager.clearCookies();
       _isLoading = false;
       if (kDebugMode) print('Logout completed');
@@ -478,12 +502,36 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  void _startotpTimer() {
+  void startOtpTimer() {
     _otpTimerInstance?.cancel();
+    _otpTimer.value = 600; // 10 minutes
     _otpTimerInstance = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (_otpTimer.value > 0) _otpTimer.value--;
-      if (_resendCooldown.value > 0) _resendCooldown.value--;
-      if (_otpTimer.value == 0 && _resendCooldown.value == 0) timer.cancel();
+      if (_otpTimer.value > 0) {
+        _otpTimer.value--;
+        if (kDebugMode && _otpTimer.value % 60 == 0) {
+          print('OTP timer tick: ${_otpTimer.value ~/ 60} minutes remaining');
+        }
+      }
+      if (_otpTimer.value == 0) {
+        timer.cancel();
+        if (kDebugMode) print('OTP timer expired');
+      }
+    });
+  }
+
+  void startResendTimer() {
+    _resendTimerInstance?.cancel();
+    _resendTimer.value = 60; // 1 minute
+    _resendTimerInstance = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_resendTimer.value > 0) {
+        _resendTimer.value--;
+        if (kDebugMode && _resendTimer.value == 0) {
+          print('Resend timer expired, resend available');
+        }
+      }
+      if (_resendTimer.value == 0) {
+        timer.cancel();
+      }
     });
   }
 
@@ -639,9 +687,10 @@ class AuthProvider with ChangeNotifier {
   @override
   void dispose() {
     _otpTimerInstance?.cancel();
+    _resendTimerInstance?.cancel();
     _refreshTimer?.cancel();
     _otpTimer.dispose();
-    _resendCooldown.dispose();
+    _resendTimer.dispose();
     super.dispose();
   }
 }

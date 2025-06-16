@@ -21,6 +21,19 @@ class VerifyResetScreenState extends State<VerifyResetScreen> {
   Map<String, String> _errors = {};
 
   @override
+  void initState() {
+    super.initState();
+    // Ensure OTP timer is running when screen mounts
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      if (authProvider.otpTimer.value == 600) {
+        if (kDebugMode) print('Starting OTP timer on VerifyResetScreen init');
+        authProvider.startOtpTimer();
+      }
+    });
+  }
+
+  @override
   void dispose() {
     _otpController.dispose();
     _passwordController.dispose();
@@ -75,6 +88,16 @@ class VerifyResetScreenState extends State<VerifyResetScreen> {
       if (kDebugMode) print('Navigating to /login after password reset');
       Navigator.pushReplacementNamed(context, '/login');
     }
+  }
+
+  // Format seconds into MM:SS
+  String _formatTimer(int seconds) {
+    final minutes = (seconds ~/ 60).toString().padLeft(2, '0');
+    final secs = (seconds % 60).toString().padLeft(2, '0');
+    if (kDebugMode && seconds % 60 == 0) {
+      print('Timer updated: $minutes:$secs');
+    }
+    return '$minutes:$secs';
   }
 
   @override
@@ -155,28 +178,14 @@ class VerifyResetScreenState extends State<VerifyResetScreen> {
                           style: TextStyle(color: theme.colorScheme.onSurface),
                         ),
                         const SizedBox(height: 24),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Resend OTP in ${authProvider.otpTimer.value} seconds',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onBackground.withOpacity(0.6),
-                              ),
+                        ValueListenableBuilder<int>(
+                          valueListenable: authProvider.otpTimer,
+                          builder: (context, value, child) => Text(
+                            'Remaining time: ${_formatTimer(value)}',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onBackground.withOpacity(0.6),
                             ),
-                            if (authProvider.otpTimer.value == 0)
-                              TextButton(
-                                onPressed: authProvider.isLoading
-                                    ? null
-                                    : () => authProvider.resend2FA(authProvider.otpMethod),
-                                child: Text(
-                                  'Resend',
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: theme.colorScheme.primary,
-                                  ),
-                                ),
-                              ),
-                          ],
+                          ),
                         ),
                       ] else ...[
                         TextFormField(
