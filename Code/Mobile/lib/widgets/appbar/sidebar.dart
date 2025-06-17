@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
+import '../../providers/user_provider.dart';
 import '../../screens/Auth/login_screen.dart';
 import '../../widgets/commen/spacer.dart';
 
@@ -12,6 +14,8 @@ class AppSidebar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final userProvider = Provider.of<UserProvider>(context);
+
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 600),
       transitionBuilder: (child, animation) => SlideTransition(
@@ -32,6 +36,7 @@ class AppSidebar extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // App Title
               Padding(
                 padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
                 child: Text(
@@ -51,6 +56,60 @@ class AppSidebar extends StatelessWidget {
                 indent: 12,
                 endIndent: 12,
               ),
+              // Profile Header
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: userProvider.currentUser == null
+                    ? const Center(
+                  child: CircularProgressIndicator(),
+                )
+                    : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CircleAvatar(
+                      radius: 40,
+                      backgroundImage: userProvider.currentUser?.pfp != null
+                          ? MemoryImage(base64Decode(userProvider.currentUser!.pfp!))
+                          : null,
+                      backgroundColor: theme.colorScheme.surface,
+                      child: userProvider.currentUser?.pfp == null
+                          ? Icon(
+                        Icons.person,
+                        size: 40,
+                        color: theme.colorScheme.onSurface.withOpacity(0.6),
+                      )
+                          : null,
+                    ),
+                    const CustomSpacer(height: 12),
+                    Text(
+                      '${userProvider.currentUser!.firstName ?? 'Not set'} ${userProvider.currentUser!.lastName ?? 'Not set'}',
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.onSurface,
+                        fontFamily: 'Inter',
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const CustomSpacer(height: 4),
+                    Text(
+                      userProvider.currentUser!.email ?? 'Not set',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurface.withOpacity(0.6),
+                        fontFamily: 'Inter',
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(
+                height: 1,
+                thickness: 1,
+                color: Colors.grey,
+                indent: 12,
+                endIndent: 12,
+              ),
+              // Navigation Items
               Expanded(
                 child: ListView(
                   padding: const EdgeInsets.all(12),
@@ -99,12 +158,12 @@ class AppSidebar extends StatelessWidget {
                 indent: 12,
                 endIndent: 12,
               ),
+              // Bottom Actions
               Padding(
                 padding: const EdgeInsets.all(12),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
-
                     _buildIconButton(
                       context,
                       icon: Icons.logout,

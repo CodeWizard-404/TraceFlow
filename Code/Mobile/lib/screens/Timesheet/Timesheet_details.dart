@@ -321,7 +321,7 @@ class TimesheetDetailsScreenState extends State<TimesheetDetailsScreen>
           ),
           const Divider(height: 1, thickness: 1, color: Colors.grey),
           Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 120),
             child: Column(children: children),
           ),
         ],

@@ -966,7 +966,7 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> with SingleTi
       title: e.key,
       value: e.value.toDouble(),
       color: statusColors[e.key] ?? Colors.grey,
-      radius: 60,
+      radius: 50,
       titleStyle: theme.textTheme.bodyMedium?.copyWith(
         color: Colors.white,
         fontWeight: FontWeight.bold,
@@ -1054,11 +1054,11 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> with SingleTi
         if (pieData.isNotEmpty)
           Container(
             height: 250,
-            width: visitStatusCounts.length * 130.0,
+            width: visitStatusCounts.length * 150.0,
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: SizedBox(
-                width: visitStatusCounts.length * 130.0,
+                width: visitStatusCounts.length * 150.0,
                 child: PieChart(
                   PieChartData(
                     sections: pieData,

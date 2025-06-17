@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/visit.dart';
 import '../../providers/timesheet_provider.dart';
 import '../../providers/auth_provider.dart';
@@ -13,6 +14,7 @@ import '../../models/delegation.dart';
 import '../../models/region.dart';
 import '../../models/governorate.dart';
 import 'package:intl/intl.dart';
+import 'dart:convert';
 
 class TimesheetSuggestionsModal extends StatefulWidget {
   final int weekNumber;
@@ -84,6 +86,9 @@ class TimesheetSuggestionsModalState extends State<TimesheetSuggestionsModal> {
   bool _isGovernoratesLoading = false;
   bool _isRecruitmentDelegationsLoading = false;
 
+  // Cache key for SharedPreferences
+  static const String _cacheKey = 'suggested_visits';
+
   @override
   void initState() {
     super.initState();
@@ -92,6 +97,7 @@ class TimesheetSuggestionsModalState extends State<TimesheetSuggestionsModal> {
     _fetchUserLocation();
     _fetchAgents();
     _fetchDelegations();
+    _restoreCachedVisits();
   }
 
   Future<void> _fetchUserLocation() async {
@@ -256,6 +262,49 @@ class TimesheetSuggestionsModalState extends State<TimesheetSuggestionsModal> {
       );
     } finally {
       setState(() => _isRecruitmentDelegationsLoading = false);
+    }
+  }
+
+  Future<void> _cacheSuggestedVisits(List<Visit> visits) async {
+    final prefs = await SharedPreferences.getInstance();
+    final visitsJson = visits.map((visit) => jsonEncode(visit.toJson())).toList();
+    await prefs.setStringList(_cacheKey, visitsJson);
+    if (kDebugMode) print('Cached ${visits.length} suggested visits');
+  }
+
+  Future<List<Visit>> _loadCachedVisits() async {
+    final prefs = await SharedPreferences.getInstance();
+    final visitsJson = prefs.getStringList(_cacheKey);
+    if (visitsJson == null || visitsJson.isEmpty) {
+      if (kDebugMode) print('No cached visits found');
+      return [];
+    }
+    try {
+      final visits = visitsJson
+          .map((json) => Visit.fromJson(jsonDecode(json) as Map<String, dynamic>))
+          .toList();
+      if (kDebugMode) print('Loaded ${visits.length} cached visits');
+      return visits;
+    } catch (e) {
+      if (kDebugMode) print('Error loading cached visits: $e');
+      return [];
+    }
+  }
+
+  Future<void> _clearCachedVisits() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_cacheKey);
+    if (kDebugMode) print('Cleared cached visits');
+  }
+
+  Future<void> _restoreCachedVisits() async {
+    final cachedVisits = await _loadCachedVisits();
+    if (cachedVisits.isNotEmpty) {
+      final timesheetProvider = Provider.of<TimesheetProvider>(context, listen: false);
+      timesheetProvider.setSuggestedVisits(cachedVisits);
+      setState(() {
+        _showSuggestions = true;
+      });
     }
   }
 
@@ -631,37 +680,7 @@ class TimesheetSuggestionsModalState extends State<TimesheetSuggestionsModal> {
                 IconButton(
                   icon: const Icon(Icons.close),
                   onPressed: () {
-                    final timesheetProvider = Provider.of<TimesheetProvider>(context, listen: false);
-                    if (timesheetProvider.suggestedVisits.isNotEmpty) {
-                      showDialog(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: const Text('Unsaved Suggestions'),
-                          content: const Text('You have unsaved suggestions. Do you want to save them?'),
-                          actions: [
-                            TextButton(
-                              onPressed: () {
-                                Navigator.pop(context); // Close dialog
-                                timesheetProvider.clearSuggestedVisits();
-                                Navigator.pop(context); // Close modal
-                              },
-                              child: const Text('Discard'),
-                            ),
-                            TextButton(
-                              onPressed: () async {
-                                await timesheetProvider.saveSuggestedVisits(widget.supervisorID);
-                                Navigator.pop(context); // Close dialog
-                                Navigator.pop(context); // Close modal
-                              },
-                              child: const Text('Save'),
-                            ),
-                          ],
-                        ),
-                      );
-                    } else {
-                      timesheetProvider.clearSuggestedVisits();
-                      Navigator.pop(context);
-                    }
+                    Navigator.pop(context); // Close modal without clearing cache
                   },
                 ),
               ],
@@ -1129,6 +1148,7 @@ class TimesheetSuggestionsModalState extends State<TimesheetSuggestionsModal> {
                     .toList();
                 if (kDebugMode) print('Parsed ${suggestedVisits.length} suggested visits');
                 timesheetProvider.setSuggestedVisits(suggestedVisits);
+                await _cacheSuggestedVisits(suggestedVisits); // Cache the visits
                 setState(() {
                   _showSuggestions = true;
                   _isLoading = false;
@@ -1173,6 +1193,7 @@ class TimesheetSuggestionsModalState extends State<TimesheetSuggestionsModal> {
                 currentVisits.removeWhere((v) => v.visitID == droppedVisit.visitID);
                 currentVisits.insert(newIndex >= 0 ? newIndex : currentVisits.length, droppedVisit);
                 timesheetProvider.setSuggestedVisits(currentVisits);
+                _cacheSuggestedVisits(currentVisits); // Update cache after reordering
               },
               builder: (context, candidateData, rejectedData) {
                 return ListView.builder(
@@ -1239,6 +1260,7 @@ class TimesheetSuggestionsModalState extends State<TimesheetSuggestionsModal> {
                 TextButton(
                   onPressed: () {
                     timesheetProvider.clearSuggestedVisits();
+                    _clearCachedVisits(); // Clear cache on cancel
                     Navigator.pop(context);
                   },
                   child: Text(
@@ -1250,6 +1272,7 @@ class TimesheetSuggestionsModalState extends State<TimesheetSuggestionsModal> {
                   onPressed: () async {
                     try {
                       await timesheetProvider.saveSuggestedVisits(widget.supervisorID);
+                      await _clearCachedVisits(); // Clear cache on save
                       Navigator.pop(context);
                       widget.scaffoldMessengerKey.currentState?.showSnackBar(
                         const SnackBar(content: Text('Suggestions saved successfully')),

@@ -52,7 +52,7 @@ class VisitItem extends StatelessWidget {
               width: 1.2,
             ),
           ),
-          color: isSuggested ? Colors.yellow.withOpacity(0.1) : theme.colorScheme.surface,
+          color: isSuggested ? Colors.yellow.withOpacity(0.1) : theme.colorScheme.surface.withOpacity(0.01),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: Material(
