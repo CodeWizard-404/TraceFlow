@@ -271,7 +271,7 @@ const UserView: React.FC<UserViewProps> = ({
           phone: data.phone || selectedUser.phone || "",
         };
 
-        console.log("WebSocket updatedUser.Roles =", updatedUser.Roles); // Debug log
+        console.log("WebSocket updatedUser.Roles =", updatedUser.Roles);
 
         if (event === "user:updated" || event === "user:profile_updated" || event === "user:supervisors_assigned" || event === "user:supervisors_revoked") {
           setSelectedUser(updatedUser);

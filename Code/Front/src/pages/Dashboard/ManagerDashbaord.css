@@ -517,7 +517,6 @@ body.dark .notifications-card .unread-count {
     border: none;
     cursor: pointer;
     font-size: 0.875rem;
-    color: #4cb1c7;
     transition: all 0.3s ease;
 }
 

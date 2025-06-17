@@ -336,13 +336,13 @@ class NotificationService {
     }
 
     // Store notification in database with deduplication
-    async storeNotification({ userID, type, message, channel, event, rule, requestID }) {
+    // services/NotificationService.js (in storeNotification)
+    async storeNotification({ userID, type, message, channel, event, rule, requestID, metadata, data }) {
         try {
             if (!rule || !rule.enabled) {
                 return null;
             }
 
-            // Check user preferences
             const { preferences } = await this.getUserPreferences(userID, event, rule);
             if (channel === 'in-app' && !preferences.inApp) return null;
             if (channel === 'email' && !preferences.email) return null;
@@ -353,25 +353,28 @@ class NotificationService {
                 return null;
             }
 
-            // Create a unique key for deduplication based on userID and requestID
             const dedupKey = `notif:${userID}:${event}:${channel}:${notificationMessage}:${requestID}`;
             const exists = await this.redis.get(dedupKey);
             if (exists) {
                 return null;
             }
 
-            // Store notification and set deduplication key
-            const notification = await Notification.create({
+            const notificationData = {
                 userID,
                 type,
                 message: notificationMessage,
                 channel,
                 status: 'pending',
-            });
+            };
+            if (event === 'ai:anomaly_detected') {
+                notificationData.details = metadata?.anomalies || [];
+                notificationData.severity = data?.severity || 'unknown'; // Save severity
+            }
+
+            const notification = await Notification.create(notificationData);
 
             await this.redis.set(dedupKey, '1', 'EX', 60);
 
-            // Send in-app notification via WebSocket
             if (channel === 'in-app' && preferences.inApp) {
                 await this.updateNotificationStatus(notification.notificationID, 'sent');
                 await this.sendWebSocketNotification('notification:created', { data: notification }, [], [userID]);
@@ -507,6 +510,12 @@ class NotificationService {
                 let dynamicUsersRoles = new Set();
                 let ruleRoles = (rule.recipients.roles || []);
 
+                let enhancedData = { ...data };
+                if (event === 'ai:anomaly_detected') {
+                    const anomalyCount = data.anomalyCount || 0;
+                    enhancedData.severity = anomalyCount >= 5 ? 'high' : anomalyCount >= 3 ? 'medium' : 'low';
+                }
+
 
                 // If dynamic recipients are provided, get their roles and filter
                 if (dynamicRecipients.length) {
@@ -563,7 +572,7 @@ class NotificationService {
 
                     const result = await this.sendNotification({
                         event,
-                        data,
+                        data: enhancedData,
                         roles: dynamicRecipients.includes(user.userID) ? rule.recipients.roles || [] : ruleRoles,
                         userIDs: dynamicRecipients.includes(user.userID) ? [] : [user.userID],
                         dynamicRecipients: dynamicRecipients.includes(user.userID) ? [user.userID] : [],
@@ -695,6 +704,8 @@ class NotificationService {
                         event,
                         rule,
                         requestID,
+                        metadata,
+                        data, // Pass data with severity
                     });
                     if (inAppResult) {
                         results.push({ success: true, userID, method: 'inApp', notificationID: inAppResult.notificationID });
@@ -718,6 +729,8 @@ class NotificationService {
                         event,
                         rule,
                         requestID,
+                        metadata,
+                        data, // Pass data with severity
                     });
                     results.push({ ...emailResult, userID, notificationID: emailNotification?.notificationID });
                 }
@@ -738,6 +751,8 @@ class NotificationService {
                         event,
                         rule,
                         requestID,
+                        metadata,
+                        data, // Pass data with severity
                     });
                     results.push({ ...smsResult, userID, notificationID: smsNotification?.notificationID });
                 }

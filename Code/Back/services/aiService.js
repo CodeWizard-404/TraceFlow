@@ -4,6 +4,7 @@ const { AIConfig, User, Role, Agent, Reason, Checklist, Delegation, sequelize } 
 const GoogleMapsService = require('./googleMapsService');
 const { Op } = require('sequelize');
 const NodeCache = require('node-cache');
+const logger = require('../utils/logger');
 
 const cache = new NodeCache({ stdTTL: 3600 });
 
@@ -726,64 +727,127 @@ Return only the JSON object without additional text or formatting.
 
     static async detectAnomalies(dataType, data, context = '', controller = new AbortController()) {
         try {
+            logger.debug('Starting anomaly detection process');
+
+            logger.debug('Validating dataType parameter');
             if (!dataType || typeof dataType !== 'string') {
                 const error = new Error('Data type must be a non-empty string');
                 error.status = 400;
+                logger.debug(`Invalid dataType: ${dataType}`);
                 throw error;
             }
 
+            logger.debug('Validating data parameter');
             if (!Array.isArray(data) || data.length === 0) {
                 const error = new Error('Data must be a non-empty array');
                 error.status = 400;
+                logger.debug('Invalid data: Data is not a non-empty array');
                 throw error;
             }
 
+            logger.debug('Initializing AI configuration');
             const aiConfig = await initializeAI();
+            logger.debug('Retrieving AI configuration from database');
             const config = (await AIConfig.findOne()) || aiConfig;
-            const prompt = `Analyze the following data of type "${dataType}": ${JSON.stringify(data)}. ${context ? `Context: ${context}. ` : ''
-                }Detect anomalies with a confidence threshold of ${config.anomalyThreshold}. For each anomaly, provide a detailed explanation including:
-    - Why it is considered an anomaly
-    - What might have caused it
-    - Where it occurred (e.g., specific field or record)
-    Return a JSON array of anomalies with their explanations. Return only the JSON array without additional text or formatting.`;
+            logger.debug(`Using configuration with anomalyThreshold: ${config.anomalyThreshold}`);
 
+            logger.debug('Constructing prompt for AI analysis');
+            const prompt = `Analyze the following data of type "${dataType}": ${JSON.stringify(data)}. ${context ? `Context: ${context}. ` : ''}Detect anomalies with a confidence threshold of ${config.anomalyThreshold}. For each anomaly, provide a detailed explanation including:
+- Why it is considered an anomaly
+- What might have caused it
+- Where it occurred (e.g., specific field or record)
+Return a JSON array of anomalies with their explanations, like this example:
+[
+  {"anomaly": 123, "explanation": "Value 123 is an outlier..."},
+  {"anomaly": 456, "explanation": "Value 456 is unexpected..."}
+]
+Ensure the response is a valid JSON array with no extra text, comments, or formatting.`;
+            logger.debug(`Generated prompt: ${prompt}`);
 
+            logger.debug('Preparing API payload');
             const payload = {
                 model: config.modelName || 'mistral',
                 prompt,
                 stream: false
             };
+            logger.debug(`Payload prepared: ${JSON.stringify(payload)}`);
 
+            logger.debug('Making API call to Ollama');
             const response = await makeOllamaApiCall('post', '/generate', payload, { signal: controller.signal });
+            logger.debug('Received API response');
 
+            logger.debug('Validating API response');
             if (!response || !response.response) {
+                logger.debug('Invalid API response received');
                 throw new Error(ERROR_MESSAGES.INVALID_AI_RESPONSE);
             }
 
-
+            logger.debug('Extracting and parsing JSON from response');
             let anomalies;
             try {
                 const jsonString = this.extractJsonFromResponse(response.response);
+                logger.debug(`Extracted JSON string: ${jsonString}`);
                 anomalies = JSON.parse(jsonString);
+                logger.debug(`Parsed anomalies: ${JSON.stringify(anomalies)}`);
+
+                logger.debug('Validating parsed anomalies format');
+                if (!Array.isArray(anomalies)) {
+                    logger.debug('Anomalies is not an array');
+                    throw new Error(ERROR_MESSAGES.INVALID_AI_RESPONSE);
+                }
+                anomalies.forEach((anomaly, index) => {
+                    if (!anomaly.anomaly || !anomaly.explanation) {
+                        logger.debug(`Invalid anomaly at index ${index}: ${JSON.stringify(anomaly)}`);
+                        throw new Error(ERROR_MESSAGES.INVALID_AI_RESPONSE);
+                    }
+                });
             } catch (parseError) {
-                throw new Error(ERROR_MESSAGES.INVALID_AI_JSON);
+                logger.debug(`Failed to parse JSON: ${parseError.message}`);
+                logger.warn('Returning empty array due to invalid JSON response');
+                await NotificationService.triggerNotification({
+                    event: 'ai:json_parse_failed',
+                    data: { error: parseError.message, response: response.response },
+                    metadata: { service: 'cron' }
+                });
+                return [];
             }
 
-            if (!Array.isArray(anomalies)) {
-                throw new Error(ERROR_MESSAGES.INVALID_AI_RESPONSE);
-            }
-
+            logger.debug('Returning detected anomalies');
             return anomalies;
         } catch (error) {
+            logger.debug(`Caught error: ${error.message}`);
             if (error.name === 'AbortError') {
+                logger.debug('Request was aborted');
                 const abortError = new Error(ERROR_MESSAGES.REQUEST_CANCELED);
                 abortError.status = 499;
                 throw abortError;
             }
+            logger.debug('Throwing final error');
             throw error.message in ERROR_MESSAGES
                 ? error
-                : Object.assign(new Error(ERROR_MESSAGES.AI_API_UNAVAILABLE), { status: 503 });
+                : Object.assign(
+                    new Error(
+                        error.message === ERROR_MESSAGES.INVALID_AI_JSON
+                            ? 'Invalid JSON response from AI service'
+                            : ERROR_MESSAGES.AI_API_UNAVAILABLE
+                    ),
+                    { status: error.message === ERROR_MESSAGES.INVALID_AI_JSON ? 422 : 503 }
+                );
         }
+    }
+
+    static extractJsonFromResponse(response) {
+        // Normalize whitespace
+        const normalized = response.replace(/\s+/g, ' ').trim();
+        // Match all JSON objects
+        const objectPattern = /\{[^}]*\}/g;
+        const matches = normalized.match(objectPattern);
+        if (!matches) {
+            throw new Error('No valid JSON objects found in response');
+        }
+        // Wrap matches in an array
+        const jsonString = `[${matches.join(',')}]`;
+        return jsonString;
     }
 
     static async generateReport(filters, format, controller = new AbortController()) {

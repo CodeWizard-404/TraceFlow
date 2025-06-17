@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
 import Notification from '../../models/Notification';
 import { useNotification } from '../../context/NotificationContext';
+import { useTranslation } from 'react-i18next';
 import { cn } from '../../lib/utils';
 import './notification.css';
 
 interface NotificationItemProps {
     notification: Notification;
-    onClose?: () => void;
 }
 
-const NotificationItem: React.FC<NotificationItemProps> = ({ notification, onClose }) => {
+const NotificationItem: React.FC<NotificationItemProps> = ({ notification }) => {
     const { markAsRead } = useNotification();
+    const { t } = useTranslation();
     const [isDismissed, setIsDismissed] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
@@ -20,11 +21,12 @@ const NotificationItem: React.FC<NotificationItemProps> = ({ notification, onClo
             setIsDismissed(true);
             try {
                 await markAsRead(notification.notificationID);
+                // Delay to allow dismissal animation to complete
                 setTimeout(() => {
-                    if (onClose) onClose();
                     setIsLoading(false);
                 }, 300);
-            } catch {
+            } catch (error) {
+                console.error('Failed to mark notification as read:', error);
                 setIsDismissed(false);
                 setIsLoading(false);
             }
@@ -41,6 +43,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({ notification, onClo
             )}
             onClick={handleMarkAsRead}
             style={{ pointerEvents: isLoading ? 'none' : 'auto' }}
+            aria-label={t('notification.markAsRead')}
         >
             <div className="notification-content">
                 <p className="message">{notification.message}</p>

@@ -1,8 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { FaTimes } from 'react-icons/fa';
 import Notification from '../../models/Notification';
 import { useNotification } from '../../context/NotificationContext';
+import { useTranslation } from 'react-i18next';
 import { cn } from '../../lib/utils';
 import './notification.css';
 
@@ -13,9 +14,9 @@ interface ToastNotificationProps {
 
 const ToastNotification: React.FC<ToastNotificationProps> = ({ notification, onDismiss }) => {
     const { markAsRead } = useNotification();
-    const [isDismissed, setIsDismissed] = React.useState(false);
+    const { t } = useTranslation();
+    const [isDismissed, setIsDismissed] = useState(false);
 
-    // Auto-dismiss after 5 seconds
     useEffect(() => {
         const timer = setTimeout(() => {
             setIsDismissed(true);
@@ -50,6 +51,7 @@ const ToastNotification: React.FC<ToastNotificationProps> = ({ notification, onD
             exit={{ opacity: 0, x: 100 }}
             transition={{ duration: 0.3 }}
             onClick={handleMarkAsRead}
+            aria-label={t('notification.markAsRead')}
         >
             <div className="toast-notification-content">
                 <p className="message">{notification.message}</p>
@@ -61,7 +63,7 @@ const ToastNotification: React.FC<ToastNotificationProps> = ({ notification, onD
                     e.stopPropagation();
                     handleMarkAsRead();
                 }}
-                aria-label="Close notification"
+                aria-label={t('notification.close')}
             >
                 <FaTimes />
             </button>

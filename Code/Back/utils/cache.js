@@ -16,15 +16,53 @@ class Cache {
             checklists: 'version:checklists',
         };
 
+        // Define user-related events that should invalidate the user cache
+        const userRelatedEvents = [
+            'user:created',
+            'user:updated',
+            'user:profile_updated',
+            'user:deleted',
+            'user:regional_manager_assigned',
+            'user:regional_manager_revoked',
+            'user:director_assigned',
+            'user:director_revoked',
+            'user:supervisor_assigned_to_agent',
+            'user:supervisor_revoked_from_agent',
+            'user:regions_assigned',
+            'user:regions_revoked',
+            'user:governorates_assigned',
+            'user:governorates_revoked',
+            'user:delegations_assigned',
+            'user:delegations_revoked',
+            'role:created',
+            'role:updated',
+            'role:deleted',
+            'role:assigned',
+            'role:revoked',
+            'permission:updated',
+            'permission:assigned',
+            'permission:revoked'
+        ];
+
         // Subscribe to version update events
         this.subClient.subscribe('cache:version_update', (err) => {
             if (err) console.error('Subscription error:', err);
+        });
+
+        // Subscribe to user-related events for cache invalidation
+        userRelatedEvents.forEach(event => {
+            this.subClient.subscribe(event, (err) => {
+                if (err) console.error(`Subscription error for ${event}:`, err);
+            });
         });
 
         this.subClient.on('message', async (channel, message) => {
             if (channel === 'cache:version_update') {
                 const { tag, version } = JSON.parse(message);
                 await this.client.set(`version:${tag}`, version);
+            } else if (userRelatedEvents.includes(channel)) {
+                // Invalidate user cache for user-related events
+                await this.invalidateByTag('users');
             }
         });
     }

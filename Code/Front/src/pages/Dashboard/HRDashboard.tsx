@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
-import { Tabs, Card, Table, Select, Row, Col, Spin, Modal, Input, DatePicker, Space, Tag, Statistic, Descriptions, Popover, Divider, Tree, message, Collapse, Timeline, List, Avatar, Button } from 'antd';
+import { Tabs, Card, Table, Select, Row, Col, Spin, Modal, Input, DatePicker, Space, Tag, Statistic, Descriptions, Popover, Divider, Tree, message, Collapse, Timeline, List, Avatar, Button, } from 'antd';
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, PieChart, Pie, Cell, LineChart, Line, AreaChart, Area, LabelList, Legend } from 'recharts';
 import MapComponent from '../../components/Google/MapComponent';
 import { getAllTimesheets } from '../../apis/timesheetAPI';
@@ -121,6 +121,11 @@ const HRDashboard: React.FC = () => {
         totalDelegations: 0,
     });
     const [receiptBookTypes, setReceiptBookTypes] = useState<any[]>([]);
+    const [isModalVisible, setIsModalVisible] = useState(false);
+    const [selectedAnomalyDetails, setSelectedAnomalyDetails] = useState<any[]>([]);
+    const [generatedReports, setGeneratedReports] = useState<GeneratedReport[]>([]);
+
+
     const filterOption = (input: string, option: any) =>
         option.children?.toLowerCase().includes(input.toLowerCase());
 
@@ -130,42 +135,9 @@ const HRDashboard: React.FC = () => {
 
 
 
-    // WebSocket setup for real-time updates
-    const setupWebSocket = useCallback(() => {
-        if (!isSocketConnected()) initSocket();
 
-        const handleEntityEvent = async (event: string, data: unknown) => {
-            console.log(`Received entity event: ${event}`, { data });
-            const entity = event.split(':')[0];
-            const action = event.split(':')[1];
 
-            if (entity === 'timesheet' && (action === 'created' || action === 'validated')) {
-                const updatedTimesheets = await getAllTimesheets();
-                setTimesheets(Array.isArray(updatedTimesheets) ? updatedTimesheets : []);
-                setVisits(Array.isArray(updatedTimesheets) ? updatedTimesheets.flatMap((ts: any) => ts.Visits || []) : []);
-            } else if (entity === 'visit' && (action === 'logged' || action === 'updated' || action === 'deleted')) {
-                const updatedTimesheets = await getAllTimesheets();
-                setTimesheets(Array.isArray(updatedTimesheets) ? updatedTimesheets : []);
-                setVisits(Array.isArray(updatedTimesheets) ? updatedTimesheets.flatMap((ts: any) => ts.Visits || []) : []);
-            }
-        };
 
-        onNotification(handleEntityEvent);
-        joinRoom('timesheet');
-        joinRoom('visit');
-
-        return () => {
-            offNotification();
-            disconnectSocket();
-        };
-    }, [
-        getAllTimesheets,
-    ]);
-
-    useEffect(() => {
-        const cleanup = setupWebSocket();
-        return cleanup;
-    }, [setupWebSocket]);
 
 
 
@@ -243,7 +215,7 @@ const HRDashboard: React.FC = () => {
                     }
                 }
 
-                setAnomalies(notificationData?.filter((n: any) => n.type === 'anomaly') || []);
+                setAnomalies(notificationData?.filter((n: any) => n.type === 'ai') || []);
                 setReceiptBookTypes(Array.isArray(receiptBookTypesData) ? receiptBookTypesData : []);
 
                 const directors = Array.isArray(userData) ? userData.filter((u: any) => u.Roles?.some((r: any) => r.name === 'Director')) : [];
@@ -276,7 +248,7 @@ const HRDashboard: React.FC = () => {
                     totalTimesheets: timesheetData?.length || 0,
                     totalVisits: timesheetData?.flatMap((ts: any) => ts.Visits || []).length || 0,
                     totalReceiptBooks: receiptBooksArray.length || 0,
-                    anomaliesDetected: notificationData?.filter((n: any) => n.type === 'anomaly').length || 0,
+                    anomaliesDetected: notificationData?.filter((n: any) => n.type === 'ai').length || 0,
                     activeSupervisors: supervisors?.filter((sup: any) => timesheetData?.some((ts: any) => ts.supervisorID === sup.userID)).length || 0,
                     totalRegions: regionData?.length || 0,
                     totalGovernorates: govData?.length || 0,
@@ -1151,6 +1123,7 @@ const HRDashboard: React.FC = () => {
 
 
 
+
     // Users Tab
     const userColumns = [
         {
@@ -1158,7 +1131,6 @@ const HRDashboard: React.FC = () => {
             dataIndex: 'isOnline',
             key: 'isOnline',
             render: (isOnline: boolean) => isOnline ? <Tag color="green">Online</Tag> : <Tag color="red">Offline</Tag>,
-            defaultSortOrder: 'ascend' as 'ascend',
             sorter: (a: User, b: User) => (a.isOnline === b.isOnline ? 0 : a.isOnline ? -1 : 1),
         },
         { title: 'Name', dataIndex: 'firstname', key: 'name', sorter: (a: User, b: User) => `${a.firstname} ${a.lastname}`.localeCompare(`${b.firstname} ${b.lastname}`), render: (_: any, record: User) => `${record.firstname} ${record.lastname}` },
@@ -2091,7 +2063,6 @@ const HRDashboard: React.FC = () => {
 
     // Reports Tab
     const renderReportsTab = () => {
-        const [generatedReports, setGeneratedReports] = useState<GeneratedReport[]>([]);
         const [loadingGenerated, setLoadingGenerated] = useState<boolean>(false);
         const [filters, setFilters] = useState({
             reportType: '',
@@ -2359,9 +2330,43 @@ const HRDashboard: React.FC = () => {
 
     // Anomalies Tab
     const anomalyColumns = [
-        { title: 'Type', dataIndex: 'type', key: 'type', sorter: (a: any, b: any) => a.type.localeCompare(b.type) },
-        { title: 'Message', dataIndex: 'message', key: 'message' },
-        { title: 'Date', dataIndex: 'createdAt', key: 'createdAt', sorter: (a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime() },
+        {
+            title: 'Severity',
+            dataIndex: 'severity',
+            key: 'severity',
+            render: (severity: string) => (
+                <Tag color={severity === 'high' ? 'red' : severity === 'medium' ? 'orange' : 'green'}>
+                    {severity ? severity.toUpperCase() : 'UNKNOWN'}
+                </Tag>
+            ),
+            sorter: (a: any, b: any) => (a.severity || 'unknown').localeCompare(b.severity || 'unknown'),
+        },
+        {
+            title: 'Type',
+            dataIndex: 'dataType',
+            key: 'dataType',
+            render: (text: string, record: any) => {
+                const match = record.message.match(/in (\w+) data/);
+                return match ? match[1] : 'Unknown';
+            },
+            sorter: (a: any, b: any) => {
+                const aType = a.message.match(/in (\w+) data/)?.[1] || 'Unknown';
+                const bType = b.message.match(/in (\w+) data/)?.[1] || 'Unknown';
+                return aType.localeCompare(bType);
+            },
+        },
+        {
+            title: 'Details',
+            dataIndex: 'details',
+            key: 'details',
+            render: () => 'Click to view', // Simplified to prompt clicking
+        },
+        {
+            title: 'Date',
+            dataIndex: 'createdAt',
+            key: 'createdAt',
+            sorter: (a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+        },
     ];
 
     const anomalyChartData = useMemo(() => {
@@ -2374,20 +2379,39 @@ const HRDashboard: React.FC = () => {
     }, [anomalies]);
 
     const anomalySeverityChartData = useMemo(() => {
-        const severityData = anomalies.reduce((acc: any, a: any) => {
-            acc[a.severity || 'unknown'] = (acc[a.severity || 'unknown'] || 0) + 1;
+        const severityCounts = anomalies.reduce((acc: any, anomaly: any) => {
+            const severity = anomaly.severity || 'Unknown';
+            acc[severity] = (acc[severity] || 0) + 1;
             return acc;
         }, {});
-        return Object.entries(severityData).map(([severity, count]) => ({ severity, count }));
+        return Object.keys(severityCounts).map(severity => ({
+            name: severity,
+            value: severityCounts[severity],
+        }));
     }, [anomalies]);
 
     const anomalyTypeData = useMemo(() => {
-        const typeData = anomalies.reduce((acc: any, a: any) => {
-            acc[a.type] = (acc[a.type] || 0) + 1;
+        const typeCounts = anomalies.reduce((acc: any, anomaly: any) => {
+            // Extract dataType from message (e.g., "AI detected 1 anomalies in receipt_stub data." -> "receipt_stub")
+            const match = anomaly.message.match(/in (\w+) data/);
+            const dataType = match ? match[1] : 'Unknown';
+            acc[dataType] = (acc[dataType] || 0) + 1;
             return acc;
         }, {});
-        return Object.entries(typeData).map(([name, value]) => ({ name, value }));
+        return Object.keys(typeCounts).map(type => ({
+            name: type,
+            value: typeCounts[type],
+        }));
     }, [anomalies]);
+
+    const handleRowClick = (record: any) => {
+        setSelectedAnomalyDetails(record.details || []);
+        setIsModalVisible(true);
+    };
+    const handleModalClose = () => {
+        setIsModalVisible(false);
+        setSelectedAnomalyDetails([]);
+    };
 
     const totalAnomalies = anomalies.length;
     const criticalAnomalies = anomalies.filter(a => a.severity === 'critical').length;
@@ -2416,14 +2440,37 @@ const HRDashboard: React.FC = () => {
             <Row gutter={16}>
                 <Col span={24}>
                     <Card title="Detected Anomalies">
-                        <Table columns={anomalyColumns} dataSource={applyGlobalFilters(anomalies, 'notificationID')} rowKey="notificationID" pagination={{ pageSize: 10 }} />
-                    </Card>
+                        <Table
+                            columns={anomalyColumns}
+                            dataSource={anomalies}
+                            rowKey="notificationID"
+                            onRow={(record) => ({
+                                onClick: () => handleRowClick(record),
+                                style: { cursor: 'pointer' },
+                            })}
+                        />                    </Card>
+                    <Modal
+                        title="Anomaly Details"
+                        open={isModalVisible}
+                        onCancel={handleModalClose}
+                        footer={null}
+                    >
+                        {selectedAnomalyDetails.length > 0 ? (
+                            selectedAnomalyDetails.map((anomaly, index) => (
+                                <div key={index} style={{ marginBottom: 8 }}>
+                                    <strong>Anomaly {index + 1}:</strong> {anomaly.anomaly} - {anomaly.explanation}
+                                </div>
+                            ))
+                        ) : (
+                            <p>No details available</p>
+                        )}
+                    </Modal>
                     <Collapse defaultActiveKey={['1']}>
                         <Panel header="Charts" key="1">
                             <Row gutter={[16, 16]}>
                                 <Col span={12}>
                                     <Card title="Trends">
-                                        <LineChart width={300} height={250} data={anomalyChartData}>
+                                        <LineChart width={600} height={250} data={anomalyChartData}>
                                             <XAxis dataKey="date" angle={-45} textAnchor="end" height={60} />
                                             <YAxis />
                                             <RechartsTooltip formatter={(value) => `${value} anomalies`} />
@@ -2433,7 +2480,7 @@ const HRDashboard: React.FC = () => {
                                 </Col>
                                 <Col span={12}>
                                     <Card title="Severity">
-                                        <PieChart width={300} height={250}>
+                                        <PieChart width={600} height={250}>
                                             <Pie
                                                 data={anomalySeverityChartData}
                                                 dataKey="count"
@@ -2455,7 +2502,7 @@ const HRDashboard: React.FC = () => {
                                 </Col>
                                 <Col span={12}>
                                     <Card title="Type">
-                                        <BarChart width={300} height={250} data={anomalyTypeData}>
+                                        <BarChart width={600} height={250} data={anomalyTypeData}>
                                             <XAxis dataKey="name" angle={-45} textAnchor="end" height={60} />
                                             <YAxis />
                                             <RechartsTooltip formatter={(value) => `${value} anomalies`} />
@@ -2467,7 +2514,7 @@ const HRDashboard: React.FC = () => {
                                 </Col>
                                 <Col span={12}>
                                     <Card title="Daily">
-                                        <BarChart width={300} height={250} data={anomalyChartData}>
+                                        <BarChart width={600} height={250} data={anomalyChartData}>
                                             <XAxis dataKey="date" angle={-45} textAnchor="end" height={60} />
                                             <YAxis />
                                             <RechartsTooltip formatter={(value) => `${value} anomalies`} />
@@ -2477,21 +2524,10 @@ const HRDashboard: React.FC = () => {
                                         </BarChart>
                                     </Card>
                                 </Col>
-                                <Col span={12}>
-                                    <Card title="Severity Trend">
-                                        <BarChart width={300} height={250} data={anomalySeverityChartData}>
-                                            <XAxis dataKey="severity" angle={-45} textAnchor="end" height={60} />
-                                            <YAxis />
-                                            <RechartsTooltip formatter={(value) => `${value} anomalies`} />
-                                            <Bar dataKey="count" fill="#FF6384">
-                                                <LabelList dataKey="count" position="top" fill="#000" />
-                                            </Bar>
-                                        </BarChart>
-                                    </Card>
-                                </Col>
+
                                 <Col span={12}>
                                     <Card title="Anomaly Types">
-                                        <PieChart width={300} height={250}>
+                                        <PieChart width={600} height={350}>
                                             <Pie
                                                 data={anomalyTypeData}
                                                 dataKey="value"
@@ -2511,52 +2547,7 @@ const HRDashboard: React.FC = () => {
                                         </PieChart>
                                     </Card>
                                 </Col>
-                                <Col span={12}>
-                                    <Card title="Count">
-                                        <PieChart width={300} height={250}>
-                                            <Pie
-                                                data={anomalySeverityChartData}
-                                                dataKey="count"
-                                                nameKey="severity"
-                                                cx="50%"
-                                                cy="50%"
-                                                outerRadius={80}
-                                                innerRadius={40}
-                                                label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
-                                            >
-                                                {anomalySeverityChartData.map((_entry, index) => (
-                                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                                ))}
-                                            </Pie>
-                                            <RechartsTooltip formatter={(value) => `${value} anomalies`} />
-                                            <Legend verticalAlign="bottom" height={36} />
-                                        </PieChart>
-                                    </Card>
-                                </Col>
-                                <Col span={12}>
-                                    <Card title="Severity Dist">
-                                        <BarChart width={300} height={250} data={anomalySeverityChartData}>
-                                            <XAxis dataKey="severity" angle={-45} textAnchor="end" height={60} />
-                                            <YAxis />
-                                            <RechartsTooltip formatter={(value) => `${value} anomalies`} />
-                                            <Bar dataKey="count" fill="#FFCE56">
-                                                <LabelList dataKey="count" position="top" fill="#000" />
-                                            </Bar>
-                                        </BarChart>
-                                    </Card>
-                                </Col>
-                                <Col span={12}>
-                                    <Card title="Anomaly Spread">
-                                        <BarChart width={300} height={250} data={anomalySeverityChartData}>
-                                            <XAxis dataKey="severity" angle={-45} textAnchor="end" height={60} />
-                                            <YAxis />
-                                            <RechartsTooltip formatter={(value) => `${value} anomalies`} />
-                                            <Bar dataKey="count" fill="#9966FF">
-                                                <LabelList dataKey="count" position="top" fill="#000" />
-                                            </Bar>
-                                        </BarChart>
-                                    </Card>
-                                </Col>
+
                             </Row>
                         </Panel>
                     </Collapse>
@@ -2739,9 +2730,200 @@ const HRDashboard: React.FC = () => {
 
 
 
+    // WebSocket setup for real-time updates
+    // WebSocket setup for real-time updates
+    const setupWebSocket = useCallback(() => {
+        if (!isSocketConnected()) initSocket();
 
+        const handleEntityEvent = async (event: string, data: unknown) => {
+            console.log(`Received entity event: ${event}`, { data });
+            const entity = event.split(':')[0];
+            const action = event.split(':')[1];
 
+            // Timesheet events
+            if (entity === 'timesheet' && (action === 'created' || action === 'validated')) {
+                const updatedTimesheets = await getAllTimesheets();
+                setTimesheets(Array.isArray(updatedTimesheets) ? updatedTimesheets : []);
+                setVisits(Array.isArray(updatedTimesheets) ? updatedTimesheets.flatMap((ts: any) => ts.Visits || []) : []);
+            }
+            // Visit events
+            else if (entity === 'visit' && (action === 'logged' || action === 'updated' || action === 'deleted')) {
+                const updatedTimesheets = await getAllTimesheets();
+                setTimesheets(Array.isArray(updatedTimesheets) ? updatedTimesheets : []);
+                setVisits(Array.isArray(updatedTimesheets) ? updatedTimesheets.flatMap((ts: any) => ts.Visits || []) : []);
+            }
+            // User events
+            else if (entity === 'user' && (
+                action === 'created' ||
+                action === 'updated' ||
+                action === 'profile_updated' ||
+                action === 'deleted' ||
+                action === 'regional_manager_assigned' ||
+                action === 'regional_manager_revoked' ||
+                action === 'director_assigned' ||
+                action === 'director_revoked' ||
+                action === 'supervisor_assigned_to_agent' ||
+                action === 'supervisor_revoked_from_agent' ||
+                action === 'regions_assigned' ||
+                action === 'regions_revoked' ||
+                action === 'governorates_assigned' ||
+                action === 'governorates_revoked' ||
+                action === 'delegations_assigned' ||
+                action === 'delegations_revoked'
+            )) {
+                const updatedUsers = await getAllUsers();
+                setUsers(Array.isArray(updatedUsers) ? updatedUsers : []);
+                const updatedHierarchy = buildHierarchy(
+                    updatedUsers.filter((u: any) => u.Roles?.some((r: any) => r.name === 'Director')),
+                    updatedUsers.filter((u: any) => u.Roles?.some((r: any) => r.name === 'Regional Manager')),
+                    updatedUsers.filter((u: any) => u.Roles?.some((r: any) => r.name === 'Supervisor')),
+                    regions,
+                    governorates,
+                    delegations,
+                    agents,
+                    timesheets,
+                    anomalies,
+                    receiptBooks
+                );
+                if (updatedHierarchy.children) {
+                    generateTreeKeys(updatedHierarchy.children);
+                }
+                setHierarchyData(updatedHierarchy);
+                setFilteredHierarchyData(updatedHierarchy);
+            }
+            // Role events
+            else if (entity === 'role' && (action === 'created' || action === 'updated' || action === 'deleted' || action === 'assigned' || action === 'revoked')) {
+                const updatedUsers = await getAllUsers();
+                setUsers(Array.isArray(updatedUsers) ? updatedUsers : []);
+                const updatedHierarchy = buildHierarchy(
+                    updatedUsers.filter((u: any) => u.Roles?.some((r: any) => r.name === 'Director')),
+                    updatedUsers.filter((u: any) => u.Roles?.some((r: any) => r.name === 'Regional Manager')),
+                    updatedUsers.filter((u: any) => u.Roles?.some((r: any) => r.name === 'Supervisor')),
+                    regions,
+                    governorates,
+                    delegations,
+                    agents,
+                    timesheets,
+                    anomalies,
+                    receiptBooks
+                );
+                if (updatedHierarchy.children) {
+                    generateTreeKeys(updatedHierarchy.children);
+                }
+                setHierarchyData(updatedHierarchy);
+                setFilteredHierarchyData(updatedHierarchy);
+            }
+            // Permission events
+            else if (entity === 'permission' && (action === 'updated' || action === 'assigned' || action === 'revoked')) {
+                const updatedUsers = await getAllUsers();
+                setUsers(Array.isArray(updatedUsers) ? updatedUsers : []);
+            }
+            // Receipt Book events
+            else if (entity === 'receipt_book' && (
+                action === 'created' ||
+                action === 'sent' ||
+                action === 'transferred' ||
+                action === 'collected' ||
+                action === 'updated' ||
+                action === 'deleted' ||
+                action === 'csv_uploaded'
+            )) {
+                const updatedReceiptBooks = await getAllReceiptBooks();
+                setReceiptBooks(Array.isArray(updatedReceiptBooks) ? updatedReceiptBooks : updatedReceiptBooks?.books || []);
+            }
+            else if (entity === 'receipt_book_type' && (action === 'created' || action === 'updated' || action === 'deleted')) {
+                const updatedReceiptBookTypes = await getAllReceiptBookTypes();
+                setReceiptBookTypes(Array.isArray(updatedReceiptBookTypes) ? updatedReceiptBookTypes : []);
+            }
+            else if (entity === 'receipt_stub' && action === 'archived') {
+                const updatedReceiptBooks = await getAllReceiptBooks();
+                setReceiptBooks(Array.isArray(updatedReceiptBooks) ? updatedReceiptBooks : updatedReceiptBooks?.books || []);
+            }
+            // Agent events
+            else if (entity === 'agent' && (action === 'created' || action === 'updated' || action === 'deleted' || action === 'csv_uploaded' || action === 'location_corrected')) {
+                const updatedAgents = await getAllAgents();
+                setAgents(updatedAgents?.agents || []);
+                const updatedHierarchy = buildHierarchy(
+                    users.filter((u: any) => u.Roles?.some((r: any) => r.name === 'Director')),
+                    users.filter((u: any) => u.Roles?.some((r: any) => r.name === 'Regional Manager')),
+                    users.filter((u: any) => u.Roles?.some((r: any) => r.name === 'Supervisor')),
+                    regions,
+                    governorates,
+                    delegations,
+                    updatedAgents?.agents || [],
+                    timesheets,
+                    anomalies,
+                    receiptBooks
+                );
+                if (updatedHierarchy.children) {
+                    generateTreeKeys(updatedHierarchy.children);
+                }
+                setHierarchyData(updatedHierarchy);
+                setFilteredHierarchyData(updatedHierarchy);
+            }
+            // Report events
+            else if (entity === 'report' && (action === 'generated' || action === 'scheduled' || action === 'deleted')) {
+                const updatedReports = await listGeneratedReports();
+                setGeneratedReports(updatedReports);
+            }
+            else if (entity === 'report_schedule' && action === 'deleted') {
+                const updatedReports = await listGeneratedReports();
+                setGeneratedReports(updatedReports);
+            }
+            // Notification events
+            else if (entity === 'notification' && action === 'anomaly_triggered') {
+                const updatedNotifications = await getNotifications();
+                setAnomalies(updatedNotifications?.filter((n: any) => n.type === 'ai') || []);
+            }
+            // AI events
+            else if (entity === 'ai' && action === 'anomaly_detected') {
+                const updatedNotifications = await getNotifications();
+                setAnomalies(updatedNotifications?.filter((n: any) => n.type === 'ai') || []);
+            }
+        };
 
+        onNotification(handleEntityEvent);
+        joinRoom('timesheet');
+        joinRoom('visit');
+        joinRoom('user');
+        joinRoom('role');
+        joinRoom('permission');
+        joinRoom('receipt_book');
+        joinRoom('receipt_book_type');
+        joinRoom('receipt_stub');
+        joinRoom('agent');
+        joinRoom('report');
+        joinRoom('report_schedule');
+        joinRoom('notification');
+        joinRoom('ai');
+
+        return () => {
+            offNotification();
+            disconnectSocket();
+        };
+    }, [
+        getAllTimesheets,
+        getAllUsers,
+        getAllReceiptBooks,
+        getAllReceiptBookTypes,
+        getAllAgents,
+        listGeneratedReports,
+        getNotifications,
+        regions,
+        governorates,
+        delegations,
+        agents,
+        timesheets,
+        anomalies,
+        receiptBooks,
+        buildHierarchy,
+        generateTreeKeys,
+    ]);
+
+    useEffect(() => {
+        const cleanup = setupWebSocket();
+        return cleanup;
+    }, [setupWebSocket]);
 
 
     // User Modal

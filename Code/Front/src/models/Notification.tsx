@@ -7,6 +7,8 @@ interface Notification {
     channel: 'email' | 'sms' | 'in-app';
     createdAt: Date;
     updatedAt: Date;
+    details?: Record<string, any>;
+    severity?: string; // Add severity field
 }
 
 export default Notification;

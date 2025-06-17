@@ -2,8 +2,10 @@ import React, { createContext, useContext, useReducer, useEffect, useCallback } 
 import { debounce } from 'lodash';
 import Notification from '../models/Notification';
 import { useAuth } from './AuthContext';
+import { useError } from './ErrorContext'; // Import ErrorContext for global error handling
 import { initSocket, joinRoom, onNotification, offNotification, disconnectSocket, isSocketConnected } from '../lib/socket';
 import { markNotificationAsRead, getNotifications } from '../apis/notificationAPI';
+import { useTranslation } from 'react-i18next';
 
 interface NotificationState {
     notifications: Notification[];
@@ -29,6 +31,7 @@ interface NotificationContextType {
     markAllAsRead: () => void;
     mergeNotifications: (notifications: Notification[]) => void;
     removeToast: (notificationID: string) => void;
+    refreshNotifications: () => Promise<void>;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
@@ -38,6 +41,13 @@ const initialState: NotificationState = {
     unreadCount: 0,
     toasts: [],
 };
+
+const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes, matching AdminDashboard
+interface CacheData {
+    data: Notification[];
+    timestamp: number;
+}
+const cache = new Map<string, CacheData>();
 
 const notificationReducer = (state: NotificationState, action: NotificationAction): NotificationState => {
     switch (action.type) {
@@ -110,62 +120,105 @@ const notificationReducer = (state: NotificationState, action: NotificationActio
 
 export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [state, dispatch] = useReducer(notificationReducer, initialState);
-    const { user, userRoles } = useAuth();
+    const { user, userRoles, effectivePermissions } = useAuth();
+    const { setError: setGlobalError, clearError } = useError();
+    const { t } = useTranslation();
+
+    const getCachedData = useCallback((key: string): Notification[] | null => {
+        const cached = cache.get(key);
+        if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+            return cached.data;
+        }
+        return null;
+    }, []);
+
+    const setCachedData = useCallback((key: string, data: Notification[]) => {
+        cache.set(key, { data, timestamp: Date.now() });
+    }, []);
 
     const fetchNotifications = useCallback(async () => {
         if (!user?.userID) return;
         try {
-            const fetchedNotifications = await getNotifications();
-            dispatch({ type: 'SET_NOTIFICATIONS', payload: fetchedNotifications });
+            let notificationsData = getCachedData('notifications');
+            if (!notificationsData) {
+                notificationsData = await getNotifications();
+                setCachedData('notifications', notificationsData);
+            }
+            dispatch({ type: 'SET_NOTIFICATIONS', payload: notificationsData });
+            clearError();
         } catch (error) {
             console.error('Failed to fetch notifications:', error);
+            const errorMessage = t('notification.error.fetchFailed');
+            setGlobalError(errorMessage);
         }
-    }, [user?.userID]);
+    }, [user?.userID, getCachedData, setCachedData, setGlobalError, clearError, t]);
 
     const debouncedFetchNotifications = useCallback(debounce(fetchNotifications, 1000), [fetchNotifications]);
 
-    const joinRooms = useCallback(() => {
-        if (!user?.userID || !userRoles) return;
-        joinRoom(user.userID);
-        joinRoom('default-roles-traceflow');
-        userRoles.forEach((role) => joinRoom(role.name.toLowerCase()));
-    }, [user?.userID, userRoles]);
+    const handleRefreshNotifications = useCallback(async () => {
+        if (!effectivePermissions?.some((p) => p === import.meta.env.VITE_PERMISSIONS_VIEW_NOTIFICATION_RULES)) {
+            const errorMessage = t('notification.error.noPermission');
+            setGlobalError(errorMessage);
+            return;
+        }
+        cache.delete('notifications');
+        try {
+            await fetchNotifications();
+        } catch (error) {
+            console.error('Failed to refresh notifications:', error);
+            const errorMessage = t('notification.error.fetchFailed');
+            setGlobalError(errorMessage);
+        }
+    }, [effectivePermissions, fetchNotifications, setGlobalError, t]);
 
     const setupWebSocket = useCallback(() => {
         if (!user?.userID || !userRoles) return () => { };
 
         if (!isSocketConnected()) initSocket();
 
-        const handleNotification = (event: string, data: unknown) => {
+        const handleNotificationEvent = (event: string, data: unknown) => {
+            console.log(`Received notification event: ${event}`, { data });
             if (typeof data !== 'object' || !data) return;
 
             const notification = 'data' in data ? (data as { data: Notification }).data : (data as Notification);
             if (!notification.notificationID || notification.userID !== user.userID) return;
 
-            if (notification.channel === 'in-app') {
+            if (event === 'notification:created' && notification.channel === 'in-app') {
                 dispatch({ type: 'ADD_NOTIFICATION', payload: notification });
-                dispatch({ type: 'ADD_TOAST', payload: notification }); // Add to toasts for popup
-            } else if (event === 'notification:updated' && (data as any).status === 'read') {
+                dispatch({ type: 'ADD_TOAST', payload: notification });
+            } else if (event === 'notification:updated' && notification.status === 'read') {
+                dispatch({ type: 'MARK_AS_READ', payload: notification.notificationID });
+            } else if (event === 'notification:read') {
                 dispatch({ type: 'MARK_AS_READ', payload: notification.notificationID });
             } else if (event.includes(':created') || event.includes(':updated') || event.includes(':deleted')) {
                 debouncedFetchNotifications();
             }
         };
 
-        onNotification(handleNotification);
+        onNotification(handleNotificationEvent);
+
+        const joinRooms = () => {
+            joinRoom(user.userID);
+            joinRoom('default-roles-traceflow');
+            userRoles.forEach((role) => joinRoom(role.name.toLowerCase()));
+            if (effectivePermissions?.some((p) => p === import.meta.env.VITE_PERMISSIONS_VIEW_NOTIFICATION_RULES)) {
+                joinRoom('notification');
+            }
+        };
+
         joinRooms();
-        fetchNotifications();
 
         return () => {
             offNotification();
             disconnectSocket();
         };
-    }, [user?.userID, userRoles, fetchNotifications, debouncedFetchNotifications, joinRooms]);
+    }, [user?.userID, userRoles, effectivePermissions, debouncedFetchNotifications]);
 
     useEffect(() => {
         const cleanup = setupWebSocket();
+        fetchNotifications();
         return cleanup;
-    }, [setupWebSocket]);
+    }, [setupWebSocket, fetchNotifications]);
 
     const addNotification = (notification: Notification) => {
         dispatch({ type: 'ADD_NOTIFICATION', payload: notification });
@@ -180,6 +233,8 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
             dispatch({ type: 'MARK_AS_READ', payload: notificationID });
         } catch (error) {
             console.error('Failed to mark notification as read:', error);
+            const errorMessage = t('notification.error.markAsReadFailed');
+            setGlobalError(errorMessage);
         }
     };
 
@@ -190,6 +245,8 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
             dispatch({ type: 'MARK_ALL_AS_READ' });
         } catch (error) {
             console.error('Failed to mark all as read:', error);
+            const errorMessage = t('notification.error.markAllAsReadFailed');
+            setGlobalError(errorMessage);
         }
     };
 
@@ -212,6 +269,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
                 markAllAsRead,
                 mergeNotifications,
                 removeToast,
+                refreshNotifications: handleRefreshNotifications,
             }}
         >
             {children}

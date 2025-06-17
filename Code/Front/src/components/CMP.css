@@ -22,7 +22,6 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    flex-wrap: nowrap;
     gap: 0.9375rem;
     position: relative;
 }
@@ -32,7 +31,6 @@
     width: auto;
     transition: transform 0.3s ease;
     flex-shrink: 0;
-    margin-right: auto;
 }
 
 .logo:hover {
@@ -65,8 +63,27 @@
 
 .header-nav {
     display: flex;
-    gap: 1.875rem;
     align-items: center;
+    gap: 1.875rem;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    /* Hide scrollbar for Firefox */
+    flex: 0 1 auto;
+    max-width: calc(100% - 200px);
+    /* Adjust based on logo and buttons width */
+    white-space: nowrap;
+}
+
+.header-nav::-webkit-scrollbar {
+    display: none;
+    /* Hide scrollbar for Chrome, Safari */
+}
+
+.header-nav>* {
+    scroll-snap-align: start;
     flex-shrink: 0;
 }
 
@@ -101,16 +118,19 @@
     background: #63b3ed;
 }
 
-.nav-link:hover::after {
+.nav-link:hover::after,
+.nav-link.active::after {
     width: 100%;
 }
 
-.nav-link:hover {
+.nav-link:hover,
+.nav-link.active {
     color: #4cb1c7;
     transform: scale(1.05);
 }
 
-.header.dark .nav-link:hover {
+.header.dark .nav-link:hover,
+.header.dark .nav-link.active {
     color: #63b3ed;
 }
 
@@ -292,7 +312,6 @@
     padding: 0.5rem;
     font-size: 1rem;
     background: #4B5563;
-    /* Dark gray in light mode */
     color: #fff;
     border: none;
     border-radius: 50%;
@@ -306,12 +325,10 @@
 
 .header.dark .profile-btn {
     background: #959698;
-    /* Dark white in dark mode */
 }
 
 .profile-btn:hover {
     background: #374151;
-    /* Slightly darker gray on hover in light mode */
     max-width: 10rem;
     border-radius: 1rem;
     padding: 0.5rem 1rem;
@@ -321,7 +338,6 @@
 
 .header.dark .profile-btn:hover {
     background: #CBD5E1;
-    /* Slightly darker white on hover in dark mode */
 }
 
 .profile-btn-pic {
@@ -394,6 +410,7 @@
     display: flex;
     gap: 0.5rem;
     align-items: center;
+    flex-shrink: 0;
 }
 
 /* Mobile Buttons */
@@ -509,7 +526,6 @@
     }
 
     .header-container {
-        flex-wrap: nowrap;
         justify-content: space-between;
     }
 
@@ -517,6 +533,7 @@
         display: flex;
         gap: 0.5rem;
         align-items: center;
+        flex-shrink: 0;
     }
 
     .desktop-only {
@@ -543,6 +560,11 @@
         opacity: 0;
         transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease-in-out;
         z-index: 999;
+        overflow-x: visible;
+        /* Disable horizontal scroll in mobile menu */
+        scroll-snap-type: none;
+        /* Disable scroll snap in mobile menu */
+        max-width: 100%;
     }
 
     .header.dark .header-nav {
@@ -558,8 +580,8 @@
         margin: 0.5rem 1.2rem;
         border-radius: 0 0 0.8rem 0.8rem;
         padding: 1rem;
-        width: 100vw;
-        transform: translateX(-1.75rem);
+        width: calc(100vw - 2.4rem);
+        transform: translateX(-1.2rem);
     }
 
     .nav-link {
@@ -708,12 +730,6 @@
         font-size: 0.7rem;
     }
 }
-
-
-
-
-
-
 
 
 
