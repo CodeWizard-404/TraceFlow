@@ -164,6 +164,7 @@ class TimesheetDetailsScreenState extends State<TimesheetDetailsScreen>
         return WeekViewCalendar(
           date,
           onDayTap: (day) => _setView('day', specificDate: day),
+          scaffoldMessengerKey: _scaffoldMessengerKey,
         );
       case 'month':
         return MonthView(
