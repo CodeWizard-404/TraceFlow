@@ -123,6 +123,8 @@ const HRDashboard: React.FC = () => {
     const [receiptBookTypes, setReceiptBookTypes] = useState<any[]>([]);
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [selectedAnomalyDetails, setSelectedAnomalyDetails] = useState<any[]>([]);
+    const [generatedReports, setGeneratedReports] = useState<GeneratedReport[]>([]);
+
 
     const filterOption = (input: string, option: any) =>
         option.children?.toLowerCase().includes(input.toLowerCase());
@@ -133,42 +135,9 @@ const HRDashboard: React.FC = () => {
 
 
 
-    // WebSocket setup for real-time updates
-    const setupWebSocket = useCallback(() => {
-        if (!isSocketConnected()) initSocket();
 
-        const handleEntityEvent = async (event: string, data: unknown) => {
-            console.log(`Received entity event: ${event}`, { data });
-            const entity = event.split(':')[0];
-            const action = event.split(':')[1];
 
-            if (entity === 'timesheet' && (action === 'created' || action === 'validated')) {
-                const updatedTimesheets = await getAllTimesheets();
-                setTimesheets(Array.isArray(updatedTimesheets) ? updatedTimesheets : []);
-                setVisits(Array.isArray(updatedTimesheets) ? updatedTimesheets.flatMap((ts: any) => ts.Visits || []) : []);
-            } else if (entity === 'visit' && (action === 'logged' || action === 'updated' || action === 'deleted')) {
-                const updatedTimesheets = await getAllTimesheets();
-                setTimesheets(Array.isArray(updatedTimesheets) ? updatedTimesheets : []);
-                setVisits(Array.isArray(updatedTimesheets) ? updatedTimesheets.flatMap((ts: any) => ts.Visits || []) : []);
-            }
-        };
 
-        onNotification(handleEntityEvent);
-        joinRoom('timesheet');
-        joinRoom('visit');
-
-        return () => {
-            offNotification();
-            disconnectSocket();
-        };
-    }, [
-        getAllTimesheets,
-    ]);
-
-    useEffect(() => {
-        const cleanup = setupWebSocket();
-        return cleanup;
-    }, [setupWebSocket]);
 
 
 
@@ -1154,6 +1123,7 @@ const HRDashboard: React.FC = () => {
 
 
 
+
     // Users Tab
     const userColumns = [
         {
@@ -2093,7 +2063,6 @@ const HRDashboard: React.FC = () => {
 
     // Reports Tab
     const renderReportsTab = () => {
-        const [generatedReports, setGeneratedReports] = useState<GeneratedReport[]>([]);
         const [loadingGenerated, setLoadingGenerated] = useState<boolean>(false);
         const [filters, setFilters] = useState({
             reportType: '',
@@ -2761,9 +2730,200 @@ const HRDashboard: React.FC = () => {
 
 
 
+    // WebSocket setup for real-time updates
+    // WebSocket setup for real-time updates
+    const setupWebSocket = useCallback(() => {
+        if (!isSocketConnected()) initSocket();
 
+        const handleEntityEvent = async (event: string, data: unknown) => {
+            console.log(`Received entity event: ${event}`, { data });
+            const entity = event.split(':')[0];
+            const action = event.split(':')[1];
 
+            // Timesheet events
+            if (entity === 'timesheet' && (action === 'created' || action === 'validated')) {
+                const updatedTimesheets = await getAllTimesheets();
+                setTimesheets(Array.isArray(updatedTimesheets) ? updatedTimesheets : []);
+                setVisits(Array.isArray(updatedTimesheets) ? updatedTimesheets.flatMap((ts: any) => ts.Visits || []) : []);
+            }
+            // Visit events
+            else if (entity === 'visit' && (action === 'logged' || action === 'updated' || action === 'deleted')) {
+                const updatedTimesheets = await getAllTimesheets();
+                setTimesheets(Array.isArray(updatedTimesheets) ? updatedTimesheets : []);
+                setVisits(Array.isArray(updatedTimesheets) ? updatedTimesheets.flatMap((ts: any) => ts.Visits || []) : []);
+            }
+            // User events
+            else if (entity === 'user' && (
+                action === 'created' ||
+                action === 'updated' ||
+                action === 'profile_updated' ||
+                action === 'deleted' ||
+                action === 'regional_manager_assigned' ||
+                action === 'regional_manager_revoked' ||
+                action === 'director_assigned' ||
+                action === 'director_revoked' ||
+                action === 'supervisor_assigned_to_agent' ||
+                action === 'supervisor_revoked_from_agent' ||
+                action === 'regions_assigned' ||
+                action === 'regions_revoked' ||
+                action === 'governorates_assigned' ||
+                action === 'governorates_revoked' ||
+                action === 'delegations_assigned' ||
+                action === 'delegations_revoked'
+            )) {
+                const updatedUsers = await getAllUsers();
+                setUsers(Array.isArray(updatedUsers) ? updatedUsers : []);
+                const updatedHierarchy = buildHierarchy(
+                    updatedUsers.filter((u: any) => u.Roles?.some((r: any) => r.name === 'Director')),
+                    updatedUsers.filter((u: any) => u.Roles?.some((r: any) => r.name === 'Regional Manager')),
+                    updatedUsers.filter((u: any) => u.Roles?.some((r: any) => r.name === 'Supervisor')),
+                    regions,
+                    governorates,
+                    delegations,
+                    agents,
+                    timesheets,
+                    anomalies,
+                    receiptBooks
+                );
+                if (updatedHierarchy.children) {
+                    generateTreeKeys(updatedHierarchy.children);
+                }
+                setHierarchyData(updatedHierarchy);
+                setFilteredHierarchyData(updatedHierarchy);
+            }
+            // Role events
+            else if (entity === 'role' && (action === 'created' || action === 'updated' || action === 'deleted' || action === 'assigned' || action === 'revoked')) {
+                const updatedUsers = await getAllUsers();
+                setUsers(Array.isArray(updatedUsers) ? updatedUsers : []);
+                const updatedHierarchy = buildHierarchy(
+                    updatedUsers.filter((u: any) => u.Roles?.some((r: any) => r.name === 'Director')),
+                    updatedUsers.filter((u: any) => u.Roles?.some((r: any) => r.name === 'Regional Manager')),
+                    updatedUsers.filter((u: any) => u.Roles?.some((r: any) => r.name === 'Supervisor')),
+                    regions,
+                    governorates,
+                    delegations,
+                    agents,
+                    timesheets,
+                    anomalies,
+                    receiptBooks
+                );
+                if (updatedHierarchy.children) {
+                    generateTreeKeys(updatedHierarchy.children);
+                }
+                setHierarchyData(updatedHierarchy);
+                setFilteredHierarchyData(updatedHierarchy);
+            }
+            // Permission events
+            else if (entity === 'permission' && (action === 'updated' || action === 'assigned' || action === 'revoked')) {
+                const updatedUsers = await getAllUsers();
+                setUsers(Array.isArray(updatedUsers) ? updatedUsers : []);
+            }
+            // Receipt Book events
+            else if (entity === 'receipt_book' && (
+                action === 'created' ||
+                action === 'sent' ||
+                action === 'transferred' ||
+                action === 'collected' ||
+                action === 'updated' ||
+                action === 'deleted' ||
+                action === 'csv_uploaded'
+            )) {
+                const updatedReceiptBooks = await getAllReceiptBooks();
+                setReceiptBooks(Array.isArray(updatedReceiptBooks) ? updatedReceiptBooks : updatedReceiptBooks?.books || []);
+            }
+            else if (entity === 'receipt_book_type' && (action === 'created' || action === 'updated' || action === 'deleted')) {
+                const updatedReceiptBookTypes = await getAllReceiptBookTypes();
+                setReceiptBookTypes(Array.isArray(updatedReceiptBookTypes) ? updatedReceiptBookTypes : []);
+            }
+            else if (entity === 'receipt_stub' && action === 'archived') {
+                const updatedReceiptBooks = await getAllReceiptBooks();
+                setReceiptBooks(Array.isArray(updatedReceiptBooks) ? updatedReceiptBooks : updatedReceiptBooks?.books || []);
+            }
+            // Agent events
+            else if (entity === 'agent' && (action === 'created' || action === 'updated' || action === 'deleted' || action === 'csv_uploaded' || action === 'location_corrected')) {
+                const updatedAgents = await getAllAgents();
+                setAgents(updatedAgents?.agents || []);
+                const updatedHierarchy = buildHierarchy(
+                    users.filter((u: any) => u.Roles?.some((r: any) => r.name === 'Director')),
+                    users.filter((u: any) => u.Roles?.some((r: any) => r.name === 'Regional Manager')),
+                    users.filter((u: any) => u.Roles?.some((r: any) => r.name === 'Supervisor')),
+                    regions,
+                    governorates,
+                    delegations,
+                    updatedAgents?.agents || [],
+                    timesheets,
+                    anomalies,
+                    receiptBooks
+                );
+                if (updatedHierarchy.children) {
+                    generateTreeKeys(updatedHierarchy.children);
+                }
+                setHierarchyData(updatedHierarchy);
+                setFilteredHierarchyData(updatedHierarchy);
+            }
+            // Report events
+            else if (entity === 'report' && (action === 'generated' || action === 'scheduled' || action === 'deleted')) {
+                const updatedReports = await listGeneratedReports();
+                setGeneratedReports(updatedReports);
+            }
+            else if (entity === 'report_schedule' && action === 'deleted') {
+                const updatedReports = await listGeneratedReports();
+                setGeneratedReports(updatedReports);
+            }
+            // Notification events
+            else if (entity === 'notification' && action === 'anomaly_triggered') {
+                const updatedNotifications = await getNotifications();
+                setAnomalies(updatedNotifications?.filter((n: any) => n.type === 'ai') || []);
+            }
+            // AI events
+            else if (entity === 'ai' && action === 'anomaly_detected') {
+                const updatedNotifications = await getNotifications();
+                setAnomalies(updatedNotifications?.filter((n: any) => n.type === 'ai') || []);
+            }
+        };
 
+        onNotification(handleEntityEvent);
+        joinRoom('timesheet');
+        joinRoom('visit');
+        joinRoom('user');
+        joinRoom('role');
+        joinRoom('permission');
+        joinRoom('receipt_book');
+        joinRoom('receipt_book_type');
+        joinRoom('receipt_stub');
+        joinRoom('agent');
+        joinRoom('report');
+        joinRoom('report_schedule');
+        joinRoom('notification');
+        joinRoom('ai');
+
+        return () => {
+            offNotification();
+            disconnectSocket();
+        };
+    }, [
+        getAllTimesheets,
+        getAllUsers,
+        getAllReceiptBooks,
+        getAllReceiptBookTypes,
+        getAllAgents,
+        listGeneratedReports,
+        getNotifications,
+        regions,
+        governorates,
+        delegations,
+        agents,
+        timesheets,
+        anomalies,
+        receiptBooks,
+        buildHierarchy,
+        generateTreeKeys,
+    ]);
+
+    useEffect(() => {
+        const cleanup = setupWebSocket();
+        return cleanup;
+    }, [setupWebSocket]);
 
 
     // User Modal

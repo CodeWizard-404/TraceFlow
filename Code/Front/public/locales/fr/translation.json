@@ -36,12 +36,13 @@
       "inStock": "En stock",
       "sentToSupplier": "Envoyé au fournisseur",
       "collectFromSupplier": "À récupérer chez le fournisseur",
-      "withRegionalManager": "Avec le responsable régional",
-      "stubCollected": "Coupon collecté",
-      "withSupervisor": "Avec le superviseur",
-      "assignedToAgent": "Assigné à l'agent",
-      "withStockManager": "Avec le gestionnaire de stock",
-      "stubCollectedStatus": "collecté"
+      "withRegionalManager": "Chez le manager régional",
+      "stubCollected": "Souche collectée",
+      "withSupervisor": "Chez le superviseur",
+      "assignedToAgent": "Attribué à l'agent",
+      "withStockManager": "Chez le gestionnaire de stock",
+      "stubCollectedStatus": "Collecté",
+      "archived": "Archivé"
     },
     "durationUnit": "min"
   },
@@ -49,11 +50,17 @@
     "logoAlt": "Logo de l'entreprise",
     "aria": {
       "toggleMenu": "Basculer le menu de navigation",
-      "themeToggle": "Passer au mode {mode}",
-      "logout": "Se déconnecter"
+      "themeToggle": "Passer en mode {{mode}}",
+      "logout": "Déconnexion",
+      "notifications": "Notifications ({{count}} non lues)",
+      "profile": "Profil",
+      "selectLanguage": "Sélectionner la langue",
+      "menuToggle": "Basculer le menu",
+      "navLink": "Naviguer vers {{label}}"
     },
     "theme": "Thème",
     "selectLanguage": "Sélectionner la langue",
+    "notifications": "Notifications",
     "logout": "Déconnexion",
     "darkMode": "sombre",
     "lightMode": "clair",
@@ -62,12 +69,22 @@
       "admin": "Administration",
       "timesheets": "Feuilles de temps",
       "receiptBooks": "Carnets de reçus",
-      "profile": "Profil"
-    }
+      "agents": "Agents",
+      "reports": "Rapports",
+      "regionalDashboard": "Tableau de bord régional",
+      "purchaseDashboard": "Tableau de bord des achats",
+      "superAdminDashboard": "Tableau de bord super administrateur",
+      "directorDashboard": "Tableau de bord du directeur",
+      "supervisorDashboard": "Tableau de bord du superviseur",
+      "adminDashboard": "Tableau de bord de l'administrateur",
+      "stockDashboard": "Tableau de bord du stock",
+      "hrDashboard": "Tableau de bord RH"
+    },
+    "profile": "Profil"
   },
   "footer": {
     "aria": {
-      "label": "Pied de page"
+      "label": "P Piedmont"
     },
     "copyright": "© {{year}} TraceFlow. Tous droits réservés.",
     "links": {
@@ -83,7 +100,7 @@
     "error": {
       "title": "Erreur",
       "missingData": "ID de visite ou jeton d'authentification manquant.",
-      "fetchFailed": "Échec du chargement des données de visite ou d'agent.",
+      "fetchFailed": "Échec du chargement des données de la visite ou de l'agent.",
       "accessDenied": "Visite non trouvée ou accès refusé.",
       "cameraAccess": "Échec de l'accès à la caméra. Veuillez vérifier que les autorisations sont accordées.",
       "cameraInUse": "La caméra est utilisée par une autre application ou indisponible. Veuillez fermer les autres applications ou vérifier votre appareil.",
@@ -97,7 +114,9 @@
       "title": "Détails de la visite",
       "agent": "Agent",
       "phone": "Téléphone",
-      "na": "N/A"
+      "na": "N/A",
+      "recruitmentVisit": "Visite de recrutement (sans agent)",
+      "location": "Lieu"
     },
     "reasons": {
       "title": "Motifs",
@@ -106,13 +125,15 @@
     "checklist": {
       "title": "Liste de contrôle",
       "noData": "Aucun élément de liste de contrôle disponible.",
-      "itemLabel": "{{item}}"
+      "itemLabel": "{{item}}",
+      "count": "{{completed}} sur {{total}} complétés"
     },
     "photos": {
       "title": "Photos",
       "startCamera": "Démarrer la caméra",
       "note": "Au moins une photo est requise.",
-      "alt": "Photo de visite {{index}}"
+      "alt": "Photo de la visite {{index}}",
+      "count": "{{count}} photos"
     },
     "comment": {
       "title": "Commentaire (facultatif)",
@@ -124,7 +145,8 @@
       "validating": "Validation en cours...",
       "back": "Retour",
       "cancel": "Annuler",
-      "submit": "Soumettre la validation"
+      "submit": "Soumettre la validation",
+      "correctLocation": "Lieu correct"
     },
     "success": {
       "title": "Succès",
@@ -134,19 +156,24 @@
   "visitDetails": {
     "title": "Détails de la visite",
     "loading": "Chargement des détails de la visite...",
+    "confirmDeleteTitle": "Confirmer la suppression",
+    "confirmDelete": "Êtes-vous sûr de vouloir supprimer cette visite ?",
+    "yes": "Oui",
+    "no": "Non",
     "error": {
       "title": "Oups !",
       "notFound": "Visite non trouvée.",
+      "loadSupervisors": "Échec du chargement des superviseurs.",
       "fetchFailed": "Échec du chargement des détails de la visite.",
       "validateFailed": "Échec de la validation de la visite.",
       "rejectFailed": "Échec du rejet de la visite.",
       "updateFailed": "Échec de la mise à jour de la visite.",
-      "deleteFailed": "Échec de la suppression de la visite.",
       "cameraAccess": "Échec de l'accès à la caméra. Veuillez vérifier que les autorisations sont accordées.",
       "cameraPlayFailed": "Échec de la lecture du flux de la caméra.",
       "agentNotFound": "Agent non trouvé avec ce numéro de téléphone.",
       "supervisorNotFound": "Superviseur non trouvé avec ce numéro de téléphone.",
-      "agentsLoadFailed": "Échec du chargement des agents pour {{location}}."
+      "agentsLoadFailed": "Échec du chargement des agents pour {{location}}.",
+      "deleteFailed": "Échec de la suppression de la visite"
     },
     "whenWhere": {
       "title": "Quand et où",
@@ -158,7 +185,8 @@
     "agent": {
       "title": "Agent",
       "noData": "Aucun agent assigné",
-      "phone": "Téléphone"
+      "phone": "Téléphone",
+      "recruitmentVisit": "Visite de recrutement (sans agent)"
     },
     "reasons": {
       "title": "Motifs",
@@ -172,7 +200,7 @@
       "title": "Photos",
       "count": "({{count}})",
       "startCamera": "Démarrer la caméra",
-      "alt": "Photo de visite {index}"
+      "alt": "Photo de la visite {{index}}"
     },
     "comment": {
       "title": "Commentaire",
@@ -190,6 +218,18 @@
       "agentPhone": {
         "label": "Téléphone de l'agent (facultatif)",
         "placeholder": "Saisir le numéro de téléphone de l'agent"
+      },
+      "region": {
+        "label": "Région",
+        "selectPlaceholder": "Sélectionner une région"
+      },
+      "governorate": {
+        "label": "Gouvernorat",
+        "selectPlaceholder": "Sélectionner un gouvernorat"
+      },
+      "delegation": {
+        "label": "Délégation",
+        "selectPlaceholder": "Sélectionner une délégation"
       },
       "location": {
         "label": "Lieu",
@@ -216,7 +256,8 @@
         "startCamera": "Démarrer la caméra",
         "lastCapturedAlt": "Dernière photo capturée",
         "existingAlt": "Photo {{index}}",
-        "newAlt": "Nouvelle photo {{index}}"
+        "newAlt": "Nouvelle photo {{index}}",
+        "count": "{{count}} photos"
       },
       "comment": {
         "label": "Commentaire",
@@ -235,7 +276,7 @@
       "time": {
         "label": "Heure"
       },
-      "permissionDenied": "Permission refusée",
+      "permissionDenied": "Autorisation refusée",
       "actions": {
         "save": "Enregistrer",
         "cancel": "Annuler"
@@ -255,7 +296,7 @@
     "duration": "{{duration}}min",
     "fullscreenAlt": "Aperçu en plein écran",
     "aria": {
-      "backButton": "Retourner à la page précédente",
+      "backButton": "Retour à la page précédente",
       "logVisit": "Enregistrer cette visite",
       "editVisit": "Modifier les détails de la visite",
       "deleteVisit": "Supprimer cette visite",
@@ -270,110 +311,157 @@
   },
   "qrScan": {
     "title": "Scanner le code QR",
-    "description": "Alignez le code QR dans le cadre pour valider la visite.",
-    "loading": "Chargement...",
+    "description": "Scannez le code QR fourni par l'agent pour vérifier la visite.",
+    "recruitmentDescription": "Il s'agit d'une visite de recrutement. Aucun scan de code QR requis.",
     "status": {
-      "startingCamera": "Démarrage de la caméra...",
-      "scanning": "Scan en cours...",
-      "detected": "Code QR détecté",
-      "checking": "Vérification...",
-      "validating": "Validation..."
+      "scanning": "Recherche d'un code QR...",
+      "detected": "Code QR détecté !",
+      "checking": "Vérification du code QR...",
+      "validating": "Code QR vérifié !",
+      "recruitmentVisit": "Visite de recrutement détectée. En cours...",
+      "startingCamera": "Démarrage de la caméra..."
     },
     "error": {
-      "title": "Oups !",
-      "noVisit": "Aucune visite sélectionnée.",
-      "authRequired": "Authentification requise.",
-      "accessDenied": "Accès refusé : Vous n'avez pas la permission de scanner des visites.",
-      "mismatch": "Erreur de correspondance"
+      "title": "Erreur",
+      "noVisit": "Aucune donnée de visite fournie.",
+      "accessDenied": "Vous n'avez pas l'autorisation de scanner des visites.",
+      "mismatch": "Code QR invalide. Veuillez réessayer.",
+      "cameraAccessDenied": "Accès à la caméra refusé. Veuillez autoriser les permissions de la caméra.",
+      "noCamera": "Aucune caméra trouvée sur cet appareil.",
+      "cameraFailed": "Échec du démarrage de la caméra. Veuillez réessayer.",
+      "noOTP": "Veuillez saisir le code OTP.",
+      "invalidOTP": "Code OTP invalide. Veuillez réessayer.",
+      "otpExpired": "Le code OTP a expiré. Veuillez scanner à nouveau le code QR."
     },
+    "form": {
+      "otp": "Saisir le code OTP envoyé au téléphone de l'agent",
+      "placeholders": {
+        "enterOTP": "Saisir le code OTP"
+      }
+    },
+    "otpTimer": "Le code OTP expire dans",
     "actions": {
-      "back": "Retour"
+      "back": "Retour",
+      "validateOTP": "Valider le code OTP"
     },
     "aria": {
-      "backButton": "Retourner à la page précédente",
-      "qrReader": "Scanner de code QR, état actuel : {{status}}",
-      "errorMessage": "Message d'erreur"
-    }
+      "qrReader": "Scanner de code QR, statut actuel : {{status}}",
+      "errorMessage": "Message d'erreur",
+      "backButton": "Bouton de retour",
+      "validateOTP": "Bouton de validation du code OTP"
+    },
+    "loading": "Chargement..."
   },
   "timesheets": {
-    "loading": "Chargement de la feuille de temps...",
     "viewModes": {
       "year": "Année",
       "month": "Mois",
       "week": "Semaine",
       "day": "Jour"
     },
+    "navigation": {
+      "previousYear": "Année précédente",
+      "nextYear": "Année suivante",
+      "previousMonth": "Mois précédent",
+      "nextMonth": "Mois suivant",
+      "previousWeek": "Semaine précédente",
+      "nextWeek": "Semaine suivante",
+      "previousDay": "Jour précédent",
+      "nextDay": "Jour suivant"
+    },
     "actions": {
       "scheduleVisit": "Planifier une visite",
-      "receiptBooks": "Carnets de reçus",
+      "scrollToCurrent": "Aller à {{view}} actuel",
+      "generateSuggestions": "Générer des suggestions",
+      "validate": "Valider la feuille de temps",
+      "toggleSelectAll": "Tout sélectionner/désélectionner",
+      "selectAll": "Tout sélectionner",
+      "deselectAll": "Tout désélectionner",
+      "cancelSuggestions": "Annuler les suggestions",
+      "saveSuggestions": "Enregistrer les suggestions",
+      "saving": "Enregistrement...",
+      "viewDayOnMap": "Voir les visites sur la carte",
+      "receiptBooks": "Voir les carnets de reçus",
       "current": "{{view}} actuel",
       "viewReceiptBooks": "Voir les carnets de reçus",
       "filterSupervisors": "Filtrer les superviseurs",
-      "validateTimesheet": "Valider l'ensemble de la feuille de temps"
+      "validateTimesheet": "Valider la feuille de temps"
     },
     "filter": {
-      "searchPlaceholder": "Rechercher par nom ou téléphone...",
-      "allSupervisors": "Tous les superviseurs"
+      "toggle": "Filtrer",
+      "searchPlaceholder": "Rechercher des superviseurs",
+      "supervisorSelect": "Sélectionner un superviseur",
+      "allSupervisors": "Tous les superviseurs",
+      "visitStatusSelect": "Sélectionner le statut de la visite",
+      "allStatuses": "Tous les statuts",
+      "reasonPlaceholder": "Rechercher par motif"
     },
     "yearView": {
       "week": "Semaine",
       "visits": "Visites",
       "supervisors": "Superviseurs",
-      "month": "{{monthName}}",
-      "weekNumber": "Semaine {{weekNumber}} :",
-      "weekRange": "{{startDate}} - {{endDate}}",
-      "supervisorCount": "Superviseurs : {{count}}"
+      "weekTile": "Semaine {{weekNumber}}"
     },
     "monthView": {
       "week": "Semaine",
-      "weekRange": "{{startDate}} - {{endDate}}",
-      "visitCount": "{{count}} Visites",
       "visits": "Visites",
-      "supervisorCount": "Superviseurs : {{count}}",
       "status": "Statut",
-      "supervisors": "Superviseurs :"
+      "supervisors": "{{count}} Superviseur(s)",
+      "weekCard": "Semaine {{weekNumber}}"
     },
     "weekView": {
       "week": "Semaine",
-      "weekRange": "{{startDate}} - {{endDate}}",
       "status": "Statut",
-      "supervisor": "Superviseur : {{firstname}} {{lastname}}",
-      "dayName": "{{dayName}}",
-      "dayDate": "{{dayDate}}",
-      "visitCount": "/ {{count}} Visites"
+      "visits": "Visites",
+      "visitCard": "Visite à {{time}}"
     },
     "dayView": {
-      "date": "{{weekday}} {{day}}/{{month}}",
-      "noVisits": "Aucune visite planifiée"
+      "noVisits": "Aucune visite planifiée pour ce jour"
     },
-    "visitCard": {
-      "supervisor": "{{firstname}} {{lastname}}",
-      "time": "{{time}}",
-      "status": "{{status}}",
-      "location": "{{location}}",
-      "locationTBD": "Lieu à déterminer",
-      "reasons": "Motifs : {{reasons}}"
+    "errors": {
+      "fetchTimesheets": "Échec de la récupération des feuilles de temps. Veuillez réessayer.",
+      "fetchUsers": "Échec de la récupération des utilisateurs. Veuillez réessayer.",
+      "noPendingVisits": "Aucune visite en attente à valider.",
+      "validateTimesheet": "Échec de la validation de la feuille de temps. Veuillez réessayer.",
+      "updateVisit": "Échec de la mise à jour de la date de visite. Veuillez réessayer.",
+      "saveSuggestions": "Échec de l'enregistrement des suggestions. Veuillez réessayer.",
+      "partialSuccessGoogleSync": "Feuille de temps enregistrée, mais la synchronisation avec Google Agenda a échoué."
     },
-    "aria": {
-      "prevYear": "Année précédente",
-      "nextYear": "Année suivante",
-      "prevMonth": "Mois précédent",
-      "nextMonth": "Mois suivant",
-      "prevWeek": "Semaine précédente",
-      "nextWeek": "Semaine suivante",
-      "prevDay": "Jour précédent",
-      "nextDay": "Jour suivant",
-      "viewToggle": "Passer à la vue {{mode}}",
-      "scheduleVisit": "Planifier une nouvelle visite",
-      "receiptBooks": "Voir les carnets de reçus",
-      "current": "Faire défiler jusqu'à {{mode}} actuel",
-      "supervisorSearch": "Rechercher des superviseurs par nom ou téléphone",
-      "supervisorFilter": "Filtrer les feuilles de temps par superviseur",
-      "month": "Voir les feuilles de temps pour {{month}}",
-      "weekTile": "Voir les détails de la semaine {{weekNumber}}",
-      "weekCard": "Voir les détails de la semaine {{weekNumber}}",
-      "dayTile": "Voir les visites pour {{weekday}} {{day}}",
-      "visitCard": "Voir les détails de la visite pour {{time}} à {{location}}"
+    "warnings": {
+      "unsavedChanges": "Vous avez des modifications non enregistrées. Êtes-vous sûr de vouloir quitter ?"
+    },
+    "confirmValidate": {
+      "title": "Confirmer la validation",
+      "message": "Êtes-vous sûr de vouloir valider {{count}} visite(s) en attente ?",
+      "yes": "Oui",
+      "no": "Non"
+    },
+    "suggestions": {
+      "title": "Générer des suggestions de feuilles de temps",
+      "close": "Fermer",
+      "delegationIds": "Délégations",
+      "agentIds": "Agents",
+      "preferredDays": "Jours préférés",
+      "timeInterval": "Intervalle de temps",
+      "maxVisitsPerAgentPerWeek": "Visites maximum par agent par semaine",
+      "includeRecruitmentVisits": "Inclure les visites de recrutement",
+      "recruitmentAreas": "Zones de recrutement",
+      "description": "Description",
+      "descriptionPlaceholder": "Saisir une description pour les suggestions",
+      "selectDelegations": "Sélectionner des délégations",
+      "selectAgents": "Sélectionner des agents",
+      "selectDays": "Sélectionner les jours préférés",
+      "generate": "Générer des suggestions",
+      "generating": "Génération en cours...",
+      "cancel": "Annuler la suggestion",
+      "canceled": "Génération de suggestion annulée.",
+      "fetchError": "Échec de la récupération des données. Veuillez réessayer.",
+      "locationError": "Impossible de récupérer votre position. Veuillez vérifier que les services de localisation sont activés.",
+      "geolocationUnsupported": "La géolocalisation n'est pas prise en charge par votre navigateur.",
+      "noSupervisor": "Aucun ID de superviseur fourni.",
+      "invalidCoordinates": "Coordonnées invalides fournies.",
+      "cancelError": "Échec de l'annulation de la suggestion. Veuillez réessayer.",
+      "generateError": "Échec de la génération des suggestions. Veuillez réessayer."
     }
   },
   "timesheetForm": {
@@ -388,26 +476,38 @@
       "agent": "Agent",
       "reasons": "Motifs",
       "checklists": "Listes de contrôle",
+      "recruitmentVisit": "Visite de recrutement",
+      "agentLocation": "- Lieu",
       "placeholders": {
+        "location": "Saisir le lieu de la visite (facultatif)",
         "supervisorSearch": "Rechercher des superviseurs par nom...",
         "supervisorPhone": "Ou saisir le numéro de téléphone du superviseur...",
-        "supervisorSelect": "Sélectionner un superviseur",
+        "supervisorSelect": "superviseur",
         "agentPhone": "Saisir le numéro de téléphone de l'agent",
-        "permissionDenied": "Permission refusée",
+        "permissionDenied": "Autorisation refusée",
         "locationSearch": "Rechercher des lieux...",
-        "locationSelect": "Sélectionner un lieu",
+        "locationSelect": "lieu",
         "agentSearch": "Rechercher des agents...",
         "agentSearchPlaceholder": "Rechercher des agents...",
-        "agentSelect": "Sélectionner un agent",
+        "agentSelect": "agent",
         "reasonSearch": "Rechercher des motifs...",
-        "reasonSelect": "Sélectionner un motif",
+        "reasonSelect": "motif",
         "checklistSearch": "Rechercher des listes de contrôle...",
-        "checklistSelect": "Sélectionner une liste de contrôle"
-      }
+        "checklistSelect": "liste de contrôle",
+        "regionalManagerSearch": "Rechercher des managers régionaux...",
+        "regionalManagerSelect": "manager régional",
+        "regionSelect": "Sélectionner une région",
+        "governorateSelect": "gouvernorat",
+        "delegationSelect": "délégation"
+      },
+      "regionalManager": "Manager régional",
+      "region": "Région",
+      "governorate": "Gouvernorat",
+      "delegation": "Délégation"
     },
     "actions": {
       "back": "Retour",
-      "create": "Créer une feuille de temps",
+      "create": "Créer une visite",
       "submitting": "Soumission en cours..."
     },
     "errors": {
@@ -425,118 +525,149 @@
     }
   },
   "transferReceiptBook": {
-    "title": "Transférer les carnets de reçus",
+    "title": "Transférer les carnets de reçus ({{roles}})",
     "loading": "Chargement...",
     "form": {
       "agentSelection": "Sélection de l'agent",
       "recipientType": "Type de destinataire",
       "supplierEmail": "Email du fournisseur",
-      "selectBooks": "Sélectionner les carnets en stock à transférer",
+      "selectBooks": "Sélectionner les carnets à transférer",
       "selectedAgent": "Agent sélectionné",
+      "selectedUser": "Utilisateur sélectionné",
+      "selectedBooks": "Carnets sélectionnés ({{count}})",
       "scanCollect": "Scanner les carnets à récupérer chez le fournisseur",
       "scanQR": "Scanner les codes QR",
-      "otp": "Saisir l'OTP (envoyé à {{type}} {{details}})",
-      "location": "Sélectionner un lieu",
+      "scanStub": "Scanner la souche",
+      "otp": "Saisir le code OTP (envoyé à {{type}} {{details}})",
       "searchAgents": "Rechercher des agents",
       "selectAgent": "Sélectionner un agent",
-      "recipientSelection": "Sélection du destinataire",
+      "recipientSelection": "Sélection du destinataire ({{type}})",
       "selectRecipient": "Sélectionner {{type}}",
-      "selectedUser": "Utilisateur sélectionné",
-      "selectedBooks": "Carnets sélectionnés",
-      "scanStub": "Scanner le coupon",
       "noBooksAvailable": "Aucun carnet disponible",
       "or": "ou",
+      "regionalManager": "Manager régional",
+      "supervisor": "Superviseur",
+      "region": "Région",
+      "governorate": "Gouvernorat",
+      "delegation": "Délégation",
+      "multipleAgents": "Plusieurs agents sélectionnés",
       "placeholders": {
         "selectRecipientType": "Sélectionner le type de destinataire",
         "enterAgentPhone": "Saisir le numéro de téléphone de l'agent",
-        "selectLocation": "Sélectionner un lieu",
         "searchAgents": "Rechercher des agents par nom ou téléphone",
         "selectAgent": "Sélectionner un agent",
         "enterSupplierEmail": "Saisir l'email du fournisseur",
         "searchBooks": "Rechercher des carnets par numéro ou type",
-        "searchRecipient": "Saisir le numéro de téléphone ou rechercher par nom",
+        "searchRecipient": "Rechercher par nom ou téléphone",
         "selectRecipient": "Sélectionner {{type}}",
-        "enterOTP": "Saisir l'OTP"
+        "enterOTP": "Saisir le code OTP",
+        "regionalManagerSearch": "Rechercher des managers régionaux par nom ou téléphone",
+        "regionalManagerSelect": "Sélectionner un manager régional",
+        "supervisorSearch": "Rechercher des superviseurs par nom",
+        "supervisorPhone": "Saisir le numéro de téléphone du superviseur",
+        "supervisorSelect": "Sélectionner un superviseur",
+        "selectRegion": "Sélectionner une région",
+        "selectGovernorate": "Sélectionner un gouvernorat",
+        "selectDelegation": "Sélectionner une délégation"
       }
     },
     "actions": {
-      "initiateTransfer": "Initier le transfert",
-      "initiateStubCollection": "Initier la collecte de coupons",
-      "collectFromSupplier": "Collecter chez le fournisseur",
       "back": "Retour",
-      "initiate": "Initier le transfert",
-      "initiateStub": "Initier la collecte de coupons",
-      "collect": "Collecter chez le fournisseur",
+      "initiate": "Lancer le transfert",
+      "initiateStub": "Lancer la collecte de souches",
+      "collect": "Collecter auprès du fournisseur",
       "validateTransfer": "Valider le transfert",
-      "validateStubCollection": "Valider la collecte de coupons",
+      "validateStubCollection": "Valider la collecte de souches",
+      "selectAll": "Tout sélectionner",
+      "deselectAll": "Tout désélectionner",
+      "dismissError": "Ignorer l'erreur",
       "aria": {
         "back": "Retour à l'étape précédente",
-        "initiate": "Initier le transfert des carnets de reçus",
-        "initiateStub": "Initier la collecte de coupons",
-        "collect": "Collecter les carnets chez le fournisseur",
+        "initiate": "Lancer le transfert des carnets de reçus",
+        "initiateStub": "Lancer la collecte de souches",
+        "collect": "Collecter les carnets auprès du fournisseur",
         "validateTransfer": "Valider le transfert",
-        "validateStubCollection": "Valider la collecte de coupons",
-        "removeBook": "Supprimer le carnet {{number}}"
+        "validateStubCollection": "Valider la collecte de souches",
+        "removeBook": "Supprimer le carnet {{number}}",
+        "selectAll": "Sélectionner tous les carnets",
+        "deselectAll": "Désélectionner tous les carnets",
+        "dismissError": "Ignorer le message d'erreur"
       }
     },
     "types": {
-      "standard": "Standard"
+      "unknown": "Type inconnu"
     },
     "pagination": {
       "pageInfo": "Page {{currentPage}} sur {{totalPages}}",
-      "selectedBooks": "Carnets sélectionnés",
       "aria": {
         "previous": "Aller à la page précédente",
         "next": "Aller à la page suivante"
       }
     },
-    "otpTimer": "L'OTP expire dans",
+    "otpTimer": "Le code OTP expire dans",
     "list": {
-      "noBooks": "Aucun carnet en stock disponible ou correspondant à la recherche.",
-      "selectedBooks": "Carnets sélectionnés",
-      "scannedQRs": "{{count}} codes QR scannés."
+      "scannedQRs": "{{count}} codes QR scannés"
     },
     "recipientTypes": {
       "agent": "Agent",
       "supplier": "Fournisseur",
       "archive": "Archive",
-      "stubCollection": "Collecte de coupons",
-      "collectFromSupplier": "Collecter chez le fournisseur"
+      "stubCollection": "Collecte de souches",
+      "collectFromSupplier": "Collecter auprès du fournisseur",
+      "regionalManager": "Manager régional",
+      "supervisor": "Superviseur",
+      "stockManager": "Gestionnaire de stock",
+      "tosupplier": "Vers le fournisseur",
+      "fromsupplier": "Depuis le fournisseur",
+      "toregionalmanager": "Manager régional",
+      "tosupervisor": "Superviseur",
+      "toagent": "Agent",
+      "stubtosupervisor": "Collecte de souches",
+      "toregionalmanagerfromsupervisor": "Collecte de souches",
+      "tostockmanager": "Gestionnaire de stock",
+      "archived": "Vers l'archive"
     },
     "errors": {
-      "accessDenied": "Accès refusé - Permission transfer_receipt_books manquante",
-      "loadData": "Échec du chargement des données. Vérifiez la console pour plus de détails.",
-      "fetchAgent": "Échec de la récupération des détails de l'agent.",
-      "cameraAccess": "Accès à la caméra refusé ou indisponible.",
-      "qrNotFound": "Code QR \"{{number}}\" non trouvé dans les carnets de reçus.",
-      "qrAlreadyScanned": "Code QR \"{{number}}\" déjà scanné ou sélectionné.",
-      "bookNotTransferable": "Le carnet \"{{number}}\" (statut : {{status}}) ne peut pas être transféré/collecté par votre rôle(s).",
-      "stubNotAssigned": "Le carnet \"{{number}}\" doit être \"Assigné à l'agent\" pour la collecte de coupons.",
-      "stubNotCollected": "Le coupon \"{{number}}\" doit être \"collecté\" pour la gestion de stock.",
-      "supervisorLimit": "Les superviseurs ne peuvent assigner qu'un seul carnet de reçus à un agent.",
-      "invalidQR": "Format de code QR invalide. Veuillez réessayer.",
-      "otpExpired": "L'OTP a expiré. Veuillez initier le transfert à nouveau.",
-      "noBooksSelected": "Veuillez sélectionner au moins un carnet.",
-      "noRecipientType": "Veuillez sélectionner un type de destinataire.",
-      "noSupplierEmail": "Veuillez saisir un email de fournisseur.",
-      "noAgent": "Veuillez saisir un numéro de téléphone d'agent ou sélectionner un agent.",
-      "noRecipient": "Veuillez sélectionner un destinataire ou saisir un numéro de téléphone.",
-      "stubCollectionLimit": "La collecte de coupons ne peut traiter qu'un seul carnet à la fois.",
-      "initiateFailed": "Échec de l'initiation du transfert/collecte : {{message}}",
-      "noOTP": "Veuillez saisir l'OTP.",
-      "stubCollectionSingle": "La collecte de coupons nécessite exactement un carnet.",
-      "validationFailed": "OTP invalide ou échec de la validation du transfert : {{message}}",
-      "agentNotFound": "Aucun agent trouvé avec le téléphone {{phone}}.",
-      "userRoleMismatch": "L'utilisateur avec le téléphone {{phone}} n'a pas le rôle {{recipientType}}.",
-      "userNotFound": "Aucun utilisateur trouvé avec le téléphone {{phone}}.",
-      "fetchAgents": "Échec de la récupération des agents par lieu."
+      "accessDenied": "Accès refusé - Permissions requises manquantes",
+      "fetchDataFailed": "Échec de la récupération des données initiales",
+      "fetchUsersFailed": "Échec de la récupération des utilisateurs",
+      "fetchAgentFailed": "Échec de la récupération des détails de l'agent",
+      "cameraAccessDenied": "Accès à la caméra refusé ou indisponible",
+      "qrNotFound": "Code QR \"{{number}}\" non trouvé dans les carnets de reçus",
+      "bookNotTransferable": "Le carnet \"{{number}}\" ne peut pas être transféré au destinataire sélectionné",
+      "supervisorLimit": "Les superviseurs ne peuvent attribuer qu'un seul carnet de reçus à un agent",
+      "invalidQR": "Format de code QR invalide",
+      "otpExpired": "Le code OTP a expiré. Veuillez relancer le transfert",
+      "noBooksSelected": "Veuillez sélectionner au moins un carnet",
+      "noRecipientType": "Veuillez sélectionner un type de destinataire",
+      "noSupplierEmail": "Veuillez saisir un email de fournisseur",
+      "noAgentSelected": "Veuillez sélectionner un agent",
+      "noRecipientSelected": "Veuillez sélectionner un destinataire",
+      "initiateFailed": "Échec du lancement du transfert : {{message}}",
+      "noOTP": "Veuillez saisir le code OTP",
+      "validateFailed": "Code OTP invalide ou échec de la validation du transfert : {{message}}",
+      "noAgentFound": "Aucun agent trouvé avec le téléphone {{phone}}",
+      "loadRegionalManagers": "Échec du chargement des managers régionaux",
+      "loadSupervisors": "Échec du chargement des superviseurs",
+      "loadAgents": "Échec du chargement des agents",
+      "loadRegions": "Échec du chargement des régions",
+      "loadGovernorates": "Échec du chargement des gouvernorats",
+      "loadDelegations": "Échec du chargement des délégations",
+      "noTypesAvailable": "Aucun type de carnet de reçus disponible",
+      "typeNotFound": "Type de carnet de reçus \"{{typeName}}\" non trouvé",
+      "invalidStubStatusForArchive": "Impossible d'archiver le carnet \"{{number}}\" en raison d'un statut de souche invalide",
+      "unknown": "Une erreur inconnue s'est produite"
     }
   },
   "receiptBooks": {
     "title": {
       "list": "Carnets de reçus",
       "create": "Créer",
-      "edit": "Modifier"
+      "edit": "Modifier",
+      "bulkUpload": "Téléchargement en masse de carnets de reçus"
+    },
+    "sidebar": {
+      "manager": "Gérer"
     },
     "loading": "Chargement...",
     "form": {
@@ -552,22 +683,27 @@
       }
     },
     "search": {
-      "placeholder": "Rechercher des reçus..."
+      "placeholder": "Rechercher des reçus...",
+      "ariaLabel": "Rechercher des carnets de reçus par numéro, type ou statut"
     },
     "sort": {
       "title": "Trier par",
-      "fields": {
+      "ariaLabel": "Trier les carnets de reçus",
+      "field": {
         "number": "Numéro",
         "type": "Type",
-        "status": "Statut"
+        "bookStatus": "Statut du carnet",
+        "stubStatus": "Statut de la souche",
+        "holder": "Détenteur"
       },
       "order": {
-        "asc": "Ascendant",
-        "desc": "Descendant"
+        "asc": "Croissant",
+        "desc": "Décroissant"
       }
     },
     "filter": {
       "title": "Filtres",
+      "ariaLabel": "Filtrer les carnets de reçus",
       "type": {
         "label": "Type",
         "all": "Tous les types"
@@ -578,11 +714,12 @@
       }
     },
     "table": {
+      "noData": "Aucun carnet de reçus trouvé",
       "headers": {
         "number": "Numéro",
         "type": "Type",
         "bookStatus": "Statut du carnet",
-        "stubStatus": "Statut du coupon",
+        "stubStatus": "Statut de la souche",
         "holder": "Détenteur",
         "qrCode": "Code QR",
         "actions": "Actions"
@@ -596,23 +733,147 @@
       "next": "Suivant"
     },
     "actions": {
+      "aria": {
+        "save": "Enregistrer les modifications du carnet de reçus",
+        "create": "Créer un nouveau carnet de reçus",
+        "cancel": "Annuler l'action sur le carnet de reçus",
+        "edit": "Modifier le carnet de reçus {{number}}",
+        "delete": "Supprimer le carnet de reçus {{number}}",
+        "history": "Voir l'historique du carnet de reçus {{number}}",
+        "retry": "Réessayer de récupérer les carnets de reçus",
+        "viewBooks": "Voir la liste des carnets de reçus",
+        "viewTypes": "Voir la liste des types de carnets de reçus",
+        "newReceipt": "Créer un nouveau carnet de reçus",
+        "transferBooks": "Transférer les carnets de reçus",
+        "importBooks": "Importer des carnets de reçus via CSV",
+        "refresh": "Actualiser la liste des carnets de reçus"
+      },
+      "creating": "Création...",
+      "refresh": "Actualiser",
+      "viewBooks": "Voir les carnets",
+      "viewTypes": "Voir les types",
+      "retry": "Réessayer",
       "newReceipt": "Nouveau reçu",
-      "transferBooks": "Transférer les carnets",
+      "transferBooks": "Transférer",
+      "importBooks": "Importer des carnets",
       "create": "Créer",
       "save": "Enregistrer",
       "cancel": "Annuler",
-      "deleteConfirm": "Êtes-vous sûr ?"
+      "deleteConfirm": "Êtes-vous sûr ?",
+      "uploading": "Téléchargement en cours",
+      "saving": "Enregistrement",
+      "deleteConfirmTitle": "Confirmer la suppression",
+      "yes": "Oui",
+      "no": "Non"
     },
     "errors": {
       "requiredFields": "Veuillez remplir tous les champs requis.",
       "invalidNumber": "Le numéro doit comporter exactement 6 chiffres.",
       "createFailed": "Échec de la création du carnet de reçus : {message}",
       "updateFailed": "Échec de la mise à jour du carnet de reçus : {message}",
-      "deleteFailed": "Échec de la suppression du carnet de reçus : {error}"
+      "deleteFailed": "Échec de la suppression du carnet de reçus : {error}",
+      "fetchFailed": "Échec de la récupération des carnets de reçus.",
+      "unknown": "Une erreur inconnue s'est produite.",
+      "fetchHeadersFailed": "Échec de la récupération des mappages d'en-têtes CSV.",
+      "saveHeadersFailed": "Échec de l'enregistrement des mappages d'en-têtes CSV.",
+      "emptyCSV": "Le fichier CSV est vide.",
+      "noHeaders": "Aucun en-tête trouvé dans le fichier CSV.",
+      "invalidCSVFormat": "Format CSV invalide.",
+      "invalidFileType": "Veuillez télécharger un fichier CSV valide.",
+      "fileTooLarge": "La taille du fichier dépasse la limite de 5 Mo.",
+      "fileReadError": "Erreur de lecture du fichier.",
+      "noFileSelected": "Aucun fichier sélectionné.",
+      "invalidCSVBeforeUpload": "Veuillez corriger les mappages d'en-têtes CSV avant de télécharger.",
+      "uploadFailed": "Échec du téléchargement des carnets de reçus.",
+      "emptyHeaders": "Tous les champs d'en-tête doivent être remplis.",
+      "duplicateExpectedHeaders": "Les en-têtes système en double ne sont pas autorisés.",
+      "duplicateHeaders": "Les en-têtes CSV en double ne sont pas autorisés.",
+      "unmappedMandatoryBackendHeaders": "En-têtes obligatoires manquants : {{headers}}",
+      "invalidMappedHeaders": "En-têtes CSV invalides : {{headers}}",
+      "validationFailedAfterSave": "Échec de la validation CSV après l'enregistrement des en-têtes."
     },
     "types": {
-      "refund": "Remboursement",
-      "transfer": "Transfert"
+      "title": {
+        "list": "Types de carnets de reçus",
+        "create": "Créer un type",
+        "edit": "Modifier un type"
+      },
+      "table": {
+        "headers": {
+          "name": "Nom",
+          "actions": "Actions"
+        },
+        "noData": "Aucun type de carnet de reçus trouvé"
+      },
+      "actions": {
+        "newType": "Nouveau type",
+        "retry": "Réessayer",
+        "deleteConfirmTitle": "Confirmer la suppression",
+        "deleteConfirm": "Êtes-vous sûr de vouloir supprimer ce type de carnet de reçus ?",
+        "yes": "Oui",
+        "no": "Non",
+        "aria": {
+          "newType": "Créer un nouveau type de carnet de reçus",
+          "edit": "Modifier le type de carnet de reçus {{name}}",
+          "delete": "Supprimer le type de carnet de reçus {{name}}",
+          "save": "Enregistrer les modifications du type de carnet de reçus",
+          "create": "Créer un nouveau type de carnet de reçus",
+          "cancel": "Annuler l'action sur le type de carnet de reçus",
+          "retry": "Réessayer de récupérer les types de carnets de reçus"
+        },
+        "save": "Enregistrer",
+        "create": "Créer",
+        "cancel": "Annuler"
+      },
+      "form": {
+        "createTitle": "Nouveau type de carnet de reçus",
+        "editTitle": "Modifier le type de carnet de reçus {{name}}",
+        "labels": {
+          "name": "Nom"
+        },
+        "placeholders": {
+          "name": "Saisir le nom du type"
+        }
+      },
+      "errors": {
+        "requiredFields": "Veuillez remplir tous les champs requis.",
+        "createFailed": "Échec de la création du type de carnet de reçus : {{message}}",
+        "updateFailed": "Échec de la mise à jour du type de carnet de reçus : {{message}}",
+        "deleteFailed": "Échec de la suppression du type de carnet de reçus : {{message}}",
+        "fetchFailed": "Échec de la récupération des types de carnets de reçus."
+      }
+    },
+    "bulkUpload": {
+      "processing": "Traitement en cours...",
+      "title": "Téléchargement en masse de carnets de reçus",
+      "requiredHeaders": "En-têtes requis",
+      "optionalHeaders": "En-têtes facultatifs",
+      "none": "Aucun",
+      "selectCSV": "Sélectionner un fichier CSV",
+      "editHeaders": "Modifier les en-têtes",
+      "addHeader": "Ajouter un en-tête",
+      "mappingInstructions": "Mapper les en-têtes CSV aux champs système",
+      "mismatchWarning": "Incohérence d'en-tête détectée. Veuillez mapper correctement les en-têtes.",
+      "required": "Requis",
+      "remove": "Supprimer",
+      "selectSystemHeader": "Sélectionner l'en-tête système",
+      "selectHeader": "Sélectionner l'en-tête CSV",
+      "systemHeader": "En-tête système",
+      "csvHeader": "En-tête CSV",
+      "actions": "Actions",
+      "upload": "Télécharger",
+      "uploadResults": "Résultats du téléchargement",
+      "totalRecords": "Total des enregistrements : {{count}}",
+      "created": "Créés : {{count}}",
+      "updated": "Mis à jour : {{count}}",
+      "skipped": "Ignorés : {{count}}",
+      "skippedRecords": "Enregistrements ignorés",
+      "skipReason": "Raison",
+      "errors": "Erreurs",
+      "unknownOperation": "Opération inconnue",
+      "selectedFile": "Fichier sélectionné : {{fileName}}",
+      "fileHeaders": "En-têtes du fichier : {{headers}}",
+      "progress": "Traitement de {{processed}} sur {{total}} carnets"
     }
   },
   "receiptBookHistory": {
@@ -640,14 +901,14 @@
       "supplier": "Fournisseur"
     },
     "transferTypes": {
-      "toSupplier": "Au fournisseur",
-      "toRegionalManager": "Au responsable régional",
-      "toSupervisor": "Au superviseur",
-      "toAgent": "À l'agent",
-      "stubToSupervisor": "Coupon au superviseur",
-      "toStockManager": "Au gestionnaire de stock",
-      "toRegionalManagerFromSupervisor": "Au responsable régional depuis le superviseur",
-      "archive": "Archiver"
+      "toSupplier": "Vers le fournisseur",
+      "toRegionalManager": "Vers le manager régional",
+      "toSupervisor": "Vers le superviseur",
+      "toAgent": "Vers l'agent",
+      "stubToSupervisor": "Souche vers le superviseur",
+      "toStockManager": "Vers le gestionnaire de stock",
+      "toRegionalManagerFromSupervisor": "Vers le manager régional depuis le superviseur",
+      "archive": "Archive"
     }
   },
   "pageNotFound": {
@@ -658,13 +919,16 @@
       "description": "Cette page n'existe pas ou a été déplacée."
     },
     "actions": {
-      "back": "Retourner à la page précédente"
+      "back": "Retour à la page précédente"
     }
   },
   "errorDisplay": {
+    "title": "Erreur",
+    "dismiss": "Ignorer l'erreur",
     "actions": {
       "dismiss": "Ignorer"
-    }
+    },
+    "clearAll": "Tout effacer"
   },
   "accessDenied": {
     "title": "Accès refusé",
@@ -674,14 +938,15 @@
       "description": "Veuillez contacter un administrateur si vous pensez qu'il s'agit d'une erreur."
     },
     "actions": {
-      "back": "Retourner à la page précédente"
+      "message": "Zone restreinte",
+      "back": "Retour à la page précédente"
     }
   },
   "entry": {
     "charts": {
       "title": "Graphiques",
-      "timesheetStatus": "Statut de la feuille de temps",
-      "visitStatus": "Statut de la visite",
+      "timesheetStatus": "Statut des feuilles de temps",
+      "visitStatus": "Statut des visites",
       "timesheetsPerSupervisor": "Feuilles de temps par superviseur",
       "timesheetStatusPending": "En attente",
       "timesheetStatusValidated": "Validé",
@@ -713,7 +978,7 @@
     }
   },
   "navbar": {
-    "monitoring": "Surveillance",
+    "monitoring": "Suivi",
     "reporting": "Rapports",
     "help": "Aide"
   },
@@ -733,12 +998,12 @@
       "lastNameNotSet": "Nom non défini"
     },
     "nav": {
-      "info": "Informations du profil",
+      "info": "Informations de profil",
       "settings": "Paramètres",
       "activity": "Activité"
     },
     "info": {
-      "title": "Informations du profil",
+      "title": "Informations de profil",
       "email": "Email",
       "phone": "Téléphone",
       "wallet": "Portefeuille",
@@ -759,7 +1024,7 @@
         "title": "Authentification à deux facteurs",
         "status": "Statut : {{status}}",
         "enabled": "Activé",
-        "enable": "Activer 2FA"
+        "enable": "Activer l'authentification day 2FA"
       }
     },
     "activity": {
@@ -780,9 +1045,9 @@
         "amount": "+1 Carnet"
       },
       "soucheCollected": {
-        "title": "Coupon collecté",
+        "title": "Souche collectée",
         "subtext": "ID du carnet : {{carnetId}} | Statut : {{status}}",
-        "amount": "+1 Coupon"
+        "amount": "+1 Souche"
       }
     },
     "validation": {
@@ -815,7 +1080,7 @@
   "login": {
     "header": {
       "title": "TraceFlow",
-      "subtitle": "Suivi sécurisé. Optimisation. Réussite."
+      "subtitle": "Suivez sécurisé. Optimisez. Réussissez."
     },
     "login": {
       "title": "Connexion",
@@ -827,33 +1092,33 @@
       "submit": "Se connecter"
     },
     "verify2FA": {
-      "title": "Saisir l'OTP",
+      "title": "Saisir le code OTP",
       "otpPlaceholder": "Code à 6 chiffres",
       "phoneMessage": "Nous avons envoyé un code à votre numéro de téléphone.",
       "emailMessage": "Nous avons envoyé un code à votre email.",
       "timer": "Temps restant : {{minutes}}:{{seconds}}",
       "trustDevice": "Faire confiance à cet appareil",
-      "resend": "Renvoyer l'OTP",
+      "resend": "Renvoyer le code OTP",
       "resendCooldown": "Renvoyer dans {{seconds}}s",
       "switchToEmail": "Impossible d'accéder à votre téléphone ? Envoyer à l'email à la place.",
       "switchToPhone": "Envoyer au téléphone à la place.",
-      "submit": "Vérifier l'OTP",
+      "submit": "Vérifier le code OTP",
       "back": "Retour à la connexion"
     },
     "forgot": {
-      "title": "Envoyer l'OTP de réinitialisation",
+      "title": "Envoyer le code OTP de réinitialisation",
       "identifier": "Email ou téléphone",
       "identifierPlaceholder": "Saisir votre email ou téléphone",
-      "submit": "Envoyer l'OTP de réinitialisation",
+      "submit": "Envoyer le code OTP de réinitialisation",
       "back": "Retour à la connexion"
     },
     "verifyReset": {
-      "title": "Saisir l'OTP de réinitialisation",
+      "title": "Saisir le code OTP de réinitialisation",
       "otpPlaceholder": "Code à 6 chiffres",
       "timer": "Temps restant : {{minutes}}:{{seconds}}",
-      "resend": "Renvoyer l'OTP",
+      "resend": "Renvoyer le code OTP",
       "resendCooldown": "Renvoyer dans {{seconds}}s",
-      "submit": "Vérifier l'OTP",
+      "submit": "Vérifier le code OTP",
       "back": "Retour à la connexion"
     },
     "reset": {
@@ -871,32 +1136,60 @@
       "passwordRequired": "Veuillez saisir un mot de passe.",
       "passwordLengthMin": "Le mot de passe doit comporter au moins 8 caractères.",
       "passwordLengthMax": "Le mot de passe ne peut pas dépasser 128 caractères.",
-      "passwordFormat": "Le mot de passe doit inclure une lettre majuscule, une lettre minuscule, un chiffre et un caractère spécial (sans espaces).",
+      "passwordFormat": "Le mot de passe doit inclure une majuscule, une minuscule, un chiffre et un caractère spécial (pas d'espaces).",
       "confirmPasswordRequired": "Veuillez confirmer votre mot de passe.",
       "passwordMismatch": "Les mots de passe ne correspondent pas.",
-      "otpRequired": "Veuillez saisir l'OTP à 6 chiffres.",
-      "otpFormat": "L'OTP doit comporter exactement 6 chiffres."
+      "otpRequired": "Veuillez saisir le code OTP à 6 chiffres.",
+      "otpFormat": "Le code OTP doit comporter exactement 6 chiffres."
     },
     "error": {
       "loginFailed": "Échec de la connexion. Veuillez vérifier votre email/téléphone et mot de passe.",
-      "networkError": "Impossible de se connecter au serveur. Veuillez vérifier votre connexion Internet.",
-      "invalidOtp": "OTP invalide. Veuillez réessayer.",
-      "resetOtpFailed": "Échec de l'envoi de l'OTP de réinitialisation. Veuillez vérifier votre email/téléphone et réessayer.",
-      "verifyResetOtpFailed": "OTP de réinitialisation invalide. Veuillez réessayer ou demander un nouveau.",
+      "networkError": "Impossible de se connecter au serveur. Veuillez vérifier votre connexion internet.",
+      "invalidOtp": "Code OTP invalide. Veuillez réessayer.",
+      "resetOtpFailed": "Échec de l'envoi du code OTP de réinitialisation. Veuillez vérifier votre email/téléphone et réessayer.",
+      "verifyResetOtpFailed": "Code OTP de réinitialisation invalide. Veuillez réessayer ou demander un nouveau code.",
       "resetFailed": "Échec de la réinitialisation du mot de passe. Veuillez réessayer.",
-      "resendFailed": "Échec du renvoi de l'OTP. Veuillez réessayer plus tard."
+      "resendFailed": "Échec du renvoi du code OTP. Veuillez réessayer plus tard."
     },
     "success": {
       "resetSuccess": "Mot de passe réinitialisé avec succès ! Veuillez vous connecter avec votre nouveau mot de passe."
     }
   },
   "adminDashboard": {
+    "aiConfigs": {
+      "modelName": "Nom du modèle",
+      "maxOptimizeRoute": "Optimisation maximale des itinéraires",
+      "timesheetMaxSuggestions": "Suggestions maximales pour les feuilles de temps",
+      "anomalyThreshold": "Seuil d'anomalie",
+      "supervisor": "Superviseur",
+      "actions": "Actions",
+      "searchSupervisors": "Rechercher un superviseur",
+      "selectSupervisor": "Sélectionner un superviseur"
+    },
+    "anomalyDetection": {
+      "dataType": "Type de données",
+      "dataInput": "Entrée de données",
+      "dataPlaceholder": "Saisir des données au format JSON (ex. [{...}, {...}])",
+      "timesheet": "Feuille de temps",
+      "visit": "Visite",
+      "receipt": "Reçu",
+      "results": "Résultats des anomalies",
+      "index": "Index",
+      "details": "Détails"
+    },
+    "pagination": {
+      "previous": "Précédent",
+      "next": "Suivant",
+      "page": "Page {{page}} sur {{total}}"
+    },
     "loading": {
-      "userDetails": "Chargement des détails de l'utilisateur..."
+      "userDetails": "Chargement des détails de l'utilisateur...",
+      "logs": "Chargement des journaux..."
     },
     "header": {
       "users": "Gestion des utilisateurs",
       "roles": "Gestion des rôles",
+      "agents": "Gestion des agents",
       "permissions": "Gestion des permissions",
       "addUser": "Ajouter un nouvel utilisateur",
       "addRole": "Créer un nouveau rôle",
@@ -910,9 +1203,20 @@
       "reasonDetails": "Motif : {{item}}",
       "notifications": "Gestion des notifications",
       "addNotificationRule": "Ajouter une nouvelle règle de notification",
-      "notificationRuleDetails": "Règle de notification : {{event}}"
+      "notificationRuleDetails": "Règle de notification : {{event}}",
+      "addAgent": "Ajouter un nouvel agent",
+      "agentDetails": "Agent : {{name}}",
+      "aiConfigs": "Configurations IA",
+      "addAIConfig": "Ajouter une configuration IA",
+      "aiConfigDetails": "Détails de la configuration IA : {{modelName}}",
+      "anomalyDetection": "Détection des anomalies",
+      "logs": "Journaux"
     },
     "sidebar": {
+      "management": "Gestion",
+      "data": "Données",
+      "system": "Système",
+      "agents": "Agents",
       "sortNotificationsBy": "Trier les notifications par",
       "filterNotifications": "Filtrer les notifications",
       "filterByNotificationType": "Filtrer par type de notification",
@@ -936,19 +1240,33 @@
       "checklists": "Listes de contrôle",
       "reasons": "Motifs",
       "sortUsersBy": "Trier les utilisateurs par",
+      "sortAgentsBy": "Trier les agents par",
+      "logs": "Journaux",
+      "filterLogs": "Filtrer les journaux",
       "sortOptions": {
         "name": "Nom",
         "email": "Email",
         "role": "Rôle",
         "event": "Événement",
         "type": "Type",
-        "status": "Statut"
+        "status": "Statut",
+        "phone": "Téléphone",
+        "lastname": "Nom de famille",
+        "supervisor": "Superviseur",
+        "location": "Lieu",
+        "date": "Date",
+        "modelName": "Nom du modèle",
+        "anomalyThreshold": "Seuil d'anomalie"
       },
       "sortOrder": {
-        "asc": "Ascendant",
-        "desc": "Descendant"
+        "asc": "Croissant",
+        "desc": "Décroissant"
       },
       "filterByRole": "Filtrer par rôle",
+      "allGovernorates": "Tous les gouvernorats",
+      "allDelegations": "Toutes les délégations",
+      "filterAgents": "Filtrer les agents",
+      "noRoles": "Aucun rôle",
       "allRoles": "Tous les rôles",
       "addUser": "Ajouter un utilisateur",
       "addRole": "Ajouter un rôle",
@@ -956,7 +1274,15 @@
       "resetting": "Réinitialisation des rôles",
       "addPermission": "Ajouter une permission",
       "addChecklist": "Ajouter une liste de contrôle",
-      "addReason": "Ajouter un motif"
+      "addReason": "Ajouter un motif",
+      "importAgents": "Importer des agents",
+      "addAgent": "Ajouter un agent",
+      "ai": "Gestion IA",
+      "aiConfigs": "Configurations IA",
+      "anomalyDetection": "Détection des anomalies",
+      "sortAIConfigsBy": "Trier les configurations IA par",
+      "addAIConfig": "Ajouter une configuration IA",
+      "refreshAIConfigs": "Actualiser les configurations IA"
     },
     "search": {
       "placeholder": "Rechercher {{view}}..."
@@ -967,86 +1293,219 @@
       "createReasonFailed": "Échec de la création du motif.",
       "updateChecklistFailed": "Échec de la mise à jour de la liste de contrôle.",
       "deleteChecklistFailed": "Échec de la suppression de la liste de contrôle.",
-      "createChecklistFailed": "Échec de la création de la liste de contrôle."
+      "createChecklistFailed": "Échec de la création de la liste de contrôle.",
+      "duplicateExpectedHeaders": "Les en-têtes système doivent être uniques.",
+      "createAIConfigFailed": "Échec de la création de la configuration IA.",
+      "updateAIConfigFailed": "Échec de la mise à jour de la configuration IA.",
+      "deleteAIConfigFailed": "Échec de la suppression de la configuration IA.",
+      "testAIConfigFailed": "Échec du test de la configuration IA.",
+      "detectAnomaliesFailed": "Échec de la détection des anomalies.",
+      "invalidDataFormat": "Format de données invalide. Veuillez fournir un tableau JSON."
     },
     "actions": {
+      "deleteConfirmTitle": "Confirmer la suppression",
+      "modifyPreMadeRolesTitle": "Modifier les rôles système",
+      "deleteConfirm": "Êtes-vous sûr de vouloir supprimer cette configuration IA ?",
+      "yes": "Oui",
+      "no": "Non",
       "back": "Retour",
+      "next": "Suivant",
+      "previous": "Précédent",
+      "first": "Premier",
+      "last": "Dernier",
+      "resetRolesConfirm": "Êtes-vous sûr de vouloir réinitialiser les rôles ?",
+      "modifyPreMadeRolesWarning": "Attention : La modification des rôles système peut affecter le fonctionnement du système.",
+      "confirm": "Confirmer",
+      "cancel": "Annuler",
+      "edit": "Modifier",
+      "delete": "Supprimer",
       "refreshUsers": "Actualiser les utilisateurs",
       "refreshRoles": "Actualiser les rôles",
       "refreshPermissions": "Actualiser les permissions",
       "refreshChecklists": "Actualiser les listes de contrôle",
       "refreshReasons": "Actualiser les motifs",
       "refreshNotifications": "Actualiser les notifications",
-      "loading": "Chargement..."
+      "refreshAgents": "Actualiser les agents",
+      "close": "Fermer",
+      "uploading": "Téléchargement en cours",
+      "save": "Enregistrer",
+      "saving": "Enregistrement en cours",
+      "loading": "Chargement...",
+      "invalidCSVHeaders": "En-têtes CSV invalides. Manquants : {{headers}}",
+      "invalidCSVFormat": "Format de fichier CSV invalide. Veuillez vous assurer qu'il contient des en-têtes valides.",
+      "noFileSelected": "Aucun fichier sélectionné.",
+      "uploadFailed": "Échec du téléchargement des agents.",
+      "fetchHeadersFailed": "Échec de la récupération des en-têtes CSV.",
+      "saveHeadersFailed": "Échec de l'enregistrement des en-têtes CSV.",
+      "emptyHeaders": "Tous les en-têtes CSV doivent être non vides.",
+      "duplicateHeaders": "Les en-têtes CSV doivent être uniques.",
+      "invalidHeaderMapping": "Tous les mappages doivent correspondre aux en-têtes du fichier CSV.",
+      "invalidResponse": "Réponse invalide du serveur.",
+      "createAgent": "Créer un nouvel agent",
+      "create": "Créer",
+      "update": "Mettre à jour",
+      "test": "Tester",
+      "detect": "Détecter les anomalies",
+      "submitting": "Soumission en cours...",
+      "refreshAIConfigs": "Actualiser les configurations IA",
+      "resetRolesConfirmTitle": "Confirmer la réinitialisation des rôles",
+      "testing": "Test en cours...",
+      "testResultTitle": "Résultat du test",
+      "testResult": "Le test de la configuration IA s'est terminé avec le résultat suivant :",
+      "ok": "OK"
     },
-    "reasonAdd": {
-      "title": "Ajouter un nouveau motif",
-      "form": {
-        "labels": {
-          "item": "Élément"
-        },
-        "placeholders": {
-          "item": "Saisir l'élément de motif (5-100 caractères)"
-        }
-      },
-      "actions": {
-        "create": "Créer un motif",
-        "creating": "Création..."
-      },
-      "validation": {
-        "empty": "L'élément ne peut pas être vide.",
-        "minLength": "L'élément doit comporter au moins 5 caractères.",
-        "maxLength": "L'élément ne peut pas dépasser 100 caractères.",
-        "duplicate": "L'élément existe déjà."
-      }
-    },
-    "checklistView": {
-      "actions": {
-        "edit": "Modifier",
-        "delete": "Supprimer",
-        "save": "Enregistrer",
-        "saving": "Enregistrement...",
-        "cancel": "Annuler"
-      }
-    },
-    "checklistsList": {
-      "title": "Listes de contrôle",
-      "noItems": "Aucune liste de contrôle trouvée",
+    "agents": {
+      "viewAgent": "Voir l'agent",
+      "editAgent": "Modifier l'agent",
+      "date": "Date",
+      "region": "Région",
+      "selectRegion": "Sélectionner une région",
+      "governorate": "Gouvernorat",
+      "selectGovernorate": "Sélectionner un gouvernorat",
+      "delegation": "Délégation",
+      "selectDelegation": "Sélectionner une délégation",
+      "supervisor": "Superviseur",
+      "selectSupervisor": "Sélectionner un superviseur",
+      "addAgent": "Ajouter un agent",
+      "enterName": "Saisir le nom de l'agent",
+      "enterLastname": "Saisir le nom de famille de l'agent",
+      "enterEmail": "Saisir l'email de l'agent",
+      "createAgent": "Créer un agent",
+      "location": "Lieu",
+      "failed": "Échec",
+      "uploading": "Téléchargement en cours...",
+      "title": "Agents",
+      "noAgents": "Aucun agent trouvé",
+      "name": "Nom",
+      "lastname": "Nom de famille",
+      "email": "Email",
+      "phone": "Téléphone",
+      "actions": "Actions",
+      "bulkUpload": "Téléchargement en masse des agents",
+      "uploadInstructions": "Téléchargez un fichier CSV contenant les données des agents.",
+      "csvFormat": "Le CSV doit inclure les en-têtes requis.",
+      "expectedHeaders": "En-têtes attendus : {{headers}}",
+      "selectCSV": "Sélectionner un fichier CSV",
+      "selectedFile": "Fichier sélectionné : {{fileName}}",
+      "upload": "Télécharger",
+      "uploadResults": "Résultats du téléchargement",
+      "totalRecords": "Total des enregistrements traités : {{count}}",
+      "created": "Agents créés : {{count}}",
+      "updated": "Agents mis à jour : {{count}}",
+      "skipped": "Enregistrements ignorés : {{count}}",
+      "errors": "Erreurs rencontrées",
       "pagination": {
         "previous": "Précédent",
         "next": "Suivant",
         "pageInfo": "Page {{currentPage}} sur {{totalPages}}"
       },
-      "validation": {
-        "empty": "L'élément ne peut pas être vide.",
-        "minLength": "L'élément doit comporter au moins 5 caractères.",
-        "maxLength": "L'élément ne peut pas dépasser 100 caractères.",
-        "duplicate": "L'élément existe déjà."
-      }
+      "skippedRecords": "Enregistrements ignorés",
+      "requiredHeaders": "En-têtes requis",
+      "optionalHeaders": "En-têtes facultatifs",
+      "skipReason": "Raison de l'ignorance",
+      "deleteConfirm": "Êtes-vous sûr de vouloir supprimer cet agent ?"
     },
-    "checklistAdd": {
-      "title": "Ajouter une nouvelle liste de contrôle",
-      "form": {
-        "labels": {
-          "item": "Élément"
-        },
-        "placeholders": {
-          "item": "Saisir l'élément de la liste de contrôle (5-100 caractères)"
-        }
-      },
-      "actions": {
-        "create": "Créer une liste de contrôle",
-        "creating": "Création..."
-      }
+    "csvHeaders": {
+      "title": "Gérer les en-têtes CSV",
+      "instructions": "Modifier les noms des en-têtes CSV pour correspondre au format de votre fichier.",
+      "mappingInstructions": "Mapper chaque en-tête système à l'en-tête correspondant dans votre fichier CSV.",
+      "systemHeader": "En-tête système",
+      "csvHeader": "En-tête CSV",
+      "noHeaders": "Aucun en-tête trouvé.",
+      "editHeader": "Modifier l'en-tête CSV pour {{header}}",
+      "selectHeader": "Sélectionner un en-tête",
+      "editHeaders": "Modifier les en-têtes",
+      "mismatchWarning": "Mettez à jour les mappages ci-dessous pour continuer.",
+      "fileHeaders": "En-têtes dans votre CSV : {{headers}}",
+      "addHeader": "Ajouter un nouvel en-tête",
+      "editSystemHeader": "Modifier l'en-tête système {{header}}",
+      "actions": "Actions",
+      "remove": "Supprimer",
+      "required": "Requis*",
+      "selectSystemHeader": "Sélectionner un en-tête système"
+    },
+    "tableHeaders": {
+      "name": "Nom",
+      "email": "Email",
+      "phone": "Téléphone",
+      "wallet": "Portefeuille",
+      "status": "Statut",
+      "actions": "Actions",
+      "agents": "Agents"
+    },
+    "noItems": {
+      "logs": "Aucun journal trouvé."
     }
   },
+  "reasonAdd": {
+    "title": "Ajouter un nouveau motif",
+    "form": {
+      "labels": {
+        "item": "Élément"
+      },
+      "placeholders": {
+        "item": "Saisir l'élément du motif (5-100 caractères)"
+      }
+    },
+    "actions": {
+      "create": "Créer le motif",
+      "creating": "Création en cours..."
+    },
+    "validation": {
+      "empty": "L'élément ne peut pas être vide.",
+      "minLength": "L'élément doit comporter au moins 5 caractères.",
+      "maxLength": "L'élément ne peut pas dépasser 100 caractères.",
+      "duplicate": "L'élément existe déjà."
+    }
+  },
+  "checklistView": {
+    "actions": {
+      "edit": "Modifier",
+      "delete": "Supprimer",
+      "save": "Enregistrer",
+      "saving": "Enregistrement en cours...",
+      "cancel": "Annuler"
+    }
+  },
+  "checklistsList": {
+    "title": "Listes de contrôle",
+    "noItems": "Aucune liste de contrôle trouvée",
+    "pagination": {
+      "previous": "Précédent",
+      "next": "Suivant",
+      "pageInfo": "Page {{currentPage}} sur {{totalPages}}"
+    },
+    "validation": {
+      "empty": "L'élément ne peut pas être vide.",
+      "minLength": "L'élément doit comporter au moins 5 caractères.",
+      "maxLength": "L'élément ne peut pas dépasser 100 caractères.",
+      "duplicate": "L'élément existe déjà."
+    }
+  },
+  "checklistAdd": {
+    "title": "Ajouter une nouvelle liste de contrôle",
+    "form": {
+      "labels": {
+        "item": "Élément"
+      },
+      "placeholders": {
+        "item": "Saisir l'élément de la liste de contrôle (5-100 caractères)"
+      }
+    },
+    "actions": {
+      "create": "Créer la liste de contrôle",
+      "creating": "Création en cours..."
+    }
+  },
+  "pagination": "Page {{currentPage}} sur {{totalPages}}",
   "usersList": {
     "title": "Utilisateurs",
     "tableHeaders": {
       "name": "Nom",
       "email": "Email",
       "phone": "Téléphone",
-      "roles": "Rôles"
+      "roles": "Rôles",
+      "createdAt": "Créé le"
     },
     "noUsers": "Aucun utilisateur trouvé",
     "pagination": {
@@ -1074,7 +1533,7 @@
     "form": {
       "placeholders": {
         "firstName": "Prénom *",
-        "lastName": "Nom *",
+        "lastName": "Nom de famille *",
         "email": "Email *",
         "phone": "XX XXX XXX",
         "wallet": "XXXX-XXXX-XXXX-XXXX",
@@ -1109,8 +1568,8 @@
       "cancel": "Annuler",
       "saveChanges": "Enregistrer les modifications",
       "saveAssignments": "Enregistrer les affectations",
-      "grantPermission": "Accorder une permission",
-      "revokePermission": "Révoquer une permission",
+      "grantPermission": "Accorder la permission",
+      "revokePermission": "Révoquer la permission",
       "removeOverride": "Supprimer la surcharge"
     },
     "pagination": {
@@ -1123,10 +1582,10 @@
       "firstnameLengthMin": "Le prénom doit comporter au moins 3 caractères",
       "firstnameLengthMax": "Le prénom doit comporter 20 caractères ou moins",
       "firstnameFormat": "Le prénom ne peut contenir que des lettres, des espaces, des tirets ou des apostrophes",
-      "lastnameRequired": "Le nom est requis",
-      "lastnameLengthMin": "Le nom doit comporter au moins 3 caractères",
-      "lastnameLengthMax": "Le nom doit comporter 20 caractères ou moins",
-      "lastnameFormat": "Le nom ne peut contenir que des lettres, des espaces, des tirets ou des apostrophes",
+      "lastnameRequired": "Le nom de famille est requis",
+      "lastnameLengthMin": "Le nom de famille doit comporter au moins 3 caractères",
+      "lastnameLengthMax": "Le nom de famille doit comporter 20 caractères ou moins",
+      "lastnameFormat": "Le nom de famille ne peut contenir que des lettres, des espaces, des tirets ou des apostrophes",
       "emailRequired": "L'email est requis",
       "emailLength": "L'email doit comporter 70 caractères ou moins",
       "emailFormat": "Format d'email invalide",
@@ -1144,16 +1603,16 @@
       "deleteFailed": "Échec de la suppression de l'utilisateur.",
       "fetchPermissionsFailed": "Échec du chargement des permissions de l'utilisateur.",
       "fetchRolePermissionsFailed": "Échec du chargement des permissions du rôle.",
-      "toggleRoleFailed": "Échec de la bascule du rôle.",
+      "toggleRoleFailed": "Échec de l'activation/désactivation du rôle.",
       "saveAssignmentsFailed": "Échec de l'enregistrement des affectations.",
       "saveOverridesFailed": "Échec de l'enregistrement des surcharges de permissions.",
-      "noRoleSelected": "Aucun rôle sélectionné pour la surcharge",
+      "noRoleSelected": "Aucun rôle sélectionné pour la surcharge.",
       "superAdminRestricted": "Le rôle Super Admin ne peut pas être assigné ou révoqué.",
       "adminSelfRevoke": "Vous ne pouvez pas révoquer votre propre rôle Admin."
     },
     "loading": {
       "default": "Chargement...",
-      "saving": "Enregistrement..."
+      "saving": "Enregistrement en cours..."
     }
   },
   "userAdd": {
@@ -1162,12 +1621,12 @@
       "personalInfo": "Informations personnelles",
       "contactInfo": "Informations de contact",
       "credentials": "Identifiants",
-      "roleAssignment": "Affectation de rôle"
+      "roleAssignment": "Assignation de rôles"
     },
     "form": {
       "labels": {
         "firstName": "Prénom *",
-        "lastName": "Nom *",
+        "lastName": "Nom de famille *",
         "email": "Email *",
         "phone": "Téléphone *",
         "password": "Mot de passe *",
@@ -1177,7 +1636,7 @@
       },
       "placeholders": {
         "firstName": "Prénom *",
-        "lastName": "Nom *",
+        "lastName": "Nom de famille *",
         "email": "Email *",
         "phone": "XX XXX XXX",
         "wallet": "XXXX-XXXX-XXXX-XXXX",
@@ -1192,17 +1651,17 @@
     "actions": {
       "create": "Créer un utilisateur",
       "cancel": "Annuler",
-      "creating": "Création..."
+      "creating": "Création en cours..."
     },
     "validation": {
       "firstnameRequired": "Le prénom est requis",
       "firstnameLengthMin": "Le prénom doit comporter au moins 3 caractères",
       "firstnameLengthMax": "Le prénom doit comporter 20 caractères ou moins",
       "firstnameFormat": "Le prénom ne peut contenir que des lettres, des espaces, des tirets ou des apostrophes",
-      "lastnameRequired": "Le nom est requis",
-      "lastnameLengthMin": "Le nom doit comporter au moins 3 caractères",
-      "lastnameLengthMax": "Le nom doit comporter 20 caractères ou moins",
-      "lastnameFormat": "Le nom ne peut contenir que des lettres, des espaces, des tirets ou des apostrophes",
+      "lastnameRequired": "Le nom de famille est requis",
+      "lastnameLengthMin": "Le nom de famille doit comporter au moins 3 caractères",
+      "lastnameLengthMax": "Le nom de famille doit comporter 20 caractères ou moins",
+      "lastnameFormat": "Le nom de famille ne peut contenir que des lettres, des espaces, des tirets ou des apostrophes",
       "emailRequired": "L'email est requis",
       "emailLength": "L'email doit comporter 70 caractères ou moins",
       "emailFormat": "Format d'email invalide",
@@ -1250,7 +1709,7 @@
       "save": "Enregistrer",
       "cancel": "Annuler",
       "saveChanges": "Enregistrer les modifications",
-      "saving": "Enregistrement...",
+      "saving": "Enregistrement en cours...",
       "toggleAll": "Tout sélectionner",
       "toggleAllOff": "Tout désélectionner",
       "deleteConfirm": "Êtes-vous sûr de vouloir supprimer le rôle \"{{roleName}}\" ? Cette action est irréversible."
@@ -1273,7 +1732,7 @@
     "title": "Rôles",
     "categories": {
       "fixed": "Rôles fixes",
-      "premade": "Rôles prédéfinis",
+      "premade": "Rôles système",
       "custom": "Rôles personnalisés"
     },
     "roleCard": {
@@ -1287,7 +1746,7 @@
     },
     "confirmation": {
       "unsavedChanges": "Vous avez des modifications non enregistrées. Êtes-vous sûr de vouloir changer de rôle ?",
-      "premadeWarning": "Attention : Modifier les rôles prédéfinis peut affecter le fonctionnement du système. Êtes-vous sûr de vouloir continuer ?"
+      "premadeWarning": "Attention : La modification des rôles système peut affecter le fonctionnement du système. Êtes-vous sûr de vouloir continuer ?"
     },
     "actions": {
       "confirm": "Confirmer",
@@ -1325,7 +1784,7 @@
       "noPermissions": "Aucune permission disponible"
     },
     "actions": {
-      "create": "Créer un rôle",
+      "create": "Créer le rôle",
       "toggleAll": "Tout sélectionner",
       "toggleAllOff": "Tout désélectionner"
     },
@@ -1380,13 +1839,13 @@
       "save": "Enregistrer",
       "cancel": "Annuler",
       "close": "Fermer",
-      "saving": "Enregistrement..."
+      "saving": "Enregistrement en cours..."
     },
     "validation": {
       "nameRequired": "Le nom de la permission est requis",
       "nameLengthMin": "Le nom de la permission doit comporter au moins 10 caractères",
       "nameLengthMax": "Le nom de la permission doit comporter 30 caractères ou moins",
-      "nameFormat": "Le nom de la permission ne doit contenir que des lettres minuscules et des tirets bas (ex. : read_users)",
+      "nameFormat": "Le nom de la permission ne peut contenir que des lettres minuscules et des underscores (ex. read_users)",
       "classRequired": "La classe de permission est requise",
       "classLengthMin": "La classe doit comporter au moins 3 caractères",
       "classLengthMax": "La classe doit comporter 20 caractères ou moins",
@@ -1414,13 +1873,13 @@
       }
     },
     "actions": {
-      "create": "Créer une permission"
+      "create": "Créer la permission"
     },
     "validation": {
       "nameRequired": "Le nom de la permission est requis",
       "nameLengthMin": "Le nom de la permission doit comporter au moins 10 caractères",
       "nameLengthMax": "Le nom de la permission doit comporter 30 caractères ou moins",
-      "nameFormat": "Le nom de la permission ne doit contenir que des lettres minuscules et des tirets bas (ex. : read_users)",
+      "nameFormat": "Le nom de la permission ne peut contenir que des lettres minuscules et des underscores (ex. read_users)",
       "classRequired": "La classe de permission est requise",
       "classLengthMin": "La classe doit comporter au moins 3 caractères",
       "classLengthMax": "La classe doit comporter 20 caractères ou moins",
@@ -1442,11 +1901,697 @@
       "delete": "Supprimer",
       "save": "Enregistrer",
       "cancel": "Annuler",
-      "saving": "Enregistrement..."
+      "saving": "Enregistrement en cours..."
     },
     "error": {
       "updateFailed": "Échec de la mise à jour du motif.",
       "deleteFailed": "Échec de la suppression du motif."
+    }
+  },
+  "agents": {
+    "pagination": {
+      "previous": "Précédent",
+      "next": "Suivant",
+      "pageInfo": "Page {{currentPage}} sur {{totalPages}}"
+    }
+  },
+  "map": {
+    "loading": "Chargement...",
+    "geolocationError": "Impossible de récupérer votre position",
+    "initialDataError": "Échec du chargement des données initiales",
+    "searchPlaceholder": "Rechercher des agents...",
+    "filter": "Filtrer",
+    "directions": "Itinéraire",
+    "carModeOn": "Mode voiture activé",
+    "carModeOff": "Mode voiture désactivé",
+    "showControls": "Afficher les contrôles",
+    "hideControls": "Masquer les contrôles",
+    "mapStyles": {
+      "standard": "Standard",
+      "platformDark": "Sombre",
+      "platformLight": "Clair",
+      "satellite": "Satellite",
+      "night": "Nuit",
+      "dark": "Noir",
+      "light": "Clair",
+      "minimal": "Minimal",
+      "silver": "Argent",
+      "retro": "Rétro",
+      "aubergine": "Aubergine"
+    },
+    "filters": {
+      "title": "Filtres",
+      "allRegions": "Toutes les régions",
+      "allGovernorates": "Tous les gouvernorats",
+      "allDelegations": "Toutes les délégations",
+      "allSupervisors": "Tous les superviseurs"
+    },
+    "directionsPanel": {
+      "title": "Itinéraire",
+      "originPlaceholder": "Saisir le point de départ",
+      "destinationPlaceholder": "Saisir la destination",
+      "myLocation": "Ma position",
+      "centerRoute": "Centrer",
+      "startNavigation": "Démarrer dans Maps",
+      "modes": {
+        "driving": "Conduite",
+        "walking": "Marche"
+      },
+      "go": "Aller",
+      "clear": "Effacer"
+    },
+    "routes": {
+      "title": "Arrêts de l'itinéraire",
+      "noStops": "Aucun arrêt ajouté",
+      "optimize": "Optimiser l'itinéraire",
+      "distance": "Distance",
+      "duration": "Durée",
+      "steps": "Étapes",
+      "stops": "Arrêts",
+      "step": "Étape {{number}}"
+    },
+    "agentsList": {
+      "title": "Agents",
+      "noAgents": "Aucun agent trouvé"
+    },
+    "agentCard": {
+      "directions": "Itinéraire",
+      "addStop": "Ajouter un arrêt",
+      "call": "Appeler",
+      "remove": "Supprimer"
+    },
+    "infoWindow": {
+      "edit": "Modifier",
+      "addStop": "Ajouter un arrêt",
+      "directions": "Itinéraire",
+      "phone": "Téléphone",
+      "addVisit": "Visite",
+      "location": "Lieu",
+      "time": "Heure",
+      "reasons": "Motifs"
+    },
+    "addAgent": "Ajouter un agent",
+    "addAgentPrompt": "Cliquez sur la carte pour sélectionner un emplacement pour le nouvel agent",
+    "refreshAgents": "Actualiser les agents",
+    "refreshAgentsError": "Échec de l'actualisation des agents",
+    "addAgentPanel": {
+      "title": "Ajouter un nouvel agent",
+      "name": "Nom",
+      "lastname": "Nom de famille",
+      "email": "Email",
+      "phone": "Téléphone",
+      "supervisor": "Sélectionner un superviseur",
+      "governorate": "Sélectionner un gouvernorat",
+      "delegation": "Sélectionner une délégation",
+      "address": "Adresse",
+      "save": "Enregistrer",
+      "cancel": "Annuler"
+    },
+    "editAgentPanel": {
+      "title": "Modifier",
+      "name": "Nom",
+      "lastname": "Nom de famille",
+      "email": "Email",
+      "phone": "Téléphone",
+      "supervisor": "Sélectionner un superviseur",
+      "governorate": "Sélectionner un gouvernorat",
+      "delegation": "Sélectionner une délégation",
+      "address": "Adresse",
+      "save": "Enregistrer",
+      "cancel": "Annuler"
+    },
+    "phone": "Téléphone",
+    "returnToMyLocation": "Retourner à ma position",
+    "userLocationError": "Position de l'utilisateur non disponible",
+    "routePointsError": "Au moins deux points sont requis pour un itinéraire",
+    "invalidRouteData": "Données d'itinéraire invalides reçues",
+    "calculateRouteError": "Échec du calcul de l'itinéraire",
+    "locationUpdateError": "Échec de la mise à jour de la position",
+    "trackLocationError": "Échec du suivi de la position : {{message}}",
+    "retryLocation": "Nouvelle tentative de mise à jour de la position ({{retry}}/{{maxRetries}})",
+    "searchError": "Échec de la recherche des agents",
+    "addressError": "Échec de la récupération de l'adresse",
+    "allFieldsRequired": "Tous les champs sont requis",
+    "agentCreated": "Agent créé avec succès",
+    "createAgentError": "Échec de la création de l'agent",
+    "noAgentSelected": "Aucun agent sélectionné",
+    "agentUpdated": "Agent mis à jour avec succès",
+    "editAgentError": "Échec de la mise à jour de l'agent",
+    "invalidMarkerPosition": "Position du marqueur invalide",
+    "updateLocationConfirm": "Mettre à jour la position de {{name}} {{lastname}} à {{address}} ?",
+    "locationUpdated": "Position mise à jour avec succès",
+    "directionsError": "Échec de l'obtention de l'itinéraire",
+    "addStopError": "Échec de l'ajout d'un arrêt",
+    "optimizeRouteError": "Au moins trois points sont requis pour optimiser",
+    "locationAccessDenied": "Accès à la position refusé",
+    "permissionCheckError": "Échec de la vérification de la permission de localisation",
+    "agentDetailsError": "Échec de la récupération des détails de l'agent",
+    "confirm": "Confirmer",
+    "cancel": "Annuler",
+    "confirmUpdateLocation": "Confirmer la mise à jour de la position de l'agent déplacé ?"
+  },
+  "reports": {
+    "scheduled": {
+      "title": "Rapports planifiés",
+      "listTitle": "Liste des rapports planifiés"
+    },
+    "generated": {
+      "title": "Rapports générés",
+      "listTitle": "Liste des rapports générés"
+    },
+    "generate": {
+      "title": "Générer un rapport"
+    },
+    "modal": {
+      "title": "Rapport généré",
+      "message": "Le rapport {{reportType}} a été généré. Que souhaitez-vous faire ?",
+      "download": "Télécharger",
+      "delete": "Supprimer",
+      "keep": "Conserver"
+    },
+    "schedule": {
+      "title": "Planifier un rapport",
+      "period": "Période",
+      "customPeriod": "Période personnalisée",
+      "unit": "Unité",
+      "minutes": "Minutes",
+      "hours": "Heures",
+      "days": "Jours",
+      "cron": "Période",
+      "daily": "Quotidien",
+      "weekly": "Hebdomadaire",
+      "monthly": "Mensuel",
+      "yearly": "Annuel",
+      "custom": "Personnalisé",
+      "placeholders": {
+        "cron": "Saisir la période",
+        "customPeriod": "Saisir la période (ex. 30)",
+        "unit": "Sélectionner une unité",
+        "period": "Période"
+      }
+    },
+    "manager": {
+      "title": "Gestionnaire de rapports",
+      "scheduled": "Rapports planifiés",
+      "generated": "Rapports générés",
+      "generate": "Générer un nouveau rapport",
+      "schedule": "Planifier un nouveau rapport"
+    },
+    "filter": {
+      "title": "Filtrer les rapports",
+      "toggle": "Filtres",
+      "options": "Options de filtrage",
+      "reportType": "Type de rapport",
+      "format": "Format",
+      "dateRange": "Plage de dates",
+      "to": "à",
+      "placeholders": {
+        "type": "Type de rapport",
+        "startDate": "Date de début",
+        "endDate": "Date de fin",
+        "supervisor": "Superviseur",
+        "regionalManager": "Manager régional",
+        "director": "Directeur",
+        "agent": "Agent",
+        "region": "Région",
+        "governorate": "Gouvernorat",
+        "delegation": "Délégation",
+        "status": "Statut",
+        "visitReasons": "Motifs de visite",
+        "visitStatus": "Statut de la visite",
+        "bookType": "Type de carnet",
+        "currentHolder": "Détenteur actuel",
+        "role": "Rôle",
+        "activityType": "Type d'activité",
+        "user": "Utilisateur",
+        "ipAddress": "Saisir l'adresse IP",
+        "anomalyType": "Type d'anomalie",
+        "affectedEntity": "Entité affectée",
+        "severity": "Gravité",
+        "route": "Itinéraire",
+        "weekNumber": "Saisir le numéro de semaine (1-52)",
+        "min": "Min",
+        "max": "Max"
+      }
+    },
+    "sort": {
+      "title": "Trier les rapports",
+      "by": "Trier par",
+      "order": "Ordre",
+      "date": "Date",
+      "type": "Type de rapport",
+      "format": "Format",
+      "ascending": "Croissant",
+      "descending": "Décroissant",
+      "reportType": "Type de rapport"
+    },
+    "accordion": {
+      "daterange": "Plage de dates",
+      "userselection": "Sélection d'utilisateurs",
+      "location": "Lieu",
+      "otherfilters": "Autres filtres"
+    },
+    "types": {
+      "visitsummary": "Résumé des visites",
+      "timesheet": "Feuille de temps",
+      "receiptbookinventory": "Inventaire des carnets de reçus",
+      "stubcollection": "Collecte de souches",
+      "useractivity": "Activité des utilisateurs",
+      "anomaly": "Anomalie",
+      "agentperformance": "Performance des agents",
+      "regionperformance": "Performance régionale",
+      "full": "Rapport complet"
+    },
+    "formats": {
+      "pdf": "PDF",
+      "excel": "Excel"
+    },
+    "statuses": {
+      "pending": "En attente",
+      "visited": "Visité",
+      "validated": "Validé",
+      "rejected": "Rejeté",
+      "collected": "Collecté",
+      "archived": "Archivé",
+      "instock": "En stock",
+      "senttosupplier": "Envoyé au fournisseur",
+      "collectfromsupplier": "À récupérer chez le fournisseur",
+      "withregionalmanager": "Chez le manager régional",
+      "withsupervisor": "Chez le superviseur",
+      "assignedtoagent": "Assigné à l'agent",
+      "stubcollected": "Souche collectée",
+      "withstockmanager": "Chez le gestionnaire de stock"
+    },
+    "filters": {
+      "supervisor": "Superviseur",
+      "regionalManager": "Manager régional",
+      "director": "Directeur",
+      "agent": "Agent",
+      "region": "Région",
+      "governorate": "Gouvernorat",
+      "delegation": "Délégation",
+      "visitType": "Type de visite (Recrutement)",
+      "status": "Statut",
+      "visitReasons": "Motifs de visite",
+      "checklistCompleted": "Liste de contrôle complétée",
+      "visitDuration": "Durée de la visite (minutes)",
+      "Anomalies": "Anomalies détectées",
+      "numberOfVisits": "Nombre de visites",
+      "totalHours": "Heures totales",
+      "aiSuggestions": "Suggestions IA",
+      "anomaliesDetected": "Anomalies détectées",
+      "visitStatus": "Statut de la visite",
+      "weekNumber": "Numéro de semaine",
+      "bookType": "Type de carnet",
+      "currentHolder": "Détenteur actuel",
+      "assignmentStatus": "Statut d'assignation",
+      "role": "Rôle",
+      "activityType": "Type d'activité",
+      "user": "Utilisateur",
+      "suspiciousActivity": "Activité suspecte",
+      "ipAddress": "Adresse IP",
+      "anomalyType": "Type d'anomalie",
+      "affectedEntity": "Entité affectée",
+      "severity": "Gravité",
+      "route": "Itinéraire",
+      "performanceScore": "Score de performance",
+      "stubsCollected": "Souches collectées",
+      "receiptBooksAssigned": "Carnets de reçus assignés",
+      "visitCompletionRate": "Taux de complétion des visites (%)",
+      "locationUpdated": "Position mise à jour"
+    },
+    "table": {
+      "headers": {
+        "scheduleID": "ID de planification",
+        "reportID": "ID de rapport",
+        "reportType": "Type de rapport",
+        "format": "Format",
+        "createdAt": "Créé le",
+        "generatedAt": "Généré le",
+        "actions": "Actions",
+        "creator": "Créateur",
+        "cronExpression": "Planification"
+      },
+      "noScheduled": "Aucun rapport planifié trouvé.",
+      "noGenerated": "Aucun rapport généré trouvé.",
+      "noData": "Aucun rapport trouvé"
+    },
+    "actions": {
+      "cancel": "Annuler",
+      "generate": "Générer un rapport",
+      "generating": "Génération en cours...",
+      "schedule": "Planifier un rapport",
+      "scheduling": "Planification en cours..."
+    },
+    "errors": {
+      "fetchFilterData": "Échec de la récupération des données de filtrage.",
+      "fetchAgents": "Échec de la récupération des agents.",
+      "fetchGovernorates": "Échec de la récupération des gouvernorats.",
+      "fetchDelegations": "Échec de la récupération des délégations.",
+      "fetchData": "Échec de la récupération des données du rapport.",
+      "generateReport": "Échec de la génération du rapport.",
+      "scheduleReport": "Échec de la planification du rapport.",
+      "cronRequired": "La période est requise.",
+      "downloadReport": "Échec du téléchargement du rapport.",
+      "deleteSchedule": "Échec de la suppression de la planification.",
+      "deleteReport": "Échec de la suppression du rapport.",
+      "invalidIP": "Format d'adresse IP invalide."
+    },
+    "loading": "Chargement des rapports...",
+    "confirmDelete": {
+      "title": "Confirmer la suppression",
+      "message": "Êtes-vous sûr de vouloir supprimer ceci ?",
+      "yes": "Oui",
+      "no": "Non"
+    }
+  },
+  "logs": {
+    "timestamp": "Horodatage",
+    "level": "Niveau",
+    "message": "Message",
+    "userId": "ID utilisateur",
+    "traceId": "ID de trace",
+    "service": "Service",
+    "method": "Méthode",
+    "status": "Statut",
+    "allLevels": "Tous les niveaux",
+    "allRoutes": "Tous les itinéraires",
+    "allServices": "Tous les services",
+    "allMethods": "Toutes les méthodes",
+    "allUsers": "Tous les utilisateurs",
+    "filterByLevel": "Filtrer par niveau",
+    "filterByRoute": "Filtrer par itinéraire",
+    "filterByService": "Filtrer par service",
+    "filterByMethod": "Filtrer par méthode",
+    "filterByUserId": "Filtrer par ID utilisateur",
+    "filterByTraceId": "Filtrer par ID de trace",
+    "filterByStatus": "Filtrer par statut",
+    "refreshLogs": "Actualiser les journaux",
+    "deleteLogs": "Supprimer les journaux",
+    "deleting": "Suppression en cours...",
+    "archiveLogs": "Archiver les journaux",
+    "archiving": "Archivage en cours...",
+    "exportLogs": "Exporter les journaux",
+    "exporting": "Exportation en cours...",
+    "clearLogs": "Effacer tous les journaux",
+    "clearing": "Effacement en cours...",
+    "toggleStats": "Basculer les statistiques",
+    "showStats": "Afficher les statistiques",
+    "hideStats": "Masquer les statistiques",
+    "statistics": "Statistiques des journaux",
+    "totalLogs": "Total des journaux : {{count}}",
+    "byLevel": "Par niveau",
+    "byRoute": "Par itinéraire",
+    "byService": "Par service",
+    "healthStatus": "État de santé du journaliseur : {{status}}",
+    "deleteSuccess": "{{count}} journaux supprimés avec succès",
+    "archiveSuccess": "{{count}} journaux archivés avec succès",
+    "clearSuccess": "{{count}} journaux effacés avec succès",
+    "filterLogs": "Filtrer les journaux",
+    "closeFilter": "Fermer le filtre",
+    "logDetails": "Détails du journal",
+    "closeDetails": "Fermer les détails",
+    "applyFilters": "Appliquer les filtres",
+    "filterBySearch": "Rechercher par message ou URL",
+    "filterByStartDate": "Date de début",
+    "filterByEndDate": "Date de fin",
+    "route": "Itinéraire",
+    "ip": "Adresse IP",
+    "url": "URL",
+    "metadata": "Métadonnées",
+    "createdAt": "Créé le",
+    "updatedAt": "Mis à jour le",
+    "deletedAt": "Supprimé le",
+    "actions": "Actions",
+    "viewDetails": "Voir les détails",
+    "byStatus": "Par statut",
+    "byMethod": "Par méthode",
+    "uniqueUsers": "Utilisateurs uniques : {{count}}",
+    "avgResponseTime": "Temps de réponse moyen : {{time}}ms",
+    "exportSuccess": "Journaux exportés avec succès",
+    "error": {
+      "uniqueValues": "Échec de la récupération des valeurs uniques pour les filtres",
+      "health": "Échec de la récupération de l'état de santé du journaliseur",
+      "stats": "Échec de la récupération des statistiques des journaux",
+      "delete": "Échec de la suppression des journaux : {{message}}",
+      "archive": "Échec de l'archivage des journaux : {{message}}",
+      "export": "Échec de l'exportation des journaux : {{message}}",
+      "clear": "Échec de l'effacement des journaux : {{message}}"
+    },
+    "confirmDelete": {
+      "title": "Confirmer la suppression des journaux",
+      "message": "Voulez-vous supprimer définitivement les journaux sélectionnés (suppression définitive) ou les marquer comme supprimés (suppression logique) ?",
+      "hardDelete": "Suppression définitive",
+      "softDelete": "Suppression logique",
+      "cancel": "Annuler"
+    },
+    "confirmClear": {
+      "title": "Confirmer l'effacement de tous les journaux",
+      "message": "Êtes-vous sûr de vouloir supprimer définitivement tous les journaux de la base de données et des fichiers ?",
+      "confirm": "Confirmer",
+      "cancel": "Annuler"
+    }
+  },
+  "dashboard": {
+    "title": "Tableau de bord du superviseur",
+    "noScheduledReports": "Aucun rapport planifié trouvé.",
+    "agents": "Agents",
+    "time": "Heure",
+    "location": "Lieu",
+    "agent": "Agent",
+    "todaysVisits": "Visites d'aujourd'hui",
+    "status": "Statut",
+    "agentsAssigned": "Agents assignés",
+    "totalAgents": "Total des agents",
+    "agentsWithVisits": "Agents avec des visites",
+    "viewAllAgents": "Voir tous les agents",
+    "receiptBooks": "Carnets de reçus",
+    "receiptBooksNetwork": "Carnets de reçus en réseau",
+    "totalReceiptBooks": "Total des carnets de reçus",
+    "receiptBooksByType": "Carnets de reçus par type",
+    "visits": "Visites",
+    "visitsLogged": "Visites enregistrées",
+    "visitsLast7Days": "Visites (7 derniers jours)",
+    "visitsInLast7Days": "Visites des 7 derniers jours",
+    "pendingVisits": "Visites en attente",
+    "pendingVisitsDescription": "Visites en attente de validation",
+    "activeAgents": "Agents actifs",
+    "activeAgentsLast7Days": "Agents visités (7 derniers jours)",
+    "totalDelegations": "Total des délégations",
+    "delegationsAssigned": "Délégations assignées",
+    "avgVisitDuration": "Durée moyenne des visites",
+    "avgDurationMinutes": "Durée moyenne (minutes)",
+    "completionRate": "Taux de complétion",
+    "validatedVisits": "Visites validées",
+    "validatedVisitsNb": "Visites en attente de complétion",
+    "validatedVisitsRate": "Taux de visites validées",
+    "quickActions": "Actions rapides",
+    "recordVisit": "Enregistrer une visite",
+    "addTimesheet": "Ajouter une feuille de temps",
+    "assignReceiptBook": "Assigner un carnet de reçus",
+    "assignedLocations": "Lieux assignés",
+    "loadingMap": "Chargement de la carte...",
+    "hierarchy": "Hiérarchie",
+    "director": "Directeur",
+    "regionalManager": "Manager régional",
+    "email": "Email",
+    "phone": "Téléphone",
+    "assignedRegions": "Régions assignées",
+    "supervisor": "Superviseur",
+    "assignedGovernorates": "Gouvernorats assignés",
+    "totalVisits": "Total des visites",
+    "allStatuses": "Tous les statuts",
+    "pending": "En attente",
+    "validated": "Validé",
+    "allAgents": "Tous les agents",
+    "visitStatusDistribution": "Répartition des statuts des visites",
+    "visitTrends": "Tendances des visites",
+    "kpis": "Indicateurs clés de performance",
+    "visitsPerAgent": "Visites par agent",
+    "averageVisitDuration": "Durée moyenne des visites",
+    "agentActivity": "Activité des agents",
+    "visitsPerDelegation": "Visites par délégation",
+    "visitsPerDayLast30": "Visites par jour (30 derniers jours)",
+    "avgDurationPerDay": "Durée moyenne par jour",
+    "visitsScatter": "Dispersion des visites",
+    "validateTimesheets": "Valider les feuilles de temps",
+    "errors": {
+      "agents": "Erreur lors du chargement des données des agents",
+      "locations": "Erreur lors du chargement des données des lieux",
+      "delegations": "Erreur lors du chargement des données des délégations",
+      "governorates": "Erreur lors du chargement des données des gouvernorats",
+      "regions": "Erreur lors du chargement des données des régions",
+      "receiptBooks": "Erreur lors du chargement des données des carnets de reçus",
+      "timesheets": "Erreur lors du chargement des données des feuilles de temps",
+      "regionalManager": "Erreur lors du chargement des données du manager régional",
+      "visits": "Erreur lors du chargement des données des visites",
+      "map": "Erreur lors du chargement de la carte",
+      "receiptBookTypeChart": "Erreur lors du chargement du graphique des types de carnets de reçus",
+      "visitStatusChart": "Erreur lors du chargement du graphique des statuts des visites",
+      "visitTrendChart": "Erreur lors du chargement du graphique des tendances des visites",
+      "kpis": "Erreur lors du chargement des indicateurs clés",
+      "visitsPerAgent": "Erreur lors du chargement des données des visites par agent",
+      "visitTrends": "Erreur lors du chargement des données des tendances des visites",
+      "averageVisitDuration": "Erreur lors du chargement des données de la durée moyenne des visites",
+      "agentActivity": "Erreur lors du chargement des données de l'activité des agents",
+      "visitsPerDelegation": "Erreur lors du chargement des données des visites par délégation",
+      "visitsPerDayLast30": "Erreur lors du chargement des données des visites par jour (30 derniers jours)",
+      "avgDurationPerDay": "Erreur lors du chargement des données de la durée moyenne par jour",
+      "visitsScatter": "Erreur lors du chargement des données de dispersion des visites",
+      "director": "Erreur lors du chargement des données du directeur",
+      "supervisors": "Erreur lors du chargement des données des superviseurs",
+      "supervisorLocations": "Erreur lors du chargement des données des lieux des superviseurs",
+      "reports": "Erreur lors du chargement des données des rapports"
+    },
+    "regionalManagerTitle": "Tableau de bord du manager régional",
+    "totalSupervisors": "Total des superviseurs",
+    "activeSupervisors": "Superviseurs actifs",
+    "totalRegions": "Total des régions",
+    "totalGovernorates": "Total des gouvernorats",
+    "generateReport": "Générer un rapport",
+    "viewSupervisors": "Voir les superviseurs",
+    "generateTimesheets": "Générer des feuilles de temps",
+    "editProfile": "Modifier le profil",
+    "notificationPreferences": "Préférences de notification",
+    "supervisors": "Superviseurs",
+    "supervisorsSummary": "Résumé des superviseurs",
+    "governorates": "Gouvernorats",
+    "delegations": "Délégations",
+    "visitSummary": "Résumé des visites",
+    "allSupervisors": "Tous les superviseurs",
+    "allRegions": "Toutes les régions",
+    "visitsPerSupervisor": "Visites par superviseur",
+    "visitsPerRegion": "Visites par région",
+    "receiptBookSummary": "Résumé des carnets de reçus",
+    "receiptBooksPerSupervisor": "Carnets de reçus par superviseur",
+    "receiptBookStatusDistribution": "Répartition des statuts des carnets de reçus",
+    "geographicalAssignments": "Affectations géographiques",
+    "regionsAssigned": "Régions assignées",
+    "supervisorsAssignments": "Affectations des superviseurs",
+    "reportSummary": "Résumé des rapports",
+    "scheduledReports": "Rapports planifiés",
+    "generatedReports": "Rapports générés",
+    "download": "Télécharger",
+    "viewAllReports": "Voir tous les rapports",
+    "map": "Carte",
+    "avgDurationPerSupervisor": "Durée moyenne par superviseur",
+    "visitAnomalies": "Anomalies des visites",
+    "agentsPerSupervisor": "Agents par superviseur"
+  },
+  "dashboardAdmin": {
+    "title": "Résumé du tableau de bord administrateur",
+    "keyMetrics": "Métriques clés",
+    "totalUsers": "Total des utilisateurs",
+    "onlineUsers": "En ligne : {{count}}",
+    "googleAuthUsers": "Utilisateurs avec authentification Google",
+    "calendarAccessUsers": "Utilisateurs avec accès au calendrier",
+    "inactiveUsers": "Utilisateurs inactifs",
+    "totalRoles": "Total des rôles",
+    "avgPermissionsPerRole": "Permissions moyennes : {{count}}",
+    "totalPermissions": "Total des permissions",
+    "totalAgents": "Total des agents",
+    "activeAgents": "Actifs : {{count}}",
+    "agentsWithoutSupervisor": "Agents sans superviseur",
+    "totalChecklists": "Total des listes de contrôle",
+    "totalReasons": "Total des motifs",
+    "totalNotificationRules": "Total des règles de notification",
+    "highPriorityRules": "Priorité élevée : {{count}}",
+    "totalLogs": "Total des journaux",
+    "errorLogsLast24Hours": "Erreurs (24h) : {{count}}",
+    "totalAIConfigs": "Total des configurations IA",
+    "avgMaxOptimizeRoute": "Optimisation maximale moyenne des itinéraires : {{count}}",
+    "loading": "Chargement...",
+    "sortBy": "Trier par",
+    "defaultSort": "Par défaut",
+    "sortAlphabetical": "Alphabétique",
+    "sortByCount": "Nombre d'agents",
+    "error": {
+      "fetchFailed": "Échec du chargement des données du tableau de bord"
+    },
+    "insights": {
+      "title": "Aperçus",
+      "inactiveUsers": "Utilisateurs inactifs élevés",
+      "inactiveUsersMessage": "{{count}} utilisateurs inactifs depuis plus de 30 jours",
+      "errorLogs": "Journaux d'erreurs récents",
+      "errorLogsMessage": "{{count}} journaux d'erreurs dans les dernières 24 heures",
+      "agentsWithoutSupervisor": "Agents non assignés",
+      "agentsWithoutSupervisorMessage": "{{count}} agents sans superviseur"
+    },
+    "userStatistics": "Statistiques des utilisateurs",
+    "usersPerRole": "Utilisateurs par rôle",
+    "userGrowth": "Croissance des utilisateurs au fil du temps",
+    "usersPerRegion": "Utilisateurs par région",
+    "roleAndPermissionStatistics": "Statistiques des rôles et permissions",
+    "permissionsPerRole": "Permissions par rôle",
+    "permissionsByClass": "Permissions par classe",
+    "agentStatistics": "Statistiques des agents",
+    "agentsPerSupervisor": "Agents par superviseur",
+    "agentsPerGovernorate": "Agents par gouvernorat",
+    "aiConfigStatistics": "Statistiques des configurations IA",
+    "aiConfigsPerModel": "Configurations IA par modèle",
+    "maxOptimizeRouteDistribution": "Distribution maximale IA",
+    "logStatistics": "Statistiques des journaux",
+    "logsByLevel": "Journaux par niveau",
+    "logsByService": "Journaux par service",
+    "logsOverTime": "Journaux au fil du temps",
+    "recentLogs": "Journaux récents",
+    "notificationRulesStatistics": "Statistiques des règles de notification",
+    "notificationRulesByEvent": "Règles de notification par événement",
+    "notificationRulesByChannel": "Règles de notification par canal",
+    "checklistAndReasonStatistics": "Statistiques des listes de contrôle et motifs",
+    "checklistsOverTime": "Listes de contrôle au fil du temps",
+    "reasonsOverTime": "Motifs au fil du temps",
+    "allLevels": "Tous les niveaux",
+    "allUsers": "Tous les utilisateurs",
+    "allEvents": "Tous les événements",
+    "allPriorities": "Toutes les priorités",
+    "maxOptimizeRoute": "Optimisation maximale des itinéraires",
+    "timesheetMaxSuggestions": "Suggestions maximales pour les feuilles de temps",
+    "aiConfigs": "Configurations IA"
+  },
+  "notificationRules": {
+    "deleteConfirmTitle": "Confirmer la suppression",
+    "deleteConfirm": "Êtes-vous sûr de vouloir supprimer cette règle de notification ?",
+    "yes": "Oui",
+    "no": "Non"
+  },
+  "stockManagerDashboard": {
+    "title": "Tableau de bord du gestionnaire de stock",
+    "totalBooks": "Total des carnets",
+    "totalBooksDesc": "Nombre total de carnets de reçus dans le système",
+    "archivedBooks": "Carnets archivés",
+    "archivedBooksDesc": "Nombre de carnets de reçus archivés",
+    "transfers": "Transferts",
+    "transfersDesc": "Nombre total de transferts de carnets",
+    "bookTypes": "Types de carnets",
+    "bookTypesDesc": "Nombre de types de carnets différents",
+    "booksByRegion": "Carnets par région",
+    "booksByRegionDesc": "Nombre de régions avec des carnets",
+    "activeHolders": "Détenteurs actifs",
+    "activeHoldersDesc": "Nombre de détenteurs de carnets actifs",
+    "pendingStubs": "Souches en attente",
+    "pendingStubsDesc": "Nombre de souches de reçus en attente",
+    "sentToSupplier": "Envoyé au fournisseur",
+    "sentToSupplierDesc": "Carnets envoyés au fournisseur",
+    "recentActivity": "Activité récente",
+    "noActivity": "Aucune activité récente disponible",
+    "bookSummary": "Résumé des carnets",
+    "bookCharts": "Graphiques des carnets",
+    "bookStatus": "Statut des carnets",
+    "noBooks": "Aucun carnet disponible",
+    "holderRoles": "Rôles des détenteurs",
+    "transferCharts": "Graphiques des transferts",
+    "transferActivity": "Activité des transferts",
+    "noTransfers": "Aucun transfert disponible",
+    "transferStatus": "Statut des transferts",
+    "holderActivity": "Activité des détenteurs",
+    "transferStatusSummary": "Résumé des statuts des transferts",
+    "errors": {
+      "fetchFailed": "Échec de la récupération des données. Veuillez réessayer plus tard.",
+      "recentActivity": "Erreur lors du chargement de l'activité récente",
+      "bookSummary": "Erreur lors du chargement du résumé des carnets",
+      "charts": "Erreur lors du chargement des graphiques",
+      "transferCharts": "Erreur lors du chargement des graphiques des transferts"
     }
   }
 }

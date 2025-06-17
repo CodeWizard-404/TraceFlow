@@ -54,6 +54,7 @@ import { AIConfig } from "../../models/AI";
 import { Log } from "../../models/log";
 import LogsList from "./LogsList";
 import { getLogs } from "../../apis/logAPI";
+import { useNotification } from "../../context/NotificationContext";
 
 const AIConfigsList = lazy(() => import("./AI/AIConfigsList"));
 const AIConfigAdd = lazy(() => import("./AI/AIConfigAdd"));
@@ -416,18 +417,13 @@ const AdminDashboard: React.FC = React.memo(() => {
         }
     }, [userPermissions.canViewAgents, setCachedData, t, setGlobalError, clearError]);
 
+    const { refreshNotifications } = useNotification();
+
     const handleRefreshNotifications = useCallback(async () => {
         if (!userPermissions.canViewNotificationRules) return;
-        cache.delete("all_notification_rules");
-        cache.delete("notification_types");
         try {
             setNotificationsLoading(true);
-            const rulesData = await getNotificationRules();
-            setNotificationRules(rulesData);
-            setCachedData("all_notification_rules", rulesData);
-            const typesData = await getNotificationTypes();
-            setNotificationTypes(typesData);
-            setCachedData("notification_types", typesData);
+            await refreshNotifications();
             setLocalError(null);
             clearError();
         } catch (err: unknown) {
@@ -438,7 +434,7 @@ const AdminDashboard: React.FC = React.memo(() => {
         } finally {
             setNotificationsLoading(false);
         }
-    }, [userPermissions.canViewNotificationRules, setCachedData, t, setGlobalError, clearError]);
+    }, [userPermissions.canViewNotificationRules, refreshNotifications, t, setGlobalError, clearError]);
 
     const handleRefreshAIConfigs = useCallback(async () => {
         if (!userPermissions.canManageAIConfigs) return;

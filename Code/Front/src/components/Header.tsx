@@ -58,7 +58,6 @@ function Header() {
     ACCESS_RECEIPT_BOOKS: import.meta.env.VITE_PERMISSIONS_ACCESS_RECEIPT_BOOKS,
     ACCESS_RECEIPT_BOOKS_BY_HOLDER: import.meta.env.VITE_PERMISSIONS_ACCESS_RECEIPT_BOOKS_BY_HOLDER,
     GENERATE_REPORT: import.meta.env.VITE_PERMISSIONS_GENERATE_REPORT,
-
   };
 
   const ROLES = {
@@ -77,7 +76,6 @@ function Header() {
   const hasRole = (role: string) =>
     permissionsLoaded && userRoles?.some((r) => r.name === role);
 
-  // Map roles to their respective dashboard paths and labels
   const roleDashboards = [
     { role: ROLES.REGIONAL_MANAGER, path: '/regional-dashboard', label: t('header.navbar.regionalDashboard') },
     { role: ROLES.PURCHASE_TEAM, path: '/stock-dashboard', label: t('header.navbar.purchaseDashboard') },
@@ -88,8 +86,6 @@ function Header() {
     { role: ROLES.HR, path: '/hr-dashboard', label: t('header.navbar.hrDashboard') },
   ];
 
-  // Generate dashboard navigation items based on user roles
-  // Generate dashboard navigation items based on user roles
   const dashboardNavItems = permissionsLoaded && userRoles
     ? [
       ...userRoles
@@ -154,7 +150,6 @@ function Header() {
     setShowProfilePanel(false);
   };
 
-  // Close menu and panels on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (isMenuOpen && menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -171,7 +166,6 @@ function Header() {
     };
   }, [isMenuOpen, showProfilePanel]);
 
-  // Close menu and panels on route change
   useEffect(() => {
     setIsMenuOpen(false);
     setShowNotificationPanel(false);
@@ -244,7 +238,7 @@ function Header() {
               item.visible() ? (
                 <button
                   key={item.path}
-                  className="nav-link"
+                  className={`nav-link ${location.pathname === item.path ? 'active' : ''}`}
                   onClick={() => handleNavClick(item.path)}
                   aria-label={t('header.aria.navLink', { label: item.label })}
                 >

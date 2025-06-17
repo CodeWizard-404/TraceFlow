@@ -11,8 +11,6 @@ const { logRequest } = require('../utils/controllerUtils');
 const { sequelize } = require('../config/db');
 const Sequelize = require('sequelize');
 
-
-
 const ERROR_MESSAGES = {
     MISSING_FIELDS: 'Please fill in all required fields.',
     ROLE_NOT_FOUND: 'Role not found.',
@@ -285,7 +283,7 @@ class RoleController {
                 dynamicRecipients: [],
                 triggeredByUserID: actorID,
                 type: 'role',
-                customMessage: `Role ${role.name} updated `,
+                customMessage: `Role ${role.name} updated`,
                 requestID,
             });
 
@@ -419,6 +417,7 @@ class RoleController {
             await cacheInstance.invalidateByTag(['users', 'roles']);
             await cacheInstance.invalidate('roles:all');
             await cacheInstance.invalidate(`user:${userID}:roles`);
+            await cacheInstance.invalidateByTag('users');
             await redis.set('roles:last_updated', Date.now().toString());
             await RedisUtils.publishEvent('cache:invalidate', 'roles');
 
@@ -499,6 +498,7 @@ class RoleController {
             await cacheInstance.invalidateByTag(['users', 'roles']);
             await cacheInstance.invalidate('roles:all');
             await cacheInstance.invalidate(`user:${userID}:roles`);
+            await cacheInstance.invalidateByTag('users');
             await redis.set('roles:last_updated', Date.now().toString());
             await RedisUtils.publishEvent('cache:invalidate', 'roles');
 
