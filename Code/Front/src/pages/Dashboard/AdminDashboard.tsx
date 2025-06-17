@@ -54,9 +54,6 @@ const AdminDashboardSummary: React.FC = () => {
     const [closedInsights, setClosedInsights] = useState<number[]>([]);
     const [sortType, setSortType] = useState<'alphabetical' | 'count' | null>(null);
 
-
-
-
     // Fetch all data on component mount
     useEffect(() => {
         const fetchData = async () => {
@@ -110,7 +107,6 @@ const AdminDashboardSummary: React.FC = () => {
     const totalUsers = users.length;
     const onlineUsers = users.filter(u => u.isOnline).length;
 
-
     interface UserPerRole {
         role: string;
         count: number;
@@ -119,19 +115,12 @@ const AdminDashboardSummary: React.FC = () => {
     const usersPerRole: UserPerRole[] = (!users.length || !roles.length)
         ? []
         : roles.reduce((acc: UserPerRole[], role: Role) => {
-            console.log(`Processing role: ${role.name}`);
             const count = users.reduce((sum: number, user: User) => {
-                const hasRole = user.Roles?.some(r => {
-                    console.log(`User ${user.userID} role name: ${r.name}, Role name: ${role.name}, Match: ${r.name === role.name}`);
-                    return r.name === role.name;
-                }) ?? false;
+                const hasRole = user.Roles?.some(r => r.name === role.name) ?? false;
                 return sum + (hasRole ? 1 : 0);
             }, 0);
-            console.log(`Role ${role.name} has ${count} users`);
             return [...acc, { role: role.name, count }];
         }, []);
-
-    console.log('Final usersPerRole:', JSON.stringify(usersPerRole, null, 2));
 
     const userGrowthData = users.reduce((acc, u) => {
         const month = new Date(u.createdAt || Date.now()).toISOString().slice(0, 7);
@@ -142,7 +131,6 @@ const AdminDashboardSummary: React.FC = () => {
         month,
         users: userGrowthData[month],
     }));
-
 
     const inactiveUsers = users.filter(u => !u.isOnline && new Date(u.updatedAt || Date.now()) < new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)).length;
 
@@ -178,7 +166,6 @@ const AdminDashboardSummary: React.FC = () => {
             count: agents.filter(a => a.supervisorID === u.userID).length,
         }));
 
-    console.log('Agents per Supervisor:', JSON.stringify(agentsPerSupervisor, null, 2));
     interface AgentPerGovernorate {
         name: string;
         count: number;
@@ -195,7 +182,6 @@ const AdminDashboardSummary: React.FC = () => {
         count: agentsPerGovernorate[name],
     }));
 
-    console.log('Agents per Governorate:', JSON.stringify(agentsPerGovernorateData, null, 2));
     const agentsWithoutSupervisor = agents.filter(a => !a.supervisorID).length;
 
     const sortedAgentsPerGovernorateData = [...agentsPerGovernorateData].sort((a, b) => {
@@ -277,8 +263,6 @@ const AdminDashboardSummary: React.FC = () => {
     // Checklist Metrics
     const totalChecklists = checklists.length;
 
-
-
     // Reason Metrics
     const totalReasons = reasons.length;
     const reasonsByDate = reasons.reduce((acc, r) => {
@@ -346,9 +330,58 @@ const AdminDashboardSummary: React.FC = () => {
         </div>
     );
 
-
+    // Skeleton Loader
     if (loading) {
-        return <div className="loading">{t('dashboardAdmin.loading')}</div>;
+        return (
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+                className="admin-dashboard-summary"
+            >
+                <header className="dashboard-header dashboard-header-2">
+                    <div className="custom-skeleton pulsing" style={{ width: '200px', height: '30px' }} />
+                </header>
+                <div className="dashboard-grid">
+                    <section className="dashboard-section">
+                        <div className="custom-skeleton pulsing" style={{ width: '150px', height: '25px', margin: '10px 0' }} />
+                        <hr />
+                        {[...Array(3)].map((_, i) => (
+                            <div key={i} className="custom-skeleton pulsing" style={{ width: '100%', height: '80px', margin: '10px 0' }} />
+                        ))}
+                    </section>
+                    <section className="dashboard-section">
+                        <div className="custom-skeleton pulsing" style={{ width: '150px', height: '25px', margin: '10px 0' }} />
+                        <hr />
+                        <div className="metrics-grid">
+                            {[...Array(9)].map((_, i) => (
+                                <div key={i} className="metric-card">
+                                    <div className="custom-skeleton pulsing" style={{ width: '40px', height: '40px', margin: '10px' }} />
+                                    <div>
+                                        <div className="custom-skeleton pulsing" style={{ width: '60px', height: '30px', margin: '5px 0' }} />
+                                        <div className="custom-skeleton pulsing" style={{ width: '100px', height: '20px', margin: '5px 0' }} />
+                                        <div className="custom-skeleton pulsing" style={{ width: '120px', height: '15px', margin: '5px 0' }} />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+                    {[...Array(7)].map((_, sectionIndex) => (
+                        <section key={sectionIndex} className="dashboard-section">
+                            <div className="custom-skeleton pulsing" style={{ width: '150px', height: '25px', margin: '10px 0' }} />
+                            <hr />
+                            <div className="chart-grid">
+                                {[...Array(2)].map((_, i) => (
+                                    <div key={i} className="chart-container">
+                                        <div className="custom-skeleton pulsing" style={{ width: '300px', height: '300px', margin: '10px 0' }} />
+                                    </div>
+                                ))}
+                            </div>
+                        </section>
+                    ))}
+                </div>
+            </motion.div>
+        );
     }
 
     return (
@@ -407,7 +440,8 @@ const AdminDashboardSummary: React.FC = () => {
                 <div className="chart-grid">
                     <div className="chart-container">
                         <h3>{t('dashboardAdmin.usersPerRole')}</h3>
-                        <BarChart width={600} height={350} data={usersPerRole} margin={{ bottom: 80 }}>                            <CartesianGrid strokeDasharray="3 3" />
+                        <BarChart width={600} height={350} data={usersPerRole} margin={{ bottom: 80 }}>
+                            <CartesianGrid strokeDasharray="3 3" />
                             <XAxis dataKey="role" angle={45} textAnchor="start" />
                             <Tooltip />
                             <Bar dataKey="count" fill="#63b3ed" />
@@ -415,8 +449,10 @@ const AdminDashboardSummary: React.FC = () => {
                     </div>
                     <div className="chart-container">
                         <h3>{t('dashboardAdmin.userGrowth')}</h3>
-                        <AreaChart width={600} height={350} data={userGrowthChartData} margin={{ bottom: 80 }}>                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="month" angle={45} textAnchor="start" />                            <Tooltip />
+                        <AreaChart width={600} height={350} data={userGrowthChartData} margin={{ bottom: 80 }}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="month" angle={45} textAnchor="start" />
+                            <Tooltip />
                             <Area type="monotone" dataKey="users" fill="#63b3ed" stroke="#63b3ed" />
                         </AreaChart>
                     </div>
@@ -430,7 +466,8 @@ const AdminDashboardSummary: React.FC = () => {
                 <div className="chart-grid">
                     <div className="chart-container">
                         <h3>{t('dashboardAdmin.permissionsPerRole')}</h3>
-                        <BarChart width={600} height={450} data={permissionsPerRole} margin={{ bottom: 80 }}>                            <CartesianGrid strokeDasharray="3 3" />
+                        <BarChart width={600} height={450} data={permissionsPerRole} margin={{ bottom: 80 }}>
+                            <CartesianGrid strokeDasharray="3 3" />
                             <XAxis dataKey="role" angle={45} textAnchor="start" />
                             <YAxis />
                             <Tooltip />
@@ -577,7 +614,6 @@ const AdminDashboardSummary: React.FC = () => {
                             <Bar dataKey="count" fill="#63b3ed" />
                         </BarChart>
                     </div>
-
                 </div>
                 <div className="chart-grid">
                     <div className="chart-container">
@@ -590,7 +626,6 @@ const AdminDashboardSummary: React.FC = () => {
                             <Line type="monotone" dataKey="count" stroke="#63b3ed" />
                         </LineChart>
                     </div>
-
                     <div className="chart-container">
                         <h3>{t('dashboardAdmin.recentLogs')}</h3>
                         <div className="summary-list">
@@ -604,8 +639,6 @@ const AdminDashboardSummary: React.FC = () => {
                             ))}
                         </div>
                     </div>
-
-
                 </div>
             </section>
 

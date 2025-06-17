@@ -45,6 +45,14 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: false,
             defaultValue: DataTypes.NOW,
         },
+        details: {
+            type: DataTypes.JSON, // field for storing anomaly details
+            allowNull: true,
+        },
+        severity: {
+            type: DataTypes.STRING,
+            allowNull: true,
+        },
     }, {
         tableName: 'Notifications',
         timestamps: true,
