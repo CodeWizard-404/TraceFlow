@@ -8,3 +8,4 @@ keycloak/Back/logs/auth.log
 /vault_1.19.4_windows_386
 /Code/vault_1.19.4_windows_386
 Code/Back/.env
+vault/vault.exe
