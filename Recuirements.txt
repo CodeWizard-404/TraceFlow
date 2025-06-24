@@ -1,0 +1,13 @@
+VScode
+Android Studio
+PostgreSQL
+Docker
+Keycloak
+Redis
+Vault
+NodeJS
+React
+Flutter
+mistral
+java
+jdk 21/17
