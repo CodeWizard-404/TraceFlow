@@ -2593,5 +2593,13 @@
       "charts": "Error loading charts",
       "transferCharts": "Error loading transfer charts"
     }
+  },
+  "notification": {
+    "header": "Notifications",
+    "loading": "Loading",
+    "refresh": "Refresh",
+    "clearAll": "Read",
+    "noUnread": "No unread notifications",
+    "markAsRead": "Mark as read"
   }
 }

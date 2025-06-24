@@ -2593,5 +2593,13 @@
       "charts": "Erreur lors du chargement des graphiques",
       "transferCharts": "Erreur lors du chargement des graphiques des transferts"
     }
+  },
+  "notification": {
+    "header": "Notifications",
+    "loading": "Chargement",
+    "refresh": "Actualiser",
+    "clearAll": "Tout marquer comme lu",
+    "noUnread": "Aucune notification non lue",
+    "markAsRead": "Marquer comme lu"
   }
 }

@@ -6,10 +6,10 @@ const { requirePermission } = require('../config/security');
 /**
  * @swagger
  * tags:
- *   name: Permissions
- *   description: API endpoints for managing permissions
- *   name: Roles
- *   description: API endpoints for managing roles and their permissions
+ *   - name: Permissions
+ *     description: API endpoints for managing permissions
+ *   - name: Roles
+ *     description: API endpoints for managing roles and their permissions
  */
 
 /**

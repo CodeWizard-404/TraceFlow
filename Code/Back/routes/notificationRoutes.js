@@ -6,10 +6,10 @@ const { requirePermission } = require('../config/security');
 /**
  * @swagger
  * tags:
- *   name: Notification Rules
- *   description: API endpoints for managing notification rules
- *   name: Notifications
- *   description: API endpoints for managing notifications and preferences
+ *   - name: Notification Rules
+ *     description: API endpoints for managing notification rules
+ *   - name: Notifications
+ *     description: API endpoints for managing notifications and preferences
  */
 
 /**
@@ -501,11 +501,26 @@ router.get('/rules', requirePermission('view_notification_rules'), NotificationC
 /**
  * @swagger
  * /notifications/types:
- *   get:
+ *   post:
  *     summary: Retrieve all unique notification types
  *     tags: [Notifications]
  *     security:
  *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - types
+ *             properties:
+ *               types:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: List of unique notification types
+ *                 example: ["ai", "notification"]
  *     responses:
  *       200:
  *         description: List of unique notification types
@@ -520,6 +535,16 @@ router.get('/rules', requirePermission('view_notification_rules'), NotificationC
  *                     type: string
  *                   description: List of unique notification types
  *                   example: ["ai", "notification"]
+ *       400:
+ *         description: Missing or invalid request fields
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "Please fill in all required fields."
  *       401:
  *         description: Unauthorized - Invalid or missing authentication cookie
  *         content:
@@ -530,6 +555,16 @@ router.get('/rules', requirePermission('view_notification_rules'), NotificationC
  *                 error:
  *                   type: string
  *                   example: "Token required"
+ *       403:
+ *         description: Forbidden - Insufficient permissions
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "Permission 'trigger_notifications' required"
  *       500:
  *         description: Internal server error
  *         content:

@@ -932,7 +932,7 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
 
     try {
       String? location;
-      if (_selectedRegionId != null && _selectedGovernorateId != null && _selectedDelegationId != null) {
+      if (_selectedRegionId != null && _selectedGovernorateId != null && _selectedDelegationId != null && _selectedAgentId == null) {
         final region = _regions.firstWhere((r) => r['regionID'] == _selectedRegionId);
         await locationProvider.getGovernoratesByRegion(_selectedRegionId!);
         final governorate = locationProvider.governorates.firstWhere((g) => g['governorateID'] == _selectedGovernorateId);
@@ -988,6 +988,7 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
       if (mounted) setState(() => _isLoading = false);
     }
   }
+
 
   
   void _showSnackBar(String message) {

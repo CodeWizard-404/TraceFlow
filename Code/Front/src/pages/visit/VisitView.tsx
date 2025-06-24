@@ -439,7 +439,7 @@ const VisitDetailsView: React.FC = () => {
                         <h2>
                             <TbCalendarTime /> {t("visitDetails.whenWhere.title")}
                         </h2>
-                        <div className="card-content">
+                        <div className="card-content-1">
                             <p>
                                 <FaCalendar />{" "}
                                 {new Date(visit.date).toLocaleDateString("en-GB")}
@@ -481,7 +481,7 @@ const VisitDetailsView: React.FC = () => {
                         <h2>
                             <FaUser /> {t("visitDetails.agent.title")}
                         </h2>
-                        <div className="card-content">
+                        <div className="card-content-1">
                             {agent ? (
                                 <>
                                     <p>
@@ -505,7 +505,7 @@ const VisitDetailsView: React.FC = () => {
                             <h2>
                                 <FaUser /> {t("visitDetails.supervisor.title")}
                             </h2>
-                            <div className="card-content">
+                            <div className="card-content-1">
                                 <p>
                                     <BsPersonLinesFill /> {supervisor.firstname} {supervisor.lastname}
                                 </p>
@@ -520,7 +520,7 @@ const VisitDetailsView: React.FC = () => {
                         <h2>
                             <FaListUl /> {t("visitDetails.reasons.title")}
                         </h2>
-                        <div className="card-content">
+                        <div className="card-content-1">
                             {visit.Reasons?.length ? (
                                 <ul>
                                     {visit.Reasons.map((reason, index) => (
@@ -539,7 +539,7 @@ const VisitDetailsView: React.FC = () => {
                         <h2>
                             <FaCheckCircle /> {t("visitDetails.checklist.title")}
                         </h2>
-                        <div className="card-content">
+                        <div className="card-content-1">
                             {visit.Checklists?.length ? (
                                 <ul className="checklist">
                                     {visit.Checklists.map((checklist, index) => (
@@ -566,7 +566,7 @@ const VisitDetailsView: React.FC = () => {
                             <h2>
                                 <FaCamera /> {t("visitDetails.photos.title")} {photosCount}
                             </h2>
-                            <div className="card-content photo-gallery">
+                            <div className="card-content-1 photo-gallery">
                                 {visit.photos.map((photo, index) => (
                                     <div key={index} className="photo-container">
                                         <img
@@ -590,7 +590,7 @@ const VisitDetailsView: React.FC = () => {
                             <h2>
                                 <FaComment /> {t("visitDetails.comment.title")}
                             </h2>
-                            <div className="card-content">
+                            <div className="card-content-1">
                                 <p>{visit.comment}</p>
                             </div>
                         </div>

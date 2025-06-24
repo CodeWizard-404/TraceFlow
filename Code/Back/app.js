@@ -62,56 +62,15 @@ ensureRedisInitialized().then(() => {
     const io = require('./utils/socket');
     const { createAdapter } = require('@socket.io/redis-adapter');
     const { getRedisClient, getRedisSubClient } = require('./config/redis');
-    const expressJSDocSwagger = require('express-jsdoc-swagger');
-    const redoc = require('redoc-express');
     const initializeCache = require('./utils/cache');
+    const swaggerUi = require('swagger-ui-express');
+    const swaggerSpec = require('./config/swagger');
 
     setupMiddleware(app);
 
-    // Configure express-jsdoc-swagger before routes
-    expressJSDocSwagger(app)({
-        info: {
-            title: 'TraceFlow API',
-            version: '1.0.0',
-            description: 'API documentation for the TraceFlow backend, including Google Services and AI integration.',
-        },
-        servers: [
-            {
-                url: process.env.NODE_ENV === 'production' ? process.env.PROD_URL : `${process.env.DEV_URL}:${process.env.PORT}`,
-                description: process.env.NODE_ENV === 'production' ? 'Production server' : 'Development server',
-            },
-        ],
-        baseDir: path.join(__dirname, 'routes'),
-        filesPattern: '*.js',
-        security: {
-            BearerAuth: {
-                type: 'http',
-                scheme: 'bearer',
-                bearerFormat: 'JWT',
-            },
-            CookieAuth: {
-                type: 'apiKey',
-                in: 'cookie',
-                name: 'accessToken',
-            },
-        },
-        onError: (error, file) => {
-            console.error(`Error parsing JSDoc in ${file}:`, error);
-            logger.error('JSDoc parsing error', {
-                file,
-                error: error.message,
-                stack: error.stack,
-                service: 'swagger',
-            });
-        },
-    });
+    // Serve Swagger UI
+    app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-    // Setup Redoc
-    app.use('/api-docs', redoc({
-        title: 'TraceFlow API Documentation',
-        specUrl: '/api-docs/swagger.json',
-        nonce: (req, res) => res.locals.nonce, // Use res.locals.nonce
-    }));
 
     app.use('/logo', express.static(path.join(__dirname, 'Templates/logo')));
 

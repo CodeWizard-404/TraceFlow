@@ -113,7 +113,7 @@ body.dark .status-visited {
   gap: 0.5rem;
 }
 
-.card-content p {
+.card-content-1 p {
   margin: 0.5rem 0;
   font-size: 0.9rem;
   color: #1f2937;
@@ -122,20 +122,20 @@ body.dark .status-visited {
   gap: 0.5rem;
 }
 
-.card-content ul {
+.card-content-1 ul {
   list-style: none;
   padding: 0;
   margin: 0;
 }
 
-.card-content li {
+.card-content-1 li {
   font-size: 0.9rem;
   color: #1f2937;
   padding: 0.5rem 0;
   border-bottom: 1px solid #e5e7eb;
 }
 
-.card-content li:last-child {
+.card-content-1 li:last-child {
   border-bottom: none;
 }
 
@@ -637,7 +637,7 @@ body.dark .directions-icon {
     font-size: 1.25rem;
   }
 
-  .card-content p, .card-content li {
+  .card-content-1 p, .card-content-1 li {
     font-size: 1rem;
   }
 
@@ -727,11 +727,11 @@ body.dark .visit-details-card h2 {
   color: #63b3ed;
 }
 
-body.dark .card-content p, body.dark .card-content li {
+body.dark .card-content-1 p, body.dark .card-content-1 li {
   color: #e2e8f0;
 }
 
-body.dark .card-content li {
+body.dark .card-content-1 li {
   border-bottom: 1px solid #4a5568;
 }
 

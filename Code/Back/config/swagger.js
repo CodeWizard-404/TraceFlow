@@ -1,41 +1,41 @@
-const swaggerAutogen = require('swagger-autogen')();
-require('dotenv').config();
+const swaggerJsdoc = require('swagger-jsdoc');
 
-const doc = {
-  info: {
-    title: 'TraceFlow API',
-    description: 'API documentation for the TraceFlow backend, automatically generated.',
-    version: '1.0.0',
-  },
-  host: process.env.NODE_ENV === 'production' ? process.env.PROD_URL.replace(/^https?:\/\//, '') : `${process.env.DEV_URL.replace(/^https?:\/\//, '')}:${process.env.PORT}`,
-  schemes: [process.env.NODE_ENV === 'production' ? 'https' : 'http'],
-  securityDefinitions: {
-    BearerAuth: {
-      type: 'apiKey',
-      in: 'header',
-      name: 'Authorization',
-      description: 'Enter your Bearer token in the format: Bearer <token>',
+const options = {
+  definition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'My API',
+      version: '1.0.0',
+      description: 'API documentation for my Node.js application',
     },
-    CookieAuth: {
-      type: 'apiKey',
-      in: 'cookie',
-      name: 'accessToken',
-      description: 'Access token stored in cookie for authentication',
-    },
+    servers: [
+      {
+        url: 'http://localhost:5000',
+      },
+    ],
   },
-  security: [{ BearerAuth: [] }, { CookieAuth: [] }],
-  definitions: {
-    ErrorResponse: {
-      error: 'string',
-    },
-  },
+  apis: [
+    './routes/agentRoutes.js',
+    './routes/aiRoutes.js',
+    './routes/authRoutes.js',
+    './routes/checklistRoutes.js',
+    './routes/csvHeaderRoutes.js',
+    './routes/reasonRoutes.js',
+    './routes/receiptStubRoutes.js',
+    './routes/reportRoutes.js',
+    './routes/roleRoutes.js',
+    './routes/systemRoutes.js',
+    './routes/timesheetRoutes.js',
+    './routes/visitRoutes.js',
+    './routes/locationRoutes.js',
+    './routes/receiptBookRoutes.js',
+    './routes/permissionRoutes.js',
+    './routes/notificationRoutes.js',
+    './routes/userRoutes.js'
+  ],
+  failOnErrors: true, // Enable strict parsing to catch errors
 };
 
-const outputFile = '../swagger-output.json';
-const routes = ['../routes/*.js'];
+const swaggerSpec = swaggerJsdoc(options);
 
-swaggerAutogen(outputFile, routes, doc).then(() => {
-  console.log('Swagger documentation generated at:', outputFile);
-}).catch((err) => {
-  console.error('Error generating Swagger documentation:', err);
-});
+module.exports = swaggerSpec;

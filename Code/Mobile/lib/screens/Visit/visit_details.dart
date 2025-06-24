@@ -4,14 +4,12 @@ import 'package:provider/provider.dart';
 import '../../models/visit.dart';
 import '../../providers/visit_provider.dart';
 import '../../providers/timesheet_provider.dart';
-import '../../widgets/Visit/otp_validation_screen.dart';
 import '../../widgets/appbar/sidebar.dart';
 import '../../widgets/commen/button.dart';
 import '../../widgets/commen/icon_button.dart';
 import '../../widgets/commen/snack_bar.dar.dart';
 import '../../widgets/commen/spacer.dart';
 import '../../utils/constants.dart';
-import '../../widgets/qr_scanner/qr_scanner_widget.dart';
 import 'edit_visit.dart';
 import 'log_visit_screen.dart';
 
@@ -39,89 +37,17 @@ class _VisitDetailsScreenState extends State<VisitDetailsScreen> {
   }
 
   Future<void> _navigateToLog(BuildContext context) async {
-    final visitProvider = Provider.of<VisitProvider>(context, listen: false);
     final timesheetProvider = Provider.of<TimesheetProvider>(context, listen: false);
-    final visit = widget.visit;
-
-    if (visit.agentID == null) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => LogVisitScreen(
-            visitID: visit.visitID,
-            weekNumber: timesheetProvider.currentTimesheet?.weekNumber ?? 1,
-            year: visit.date.year,
-          ),
-        ),
-      );
-      return;
-    }
-
-    final qrResult = await Navigator.push<String?>(
+    Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const QRScannerWidget()),
-    );
-
-    if (qrResult == null || !mounted) {
-      CustomSnackBar.show(
-        context: context,
-        message: 'QR scan cancelled or failed',
-        backgroundColor: Theme.of(context).colorScheme.error.withOpacity(0.9),
-      );
-      return;
-    }
-
-    try {
-      final qrResponse = await visitProvider.verifyQRCode(
-        qrData: qrResult,
-        visitId: visit.visitID,
-      );
-      if (qrResponse['valid'] != true) {
-        CustomSnackBar.show(
-          context: context,
-          message: qrResponse['message'] ?? 'Invalid QR code',
-          backgroundColor: Theme.of(context).colorScheme.error.withOpacity(0.9),
-        );
-        return;
-      }
-
-      final otpValidated = await Navigator.push<bool>(
-        context,
-        MaterialPageRoute(
-          builder: (_) => OTPValidationScreen(
-            visitId: visit.visitID,
-            onOTPValidated: (otp) async {
-              final otpResponse = await visitProvider.validateOTP(
-                visitId: visit.visitID,
-                otpCode: otp,
-              );
-              if (otpResponse['valid'] != true) {
-                throw Exception(otpResponse['message'] ?? 'Invalid OTP');
-              }
-            },
-          ),
+      MaterialPageRoute(
+        builder: (_) => LogVisitScreen(
+          visitID: widget.visit.visitID,
+          weekNumber: timesheetProvider.currentTimesheet?.weekNumber ?? 1,
+          year: widget.visit.date.year,
         ),
-      );
-
-      if (otpValidated == true && mounted) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => LogVisitScreen(
-              visitID: visit.visitID,
-              weekNumber: timesheetProvider.currentTimesheet?.weekNumber ?? 1,
-              year: visit.date.year,
-            ),
-          ),
-        );
-      }
-    } catch (e) {
-      CustomSnackBar.show(
-        context: context,
-        message: 'Verification failed: $e',
-        backgroundColor: Theme.of(context).colorScheme.error.withOpacity(0.9),
-      );
-    }
+      ),
+    );
   }
 
   void _deleteVisit(BuildContext context) async {

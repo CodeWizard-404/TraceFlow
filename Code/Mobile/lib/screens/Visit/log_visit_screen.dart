@@ -10,6 +10,7 @@ import '../../widgets/Visit/otp_validation_screen.dart';
 import '../../widgets/commen/snack_bar.dar.dart';
 import '../Error.dart';
 import '../../widgets/appbar/app_bar.dart';
+import '../../widgets/appbar/sidebar.dart';
 import '../../widgets/commen/button.dart';
 import '../../widgets/commen/progress_indicator.dart';
 import '../../widgets/commen/spacer.dart';
@@ -469,14 +470,38 @@ class _LogVisitScreenState extends State<LogVisitScreen> with WidgetsBindingObse
 
   void _toggleMinimalView() => setState(() => _isMinimalView = !_isMinimalView);
 
-  Widget _buildSectionHeader(BuildContext context, String title, IconData icon) {
+  Widget _buildSectionCard(BuildContext context, {required String title, required List<Widget> children}) {
     final theme = Theme.of(context);
-    return Row(
-      children: [
-        Icon(icon, color: theme.colorScheme.primary),
-        const CustomSpacer(width: 12),
-        Text(title, style: theme.textTheme.headlineSmall),
-      ],
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: theme.colorScheme.primary.withOpacity(0.7),
+          width: 1.5,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+            child: Text(
+              title,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ),
+          const Divider(height: 1, thickness: 1, color: Colors.grey),
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(children: children),
+          ),
+        ],
+      ),
     );
   }
 
@@ -489,31 +514,46 @@ class _LogVisitScreenState extends State<LogVisitScreen> with WidgetsBindingObse
       appBar: _isCameraActive
           ? null
           : CustomAppBar(title: 'Log Visit', showBackButton: true),
+      drawer: const AppSidebar(),
       body: (!_isCameraInitialized && _isCameraActive)
           ? Container(color: Colors.black)
           : visitProvider.isLoading
           ? Center(child: CustomProgressIndicator(color: theme.colorScheme.primary))
           : !_isQRVerified || !_isOTPVerified
           ? Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              _visit?.agentID == null
-                  ? 'Recruitment Visit: No QR/OTP Required'
-                  : 'Please Scan QR Code',
-              style: theme.textTheme.headlineSmall,
-              textAlign: TextAlign.center,
-            ),
-            const CustomSpacer(height: 24),
-            if (_visit?.agentID != null)
-              CustomButton(
-                label: 'Scan QR Code',
-                icon: Icons.qr_code_scanner,
-                onPressed: _startQRScan,
-                backgroundColor: theme.colorScheme.primary,
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: theme.colorScheme.onSurface.withOpacity(0.1),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
               ),
-          ],
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                _visit?.agentID == null
+                    ? 'Recruitment Visit: No QR/OTP Required'
+                    : 'Please Scan QR Code',
+                style: theme.textTheme.headlineSmall,
+                textAlign: TextAlign.center,
+              ),
+              const CustomSpacer(height: 24),
+              if (_visit?.agentID != null)
+                CustomButton(
+                  label: 'Scan QR Code',
+                  icon: Icons.qr_code_scanner,
+                  onPressed: _startQRScan,
+                  backgroundColor: theme.colorScheme.primary,
+                ),
+            ],
+          ),
         ),
       )
           : _isCameraActive
@@ -760,175 +800,146 @@ class _LogVisitScreenState extends State<LogVisitScreen> with WidgetsBindingObse
           ],
         ),
       )
-          : RefreshIndicator(
-        onRefresh: _fetchVisitData,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Card(
-                color: theme.cardTheme.color,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildSectionHeader(context, 'Visit Details', Icons.person),
-                      const CustomSpacer(height: 16),
-                      Text(
-                        'Agent: ${_visit?.agent != null ? '${_visit!.agent!.name} ${_visit!.agent!.lastname}' : 'Recruitment Visit'}',
-                        style: theme.textTheme.bodyMedium,
-                      ),
-                      const CustomSpacer(height: 8),
-                      Text(
-                        'Location: ${_visit?.location ?? 'Not specified'}',
-                        style: theme.textTheme.bodyMedium,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const CustomSpacer(height: 16),
-              Card(
-                color: theme.cardTheme.color,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildSectionHeader(context, 'Reasons', Icons.question_answer),
-                      const CustomSpacer(height: 16),
-                      if (_visit?.reasons?.isEmpty ?? true)
-                        Text('No reasons specified', style: theme.textTheme.bodyMedium)
-                      else
-                        ..._visit!.reasons!.map((r) => Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: Text(r.item ?? 'Not specified', style: theme.textTheme.bodyMedium),
-                        )),
-                    ],
-                  ),
-                ),
-              ),
-              const CustomSpacer(height: 16),
-              Card(
-                color: theme.cardTheme.color,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildSectionHeader(context, 'Camera & Photos', Icons.camera_alt),
-                      const CustomSpacer(height: 16),
-                      CustomButton(
-                        label: 'Start Camera',
-                        onPressed: _startCamera,
-                      ),
-                      if (_photos.isNotEmpty) ...[
-                        const CustomSpacer(height: 12),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: _photos.asMap().entries.map((entry) {
-                            final index = entry.key;
-                            final photo = entry.value;
-                            return GestureDetector(
-                              onTap: () => _viewPhotoFullScreen(index),
-                              child: Stack(
-                                children: [
-                                  Container(
-                                    decoration: BoxDecoration(
-                                      border: Border.all(color: theme.dividerColor, width: 1),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(8),
-                                      child: Image.file(File(photo.path), width: 100, height: 100, fit: BoxFit.cover),
-                                    ),
-                                  ),
-                                  Positioned(
-                                    top: 4,
-                                    right: 4,
-                                    child: GestureDetector(
-                                      onTap: () => _removePhoto(index),
-                                      child: Container(
-                                        padding: const EdgeInsets.all(4),
-                                        decoration: BoxDecoration(
-                                          color: theme.colorScheme.background.withOpacity(0.7),
-                                          shape: BoxShape.circle,
-                                          border: Border.all(color: theme.colorScheme.error, width: 1),
-                                        ),
-                                        child: Icon(Icons.close, color: theme.colorScheme.error, size: 18),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }).toList(),
+          : Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Column(
+          children: [
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: _fetchVisitData,
+                child: ListView(
+                  children: [
+                    _buildSectionCard(
+                      context,
+                      title: 'Visit Details',
+                      children: [
+                        Text(
+                          'Agent: ${_visit?.agent != null ? '${_visit!.agent!.name} ${_visit!.agent!.lastname}' : 'Recruitment Visit'}',
+                          style: theme.textTheme.bodyMedium,
+                        ),
+                        const CustomSpacer(height: 8),
+                        Text(
+                          'Location: ${_visit?.location ?? 'Not specified'}',
+                          style: theme.textTheme.bodyMedium,
                         ),
                       ],
-                    ],
-                  ),
-                ),
-              ),
-              const CustomSpacer(height: 16),
-              Card(
-                color: theme.cardTheme.color,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildSectionHeader(context, 'Checklist (${_checklists.length})', Icons.checklist),
-                      const CustomSpacer(height: 16),
-                      if (_checklists.isEmpty)
-                        Text('No checklists assigned', style: theme.textTheme.bodyMedium)
-                      else
-                        ..._checklists.map((checklist) => CheckboxListTile(
-                          title: Text(checklist.item ?? 'Untitled Checklist'),
-                          value: checklist.visitChecklist?.checked ?? false,
-                          onChanged: (value) => _toggleChecklist(checklist.checklistID!, value!),
-                          activeColor: theme.colorScheme.primary,
-                          controlAffinity: ListTileControlAffinity.leading,
-                          dense: true,
-                        )),
-                    ],
-                  ),
-                ),
-              ),
-              const CustomSpacer(height: 16),
-              Card(
-                color: theme.cardTheme.color,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildSectionHeader(context, 'Comment', Icons.comment),
-                      const CustomSpacer(height: 16),
-                      TextField(
-                        onChanged: (value) => _comment = value,
-                        decoration: InputDecoration(
-                          hintText: 'Add a comment...',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                          prefixIcon: Icon(Icons.edit, color: theme.colorScheme.primary),
+                    ),
+                    const CustomSpacer(height: 8),
+                    _buildSectionCard(
+                      context,
+                      title: 'Reasons',
+                      children: [
+                        if (_visit?.reasons?.isEmpty ?? true)
+                          Text('No reasons specified', style: theme.textTheme.bodyMedium)
+                        else
+                          ..._visit!.reasons!.map((r) => Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: Text(r.item ?? 'Not specified', style: theme.textTheme.bodyMedium),
+                          )),
+                      ],
+                    ),
+                    const CustomSpacer(height: 8),
+                    _buildSectionCard(
+                      context,
+                      title: 'Camera & Photos',
+                      children: [
+                        CustomButton(
+                          label: 'Start Camera',
+                          onPressed: _startCamera,
+                          backgroundColor: theme.colorScheme.primary,
                         ),
-                        maxLines: 3,
-                      ),
-                    ],
-                  ),
+                        if (_photos.isNotEmpty) ...[
+                          const CustomSpacer(height: 12),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: _photos.asMap().entries.map((entry) {
+                              final index = entry.key;
+                              final photo = entry.value;
+                              return GestureDetector(
+                                onTap: () => _viewPhotoFullScreen(index),
+                                child: Stack(
+                                  children: [
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        border: Border.all(color: theme.dividerColor, width: 1),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: Image.file(File(photo.path), width: 100, height: 100, fit: BoxFit.cover),
+                                      ),
+                                    ),
+                                    Positioned(
+                                      top: 4,
+                                      right: 4,
+                                      child: GestureDetector(
+                                        onTap: () => _removePhoto(index),
+                                        child: Container(
+                                          padding: const EdgeInsets.all(4),
+                                          decoration: BoxDecoration(
+                                            color: theme.colorScheme.background.withOpacity(0.7),
+                                            shape: BoxShape.circle,
+                                            border: Border.all(color: theme.colorScheme.error, width: 1),
+                                          ),
+                                          child: Icon(Icons.close, color: theme.colorScheme.error, size: 18),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const CustomSpacer(height: 8),
+                    _buildSectionCard(
+                      context,
+                      title: 'Checklist (${_checklists.length})',
+                      children: [
+                        if (_checklists.isEmpty)
+                          Text('No checklists assigned', style: theme.textTheme.bodyMedium)
+                        else
+                          ..._checklists.map((checklist) => CheckboxListTile(
+                            title: Text(checklist.item ?? 'Untitled Checklist'),
+                            value: checklist.visitChecklist?.checked ?? false,
+                            onChanged: (value) => _toggleChecklist(checklist.checklistID!, value!),
+                            activeColor: theme.colorScheme.primary,
+                            controlAffinity: ListTileControlAffinity.leading,
+                            dense: true,
+                          )),
+                      ],
+                    ),
+                    const CustomSpacer(height: 8),
+                    _buildSectionCard(
+                      context,
+                      title: 'Comment',
+                      children: [
+                        TextField(
+                          onChanged: (value) => _comment = value,
+                          decoration: InputDecoration(
+                            hintText: 'Add a comment...',
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                            prefixIcon: Icon(Icons.edit, color: theme.colorScheme.primary),
+                          ),
+                          maxLines: 3,
+                        ),
+                      ],
+                    ),
+                    const CustomSpacer(height: 16),
+                    CustomButton(
+                      label: 'Validate Visit',
+                      onPressed: _validateVisit,
+                      isLoading: visitProvider.isLoading,
+                      backgroundColor: theme.colorScheme.primary,
+                    ),
+                  ],
                 ),
               ),
-              const CustomSpacer(height: 24),
-              CustomButton(
-                label: 'Validate Visit',
-                onPressed: _validateVisit,
-                isLoading: visitProvider.isLoading,
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -959,11 +970,9 @@ class PhotoGalleryScreen extends StatelessWidget {
           PageView.builder(
             controller: pageController,
             itemCount: photos.length,
-            itemBuilder: (context, index) =>
-                Center(
-                  child: Image.file(
-                      File(photos[index].path), fit: BoxFit.contain),
-                ),
+            itemBuilder: (context, index) => Center(
+              child: Image.file(File(photos[index].path), fit: BoxFit.contain),
+            ),
           ),
           Positioned(
             top: 20,

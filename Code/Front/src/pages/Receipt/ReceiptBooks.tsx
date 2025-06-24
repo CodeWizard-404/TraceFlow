@@ -36,6 +36,7 @@ import ReceiptBookBulkUploadModal from "./ReceiptBookBulkUploadModal";
 import { onNotification, offNotification } from "../../lib/socket";
 import "./ReceiptBooks.css";
 import "../Admin/AdminDashboard.css";
+import agentAPI from "../../apis/agentAPI";
 
 // Constants
 const ITEMS_PER_PAGE = 10;
@@ -580,6 +581,7 @@ const ReceiptBooks: React.FC = memo(() => {
   }, [debouncedSearch]);
 
   // Fetch Receipt Books
+  // Fetch Receipt Books
   const fetchReceiptBooks = useCallback(async () => {
     if (!userPermissions.canView || !permissionsLoaded || !user) {
       return;
@@ -591,13 +593,24 @@ const ReceiptBooks: React.FC = memo(() => {
       let totalPages = 1;
 
       if (userCapabilities.isSupervisorLike || userCapabilities.isRegionalManagerLike) {
-        // Determine userType based on role
-        const books = await getReceiptBooksByHolder(currentUserID as string, "user");
-        filteredBooks = books.map((receipt: ReceiptBook) => ({
+        // Fetch supervisor's receipt books
+        const supervisorBooks = await getReceiptBooksByHolder(currentUserID as string, "user");
+
+        // Fetch agents assigned to the supervisor
+        const agentsData = await agentAPI.getAgentsByUser(currentUserID as string);
+        const agents = agentsData.agents || [];
+
+        // Fetch receipt books for each agent
+        const agentBooks = await Promise.all(
+          agents.map(agent => getReceiptBooksByHolder(agent.agentID, "agent").catch(() => []))
+        ).then(results => results.flat());
+
+        // Combine supervisor and agent books
+        filteredBooks = [...supervisorBooks, ...agentBooks].map((receipt: ReceiptBook) => ({
           ...receipt,
           qrCode: `data:image/png;base64,${receipt.qrCode}`,
         }));
-        totalCount = books.length;
+        totalCount = filteredBooks.length;
         totalPages = 1;
       } else {
         const response = await getAllReceiptBooks(
@@ -619,12 +632,12 @@ const ReceiptBooks: React.FC = memo(() => {
 
       // Apply additional role-based filtering
       if (userCapabilities.isStockManagerLike) {
-        filteredBooks = filteredBooks.filter((r: { status: string; }) =>
+        filteredBooks = filteredBooks.filter((r: { status: string }) =>
           ["In Stock", "With Stock Manager", "Archived"].includes(r.status)
         );
       }
       if (userCapabilities.isPurchaseTeamLike) {
-        filteredBooks = filteredBooks.filter((r: { status: string; }) => r.status !== "Archived");
+        filteredBooks = filteredBooks.filter((r: { status: string }) => r.status !== "Archived");
       }
 
       setReceiptBooksCache({

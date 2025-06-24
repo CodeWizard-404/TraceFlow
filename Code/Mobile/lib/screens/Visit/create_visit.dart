@@ -1031,7 +1031,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
 
     try {
       String? location;
-      if (_selectedDelegationId != null) {
+      if (_selectedDelegationId != null && _selectedAgentId == null) {
         developer.log(
           '[CreateVisitScreen] Fetching region details for region ID: $_selectedRegionId',
           name: 'CreateVisitScreen.submitVisit',
@@ -1114,6 +1114,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
       if (mounted) setState(() => _isLoading = false);
     }
   }
+
 
   void _showSnackBar(String message) {
     if (mounted) {

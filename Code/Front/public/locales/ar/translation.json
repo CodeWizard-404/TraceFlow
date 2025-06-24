@@ -1076,5 +1076,13 @@
       "pictureUpdated": "تم تحديث صورة الملف الشخصي بنجاح",
       "passwordUpdated": "تم تحديث كلمة المرور بنجاح"
     }
+  },
+  "notification": {
+    "header": "الإشعارات",
+    "loading": "جارٍ التحميل",
+    "refresh": "تحديث",
+    "clearAll": "مقروء ",
+    "noUnread": "لا توجد إشعارات غير مقروءة",
+    "markAsRead": "وضع علامة مقروء"
   }
 }

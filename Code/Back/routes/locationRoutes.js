@@ -397,6 +397,7 @@ const LocationController = require('../controllers/locationController');
  *         lng:
  *           type: number
  *           description: Longitude of the current location
+ */
 
 /**
  * @swagger
@@ -483,7 +484,7 @@ router.get('/delegations', requirePermission('access_delegations'), LocationCont
  * @swagger
  * /api/locations/delegations/governorate:
  *   get:
- *     summary: Get delegations by governorate
+ *     summary: Get delegations by governor ID
  *     description: Retrieves delegations for a specific governorate. Requires `access_delegations_by_governorate` permission.
  *     tags: [Locations]
  *     security:
@@ -519,7 +520,7 @@ router.get('/delegations/governorate', requirePermission('access_delegations_by_
  * @swagger
  * /api/locations/governorates/region:
  *   get:
- *     summary: Get governorates by region
+ *     summary: Get governorates by region ID
  *     description: Retrieves governorates for a specific region. Requires `access_governorates_by_region` permission.
  *     tags: [Locations]
  *     security:
@@ -555,7 +556,7 @@ router.get('/governorates/region', requirePermission('access_governorates_by_reg
  * @swagger
  * /api/locations/regions/governorate:
  *   get:
- *     summary: Get regions by governorate
+ *     summary: Get regions by governorate ID
  *     description: Retrieves the region associated with a specific governorate. Requires `access_regions_by_governorate` permission.
  *     tags: [Locations]
  *     security:
@@ -591,7 +592,7 @@ router.get('/regions/governorate', requirePermission('access_regions_by_governor
  * @swagger
  * /api/locations/governorates/delegation:
  *   get:
- *     summary: Get governorates by delegation
+ *     summary: Get governorates by delegation ID
  *     description: Retrieves the governorate associated with a specific delegation. Requires `access_governorates_by_delegation` permission.
  *     tags: [Locations]
  *     security:
@@ -602,7 +603,7 @@ router.get('/regions/governorate', requirePermission('access_regions_by_governor
  *         required: true
  *         schema:
  *           type: string
- *         description: ID of the delegation
+ *         description: Identifier of the delegation
  *     responses:
  *       200:
  *         description: Successfully retrieved governorates
@@ -671,8 +672,8 @@ router.get('/regions/user/:userID', requirePermission('access_regions_by_user'),
  *     security:
  *       - cookieAuth: []
  *     parameters:
- *       - in: path
- *         name: userID
+ *       - in: userID
+ *         name: user
  *         required: true
  *         schema:
  *           type: string

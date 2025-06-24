@@ -192,7 +192,8 @@ class AIController {
             const cacheInstance = await cache();
             const redis = getRedisClient();
             const cacheKey = `ai_config_${configID}`;
-            await cacheInstance.set(cacheKey, config, 60);
+            // Use getOrSet to store the config
+            await cacheInstance.getOrSet(cacheKey, async () => config, 60);
             await cacheInstance.invalidateByTag('ai_configs');
             await redis.set('ai_configs:last_updated', Date.now().toString());
             await RedisUtils.publishEvent('cache:invalidate', 'ai_configs');

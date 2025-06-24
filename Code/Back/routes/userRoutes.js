@@ -220,7 +220,7 @@ router.post('/assign-regional-manager', requirePermission('assign_regional_manag
  *                 properties:
  *                   revokeAll:
  *                     type: boolean
- *                     description: Whether to revoke associated governorates, delegations, and agents (default: false)
+ *                     description: Whether to revoke associated governorates, delegations, and agents (default= false)
  *                 description: Optional confirmations for cascading revocation
  *     responses:
  *       200:
@@ -594,7 +594,7 @@ router.post('/assign-regions', requirePermission('assign_regions'), UserControll
  *                 properties:
  *                   revokeSupervisors:
  *                     type: boolean
- *                     description: Whether to revoke supervisors associated with the regions (default: false)
+ *                     description: Whether to revoke supervisors associated with the regions (default= false)
  *                 description: Optional confirmations for cascading revocation
  *     responses:
  *       200:
@@ -736,7 +736,7 @@ router.post('/assign-governorates', requirePermission('assign_governorates'), Us
  *                 properties:
  *                   revokeAll:
  *                     type: boolean
- *                     description: Whether to revoke associated delegations and agents (default: false)
+ *                     description: Whether to revoke associated delegations and agents (default= false)
  *                 description: Optional confirmations for cascading revocation
  *     responses:
  *       200:
@@ -884,7 +884,7 @@ router.post('/assign-delegations', requirePermission('assign_delegations'), User
  *                 properties:
  *                   revokeAgents:
  *                     type: boolean
- *                     description: Whether to revoke agents associated with the delegations (default: false)
+ *                     description: Whether to revoke agents associated with the delegations (default= false)
  *                 description: Optional confirmations for cascading revocation
  *     responses:
  *       200:
@@ -1608,7 +1608,7 @@ router.delete('/:userID', requirePermission('delete_users'), UserController.dele
  *         description: Unauthorized (missing or invalid token)
  *       403:
  *         description: Forbidden (insufficient permissions)
- *        similaire404:
+ *       404:
  *         description: User not found or no supervisors assigned
  *       500:
  *         description: Internal server error

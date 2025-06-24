@@ -7,6 +7,262 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 /**
  * @swagger
+ * components:
+ *   securitySchemes:
+ *     cookieAuth:
+ *       type: apiKey
+ *       in: cookie
+ *       name: accessToken
+ *   schemas:
+ *     ReceiptBookType:
+ *       type: object
+ *       properties:
+ *         typeID:
+ *           type: number
+ *           description: Unique identifier for the receipt book type
+ *         name:
+ *           type: string
+ *           description: Name of the receipt book type
+ *       example:
+ *         typeID: 1
+ *         name: Standard Receipt
+ *     Holder:
+ *       type: object
+ *       properties:
+ *         userID:
+ *           type: string
+ *           description: Unique identifier for the user
+ *         firstname:
+ *           type: string
+ *           description: User's first name
+ *         lastname:
+ *           type: string
+ *           description: User's last name
+ *         phone:
+ *           type: string
+ *           description: User's phone number
+ *         Roles:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               roleID:
+ *                 type: number
+ *               name:
+ *                 type: string
+ *       example:
+ *         userID: uuid-123
+ *         firstname: John
+ *         lastname: Doe
+ *         phone: +1234567890
+ *         Roles:
+ *           - roleID: 1
+ *             name: Regional Manager
+ *     ReceiptBook:
+ *       type: object
+ *       properties:
+ *         bookID:
+ *           type: string
+ *           description: Unique identifier for the receipt book
+ *         number:
+ *           type: string
+ *           description: Receipt book number
+ *         status:
+ *           type: string
+ *           description: Status of the receipt book
+ *         qrCode:
+ *           type: string
+ *           description: QR code data
+ *         agentID:
+ *           type: string
+ *           description: ID of the associated agent
+ *         currentHolderID:
+ *           type: string
+ *           description: ID of the current holder
+ *         typeID:
+ *           type: string
+ *           description: ID of the receipt book type
+ *         holder:
+ *           $ref: '#/components/schemas/Holder'
+ *         Agent:
+ *           type: object
+ *           properties:
+ *             agentID:
+ *               type: string
+ *             name:
+ *               type: string
+ *         ReceiptStub:
+ *           type: object
+ *           properties:
+ *             stubID:
+ *               type: string
+ *             status:
+ *               type: string
+ *         type:
+ *           type: string
+ *           description: Name of the receipt book type
+ *       example:
+ *         bookID: uuid-456
+ *         number: RB123
+ *         status: In Stock
+ *         qrCode: base64-encoded-string
+ *         agentID: null
+ *         currentHolderID: uuid-123
+ *         typeID: 1
+ *         holder:
+ *           userID: uuid-123
+ *           firstname: John
+ *           lastname: Doe
+ *           phone: +1234567890
+ *         Agent: null
+ *         ReceiptStub:
+ *           stubID: uuid-789
+ *           status: pending
+ *         type: Standard Receipt
+ *     TransferHistory:
+ *       type: object
+ *       properties:
+ *         transferID:
+ *           type: string
+ *           description: Unique identifier for the transfer
+ *         bookID:
+ *           type: string
+ *           description: ID of the receipt book
+ *         fromUserID:
+ *           type: string
+ *           description: ID of the user initiating the transfer
+ *         toUserID:
+ *           type: string
+ *           description: ID of the user receiving the transfer
+ *         toAgentID:
+ *           type: string
+ *           description: ID of the agent receiving the transfer
+ *         transferType:
+ *           type: string
+ *           description: Type of transfer
+ *         status:
+ *           type: string
+ *           description: Status of the transfer
+ *         transferDate:
+ *           type: string
+ *           format: date-time
+ *           description: Date of the transfer
+ *         FromUser:
+ *           $ref: '#/components/schemas/Holder'
+ *         ToUser:
+ *           $ref: '#/components/schemas/Holder'
+ *         Agent:
+ *           type: object
+ *           properties:
+ *             agentID:
+ *               type: string
+ *             name:
+ *               type: string
+ *       example:
+ *         transferID: uuid-789
+ *         bookID: uuid-456
+ *         fromUserID: uuid-123
+ *         toUserID: null
+ *         toAgentID: null
+ *         transferType: ToSupplier
+ *         status: Validated
+ *         transferDate: 2025-06-15T18:00:00Z
+ *         FromUser:
+ *           userID: uuid-123
+ *           firstname: John
+ *           lastname: Doe
+ *         ToUser: null
+ *         Agent: null
+ *     UploadResult:
+ *       type: object
+ *       properties:
+ *         status:
+ *           type: string
+ *           enum: [pending, completed_successfully, completed_with_issues, failed]
+ *           description: Status of the CSV processing
+ *         summary:
+ *           type: object
+ *           properties:
+ *             totalRecords:
+ *               type: integer
+ *             booksCreated:
+ *               type: integer
+ *             recordsSkipped:
+ *               type: integer
+ *             errorsEncountered:
+ *               type: integer
+ *         detailedLog:
+ *           type: object
+ *           properties:
+ *             created:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   bookNumber:
+ *                     type: string
+ *                   bookType:
+ *                     type: string
+ *                   timestamp:
+ *                     type: string
+ *                     format: date-time
+ *                   details:
+ *                     type: string
+ *             skipped:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   bookNumber:
+ *                     type: string
+ *                   bookType:
+ *                     type: string
+ *                   timestamp:
+ *                     type: string
+ *                     format: date-time
+ *                   reason:
+ *                     type: string
+ *             errors:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   bookNumber:
+ *                     type: string
+ *                   bookType:
+ *                     type: string
+ *                   timestamp:
+ *                     type: string
+ *                     format: date-time
+ *                   reason:
+ *                     type: string
+ *       example:
+ *         status: completed_with_issues
+ *         summary:
+ *           totalRecords: 10
+ *           booksCreated: 8
+ *           recordsSkipped: 1
+ *           errorsEncountered: 1
+ *         detailedLog:
+ *           created:
+ *             - bookNumber: RB123
+ *               bookType: Standard Receipt
+ *               timestamp: 2025-06-15T18:00:00Z
+ *               details: Receipt book created
+ *           skipped:
+ *             - bookNumber: RB124
+ *               bookType: Standard Receipt
+ *               timestamp: 2025-06-15T18:00:00Z
+ *               reason: Duplicate number
+ *           errors:
+ *             - bookNumber: RB125
+ *               bookType: Invalid Type
+ *               timestamp: 2025-06-15T18:00:00Z
+ *               reason: Invalid book type
+ */
+
+/**
+ * @swagger
  * /api/receipt-books/types:
  *   post:
  *     summary: Create a new receipt book type
@@ -25,21 +281,15 @@ const upload = multer({ storage: multer.memoryStorage() });
  *             properties:
  *               name:
  *                 type: string
- * description: Name of the receipt book type
- *               example: Standard Receipt
+ *                 description: Name of the receipt book type
+ *                 example: Standard Receipt
  *     responses:
  *       201:
  *         description: Receipt book type created successfully
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 typeID: number
- *                 name: string
- *               example:
- *                 typeID: 1
- *                 name: Standard Receipt
+ *               $ref: '#/components/schemas/ReceiptBookType'
  *       400:
  *         description: Missing required field 'name' or duplicate name
  *       401:
@@ -63,22 +313,12 @@ router.post('/types', requirePermission('manage_receipt_book_types'), ReceiptBoo
  *     responses:
  *       200:
  *         description: List of receipt book types
- *         description:
- *           content:
- *             application/json:
- *               schema:
- *                 type: array
- *                 items:
- *                   type: object
- *                 properties:
- *                   typeID: *                     number
-                    name:
-                      type: string
- *                   example:
- *                     - typeID: 1
- *                     name: Standard Receipt
- *                     - typeID: 2
- *                     name: Premium Receipt
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/ReceiptBookType'
  *       401:
  *         description: Unauthorized (missing or invalid token)
  *       403:
@@ -110,15 +350,7 @@ router.get('/types', requirePermission('access_receipt_book_types'), ReceiptBook
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 typeID:
- * number
- *                 name:
- *                 type: string
- *               example:
- *                 typeID: 1
- *                 name: Standard Receipt
+ *               $ref: '#/components/schemas/ReceiptBookType'
  *       400:
  *         description: Missing required field 'typeID'
  *       401:
@@ -160,23 +392,14 @@ router.get('/types/:typeID', requirePermission('access_receipt_book_types'), Rec
  *               name:
  *                 type: string
  *                 description: New name for the receipt book type
- *               example:
- *                 name: Updated Standard Receipt
+ *                 example: Updated Standard Receipt
  *     responses:
  *       200:
  *         description: Receipt book type updated successfully
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 typeID:
- * number
- *                 name:
- *                 type: string
- *               example:
- *                 typeID: 1
- *                 name: Updated Standard Receipt
+ *               $ref: '#/components/schemas/ReceiptBookType'
  *       400:
  *         description: Missing required fields 'typeID' or 'name' or duplicate name
  *       401:
@@ -247,33 +470,7 @@ router.delete('/types/:typeID', requirePermission('manage_receipt_book_types'), 
  *             schema:
  *               type: array
  *               items:
- *                 type: object
- *                 properties:
- *                   userID:
- *                     type: string
- *                   firstname:
- *                     type: string
- *                   lastname:
- *                     type: string
- *                   phone:
- *                     type: string
- *                   Roles:
- *                     type: array
- *                     items:
- *                       type: object
- *                       properties:
- *                         roleID:
- *                           type: number
- *                         name:
- *                           type: string
- *               example:
- *                 - userID: uuid-123
- *                   firstname: John
- *                   lastname: Doe
- *                   phone: +1234567890
- *                   Roles:
- *                     - roleID: 1
- *                       name: Regional Manager
+ *                 $ref: '#/components/schemas/Holder'
  *       401:
  *         description: Unauthorized (missing or invalid token)
  *       403:
@@ -317,30 +514,7 @@ router.get('/holders', requirePermission('access_receipt_book_holders'), Receipt
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 bookID:
- *                   type: string
- *                 number:
- *                   type: string
- *                 status:
- *                   type: string
- *                 qrCode:
- *                   type: string
- *                 agentID:
- *                   type: string
- *                 currentHolderID:
- *                   type: string
- *                 type:
- *                   type: string
- *               example:
- *                 bookID: uuid-456
- *                 number: RB123
- *                 status: In Stock
- *                 qrCode: base64-encoded-string
- *                 agentID: null
- *                 currentHolderID: uuid-123
- *                 type: Standard Receipt
+ *               $ref: '#/components/schemas/ReceiptBook'
  *       400:
  *         description: Missing required fields, invalid number format, or invalid typeID
  *       401:
@@ -417,58 +591,13 @@ router.post('/', requirePermission('create_receipt_books'), ReceiptBookControlle
  *                 books:
  *                   type: array
  *                   items:
- *                     type: object
- *                     properties:
- *                       bookID:
- *                         type: string
- *                       number:
- *                         type: string
- *                       status:
- *                         type: string
- *                       qrCode:
- *                         type: string
- *                       agentID:
- *                         type: string
- *                       currentHolderID:
- *                         type: string
- *                       typeID:
- *                         type: string
- *                       holder:
- *                         type: object
- *                       Agent:
- *                         type: object
- *                       type:
- *                         type: string
- *                       ReceiptStub:
- *                         type: object
+ *                     $ref: '#/components/schemas/ReceiptBook'
  *                 totalCount:
  *                   type: integer
  *                 currentPage:
  *                   type: integer
  *                 totalPages:
  *                   type: integer
- *               example:
- *                 books:
- *                   - bookID: uuid-456
- *                     number: RB123
- *                     status: In Stock
- *                     qrCode: base64-encoded-string
- *                     agentID: null
- *                     currentHolderID: uuid-123
- *                     typeID: 1
- *                     holder:
- *                       userID: uuid-123
- *                       firstname: John
- *                       lastname: Doe
- *                       phone: +1234567890
- *                     Agent: null
- *                     type: Standard Receipt
- *                     ReceiptStub:
- *                       stubID: uuid-789
- *                       status: pending
- *                 totalCount: 50
- *                 currentPage: 1
- *                 totalPages: 5
  *       400:
  *         description: Invalid sortField or sortOrder
  *       401:
@@ -502,51 +631,7 @@ router.get('/', requirePermission('access_all_receipt_books'), ReceiptBookContro
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 bookID:
- *                   type: string
- *                 number:
- *                   type: string
- *                 status:
- *                   type: string
- *                 qrCode:
- *                   type: string
- *                 agentID:
- *                   type: string
- *                 currentHolderID:
- *                   type: string
- *                 typeID:
- *                   type: string
- *                 holder:
- *                   type: object
- *                 ReceiptBookTransfers:
- *                   type: array
- *                 Agent:
- *                   type: object
- *                 ReceiptStub:
- *                   type: object
- *                 type:
- *                   type: string
- *               example:
- *                 bookID: uuid-456
- *                 number: RB123
- *                 status: In Stock
- *                 qrCode: base64-encoded-string
- *                 agentID: null
- *                 currentHolderID: uuid-123
- *                 typeID: 1
- *                 holder:
- *                   userID: uuid-123
- *                   firstname: John
- *                   lastname: Doe
- *                   phone: +1234567890
- *                 ReceiptBookTransfers: []
- *                 Agent: null
- *                 ReceiptStub:
- *                   stubID: uuid-789
- *                   status: pending
- *                 type: Standard Receipt
+ *               $ref: '#/components/schemas/ReceiptBook'
  *       400:
  *         description: Missing required field 'bookID'
  *       401:
@@ -589,8 +674,7 @@ router.get('/:bookID', requirePermission('access_receipt_book_details'), Receipt
  *                 type: string
  *                 enum: [user, agent]
  *                 description: Type of the holder
- *               example:
- *                 userType: user
+ *                 example: user
  *     responses:
  *       200:
  *         description: List of receipt books
@@ -599,51 +683,7 @@ router.get('/:bookID', requirePermission('access_receipt_book_details'), Receipt
  *             schema:
  *               type: array
  *               items:
- *                 type: object
- *                 properties:
- *                   bookID:
- *                     type: string
- *                   number:
- *                     type: string
- *                   status:
- *                     type: string
- *                   qrCode:
- *                     type: string
- *                   agentID:
- *                     type: string
- *                   currentHolderID:
- *                     type: string
- *                   typeID:
- *                     type: string
- *                   holder:
- *                     type: object
- *                   ReceiptBookTransfers:
- *                     type: array
- *                   Agent:
- *                     type: object
- *                   ReceiptStub:
- *                     type: object
- *                   type:
- *                     type: string
- *               example:
- *                 - bookID: uuid-456
- *                   number: RB123
- *                   status: In Stock
- *                   qrCode: base64-encoded-string
- *                   agentID: null
- *                   currentHolderID: uuid-123
- *                   typeID: 1
- *                   holder:
- *                     userID: uuid-123
- *                     firstname: John
- *                     lastname: Doe
- *                     phone: +1234567890
- *                   ReceiptBookTransfers: []
- *                   Agent: null
- *                   ReceiptStub:
- *                     stubID: uuid-789
- *                     status: pending
- *                   type: Standard Receipt
+ *                 $ref: '#/components/schemas/ReceiptBook'
  *       400:
  *         description: Missing required fields 'holderID' or 'userType'
  *       401:
@@ -679,51 +719,7 @@ router.post('/holder/:holderID', requirePermission('access_receipt_books_by_hold
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 bookID:
- *                   type: string
- *                 number:
- *                   type: string
- *                 status:
- *                   type: string
- *                 qrCode:
- *                   type: string
- *                 agentID:
- *                   type: string
- *                 currentHolderID:
- *                   type: string
- *                 typeID:
- *                   type: string
- *                 holder:
- *                   type: object
- *                 ReceiptBookTransfers:
- *                   type: array
- *                 Agent:
- *                   type: object
- *                 ReceiptStub:
- *                   type: object
- *                 type:
- *                   type: string
- *               example:
- *                 bookID: uuid-456
- *                 number: RB123
- *                 status: In Stock
- *                 qrCode: base64-encoded-string
- *                 agentID: null
- *                 currentHolderID: uuid-123
- *                 typeID: 1
- *                 holder:
- *                   userID: uuid-123
- *                   firstname: John
- *                   lastname: Doe
- *                   phone: +1234567890
- *                 ReceiptBookTransfers: []
- *                 Agent: null
- *                 ReceiptStub:
- *                   stubID: uuid-789
- *                   status: pending
- *                 type: Standard Receipt
+ *               $ref: '#/components/schemas/ReceiptBook'
  *       400:
  *         description: Missing required field 'number'
  *       401:
@@ -775,48 +771,7 @@ router.get('/number/:number', requirePermission('access_receipt_books_by_number'
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 bookID:
- *                   type: string
- *                 number:
- *                   type: string
- *                 status:
- *                   type: string
- *                 qrCode:
- *                   type: string
- *                 agentID:
- *                   type: string
- *                 currentHolderID:
- *                   type: string
- *                 type:
- *                   type: string
- *                 CurrentHolder:
- *                   type: object
- *                 ReceiptBookTransfers:
- *                   type: array
- *                 Agent:
- *                   type: object
- *                 ReceiptStub:
- *                   type: object
- *               example:
- *                 bookID: uuid-456
- *                 number: RB124
- *                 status: In Stock
- *                 qrCode: base64-encoded-string
- *                 agentID: null
- *                 currentHolderID: uuid-123
- *                 type: Premium Receipt
- *                 CurrentHolder:
- *                   userID: uuid-123
- *                   firstname: John
- *                   lastname: Doe
- *                   phone: +1234567890
- *                 ReceiptBookTransfers: []
- *                 Agent: null
- *                 ReceiptStub:
- *                   stubID: uuid-789
- *                   status: pending
+ *               $ref: '#/components/schemas/ReceiptBook'
  *       400:
  *         description: Missing required field 'bookID', invalid number format, or invalid typeID
  *       401:
@@ -889,55 +844,16 @@ router.delete('/:bookID', requirePermission('delete_receipt_books'), ReceiptBook
  *               csvFile:
  *                 type: string
  *                 format: binary
- *                 description: CSV file containing receipt book data (columns: number, type)
+ *                 description: CSV file containing receipt book data (columns= number, type)
+ *             required:
+ *               - csvFile
  *     responses:
  *       200:
  *         description: CSV processed successfully
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 status:
- *                   type: string
- *                   enum: [completed_successfully, completed_with_issues, failed]
- *                 summary:
- *                   type: object
- *                   properties:
- *                     totalRecords:
- *                       type: integer
- *                     booksCreated:
- *                       type: integer
- *                     recordsSkipped:
- *                       type: integer
- *                     errorsEncountered:
- *                       type: integer
- *                 detailedLog:
- *                   type: object
- *                   properties:
- *                     created:
- *                       type: array
- *                       items:
- *                         type: object
- *                     skipped:
- *                       type: array
- *                       items:
- *                         type: object
- *                     errors:
- *                       type: array
- *                       items:
- *                         type: object
- *               example:
- *                 status: completed_with_issues
- *                 summary:
- *                   totalRecords: 10
- *                   booksCreated: 8
- *                   recordsSkipped: 1
- *                   errorsEncountered: 1
- *                 detailedLog:
- *                   created: [{ bookNumber: RB123, bookType: Standard Receipt, timestamp: 2025-06-15T18:00:00Z, details: Receipt book created }]
- *                   skipped: [{ bookNumber: RB124, bookType: Standard Receipt, timestamp: 2025-06-15T18:00:00Z, reason: Duplicate number }]
- *                   errors: [{ bookNumber: RB125, bookType: Invalid Type, timestamp: 2025-06-15T18:00:00Z, reason: Invalid book type }]
+ *               $ref: '#/components/schemas/UploadResult'
  *       400:
  *         description: Missing CSV file, invalid headers, or encoding issues
  *       401:
@@ -947,11 +863,7 @@ router.delete('/:bookID', requirePermission('delete_receipt_books'), ReceiptBook
  *       500:
  *         description: Internal server error
  */
-router.post('/upload-csv',
-    requirePermission('create_receipt_books'),
-    upload.single('csvFile'),
-    ReceiptBookController.uploadReceiptBooksCSV
-);
+router.post('/upload-csv', requirePermission('create_receipt_books'), upload.single('csvFile'), ReceiptBookController.uploadReceiptBooksCSV);
 
 /**
  * @swagger
@@ -988,7 +900,9 @@ router.post('/upload-csv',
  *                 description: Indicates if this is a partial transfer
  *               example:
  *                 transferID: uuid-789
- *                 bookIDs: [uuid-456, uuid-457]
+ *                 bookIDs:
+ *                   - uuid-456
+ *                   - uuid-457
  *                 supplierEmail: supplier@example.com
  *                 isPartial: true
  *     responses:
@@ -1050,7 +964,9 @@ router.post('/send', requirePermission('send_receipt_books'), ReceiptBookControl
  *                 type: string
  *                 description: ID of the user collecting the books
  *               example:
- *                 bookIDs: [uuid-456, uuid-457]
+ *                 bookIDs:
+ *                   - uuid-456
+ *                   - uuid-457
  *                 userID: uuid-123
  *     responses:
  *       200:
@@ -1109,7 +1025,9 @@ router.post('/receive', requirePermission('collect_supplier_receipt_books'), Rec
  *                 default: user
  *                 description: Type of the recipient
  *               example:
- *                 bookIDs: [uuid-456, uuid-457]
+ *                 bookIDs:
+ *                   - uuid-456
+ *                   - uuid-457
  *                 recipientID: uuid-123
  *                 recipientType: user
  *     responses:
@@ -1177,7 +1095,9 @@ router.post('/transfer', requirePermission('transfer_receipt_books'), ReceiptBoo
  *                 default: user
  *                 description: Type of the recipient
  *               example:
- *                 bookIDs: [uuid-456, uuid-457]
+ *                 bookIDs:
+ *                   - uuid-456
+ *                   - uuid-457
  *                 recipientID: uuid-123
  *                 otpCode: 123456
  *                 recipientType: user
@@ -1229,45 +1149,7 @@ router.post('/validate-transfer', requirePermission('validate_receipt_books_tran
  *             schema:
  *               type: array
  *               items:
- *                 type: object
- *                 properties:
- *                   transferID:
- *                     type: string
- *                   bookID:
- *                     type: string
- *                   fromUserID:
- *                     type: string
- *                   toUserID:
- *                     type: string
- *                   toAgentID:
- *                     type: string
- *                   transferType:
- *                     type: string
- *                   status:
- *                     type: string
- *                   transferDate:
- *                     type: string
- *                   FromUser:
- *                     type: object
- *                   ToUser:
- *                     type: object
- *                   Agent:
- *                     type: object
- *               example:
- *                 - transferID: uuid-789
- *                   bookID: uuid-456
- *                   fromUserID: uuid-123
- *                   toUserID: null
- *                   toAgentID: null
- *                   transferType: ToSupplier
- *                   status: Validated
- *                   transferDate: 2025-06-15T18:00:00Z
- *                   FromUser:
- *                     userID: uuid-123
- *                     firstname: John
- *                     lastname: Doe
- *                   ToUser: null
- *                   Agent: null
+ *                 $ref: '#/components/schemas/TransferHistory'
  *       400:
  *         description: Missing required field 'bookID'
  *       401:

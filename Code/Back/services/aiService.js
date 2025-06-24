@@ -646,6 +646,8 @@ Return only the JSON object without additional text or formatting.
         return response.slice(start, end + 1);
     }
 
+
+
     static fallbackOptimization(allPoints, distanceMatrix) {
         if (!allPoints.length) {
             return { waypointOrder: [], estimatedDuration: 0, estimatedDistance: 0 };
@@ -890,7 +892,7 @@ Ensure the response is structured as a JSON object with a single 'summary' field
 
             let report;
             try {
-                const jsonString = this.extractJsonFromResponse(response.response);
+                const jsonString = this.extractJsonFromResponseReport(response.response);
                 report = JSON.parse(jsonString);
                 if (!report.summary || typeof report.summary !== 'string') {
                     throw new Error('Invalid summary format');
@@ -913,7 +915,15 @@ Ensure the response is structured as a JSON object with a single 'summary' field
     }
 
 
-
+    static extractJsonFromResponseReport(response) {
+        const normalized = response.replace(/\s+/g, ' ').trim();
+        const jsonMatch = normalized.match(/(\[.*?\]|\{.*?\})/);
+        if (!jsonMatch) {
+            logger.error('No valid JSON found in response', { response });
+            throw new Error('No valid JSON object found in response');
+        }
+        return jsonMatch[0];
+    }
 
 
 
