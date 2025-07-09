@@ -1,4 +1,0 @@
-flutter pub add qr_code_scanner
-
-flutter clean
-flutter build apk --release
