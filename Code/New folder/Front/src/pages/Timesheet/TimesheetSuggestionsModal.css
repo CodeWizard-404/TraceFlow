@@ -1,0 +1,813 @@
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    font-family: 'Inter', sans-serif;
+}
+
+.sugg-modal-content {
+    background: #fff;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    max-width: 32rem;
+    width: 90%;
+    box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.1);
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+body.dark .sugg-modal-content {
+    background: #262626;
+    color: #e5e7eb;
+}
+
+.modal-close {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    background: none;
+    border: none;
+    font-size: 1rem;
+    color: #6b7280;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.modal-close:hover {
+    color: #4cb1c7;
+}
+
+body.dark .modal-close {
+    color: #9ca3af;
+}
+
+body.dark .modal-close:hover {
+    color: #63b3ed;
+}
+
+.modal-form h2 {
+    margin: 0 0 1rem;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+body.dark .modal-form h2 {
+    color: #e5e7eb;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 0.5rem;
+}
+
+body.dark .form-group label {
+    color: #e5e7eb;
+}
+
+.input-pair {
+    display: flex;
+    gap: 0.625rem;
+}
+
+.form-buttons {
+    display: flex;
+    gap: 0.625rem;
+    justify-content: flex-end;
+    margin-top: 1rem;
+}
+
+.error {
+    color: #930744;
+    font-size: 0.75rem;
+    margin: 0.5rem 0;
+    font-style: italic;
+}
+
+body.dark .error {
+    color: #f87171;
+}
+
+/* Reuse filter-input and filter-select from Timesheets.css */
+.filter-input,
+.filter-select {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #1f2937;
+    background: #fff;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.2s ease;
+    width: 100%;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.filter-input:hover,
+.filter-select:hover {
+    border-color: #4cb1c7;
+}
+
+.filter-input:focus,
+.filter-select:focus {
+    outline: none;
+    border-color: #4cb1c7;
+    box-shadow: 0 0 0 2px rgba(76, 177, 199, 0.2);
+}
+
+.filter-input::placeholder {
+    color: #9ca3af;
+    font-weight: 400;
+}
+
+body.dark .filter-input,
+body.dark .filter-select {
+    background: #262626;
+    color: #e5e7eb;
+    border-color: #4b5563;
+}
+
+body.dark .filter-input::placeholder {
+    color: #9ca3af;
+}
+
+body.dark .filter-input:hover,
+body.dark .filter-select:hover {
+    border-color: #63b3ed;
+}
+
+body.dark .filter-input:focus,
+body.dark .filter-select:focus {
+    border-color: #63b3ed;
+    box-shadow: 0 0 0 2px rgba(99, 179, 237, 0.2);
+}
+
+/* Buttons */
+.create-btn,
+.cancel-btn {
+    padding: 0.625rem 1.25rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03125rem;
+    border: none;
+    border-radius: 3.125rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.create-btn {
+    background: #4cb1c7;
+    color: #fff;
+    box-shadow: 0 0.25rem 0.75rem rgba(76, 177, 199, 0.3);
+}
+
+.create-btn:hover {
+    background: #3a8fa2;
+}
+
+.create-btn:disabled {
+    background: #d1d5db;
+    cursor: not-allowed;
+}
+
+.cancel-btn {
+    background: #fff;
+    color: #4cb1c7;
+    border: 1px solid #4cb1c7;
+}
+
+.cancel-btn:hover {
+    background: #4cb1c7;
+    color: #fff;
+}
+
+.cancel-btn:disabled {
+    background: #d1d5db;
+    color: #9ca3af;
+    border-color: #d1d5db;
+    cursor: not-allowed;
+}
+
+body.dark .create-btn {
+    background: #63b3ed;
+    color: #1f2937;
+}
+
+body.dark .create-btn:hover {
+    background: #4b9cd3;
+}
+
+body.dark .create-btn:disabled {
+    background: #4b5563;
+}
+
+body.dark .cancel-btn {
+    background: #262626;
+    color: #63b3ed;
+    border-color: #63b3ed;
+}
+
+body.dark .cancel-btn:hover {
+    background: #63b3ed;
+    color: #1f2937;
+}
+
+body.dark .cancel-btn:disabled {
+    background: #4b5563;
+    color: #6b7280;
+    border-color: #4b5563;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .sugg-modal-content {
+        padding: 1.25rem;
+        max-width: 28rem;
+    }
+
+    .modal-form h2 {
+        font-size: 1.125rem;
+    }
+
+    .form-group label {
+        font-size: 0.8125rem;
+    }
+
+    .filter-input,
+    .filter-select {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.8125rem;
+    }
+
+    .create-btn,
+    .cancel-btn {
+        padding: 0.625rem 1.125rem;
+        font-size: 0.8125rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .sugg-modal-content {
+        padding: 1rem;
+        max-width: 90%;
+    }
+
+    .modal-form h2 {
+        font-size: 1rem;
+    }
+
+    .form-group label {
+        font-size: 0.75rem;
+    }
+
+    .filter-input,
+    .filter-select {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.75rem;
+    }
+
+    .create-btn,
+    .cancel-btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.75rem;
+    }
+
+    .input-pair {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+}
+
+
+
+
+/* React Select Custom Styles */
+.react-select-container {
+    width: 100%;
+    font-size: 0.875rem;
+}
+
+.react-select__control {
+    padding: 0.3rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.75rem !important;
+    background: #f8fafc;
+    color: #1f2937;
+    box-shadow: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+body.dark .react-select__control {
+    background: #363636;
+    border-color: #4b5563;
+    color: #e5e7eb;
+}
+
+.react-select__control:hover {
+    border-color: #4cb1c7;
+}
+
+body.dark .react-select__control:hover {
+    border-color: #63b3ed;
+}
+
+.react-select__control--is-focused {
+    outline: none;
+    border-color: #4cb1c7 !important;
+    box-shadow: 0 0 0 3px rgba(76, 177, 199, 0.1) !important;
+}
+
+body.dark .react-select__control--is-focused {
+    border-color: #63b3ed !important;
+    box-shadow: 0 0 0 3px rgba(99, 179, 237, 0.1) !important;
+}
+
+.react-select__control--is-disabled {
+    background: #e5e7eb;
+    border-color: #d1d5db;
+    cursor: not-allowed;
+}
+
+body.dark .react-select__control--is-disabled {
+    background: #4b5563;
+    border-color: #6b7280;
+}
+
+.react-select__value-container {
+    padding: 0 0.5rem;
+}
+
+.react-select__placeholder {
+    color: #9ca3af;
+}
+
+body.dark .react-select__placeholder {
+    color: #6b7280;
+}
+
+.react-select__single-value {
+    color: #1f2937;
+}
+
+body.dark .react-select__single-value {
+    color: #e5e7eb;
+}
+
+.react-select__multi-value {
+    background: #e5e7eb;
+}
+
+body.dark .react-select__multi-value {
+    background: #4b5563;
+}
+
+.react-select__multi-value__label {
+    color: #1f2937;
+    font-size: 0.75rem;
+    padding: 0.5rem;
+}
+
+body.dark .react-select__multi-value__label {
+    color: #e5e7eb;
+}
+
+.react-select__multi-value__remove {
+    color: #6b7280;
+    cursor: pointer;
+}
+
+body.dark .react-select__multi-value__remove {
+    color: #9ca3af;
+}
+
+.react-select__multi-value__remove:hover {
+    background: #e81f76;
+    color: #fff;
+}
+
+body.dark .react-select__multi-value__remove:hover {
+    background: #f56565;
+}
+
+.react-select__menu {
+    background: #ffffff;
+    border: 1px solid #d1d5db;
+    border-radius: 0.75rem !important;
+    box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+}
+
+body.dark .react-select__menu {
+    background: #222222;
+    border-color: #4b5563;
+    box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.3);
+}
+
+.react-select__menu-list {
+    padding: 0;
+}
+
+
+.react-select__option {
+    padding: 0.75rem;
+    color: #1f2937;
+    background: transparent;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+body.dark .react-select__option {
+    color: #e5e7eb;
+}
+
+.react-select__option:hover,
+.react-select__option--is-focused {
+    background: #4cb1c7;
+    color: #ffffff;
+}
+
+body.dark .react-select__option:hover,
+body.dark .react-select__option--is-focused {
+    background: #63b3ed;
+    color: #222222;
+}
+
+.react-select__option--is-selected {
+    background: #4cb1c7;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+body.dark .react-select__option--is-selected {
+    background: #63b3ed;
+    color: #222222;
+}
+
+.react-select__indicator-separator {
+    background: #d1d5db;
+}
+
+body.dark .react-select__indicator-separator {
+    background: #4b5563;
+}
+
+.react-select__dropdown-indicator,
+.react-select__clear-indicator {
+    color: #6b7280;
+    padding: 0.25rem;
+}
+
+body.dark .react-select__dropdown-indicator,
+body.dark .react-select__clear-indicator {
+    color: #9ca3af;
+}
+
+.react-select__dropdown-indicator:hover,
+.react-select__clear-indicator:hover {
+    color: #4cb1c7;
+}
+
+body.dark .react-select__dropdown-indicator:hover,
+body.dark .react-select__clear-indicator:hover {
+    color: #63b3ed;
+}
+
+.react-select-container.invalid .react-select__control {
+    border-color: #e53e3e;
+    animation: vibrate 0.3s ease;
+}
+
+body.dark .react-select-container.invalid .react-select__control {
+    border-color: #f56565;
+}
+
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.sugg-modal-content {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.modal-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: #333;
+}
+
+.modal-close:hover {
+    color: #e74c3c;
+}
+
+.modal-form h2 {
+    margin-bottom: 20px;
+    font-size: 24px;
+    color: #333;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #555;
+}
+
+.form-group .checkbox-label {
+    display: flex;
+    justify-content: flex-start;
+}
+
+
+
+.location-group .input-pair,
+.time-interval-group .input-pair {
+    display: flex;
+    gap: 10px;
+}
+
+.filter-input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.filter-input:disabled {
+    background: #f0f0f0;
+    cursor: not-allowed;
+}
+
+.filter-textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+    min-height: 100px;
+    resize: vertical;
+}
+
+.filter-textarea:disabled {
+    background: #f0f0f0;
+    cursor: not-allowed;
+}
+
+.form-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+
+.error-message {
+    background: #f8d7da;
+    color: #721c24;
+    padding: 10px;
+    border-radius: 4px;
+    margin-bottom: 15px;
+}
+
+.warning-message {
+    background: #fff3cd;
+    color: #856404;
+    padding: 10px;
+    border-radius: 4px;
+    margin-bottom: 15px;
+}
+
+.react-select__control {
+    border-color: #ccc;
+    box-shadow: none;
+}
+
+.react-select__control--is-focused {
+    border-color: #3498db;
+    box-shadow: 0 0 5px rgba(52, 152, 219, 0.3);
+}
+
+.react-select__menu {
+    z-index: 1001;
+}
+
+
+
+
+/* Skeleton loader */
+.skeleton-select {
+    width: 100%;
+    height: 38px;
+    background-color: #f0f0f0;
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+}
+
+.skeleton-placeholder {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite;
+}
+
+@keyframes skeleton-loading {
+    0% {
+        background-position: 200% 0;
+    }
+
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+/* Recruitment areas visibility */
+.recruitment-areas.hidden {
+    display: none;
+}
+
+/* Location selects spacing */
+.location-selects .react-select-container {
+    margin-bottom: 10px;
+
+}
+
+.location-selects {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    gap: 1rem;
+}
+
+.location-selects div {
+    justify-items: stretch;
+}
+
+
+
+/* Switch Button Styles */
+.switch-container {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.switch-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+body.dark .switch-label {
+    color: #e5e7eb;
+}
+
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 2.5rem;
+    height: 1.5rem;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #d1d5db;
+    transition: background-color 0.3s ease;
+    border-radius: 1rem;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 1.125rem;
+    width: 1.125rem;
+    left: 0.1875rem;
+    bottom: 0.1875rem;
+    background-color: #fff;
+    transition: transform 0.3s ease;
+    border-radius: 50%;
+}
+
+.switch input:checked+.slider {
+    background-color: #4cb1c7;
+}
+
+.switch input:checked+.slider:before {
+    transform: translateX(1rem);
+}
+
+.switch input:disabled+.slider {
+    background-color: #e5e7eb;
+    cursor: not-allowed;
+}
+
+body.dark .slider {
+    background-color: #4b5563;
+}
+
+body.dark .switch input:checked+.slider {
+    background-color: #63b3ed;
+}
+
+body.dark .switch input:disabled+.slider {
+    background-color: #6b7280;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .switch-label {
+        font-size: 0.8125rem;
+    }
+
+    .switch {
+        width: 2.25rem;
+        height: 1.375rem;
+    }
+
+    .slider:before {
+        height: 1rem;
+        width: 1rem;
+        left: 0.1875rem;
+        bottom: 0.1875rem;
+    }
+
+    .switch input:checked+.slider:before {
+        transform: translateX(0.875rem);
+    }
+}
+
+@media (max-width: 480px) {
+    .switch-label {
+        font-size: 0.75rem;
+    }
+
+    .switch {
+        width: 2rem;
+        height: 1.25rem;
+    }
+
+    .slider:before {
+        height: 0.875rem;
+        width: 0.875rem;
+        left: 0.1875rem;
+        bottom: 0.1875rem;
+    }
+
+    .switch input:checked+.slider:before {
+        transform: translateX(0.75rem);
+    }
+}

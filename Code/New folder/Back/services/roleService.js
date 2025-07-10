@@ -1,0 +1,1069 @@
+const axios = require('axios');
+const { Role, Permission, User } = require('../models');
+const PermissionService = require('./permissionService');
+const { migratePermissionsToKeycloak: migrateRecourcesToKeycloak } = require('../scripts/migrateRe');
+const { migratePermissionsToKeycloak } = require('../scripts/migratePe');
+const { migratePoliciesToKeycloak } = require('../scripts/migratePo');
+require('dotenv').config();
+const UserService = require('./userService');
+
+// Keycloak configuration
+const KEYCLOAK_URL = process.env.KEYCLOAK_URL || 'http://localhost:8080';
+const REALM = process.env.REALM || 'TraceFlow';
+const CLIENT_ID = process.env.KEYCLOAK_CLIENT_ID || 'traceflow-backend';
+
+// Roles that cannot be modified or deleted
+const RESTRICTED_ROLES = [
+    process.env.ROLE_SUPER_ADMIN || 'Super Admin',
+    process.env.ROLE_ADMIN || 'Admin',
+    process.env.ROLE_DIRECTOR || 'Director',
+    process.env.ROLE_SUPERVISOR || 'Supervisor',
+    process.env.ROLE_PURCHASE_TEAM || 'Purchase Team',
+    process.env.ROLE_REGIONAL_MANAGER || 'Regional Manager',
+    process.env.ROLE_STOCK_MANAGER || 'Stock Manager',
+    process.env.ROLE_HR || 'HR',
+];
+
+// Get admin token for Keycloak
+async function getAdminToken() {
+    try {
+        const response = await axios.post(
+            `${KEYCLOAK_URL}/realms/master/protocol/openid-connect/token`,
+            new URLSearchParams({
+                grant_type: 'password',
+                client_id: 'admin-cli',
+                username: process.env.KEYCLOAK_ADMIN_USER,
+                password: process.env.KEYCLOAK_ADMIN_PASSWORD,
+            }),
+            { timeout: 5000 }
+        );
+        return response.data.access_token;
+    } catch (error) {
+        const errorDetails = error.response?.data?.error_description || error.message;
+        throw new Error(`Could not authenticate with Keycloak: ${errorDetails}`);
+    }
+}
+
+// Get client UUID from Keycloak
+async function getClientUUID(token) {
+    try {
+        const response = await axios.get(
+            `${KEYCLOAK_URL}/admin/realms/${REALM}/clients?clientId=${CLIENT_ID}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
+        const client = response.data.find((c) => c.clientId === CLIENT_ID);
+        if (!client) throw new Error('Client not found.');
+        return client.id;
+    } catch (error) {
+        throw new Error('Could not find client in Keycloak.');
+    }
+}
+
+class RoleService {
+    // Create a new role
+    static async createRole(name, description, actorID) {
+        try {
+            const token = await getAdminToken();
+            const clientUUID = await getClientUUID(token);
+
+            // Check or create role in Keycloak
+            let keycloakRoleId;
+            try {
+                const response = await axios.get(
+                    `${KEYCLOAK_URL}/admin/realms/${REALM}/roles/${name}`,
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+                keycloakRoleId = response.data.id;
+            } catch (error) {
+                if (error.response?.status === 404) {
+                    await axios.post(
+                        `${KEYCLOAK_URL}/admin/realms/${REALM}/roles`,
+                        { name, description },
+                        { headers: { Authorization: `Bearer ${token}` } }
+                    );
+                    const keycloakRole = await axios.get(
+                        `${KEYCLOAK_URL}/admin/realms/${REALM}/roles/${name}`,
+                        { headers: { Authorization: `Bearer ${token}` } }
+                    );
+                    keycloakRoleId = keycloakRole.data.id;
+
+                    // Create policy in Keycloak
+                    await axios.post(
+                        `${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${clientUUID}/authz/resource-server/policy/role`,
+                        {
+                            name: `${name}-policy`,
+                            description: `Policy for ${name} role`,
+                            logic: 'POSITIVE',
+                            type: 'role',
+                            roles: [{ id: keycloakRoleId, required: true }],
+                        },
+                        { headers: { Authorization: `Bearer ${token}` } }
+                    );
+                } else {
+                    throw new Error('Could not create role in Keycloak.');
+                }
+            }
+
+            // Save role in local DB
+            const [role, created] = await Role.findOrCreate({
+                where: { name },
+                defaults: { name, description },
+            });
+            if (!created) throw new Error('Role already exists.');
+
+            return role;
+        } catch (error) {
+            throw new Error(error.message || 'Could not create role.');
+        }
+    }
+
+    // Get all roles
+    static async getAllRoles() {
+        try {
+            const roles = await Role.findAll({
+                attributes: ['roleID', 'name', 'description'],
+                include: [
+                    {
+                        model: Permission,
+                        attributes: ['permissionID', 'name', 'description'],
+                        through: { attributes: [] },
+                    },
+                ],
+            });
+            return roles;
+        } catch (error) {
+            throw new Error('Could not fetch roles.');
+        }
+    }
+
+    // Get role by ID
+    static async getRoleById(roleID) {
+        try {
+            const role = await Role.findByPk(roleID, {
+                include: [
+                    {
+                        model: Permission,
+                        through: { attributes: [] },
+                        attributes: ['name', 'description'],
+                    },
+                ],
+            });
+            if (!role) throw new Error('Role not found.');
+            return role;
+        } catch (error) {
+            throw new Error(error.message || 'Could not fetch role.');
+        }
+    }
+
+    // Update a role
+    static async updateRole(roleID, updates, actorID) {
+        try {
+            const role = await Role.findByPk(roleID);
+            if (!role) throw new Error('Role not found.');
+
+            // Block name updates for restricted roles
+            if (RESTRICTED_ROLES.includes(role.name) && updates.name) {
+                throw new Error(`Cannot rename ${role.name} role.`);
+            }
+
+            const token = await getAdminToken();
+
+            // Update Keycloak role
+            await axios.put(
+                `${KEYCLOAK_URL}/admin/realms/${REALM}/roles/${role.name}`,
+                {
+                    name: updates.name || role.name,
+                    description: updates.description || role.description,
+                },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            // Update local DB
+            await role.update({
+                name: updates.name || role.name,
+                description: updates.description || role.description,
+            });
+
+            return role;
+        } catch (error) {
+            throw new Error(error.message || 'Could not update role.');
+        }
+    }
+
+    // Delete a role
+    static async deleteRole(roleID, actorID) {
+        try {
+            const role = await Role.findByPk(roleID);
+            if (!role) throw new Error('Role not found.');
+
+            // Block deletion of restricted roles
+            if (RESTRICTED_ROLES.includes(role.name)) {
+                throw new Error(`Cannot delete ${role.name} role.`);
+            }
+
+            const token = await getAdminToken();
+            const clientUUID = await getClientUUID(token);
+
+            // Delete policy from Keycloak
+            try {
+                const policyResponse = await axios.get(
+                    `${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${clientUUID}/authz/resource-server/policy/role?name=${role.name}-policy`,
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+                if (policyResponse.data[0]?.id) {
+                    await axios.delete(
+                        `${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${clientUUID}/authz/resource-server/policy/${policyResponse.data[0].id}`,
+                        { headers: { Authorization: `Bearer ${token}` } }
+                    );
+                }
+            } catch (error) {
+                if (error.response?.status !== 404) throw error;
+            }
+
+            // Delete role from Keycloak
+            await axios.delete(
+                `${KEYCLOAK_URL}/admin/realms/${REALM}/roles/${role.name}`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            // Delete from local DB
+            await role.destroy();
+
+            return { message: 'Role deleted successfully.' };
+        } catch (error) {
+            throw new Error(error.message || 'Could not delete role.');
+        }
+    }
+
+    /**
+     * Assign roles to a user
+     * @param {string} userID - User ID
+     * @param {Array<string>} roleIDs - Role IDs to assign
+     * @param {string} actorID - Actor ID
+     * @returns {Promise<Object>} Assignment details
+     */
+    static async assignRolesToUser(userID, roleIDs, actorID) {
+        try {
+            const token = await getAdminToken();
+            const user = await User.findByPk(userID);
+            if (!user) throw new Error('User not found.');
+
+            // Validate roles
+            const roles = await Role.findAll({ where: { roleID: roleIDs } });
+            if (roles.length !== roleIDs.length) throw new Error('One or more roles not found.');
+
+            // Filter new roles
+            const currentRoles = await user.getRoles();
+            const currentRoleIDs = currentRoles.map((r) => r.roleID);
+            const newRoles = roles.filter((r) => !currentRoleIDs.includes(r.roleID));
+
+            if (newRoles.length > 0) {
+                // Assign in local DB
+                await user.addRoles(newRoles);
+
+                // Assign in Keycloak
+                const roleMappings = [];
+                for (const role of newRoles) {
+                    const roleData = await axios.get(
+                        `${KEYCLOAK_URL}/admin/realms/${REALM}/roles/${role.name}`,
+                        { headers: { Authorization: `Bearer ${token}` } }
+                    );
+                    roleMappings.push({ id: roleData.data.id, name: role.name });
+                }
+                await axios.post(
+                    `${KEYCLOAK_URL}/admin/realms/${REALM}/users/${user.keycloakId}/role-mappings/realm`,
+                    roleMappings,
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+
+                // Notify user of role assignment
+                const roleChanges = newRoles.map(role => ({ roleName: role.name, action: 'assigned' }));
+                await UserService.notifyRoleChange(userID, roleChanges);
+            }
+
+            return {
+                userID,
+                assignedRoles: newRoles.map((r) => r.name),
+                totalAssigned: (await user.getRoles()).length,
+            };
+        } catch (error) {
+            throw new Error(error.message || 'Could not assign roles.');
+        }
+    }
+
+    /**
+     * Revoke roles from a user
+     * @param {string} userID - User ID
+     * @param {Array<string>} roleIDs - Role IDs to revoke
+     * @param {string} actorID - Actor ID
+     * @returns {Promise<Object|Array>} Revocation details
+     */
+    static async revokeRolesFromUser(userID, roleIDs, actorID) {
+        try {
+            const token = await getAdminToken();
+            const user = await User.findByPk(userID);
+            if (!user) throw new Error('User not found.');
+
+            const results = [];
+            const roleChanges = [];
+            for (const roleID of roleIDs) {
+                const role = await Role.findByPk(roleID);
+                if (!role) throw new Error('Role not found.');
+
+                // Check if user has the role
+                const hasRole = await user.hasRole(role);
+                if (!hasRole) throw new Error(`User does not have role: ${role.name}.`);
+
+                // Remove from local DB
+                await user.removeRole(role);
+
+                // Remove from Keycloak
+                const roleData = await axios.get(
+                    `${KEYCLOAK_URL}/admin/realms/${REALM}/roles/${role.name}`,
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+                await axios.delete(
+                    `${KEYCLOAK_URL}/admin/realms/${REALM}/users/${user.keycloakId}/role-mappings/realm`,
+                    {
+                        data: [{ id: roleData.data.id, name: role.name }],
+                        headers: { Authorization: `Bearer ${token}` },
+                    }
+                );
+
+                results.push({
+                    userID,
+                    revokedRole: role.name,
+                    totalAssigned: (await user.getRoles()).length,
+                });
+                roleChanges.push({ roleName: role.name, action: 'revoked' });
+            }
+
+            // Notify user of role revocation
+            if (roleChanges.length > 0) {
+                await UserService.notifyRoleChange(userID, roleChanges);
+            }
+
+            return results.length === 1 ? results[0] : results;
+        } catch (error) {
+            throw new Error(error.message || 'Could not revoke roles.');
+        }
+    }
+
+    // Get roles for a user
+    static async getRolesByUser(userID) {
+        try {
+            const user = await User.findByPk(userID, {
+                include: [
+                    {
+                        model: Role,
+                        through: { attributes: [] },
+                        attributes: ['roleID', 'name', 'description'],
+                        include: [
+                            {
+                                model: Permission,
+                                through: { attributes: [] },
+                                attributes: ['name', 'description'],
+                            },
+                        ],
+                    },
+                ],
+            });
+            if (!user) throw new Error('User not found.');
+            return user.Roles;
+        } catch (error) {
+            throw new Error(error.message || 'Could not fetch user roles.');
+        }
+    }
+
+    // Reset main roles to default
+    static async resetMainRolesToDefault(actorID) {
+        try {
+            const token = await getAdminToken();
+            const clientUUID = await getClientUUID(token);
+
+            // Default roles configuration
+            const defaultRoles = [
+                {
+                    name: process.env.ROLE_SUPER_ADMIN,
+                    description: 'Role with full administrative privileges',
+                    permissions: '*', // Indicates all available permissions are assigned to Super Admin
+                },
+                {
+                    name: process.env.ROLE_ADMIN,
+                    description: null,
+                    permissions: [
+                        // Class: Agent
+                        'access_agents_by_delegation',
+                        'access_agents_locations',
+                        'access_agent_map_locations',
+                        'access_agents_by_phone',
+                        'access_agent_supervisor',
+                        'create_agents',
+                        'access_agents_by_user',
+                        'access_all_agents',
+                        'access_agents_by_id',
+                        'update_agents',
+                        'delete_agents',
+                        'access_nearby_agents',
+                        'access_agents_by_bounds',
+                        'update_agents_location',
+                        // Class: AI
+                        'manage_ai_config',
+                        // Class: Checklist
+                        'access_checklist_item_details',
+                        'create_checklists_items',
+                        'update_checklists_items',
+                        'delete_checklists_items',
+                        'access_checklists_items',
+                        'access_visit_checklist',
+                        // Class: CSVHeader
+                        'view_csv_headers',
+                        'update_csv_headers',
+                        // Class: Location
+                        'access_regions',
+                        'access_governorates',
+                        'access_delegations',
+                        'access_delegations_by_governorate',
+                        'access_regions_by_governorate',
+                        'access_governorates_by_delegation',
+                        'access_regions_by_user',
+                        'access_delegations_by_user',
+                        'access_governorates_by_user',
+                        'access_governorates_by_region',
+                        'access_location_details_by_id',
+                        'update_user_location',
+                        'access_google_maps',
+                        'access_user_location',
+                        // Class: Log
+                        'view_logs',
+                        'export_logs',
+                        'view_log_categories',
+                        'delete_logs',
+                        'archive_logs',
+                        'view_log_statistics',
+                        'clear_logs',
+                        'view_log_filters',
+                        'view_logger_health',
+                        'view_logger_metrics',
+                        // Class: Notification
+                        'manage_notification_rules',
+                        'view_notification_rules',
+                        'trigger_notifications',
+                        // Class: Permission
+                        'access_all_permissions',
+                        'update_permissions',
+                        'access_permission_details',
+                        'assign_permissions',
+                        'revoke_permissions',
+                        'access_permissions_by_role',
+                        // Class: Reason
+                        'create_reason_items',
+                        'access_reason_item_details',
+                        'update_reason_items',
+                        'delete_reason_items',
+                        'access_reason_items',
+                        'access_visit_reasons',
+                        // Class: Role
+                        'read_role_details',
+                        'reset_roles',
+                        'create_roles',
+                        'access_all_roles',
+                        'update_roles',
+                        'delete_roles',
+                        'assign_roles',
+                        'revoke_roles',
+                        // Class: User
+                        'revoke_regional_manager',
+                        'assign_regions',
+                        'revoke_delegations',
+                        'access_users_by_delegation',
+                        'access_all_users',
+                        'update_users',
+                        'revoke_director',
+                        'assign_governorates',
+                        'access_users_by_governorate',
+                        'access_regional_manager_by_supervisor',
+                        'create_users',
+                        'access_director',
+                        'assign_supervisor_to_agent',
+                        'revoke_governorates',
+                        'access_supervisors_by_regional_manager',
+                        'access_user_by_phone',
+                        'delete_users',
+                        'assign_regional_manager',
+                        'revoke_supervisor_from_agent',
+                        'assign_delegations',
+                        'access_regional_managers_by_director',
+                        'access_users_by_role',
+                        'access_regional_managers',
+                        'assign_director',
+                        'revoke_regions',
+                        'access_users_by_region',
+                        'access_director_by_regional_manager',
+                        'access_user_details',
+                        'access_supervisors'
+                    ],
+                },
+                {
+                    name: process.env.ROLE_SUPERVISOR,
+                    description: null,
+                    permissions: [
+                        // Class: Agent
+                        'access_agents_by_delegation',
+                        'access_agents_locations',
+                        'access_agent_map_locations',
+                        'access_agents_by_phone',
+                        'access_agent_supervisor',
+                        'create_agents',
+                        'access_agents_by_user',
+                        'access_all_agents',
+                        'access_agents_by_id',
+                        'delete_agents',
+                        'access_nearby_agents',
+                        'access_agents_by_bounds',
+                        'update_agents_location',
+                        // Class: Checklist
+                        'access_checklist_item_details',
+                        'access_checklists_items',
+                        'access_visit_checklist',
+                        // Class: Location
+                        'access_regions',
+                        'access_governorates',
+                        'access_delegations',
+                        'access_delegations_by_governorate',
+                        'access_regions_by_governorate',
+                        'access_governorates_by_delegation',
+                        'access_regions_by_user',
+                        'access_delegations_by_user',
+                        'access_governorates_by_user',
+                        'access_governorates_by_region',
+                        // Class: Notification
+                        'view_notification_rules',
+                        // Class: Reason
+                        'access_reason_item_details',
+                        'access_reason_items',
+                        'access_visit_reasons',
+                        // Class: ReceiptBook
+                        'access_receipt_book_types',
+                        'access_receipt_book_details',
+                        'access_receipt_books_by_holder',
+                        'access_receipt_books_by_number',
+                        'transfer_receipt_books',
+                        'validate_receipt_books_transfer',
+                        // Class: ReceiptStub
+                        'collect_receipt_stubs',
+                        'validate_receipt_stubs',
+                        // Class: Timesheet
+                        'access_supervisor_timesheets',
+                        'create_self_timesheets',
+                        'access_timesheet_details',
+                        'suggest_timesheets',
+                        'sync_timesheet_to_calendar',
+                        // Class: User
+                        'access_users_by_delegation',
+                        'access_all_users',
+                        'access_governorates_by_user',
+                        'access_users_by_governorate',
+                        'access_regional_manager_by_supervisor',
+                        'access_supervisors_by_regional_manager',
+                        'access_user_by_phone',
+                        'access_users_by_role',
+                        'access_regional_managers',
+                        'access_users_by_region',
+                        'access_director_by_regional_manager',
+                        'access_user_details',
+                        'access_supervisors',
+                        'access_director',
+                        'access_regional_managers_by_director',
+                        // Class: Visit
+                        'scan_visits',
+                        'log_visits',
+                        'access_visit_details',
+                        'edit_visit_details',
+                        'delete_visit',
+                        'sync_visits_to_calendar',
+                        'access_calendar_events'
+                    ],
+                },
+                {
+                    name: process.env.ROLE_REGIONAL_MANAGER,
+                    description: null,
+                    permissions: [
+                        // Class: Agent
+                        'access_agents_by_delegation',
+                        'access_agents_locations',
+                        'access_agent_map_locations',
+                        'access_agents_by_phone',
+                        'access_agent_supervisor',
+                        'access_all_agents',
+                        'access_agents_by_id',
+                        'access_nearby_agents',
+                        'access_agents_by_bounds',
+                        'update_agents_location',
+                        // Class: Checklist
+                        'access_checklist_item_details',
+                        'access_checklists_items',
+                        'access_visit_checklist',
+                        // Class: Location
+                        'access_regions',
+                        'access_governorates',
+                        'access_delegations',
+                        'access_delegations_by_governorate',
+                        'access_regions_by_governorate',
+                        'access_governorates_by_delegation',
+                        'access_regions_by_user',
+                        'access_delegations_by_user',
+                        'access_governorates_by_user',
+                        'access_governorates_by_region',
+                        'access_location_details_by_id',
+                        'update_user_location',
+                        'access_google_maps',
+                        'access_user_location',
+                        // Class: Notification
+                        'view_notification_rules',
+                        // Class: Reason
+                        'access_reason_item_details',
+                        'access_reason_items',
+                        'access_visit_reasons',
+                        // Class: ReceiptBook
+                        'access_receipt_book_types',
+                        'access_all_receipt_books',
+                        'access_receipt_book_details',
+                        'access_receipt_books_by_holder',
+                        'access_receipt_books_by_number',
+                        'transfer_receipt_books',
+                        'validate_receipt_books_transfer',
+                        'access_receipt_book_history',
+                        'access_receipt_book_holders',
+                        // Class: Report
+                        'download_report',
+                        'delete_report_schedule',
+                        'generate_report',
+                        'schedule_report',
+                        'view_report_schedules',
+                        'view_generated_reports',
+                        'delete_generated_report',
+                        // Class: Timesheet
+                        'create_timesheets_for_supervisor',
+                        'access_supervisor_timesheets',
+                        'validate_timesheets',
+                        'access_timesheet_details',
+                        // Class: User
+                        'access_users_by_delegation',
+                        'access_all_users',
+                        'access_governorates_by_user',
+                        'access_users_by_governorate',
+                        'access_regional_manager_by_supervisor',
+                        'access_director',
+                        'access_supervisors_by_regional_manager',
+                        'access_user_by_phone',
+                        'access_users_by_role',
+                        'access_regional_managers',
+                        'access_users_by_region',
+                        'access_director_by_regional_manager',
+                        'access_user_details',
+                        'access_supervisors',
+                        'access_regional_managers_by_director',
+                        // Class: Visit
+                        'access_visit_details',
+                        'edit_visit_details',
+                        'delete_visit',
+                        'access_calendar_events'
+                    ],
+                },
+                {
+                    name: process.env.ROLE_DIRECTOR,
+                    description: null,
+                    permissions: [
+                        // Class: Agent
+                        'access_agents_by_delegation',
+                        'access_agents_locations',
+                        'access_agent_map_locations',
+                        'access_agents_by_phone',
+                        'access_agent_supervisor',
+                        'access_agents_by_user',
+                        'access_all_agents',
+                        'access_agents_by_id',
+                        'access_nearby_agents',
+                        // Class: Checklist
+                        'access_checklist_item_details',
+                        'access_checklists_items',
+                        'access_visit_checklist',
+                        // Class: Location
+                        'access_regions',
+                        'access_governorates',
+                        'access_delegations',
+                        'access_delegations_by_governorate',
+                        'access_regions_by_governorate',
+                        'access_governorates_by_delegation',
+                        'access_regions_by_user',
+                        'access_delegations_by_user',
+                        'access_governorates_by_user',
+                        'access_governorates_by_region',
+                        'access_location_details_by_id',
+                        'update_user_location',
+                        'access_google_maps',
+                        'access_user_location',
+                        // Class: Reason
+                        'access_reason_item_details',
+                        'access_reason_items',
+                        'access_visit_reasons',
+                        // Class: ReceiptBook
+                        'access_receipt_book_types',
+                        'access_receipt_book_holders',
+                        'access_all_receipt_books',
+                        'access_receipt_book_details',
+                        'access_receipt_books_by_holder',
+                        'access_receipt_books_by_number',
+                        'access_receipt_book_history',
+                        // Class: Report
+                        'view_report_schedules',
+                        'view_generated_reports',
+                        // Class: Timesheet
+                        'access_supervisor_timesheets',
+                        'access_timesheet_details',
+                        'access_all_timesheets',
+                        'access_timesheets_by_week_and_year',
+                        // Class: User
+                        'access_users_by_delegation',
+                        'access_all_users',
+                        'access_governorates_by_user',
+                        'access_users_by_governorate',
+                        'access_regional_manager_by_supervisor',
+                        'access_director',
+                        'access_supervisors_by_regional_manager',
+                        'access_user_by_phone',
+                        'access_users_by_role',
+                        'access_regional_managers',
+                        'access_users_by_region',
+                        'access_director_by_regional_manager',
+                        'access_user_details',
+                        'access_supervisors',
+                        'access_regional_managers_by_director',
+                        // Class: Visit
+                        'access_visit_details',
+                        'access_calendar_events',
+                        // Class: Notification
+                        'view_notification_rules'
+                    ],
+                },
+                {
+                    name: process.env.ROLE_PURCHASE_TEAM,
+                    description: null,
+                    permissions: [
+                        // Class: Agent
+                        'access_agents_locations',
+                        'access_agent_map_locations',
+                        'access_agents_by_delegation',
+                        'access_agents_by_phone',
+                        'access_agents_by_user',
+                        'access_agent_supervisor',
+                        'access_nearby_agents',
+                        'access_agents_by_bounds',
+                        'access_all_agents',
+                        'access_agents_by_id',
+                        // Class: CSVHeader
+                        'view_csv_headers',
+                        'update_csv_headers',
+                        // Class: Location
+                        'access_regions',
+                        'access_governorates',
+                        'access_delegations',
+                        'access_delegations_by_governorate',
+                        'access_regions_by_governorate',
+                        'access_governorates_by_delegation',
+                        'access_regions_by_user',
+                        'access_delegations_by_user',
+                        'access_governorates_by_user',
+                        'access_location_details_by_id',
+                        'access_governorates_by_region',
+                        'access_google_maps',
+                        'access_user_location',
+                        // Class: Notification
+                        'view_notification_rules',
+                        // Class: ReceiptBook
+                        'manage_receipt_book_types',
+                        'access_receipt_book_types',
+                        'create_receipt_books',
+                        'access_all_receipt_books',
+                        'access_receipt_book_details',
+                        'access_receipt_books_by_holder',
+                        'access_receipt_books_by_number',
+                        'update_receipt_books',
+                        'delete_receipt_books',
+                        'send_receipt_books',
+                        'collect_supplier_receipt_books',
+                        'transfer_receipt_books',
+                        'validate_receipt_books_transfer',
+                        'access_receipt_book_history',
+                        'access_receipt_book_holders',
+                        // Class: User
+                        'access_users_by_delegation',
+                        'access_all_users',
+                        'access_users_by_governorate',
+                        'access_regional_manager_by_supervisor',
+                        'access_supervisors_by_regional_manager',
+                        'access_user_by_phone',
+                        'access_users_by_role',
+                        'access_regional_managers',
+                        'access_users_by_region',
+                        'access_director_by_regional_manager',
+                        'access_user_details',
+                        'access_supervisors',
+                        'access_regional_managers_by_director',
+                        'access_director'
+                    ],
+                },
+                {
+                    name: process.env.ROLE_STOCK_MANAGER,
+                    description: null,
+                    permissions: [
+                        // Class: Agent
+                        'access_agents_locations',
+                        'access_agent_map_locations',
+                        'access_agents_by_delegation',
+                        'access_agents_by_phone',
+                        'access_agents_by_user',
+                        'access_agent_supervisor',
+                        'access_nearby_agents',
+                        'access_agents_by_bounds',
+                        'access_all_agents',
+                        'access_agents_by_id',
+                        // Class: Location
+                        'access_regions',
+                        'access_governorates',
+                        'access_delegations',
+                        'access_delegations_by_governorate',
+                        'access_regions_by_governorate',
+                        'access_governorates_by_region',
+                        'access_regions_by_governorate',
+                        'access_governorates_by_delegation',
+                        'access_regions_by_user',
+                        'access_delegations_by_user',
+                        'access_governorates_by_user',
+                        'access_location_details_by_id',
+                        'update_user_location',
+                        'access_google_maps',
+                        'access_user_location',
+                        // Class: Notification
+                        'view_notification_rules',
+                        // Class: ReceiptBook
+                        'access_receipt_book_types',
+                        'access_all_receipt_books',
+                        'access_receipt_book_details',
+                        'access_receipt_books_by_holder',
+                        'access_receipt_books_by_number',
+                        'transfer_receipt_books',
+                        'validate_receipt_books_transfer',
+                        'access_receipt_book_history',
+                        'access_receipt_book_holders',
+                        // Class: ReceiptStub
+                        'archive_receipt_stubs',
+                        // Class: User
+                        'access_users_by_delegation',
+                        'access_all_users',
+                        'access_governorates_by_user',
+                        'access_users_by_governorate',
+                        'access_regional_manager_by_supervisor',
+                        'access_director',
+                        'access_supervisors_by_regional_manager',
+                        'access_user_by_phone',
+                        'access_users_by_role',
+                        'access_regional_managers',
+                        'access_users_by_region',
+                        'access_director_by_regional_manager',
+                        'access_user_details',
+                        'access_supervisors',
+                        'access_regional_managers_by_director'
+                    ],
+                },
+                {
+                    name: process.env.ROLE_HR,
+                    description: null,
+                    permissions: [
+                        // Class: Agent
+                        'access_agents_locations',
+                        'access_agent_map_locations',
+                        'access_agents_by_delegation',
+                        'access_agents_by_phone',
+                        'access_agents_by_user',
+                        'access_agent_supervisor',
+                        'access_nearby_agents',
+                        'access_agents_by_bounds',
+                        'access_all_agents',
+                        'access_agents_by_id',
+                        'update_agents',
+                        'create_agents',
+                        'update_agents_location',
+                        'delete_agents',
+                        // Class: Checklist
+                        'access_checklist_item_details',
+                        'access_checklists_items',
+                        'access_visit_checklist',
+                        // Class: CSVHeader
+                        'view_csv_headers',
+                        'update_csv_headers',
+                        // Class: Location
+                        'access_regions',
+                        'access_governorates',
+                        'access_delegations',
+                        'access_delegations_by_governorate',
+                        'access_regions_by_governorate',
+                        'access_governorates_by_delegation',
+                        'access_regions_by_user',
+                        'access_delegations_by_user',
+                        'access_governorates_by_user',
+                        'access_location_details_by_id',
+                        'access_governorates_by_region',
+                        'access_google_maps',
+                        'access_user_location',
+                        'update_user_location',
+                        // Class: Reason
+                        'access_reason_item_details',
+                        'access_reason_items',
+                        'access_visit_reasons',
+                        // Class: Report
+                        'download_report',
+                        'view_report_schedules',
+                        'view_generated_reports',
+                        'delete_report_schedule',
+                        'generate_report',
+                        'schedule_report',
+                        'delete_generated_report',
+                        // Class: Timesheet
+                        'access_supervisor_timesheets',
+                        'access_all_timesheets',
+                        'access_timesheet_details',
+                        'access_timesheets_by_week_and_year',
+                        // Class: User
+                        'access_users_by_delegation',
+                        'access_all_users',
+                        'access_users_by_governorate',
+                        'access_regional_manager_by_supervisor',
+                        'access_director',
+                        'access_supervisors_by_regional_manager',
+                        'access_user_by_phone',
+                        'access_users_by_role',
+                        'access_regional_managers',
+                        'access_users_by_region',
+                        'access_director_by_regional_manager',
+                        'access_user_details',
+                        'access_supervisors',
+                        'access_regional_managers_by_director',
+                        // Class: Visit
+                        'access_visit_details',
+                        'access_calendar_events',
+                        // Class: Notification
+                        'view_notification_rules',
+                        // Class: ReceiptBook
+                        'access_receipt_book_types',
+                        'access_receipt_book_holders',
+                        'access_all_receipt_books',
+                        'access_receipt_book_details',
+                        'access_receipt_books_by_holder',
+                        'access_receipt_books_by_number',
+                        'access_receipt_book_history'
+                    ],
+                }
+            ];
+
+            const results = [];
+            const allPermissions = await Permission.findAll();
+            const allPermissionNames = allPermissions.map((p) => p.name);
+
+            // Validate permission names
+            for (const defaultRole of defaultRoles) {
+                if (defaultRole.name !== process.env.ROLE_SUPER_ADMIN) {
+                    const invalidPermissions = defaultRole.permissions.filter(
+                        (p) => !allPermissionNames.includes(p)
+                    );
+                    if (invalidPermissions.length > 0) {
+                        throw new Error(`Invalid permission name(s) in role '${defaultRole.name}': ${invalidPermissions.join(', ')}`);
+                    }
+                }
+            }
+
+            // Process roles and assign permissions
+            for (const defaultRole of defaultRoles) {
+                let role = await Role.findOne({ where: { name: defaultRole.name } });
+                let keycloakRoleId;
+                if (!role) {
+                    role = await RoleService.createRole(defaultRole.name, defaultRole.description, actorID);
+                    const keycloakRole = await axios.get(
+                        `${KEYCLOAK_URL}/admin/realms/${REALM}/roles/${defaultRole.name}`,
+                        { headers: { Authorization: `Bearer ${token}` } }
+                    );
+                    keycloakRoleId = keycloakRole.data.id;
+                } else {
+                    if (role.description !== defaultRole.description) {
+                        await role.update({ description: defaultRole.description });
+                        await axios.put(
+                            `${KEYCLOAK_URL}/admin/realms/${REALM}/roles/${role.name}`,
+                            {
+                                name: role.name,
+                                description: defaultRole.description,
+                            },
+                            { headers: { Authorization: `Bearer ${token}` } }
+                        );
+                    }
+                    const keycloakRole = await axios.get(
+                        `${KEYCLOAK_URL}/admin/realms/${REALM}/roles/${role.name}`,
+                        { headers: { Authorization: `Bearer ${token}` } }
+                    );
+                    keycloakRoleId = keycloakRole.data.id;
+                }
+
+                // Update permissions
+                let permissionIDsToAssign =
+                    defaultRole.name === process.env.ROLE_SUPER_ADMIN
+                        ? allPermissions.map((p) => p.permissionID)
+                        : allPermissions
+                            .filter((p) => defaultRole.permissions.includes(p.name))
+                            .map((p) => p.permissionID);
+
+                const currentPermissions = await role.getPermissions();
+                const currentPermissionIDs = currentPermissions.map((p) => p.permissionID);
+
+                const permissionsToRevoke = currentPermissions
+                    .filter(
+                        (p) =>
+                            defaultRole.name !== process.env.ROLE_SUPER_ADMIN && !defaultRole.permissions.includes(p.name)
+                    )
+                    .map((p) => p.permissionID);
+
+                if (permissionsToRevoke.length > 0) {
+                    await PermissionService.revokePermissionsFromRole(role.roleID, permissionsToRevoke, actorID);
+                }
+
+                const permissionsToAssign = permissionIDsToAssign.filter(
+                    (id) => !currentPermissionIDs.includes(id)
+                );
+
+                if (permissionsToAssign.length > 0) {
+                    const dummyUser = { roles: [process.env.ROLE_SUPER_ADMIN] };
+                    await PermissionService.assignPermissionsToRole(dummyUser, role.roleID, permissionsToAssign, actorID);
+                }
+
+                results.push({
+                    roleName: defaultRole.name,
+                    permissionsAssigned: permissionsToAssign.length,
+                    permissionsRevoked: permissionsToRevoke.length,
+                    totalPermissions:
+                        defaultRole.name === process.env.ROLE_SUPER_ADMIN
+                            ? allPermissions.length
+                            : permissionIDsToAssign.length,
+                });
+            }
+            //await resetAll();
+            await migratePoliciesToKeycloak();
+            await migrateRecourcesToKeycloak();
+            await migratePermissionsToKeycloak();
+
+            return results;
+        } catch (error) {
+            throw new Error(error.message || 'Could not reset roles.');
+        }
+    }
+}
+
+module.exports = RoleService;

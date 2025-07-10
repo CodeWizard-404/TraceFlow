@@ -1,0 +1,193 @@
+/* Base Container */
+.location-correction-container {
+    display: none;
+}
+
+.location-correction-container.active {
+    display: block;
+    height: 100vh;
+    left: 0;
+    position: fixed;
+    top: 0;
+    width: 100vw;
+    z-index: 1000;
+    background: #000;
+    font-family: 'Inter', sans-serif;
+}
+
+/* Map Frame */
+.map-frame {
+    border: 10px solid #4cb1c7;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    position: relative;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 100%;
+}
+
+/* Dark Mode */
+body.dark .map-frame {
+    border-color: #63b3ed;
+}
+
+/* Address Display */
+.address-display {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: rgba(0, 0, 0, 0.7);
+    color: #fff;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+body.dark .address-display {
+    color: #e2e8f0;
+}
+
+/* Buttons */
+.current-location-btn,
+.save-location-btn,
+.close-btn {
+    align-items: center;
+    border: none;
+    border-radius: 50%;
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.current-location-btn {
+    background: #4cb1c7;
+    height: 50px;
+    width: 50px;
+    position: absolute;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.current-location-btn:hover:not(:disabled) {
+    background: #3a8fa2;
+}
+
+.current-location-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+.save-location-btn {
+    background: #4cb1c7;
+    height: 60px;
+    width: 60px;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    position: absolute;
+}
+
+.save-location-btn:hover:not(:disabled) {
+    background: #3a8fa2;
+}
+
+.save-location-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+.close-btn {
+    background: #e81f76;
+    height: 50px;
+    width: 50px;
+    right: 20px;
+    top: 20px;
+    position: absolute;
+}
+
+.close-btn:hover {
+    background: #b70a4f;
+}
+
+/* Dark Mode Button Styles */
+body.dark .current-location-btn,
+body.dark .save-location-btn {
+    background: #63b3ed;
+}
+
+body.dark .current-location-btn:hover:not(:disabled),
+body.dark .save-location-btn:hover:not(:disabled) {
+    background: #4299e1;
+}
+
+body.dark .close-btn {
+    background: #f87171;
+}
+
+body.dark .close-btn:hover {
+    background: #e53e3e;
+}
+
+/* Media Queries for Mobile Responsiveness */
+@media (max-width: 768px) {
+    .map-frame {
+        border-width: 5px;
+    }
+
+    .address-display {
+        font-size: 0.75rem;
+        padding: 4px 8px;
+    }
+
+    .current-location-btn {
+        height: 45px;
+        width: 45px;
+        bottom: 80px;
+    }
+
+    .save-location-btn {
+        height: 50px;
+        width: 50px;
+        bottom: 20px;
+    }
+
+    .close-btn {
+        height: 40px;
+        width: 40px;
+        right: 15px;
+        top: 15px;
+    }
+}
+
+@media (max-width: 480px) {
+    .address-display {
+        font-size: 0.7rem;
+        padding: 3px 6px;
+    }
+
+    .current-location-btn {
+        height: 40px;
+        width: 40px;
+        bottom: 70px;
+    }
+
+    .save-location-btn {
+        height: 45px;
+        width: 45px;
+    }
+
+    .close-btn {
+        height: 35px;
+        width: 35px;
+        right: 10px;
+        top: 10px;
+    }
+}

@@ -1,0 +1,833 @@
+const io = require('../utils/socket'); // Socket.io for real-time WebSocket notifications
+const { sendSMS } = require('../config/sms'); // SMS sending utility
+const { sendEmail } = require('../config/smtp'); // Email sending utility
+const { Notification, NotificationPreference, NotificationRule, User, Role, Sequelize } = require('../models'); // Sequelize models
+const { Op, sequelize } = require('sequelize'); // Sequelize operators for queries
+const { getRedisClient, getRedisSubClient } = require('../config/redis'); // Redis client utilities
+const RedisUtils = require('../utils/redisUtils'); // Redis helper utilities
+const logger = require('../utils/logger'); // Logger import
+const { v4: uuidv4 } = require('uuid'); // UUID for requestID
+
+// Error messages for common issues
+const ERROR_MESSAGES = {
+    INVALID_RULE: 'Invalid notification rule.',
+    INVALID_CHANNELS: 'Channels must only include email, sms, and inApp.',
+    INVALID_PRIORITY: 'Priority must be "high" or "normal".',
+    INVALID_PREFERENCES: 'Invalid notification preferences.',
+};
+
+class NotificationService {
+    constructor() {
+        // Initialize Redis clients for caching and pub/sub
+        this.redis = getRedisClient();
+        this.redisSub = getRedisSubClient();
+
+
+        // Subscribe to Redis 'notifications' channel for real-time messages
+        this.redisSub.subscribe('notifications', (err) => {
+            if (err) {
+                logger.error('Failed to subscribe to notifications:', err.message);
+            }
+        });
+
+        // Handle incoming Redis messages
+        this.redisSub.on('message', (channel, message) => {
+            if (channel === 'notifications') {
+                try {
+                    const { room, data } = JSON.parse(message);
+                    io.to(room).emit('notification', data);
+                } catch (error) {
+                    logger.error('Failed to process notification message:', error.message);
+                }
+            }
+        });
+    }
+
+    // Create a new notification rule
+    async createRule(data, creatorID, logInfo) {
+        const { event, type, recipients, channels, conditions, messageTemplate, enabled, priority } = data;
+
+        // Validate channels
+        if (channels.websocket !== undefined || !['email', 'sms', 'inApp'].every(c => typeof channels[c] === 'boolean')) {
+            throw Object.assign(new Error(ERROR_MESSAGES.INVALID_CHANNELS), { status: 400 });
+        }
+
+        // Validate priority
+        if (priority && !['high', 'normal'].includes(priority)) {
+            throw Object.assign(new Error(ERROR_MESSAGES.INVALID_PRIORITY), { status: 400 });
+        }
+
+        // Create rule in database
+        const rule = await NotificationRule.create({
+            event,
+            type,
+            recipients,
+            channels,
+            conditions,
+            messageTemplate,
+            enabled: enabled !== undefined ? enabled : true,
+            priority: priority || 'normal',
+            creatorID,
+        });
+
+        // Handle high-priority rules
+        if (rule.priority === 'high') {
+            await this.handlePriorityChange(rule);
+        }
+        return rule;
+    }
+
+    // Update an existing rule
+    async updateRule(ruleID, data, logInfo) {
+        const { event, type, recipients, channels, conditions, messageTemplate, enabled, priority } = data;
+
+        // Validate channels
+        if (channels.websocket !== undefined || !['email', 'sms', 'inApp'].every(c => typeof channels[c] === 'boolean')) {
+            throw Object.assign(new Error(ERROR_MESSAGES.INVALID_CHANNELS), { status: 400 });
+        }
+
+        // Validate priority
+        if (priority && !['high', 'normal'].includes(priority)) {
+            throw Object.assign(new Error(ERROR_MESSAGES.INVALID_PRIORITY), { status: 400 });
+        }
+
+        // Find and update rule
+        const rule = await NotificationRule.findByPk(ruleID);
+        if (!rule) {
+            throw Object.assign(new Error(ERROR_MESSAGES.INVALID_RULE), { status: 404 });
+        }
+
+        const wasNormalPriority = rule.priority === 'normal';
+        await rule.update({
+            event,
+            type,
+            recipients,
+            channels,
+            conditions,
+            messageTemplate,
+            enabled,
+            priority: priority || rule.priority,
+        });
+
+        // Handle priority change to high
+        if (wasNormalPriority && rule.priority === 'high') {
+            await this.handlePriorityChange(rule);
+        }
+
+        return rule;
+    }
+
+    // Delete a rule
+    async deleteRule(ruleID, logInfo) {
+        const rule = await NotificationRule.findByPk(ruleID);
+        if (!rule) {
+            throw Object.assign(new Error(ERROR_MESSAGES.INVALID_RULE), { status: 404 });
+        }
+        await rule.destroy();
+        return { message: 'Notification rule deleted successfully.' };
+    }
+
+    // Get all rules
+    async getRules(logInfo) {
+        const rules = await NotificationRule.findAll();
+        return rules;
+    }
+
+    // Get unique notification types
+    async getNotificationTypes(logInfo) {
+        const rules = await NotificationRule.findAll({
+            attributes: ['type'],
+            group: ['type'],
+        });
+        const types = rules.map(rule => rule.type);
+        return types;
+    }
+
+    // Get user notification preferences and available events
+    async getPreferences(userID, logInfo) {
+        const preference = await NotificationPreference.findOne({ where: { userID } });
+        const rules = await NotificationRule.findAll({
+            attributes: ['event', 'priority'],
+            group: ['event', 'priority'],
+        });
+        const availableEvents = rules.map(rule => ({
+            event: rule.event,
+            isCustomizable: rule.priority !== 'high',
+        }));
+
+        const storedPrefs = preference?.preferences || {};
+        const preferences = {};
+        for (const { event } of availableEvents) {
+            preferences[event] = storedPrefs[event] || {
+                email: rules.channels?.email || false,
+                sms: rules.channels?.sms || false,
+                inApp: rules.channels?.inApp || true,
+            };
+        }
+
+        const sanitizedPreferences = {};
+        for (const [event, channels] of Object.entries(preferences)) {
+            sanitizedPreferences[event] = {
+                email: channels.email,
+                sms: channels.sms,
+                inApp: channels.inApp,
+            };
+        }
+
+        return { preferences: sanitizedPreferences, availableEvents };
+    }
+
+    // Get all notifications for a user
+    async getNotifications(userID, logInfo) {
+        const notifications = await Notification.findAll({
+            where: { userID },
+            order: [['createdAt', 'DESC']],
+        });
+        return notifications;
+    }
+
+    // Mark a single notification as read
+    async markNotificationAsRead(notificationID, userID, logInfo) {
+        const notification = await Notification.findByPk(notificationID);
+        if (!notification || notification.userID !== userID) {
+            throw Object.assign(new Error('Notification not found or unauthorized'), { status: 404 });
+        }
+        await notification.update({ status: 'read' });
+        return notification;
+    }
+
+    // Mark all notifications for a user as read
+    async markAllNotificationsAsRead(userID, logInfo) {
+        const updatedCount = await Notification.update(
+            { status: 'read' },
+            {
+                where: {
+                    userID,
+                    status: { [Op.in]: ['pending', 'sent'] },
+                },
+            }
+        );
+        return { message: `Marked ${updatedCount[0]} notifications as read.` };
+    }
+
+    // DEPRECATED: Redirect createNotification to triggerNotification
+    async createNotification(data, logInfo) {
+        const { event, data: notificationData, roles, userIDs, type, message, email, sms, dynamicRecipients, triggeredByUserID } = data;
+        const results = await this.triggerNotification({
+            event,
+            data: notificationData,
+            metadata: { customMessage: message, triggeredBy: email || data?.triggeredBy },
+            roles: roles || [],
+            userIDs: userIDs || [],
+            dynamicRecipients,
+            triggeredByUserID,
+            type: type || event.split(':')[0],
+            customMessage: message,
+            email,
+            sms,
+        });
+        return { results, message: 'Notification sent successfully.' };
+    }
+
+    // Notify for anomaly detection
+    async notifyAnomaly(data, userEmail, logInfo) {
+        const { dataType, anomalies, userIDs, roles, dynamicRecipients, triggeredByUserID } = data;
+        const results = await this.triggerNotification({
+            event: 'ai:anomaly_detected',
+            data: { dataType, anomalyCount: anomalies.length },
+            metadata: { triggeredBy: userEmail, anomalies },
+            roles: roles || [],
+            userIDs: userIDs || [],
+            dynamicRecipients,
+            triggeredByUserID,
+            type: 'ai',
+        });
+        return { results, message: 'Anomaly notification sent successfully.' };
+    }
+
+    // Notify for report generation
+    async notifyReport(data, userEmail, logInfo) {
+        const { format, filters, userIDs, roles, dynamicRecipients, triggeredByUserID } = data;
+        const results = await this.triggerNotification({
+            event: 'ai:report_generated',
+            data: { format, filters },
+            metadata: { triggeredBy: userEmail },
+            roles: roles || [],
+            userIDs: userIDs || [],
+            dynamicRecipients,
+            triggeredByUserID,
+            type: 'ai',
+        });
+        return { results, message: 'Report notification sent successfully.' };
+    }
+
+    // Send WebSocket notification to specific rooms
+    async sendWebSocketNotification(event, data, roles = [], userIDs = []) {
+        try {
+            if (!io || !io.sockets) {
+                return { success: false, method: 'WebSocket', reason: 'Server not initialized' };
+            }
+            const payload = { event, data, timestamp: new Date().toISOString() };
+            const rooms = [...new Set([...roles.map(r => r.toLowerCase()), ...userIDs, 'default-roles-traceflow'].filter(Boolean))];
+            if (rooms.length === 0) {
+                return { success: true, method: 'WebSocket', reason: 'No rooms to notify' };
+            }
+            rooms.forEach((room) => {
+                io.to(room).emit(event, payload);
+            });
+            return { success: true, method: 'WebSocket' };
+        } catch (error) {
+            logger.error('Failed to send WebSocket notification:', error.message);
+            return { success: false, method: 'WebSocket', reason: error.message };
+        }
+    }
+
+    // Send email notification
+    async sendEmailNotification(to, subject, message, data = {}, metadata = {}) {
+        try {
+            const resolvedMessage = await Promise.resolve(message);
+            let detailedMessage = `Event: ${resolvedMessage}\n`;
+            if (data && Object.keys(data).length) {
+                detailedMessage += `Details:\n${Object.entries(data)
+                    .map(([key, value]) => `- ${key}: ${value}`)
+                    .join('\n')}\n`;
+            }
+            if (metadata.triggeredBy) {
+                detailedMessage += `Triggered by: ${metadata.triggeredBy}\n`;
+            }
+            detailedMessage += `Timestamp: ${new Date().toLocaleString()}\n`;
+
+            await sendEmail({
+                to,
+                subject,
+                templateName: 'default',
+                replacements: {
+                    firstname: 'User',
+                    content: detailedMessage.replace(/\n/g, '<br>'),
+                    event: resolvedMessage,
+                    timestamp: new Date().toLocaleString(),
+                    platformUrl: process.env.PLATFORM_URL || 'https://traceflow.example.com',
+                },
+                textFallback: detailedMessage,
+            });
+            return { success: true, method: 'Email' };
+        } catch (error) {
+            logger.error('Failed to send email notification:', error.message);
+            return { success: false, method: 'Email', reason: error.message };
+        }
+    }
+
+    // Send SMS notification
+    async sendSMSNotification(to, message, data = {}, metadata = {}) {
+        try {
+            const resolvedMessage = await Promise.resolve(message);
+            let smsMessage = `${resolvedMessage}`;
+            if (data && Object.keys(data).length) {
+                const keyDetail = Object.entries(data)[0];
+                smsMessage += ` (${keyDetail[0]}: ${keyDetail[1]})`;
+            }
+            smsMessage += `. Check traceflow.app`;
+            const result = await sendSMS(to, smsMessage, 'notification');
+            return result;
+        } catch (error) {
+            logger.error('Failed to send SMS notification:', error.message);
+            return { success: false, method: 'SMS', reason: error.message };
+        }
+    }
+
+    // Store notification in database with deduplication
+    // services/NotificationService.js (in storeNotification)
+    async storeNotification({ userID, type, message, channel, event, rule, requestID, metadata, data }) {
+        try {
+            if (!rule || !rule.enabled) {
+                return null;
+            }
+
+            const { preferences } = await this.getUserPreferences(userID, event, rule);
+            if (channel === 'in-app' && !preferences.inApp) return null;
+            if (channel === 'email' && !preferences.email) return null;
+            if (channel === 'sms' && !preferences.sms) return null;
+
+            const notificationMessage = await Promise.resolve(message).then(String);
+            if (!notificationMessage) {
+                return null;
+            }
+
+            const dedupKey = `notif:${userID}:${event}:${channel}:${notificationMessage}:${requestID}`;
+            const exists = await this.redis.get(dedupKey);
+            if (exists) {
+                return null;
+            }
+
+            const notificationData = {
+                userID,
+                type,
+                message: notificationMessage,
+                channel,
+                status: 'pending',
+            };
+            if (event === 'ai:anomaly_detected') {
+                notificationData.details = metadata?.anomalies || [];
+                notificationData.severity = data?.severity || 'unknown'; // Save severity
+            }
+
+            const notification = await Notification.create(notificationData);
+
+            await this.redis.set(dedupKey, '1', 'EX', 60);
+
+            if (channel === 'in-app' && preferences.inApp) {
+                await this.updateNotificationStatus(notification.notificationID, 'sent');
+                await this.sendWebSocketNotification('notification:created', { data: notification }, [], [userID]);
+            }
+
+            return notification;
+        } catch (error) {
+            logger.error(`Failed to store notification for user ${userID}:`, error.message);
+            return null;
+        }
+    }
+
+    // Update notification status and notify via WebSocket
+    async updateNotificationStatus(notificationID, status) {
+        const notification = await Notification.findByPk(notificationID);
+        if (notification) {
+            notification.status = status;
+            await notification.save();
+            const event = 'notification:updated';
+            const data = {
+                notificationID,
+                status,
+                updatedAt: new Date(),
+            };
+            await this.sendWebSocketNotification(event, data, [], [notification.userID]);
+        }
+    }
+
+    // Create a default disabled rule for an event
+    async createDefaultDisabledRule({ event, data, metadata = {} }) {
+        try {
+            if (!event || !data) return null;
+            const existingRule = await NotificationRule.findOne({ where: { event } });
+            if (existingRule) {
+                return existingRule;
+            }
+            const notificationType = event.split(':')[0];
+            const defaultRule = {
+                event,
+                type: notificationType,
+                recipients: {
+                    roles: [process.env.ROLE_ADMIN, process.env.ROLE_SUPER_ADMIN],
+                    userIDs: [],
+                },
+                channels: {
+                    email: event.includes('ai:') ? true : false,
+                    sms: event.includes('ai:anomaly_detected') ? true : false,
+                    inApp: true,
+                },
+                conditions: data.conditions || null,
+                messageTemplate: event === 'ai:anomaly_detected'
+                    ? 'AI detected {anomalyCount} anomalies in {dataType} data.'
+                    : event === 'ai:report_generated'
+                        ? 'AI generated a {format} report with filters: {filters}.'
+                        : '{event}',
+                enabled: true,
+                priority: 'normal',
+            };
+            const rule = await NotificationRule.create(defaultRule);
+            return rule;
+        } catch (error) {
+            logger.error('Failed to create default rule:', error.message);
+            return null;
+        }
+    }
+
+    // Handle priority changes for high-priority rules
+    async handlePriorityChange(rule) {
+        if (rule.priority !== 'high') return;
+
+        try {
+            // Use raw query to find preferences with the event key
+            const preferences = await sequelize.query(
+                `SELECT * FROM notification_preferences WHERE preferences ? :event`,
+                {
+                    replacements: { event: rule.event },
+                    type: sequelize.QueryTypes.SELECT,
+                }
+            );
+
+            for (const pref of preferences) {
+                const userPrefs = pref.preferences || {};
+                if (rule.event in userPrefs) {
+                    delete userPrefs[rule.event];
+                    await NotificationPreference.update(
+                        { preferences: userPrefs },
+                        { where: { userID: pref.userID } }
+                    );
+                    await RedisUtils.invalidateUserPreferences(pref.userID);
+                }
+            }
+        } catch (error) {
+            logger.error(`Failed to handle priority change for rule ${rule.ruleID}:`, error.message);
+            throw error;
+        }
+    }
+
+    // Trigger a notification for an event with customizable recipients
+    async triggerNotification({ event, data, metadata = {}, roles = [], userIDs = [], dynamicRecipients = [], triggeredByUserID, type, customMessage, email, sms, requestID = uuidv4() }) {
+        try {
+            // Fetch all users and roles for WebSocket rooms
+            const allUsers = await User.findAll();
+            const allRoles = await Role.findAll();
+            const userIDsAll = allUsers.map(user => user.userID);
+            const roleNames = allRoles.map(role => role.name);
+
+            // Send WebSocket notification to all relevant rooms
+            const triggerEventPayload = { event, data, timestamp: new Date().toISOString() };
+            await this.sendWebSocketNotification(event, triggerEventPayload, roleNames, userIDsAll);
+
+            // Fetch all rules for the event
+            const allRules = await NotificationRule.findAll({ where: { event } });
+            for (const rule of allRules) {
+                await this.handlePriorityChange(rule);
+            }
+
+            // Get enabled rules
+            const rules = await NotificationRule.findAll({ where: { event, enabled: true } });
+            if (!rules.length) {
+                const defaultRule = await this.createDefaultDisabledRule({ event, data, metadata });
+                if (defaultRule && defaultRule.enabled) {
+                    await this.handlePriorityChange(defaultRule);
+                    rules.push(defaultRule);
+                } else {
+                    return [{ success: true, method: 'WebSocket', reason: 'No enabled rules or dynamic recipients, WebSocket sent' }];
+                }
+            }
+
+            const results = [];
+            // Handle recipients based on rules
+            for (const rule of rules) {
+                let allRecipients = [];
+                let dynamicUsersRoles = new Set();
+                let ruleRoles = (rule.recipients.roles || []);
+
+                let enhancedData = { ...data };
+                if (event === 'ai:anomaly_detected') {
+                    const anomalyCount = data.anomalyCount || 0;
+                    enhancedData.severity = anomalyCount >= 5 ? 'high' : anomalyCount >= 3 ? 'medium' : 'low';
+                }
+
+
+                // If dynamic recipients are provided, get their roles and filter
+                if (dynamicRecipients.length) {
+                    const dynamicUsersWithRoles = await User.findAll({
+                        where: { userID: { [Op.in]: dynamicRecipients } },
+                        include: [{
+                            model: Role,
+                            through: { attributes: [] },
+                            required: false
+                        }],
+                    });
+                    // Collect roles of dynamic recipients
+                    dynamicUsersWithRoles.forEach(user => {
+                        if (user.Roles && Array.isArray(user.Roles)) {
+                            user.Roles.forEach(role => dynamicUsersRoles.add(role.name));
+                        }
+                    });
+                    // Filter dynamic users to those whose roles are in the rule
+                    const filteredDynamicUsers = dynamicUsersWithRoles.filter(user =>
+                        user.Roles && Array.isArray(user.Roles) &&
+                        user.Roles.some(role => (rule.recipients.roles || []).includes(role.name))
+                    );
+                    // Exclude roles of dynamic recipients from rule roles
+                    ruleRoles = (rule.recipients.roles || []).filter(role => !dynamicUsersRoles.has(role));
+                    const ruleUsers = await this.resolveRecipients({ roles: ruleRoles, userIDs: rule.recipients.userIDs || [] });
+                    allRecipients = [...filteredDynamicUsers, ...ruleUsers];
+                } else {
+                    // No dynamic recipients, use rule's recipients
+                    allRecipients = await this.resolveRecipients({ roles: rule.recipients.roles || [], userIDs: rule.recipients.userIDs || [] });
+                }
+
+
+                // Deduplicate recipients by userID
+                let uniqueRecipients = Array.from(new Set(allRecipients.map(u => u.userID)))
+                    .map(id => allRecipients.find(u => u.userID === id));
+
+
+                // Filter out the user who triggered the notification
+                if (triggeredByUserID) {
+                    uniqueRecipients = uniqueRecipients.filter(user => user.userID !== triggeredByUserID);
+                }
+
+                if (!uniqueRecipients.length) {
+                    results.push({ success: false, reason: 'No valid recipients after filtering' });
+                    continue;
+                }
+
+                for (const user of uniqueRecipients) {
+                    const messageData = { event, ...data, ...metadata };
+                    const message = await this.formatMessage(customMessage || (rule.messageTemplate || event), messageData);
+                    if (!message) {
+                        throw new Error(`Invalid notification message for event: ${event}`);
+                    }
+
+                    const result = await this.sendNotification({
+                        event,
+                        data: enhancedData,
+                        roles: dynamicRecipients.includes(user.userID) ? rule.recipients.roles || [] : ruleRoles,
+                        userIDs: dynamicRecipients.includes(user.userID) ? [] : [user.userID],
+                        dynamicRecipients: dynamicRecipients.includes(user.userID) ? [user.userID] : [],
+                        triggeredByUserID,
+                        type: type || rule.type || event.split(':')[0],
+                        message,
+                        email: email || user.email,
+                        sms: sms || user.phone,
+                        metadata,
+                        rule,
+                        requestID,
+                    });
+
+                    results.push({ userID: user.userID, ruleID: rule.ruleID, result });
+                }
+            }
+
+            return results;
+        } catch (error) {
+            logger.error('Failed to trigger notification:', error.message);
+            return [{ success: false, reason: error.message }];
+        }
+    }
+
+    // Resolve recipients from roles and user IDs
+    async resolveRecipients({ roles = [], userIDs = [] }) {
+        try {
+            const users = new Set();
+            if (roles.length) {
+                const roleUsers = await User.findAll({
+                    include: [{
+                        model: Role,
+                        where: { name: { [Op.in]: roles } },
+                        through: { attributes: [] },
+                    }],
+                });
+                roleUsers.forEach(user => users.add(user));
+            }
+            if (userIDs.length) {
+                const specificUsers = await User.findAll({
+                    where: { userID: { [Op.in]: userIDs } },
+                });
+                specificUsers.forEach(user => users.add(user));
+            }
+            const resolvedUsers = Array.from(users);
+            return resolvedUsers;
+        } catch (error) {
+            logger.error('Failed to resolve recipients:', error.message);
+            return [];
+        }
+    }
+
+    // Resolve dynamic recipients
+    async resolveDynamicRecipients(userIDs) {
+        try {
+            if (!userIDs || !userIDs.length) return [];
+            const users = await User.findAll({
+                where: { userID: { [Op.in]: userIDs } },
+            });
+            return users;
+        } catch (error) {
+            logger.error('Failed to resolve dynamic recipients:', error.message);
+            return [];
+        }
+    }
+
+    // Format message template with data
+    async formatMessage(template, data) {
+        const resolvedData = {};
+        for (const [key, value] of Object.entries(data)) {
+            resolvedData[key] = await Promise.resolve(value);
+        }
+        const formattedMessage = template.replace(/{(\w+)}/g, (_, key) => resolvedData[key] || '');
+        return formattedMessage;
+    }
+
+    // Send notification to recipients
+    async sendNotification({ event, data, roles, userIDs, dynamicRecipients, triggeredByUserID, type, message, email, sms, metadata = {}, rule, requestID }) {
+        try {
+            const results = [];
+            let recipients = [];
+
+            // Resolve recipients based on dynamicRecipients or roles/userIDs
+            if (dynamicRecipients && dynamicRecipients.length) {
+                recipients = await this.resolveDynamicRecipients(dynamicRecipients);
+            } else {
+                recipients = await this.resolveRecipients({ roles, userIDs });
+            }
+
+            if (triggeredByUserID) {
+                recipients = recipients.filter(user => user.userID !== triggeredByUserID);
+            }
+
+            if (!recipients.length) {
+                results.push({ success: false, reason: 'No valid recipients after filtering' });
+                return results;
+            }
+
+            for (const user of recipients) {
+                const userID = user.userID;
+                const userEmail = email || user.email;
+                const userPhone = sms || user.phone;
+
+                const { preferences } = await this.getUserPreferences(userID, event, rule);
+
+                if (rule && !rule.enabled) {
+                    results.push({ success: false, userID, reason: 'Rule is disabled' });
+                    continue;
+                }
+
+                const notificationData = { event, ...data, ...metadata };
+                const formattedMessage = await this.formatMessage(message || (rule?.messageTemplate || event), notificationData);
+
+                // Determine if preferences override rule channels (normal priority only)
+                const usePreferences = rule?.priority === 'normal';
+                const effectiveChannels = {
+                    inApp: usePreferences ? preferences.inApp : rule?.channels.inApp || preferences.inApp,
+                    email: usePreferences ? preferences.email : rule?.channels.email || preferences.email,
+                    sms: usePreferences ? preferences.sms : rule?.channels.sms || preferences.sms,
+                };
+
+                // Send in-app notification
+                if (effectiveChannels.inApp) {
+                    const inAppResult = await this.storeNotification({
+                        userID,
+                        type: type || rule?.type || event.split(':')[0],
+                        message: formattedMessage,
+                        channel: 'in-app',
+                        event,
+                        rule,
+                        requestID,
+                        metadata,
+                        data, // Pass data with severity
+                    });
+                    if (inAppResult) {
+                        results.push({ success: true, userID, method: 'inApp', notificationID: inAppResult.notificationID });
+                    }
+                }
+
+                // Send email notification
+                if (effectiveChannels.email && userEmail) {
+                    const emailResult = await this.sendEmailNotification(
+                        userEmail,
+                        `Notification: ${event}`,
+                        formattedMessage,
+                        data,
+                        metadata
+                    );
+                    const emailNotification = await this.storeNotification({
+                        userID,
+                        type: type || rule?.type || event.split(':')[0],
+                        message: formattedMessage,
+                        channel: 'email',
+                        event,
+                        rule,
+                        requestID,
+                        metadata,
+                        data, // Pass data with severity
+                    });
+                    results.push({ ...emailResult, userID, notificationID: emailNotification?.notificationID });
+                }
+
+                // Send SMS notification
+                if (effectiveChannels.sms && userPhone) {
+                    const smsResult = await this.sendSMSNotification(
+                        userPhone,
+                        formattedMessage,
+                        data,
+                        metadata
+                    );
+                    const smsNotification = await this.storeNotification({
+                        userID,
+                        type: type || rule?.type || event.split(':')[0],
+                        message: formattedMessage,
+                        channel: 'sms',
+                        event,
+                        rule,
+                        requestID,
+                        metadata,
+                        data, // Pass data with severity
+                    });
+                    results.push({ ...smsResult, userID, notificationID: smsNotification?.notificationID });
+                }
+            }
+
+            return results;
+        } catch (error) {
+            logger.error('Failed to send notification:', error.message);
+            return [{ success: false, reason: error.message }];
+        }
+    }
+
+    // Get user preferences for an event
+    async getUserPreferences(userID, event, rule) {
+        try {
+            const preference = await NotificationPreference.findOne({ where: { userID } });
+            const defaultPrefs = {
+                email: rule?.channels?.email || false,
+                sms: rule?.channels?.sms || false,
+                inApp: rule?.channels?.inApp || true,
+            };
+
+            if (!preference || !preference.preferences[event]) {
+                return { preferences: defaultPrefs };
+            }
+
+            const userPrefs = preference.preferences[event];
+            const preferences = {
+                email: rule?.priority === 'high' ? true : userPrefs.email,
+                sms: rule?.priority === 'high' ? true : userPrefs.sms,
+                inApp: rule?.priority === 'high' ? true : userPrefs.inApp,
+            };
+            return { preferences };
+        } catch (error) {
+            logger.error('Failed to get user preferences:', error.message);
+            return { preferences: { email: false, sms: false, inApp: true } };
+        }
+    }
+
+    // Update user notification preferences
+    async updatePreferences(userID, preferences, logInfo = {}) {
+        try {
+            // Validate preferences
+            if (!preferences || typeof preferences !== 'object') {
+                throw Object.assign(new Error(ERROR_MESSAGES.INVALID_PREFERENCES), { status: 400 });
+            }
+
+            // Validate each event's channels
+            for (const [event, channels] of Object.entries(preferences)) {
+                if (!['email', 'sms', 'inApp'].every(c => typeof channels[c] === 'boolean')) {
+                    throw Object.assign(new Error(ERROR_MESSAGES.INVALID_CHANNELS), { status: 400 });
+                }
+            }
+
+            // Find existing preference or create a new one
+            let preference = await NotificationPreference.findOne({ where: { userID } });
+            if (preference) {
+                await preference.update({ preferences });
+            } else {
+                preference = await NotificationPreference.create({
+                    userID,
+                    preferences,
+                });
+            }
+
+            // Invalidate cache
+            await RedisUtils.invalidateUserPreferences(userID);
+
+            return preference;
+        } catch (error) {
+            logger.error(`Failed to update preferences for user ${userID}:`, error.message);
+            throw Object.assign(error, { status: error.status || 500 });
+        }
+    }
+
+}
+
+module.exports = new NotificationService();
